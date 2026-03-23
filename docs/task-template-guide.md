@@ -53,7 +53,7 @@ QA Reviewers (user chooses: style / logic / security / all / skip)
   v
 Completion bookkeeping
   -> completion-report.md written
-  -> registry.md updated to COMPLETED
+  -> registry.md updated to COMPLETE
 ```
 
 ---
@@ -82,7 +82,7 @@ Every field in `task.md` has a specific consumer in the pipeline.
 | DOCUMENTATION | PM → Developer → Style Reviewer                         |
 | RESEARCH      | Researcher → [conditional implementation]                |
 | DEVOPS        | PM → Architect → DevOps Engineer → QA                   |
-| CREATIVE      | [ui-ux-designer] → content-writer → frontend-developer  |
+| CREATIVE      | [ui-ux-designer] → content-writer → frontend             |
 
 ---
 
@@ -91,7 +91,7 @@ Every field in `task.md` has a specific consumer in the pipeline.
 When auto-pilot is running, it uses task.md fields to make autonomous decisions:
 
 1. **Read** `registry.md` + all `TASK_*/task.md` files → build dependency graph
-2. **Find unblocked tasks** — all dependencies have status `COMPLETED`, own status is `CREATED`
+2. **Find unblocked tasks** — all dependencies have status `COMPLETE`, own status is `CREATED`
 3. **Order by Priority** — P0-Critical first, P3-Low last
 4. **Pick next 1-2 tasks** to run concurrently
 5. **Generate orchestration prompt** from task.md content (Type determines strategy)
@@ -120,10 +120,10 @@ This is why structured metadata matters — the auto-pilot can't parse ambiguous
 
 ## Description
 
-Add a settings panel accessible from the project sidebar that allows users to
+Add a settings panel accessible from the main navigation that allows users to
 configure project-level preferences: default branch, auto-save interval, and
-theme override. Settings should persist in the project's SQLite database and
-sync to the renderer via IPC.
+theme override. Settings should persist in the database and sync to the UI
+layer via the app's data transport (e.g., IPC, REST, tRPC).
 
 ## Dependencies
 
@@ -131,16 +131,16 @@ sync to the renderer via IPC.
 
 ## Acceptance Criteria
 
-- [ ] Settings panel opens from sidebar gear icon
+- [ ] Settings panel opens from navigation gear icon
 - [ ] Three settings are configurable: default branch, auto-save interval, theme override
-- [ ] Settings persist across app restarts (stored in SQLite)
+- [ ] Settings persist across app restarts
 - [ ] Settings changes reflect immediately in the UI without restart
 
 ## References
 
-- Existing settings pattern: libs/main-process/database/src/lib/repositories/settings.repository.ts
-- IPC channel conventions: libs/shared/src/lib/channels.ts
-- UI sidebar component: apps/renderer/src/app/components/sidebar/
+- Existing settings pattern: src/database/repositories/settings.repository.ts
+- Data transport conventions: src/shared/channels.ts
+- UI navigation component: src/components/sidebar/
 ```
 
 ### Example 2: BUGFIX Task
@@ -176,7 +176,7 @@ should be fixed.
 ## References
 
 - Related issue: discussed in TASK_2026_007 review
-- Sidebar component: apps/renderer/src/app/components/sidebar/sidebar.component.ts
+- Sidebar component: src/components/sidebar/sidebar.component.ts
 ```
 
 ---

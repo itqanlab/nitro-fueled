@@ -17,7 +17,7 @@
        DOCUMENTATION — PM -> Developer -> Style Reviewer
        RESEARCH      — Researcher -> [conditional implementation]
        DEVOPS        — PM -> Architect -> DevOps Engineer -> QA
-       CREATIVE      — [ui-ux-designer] -> content-writer -> frontend-developer
+       CREATIVE      — [ui-ux-designer] -> content-writer -> frontend
 
      Priority: Determines queue ordering in auto-pilot (P0 first, P3 last)
 

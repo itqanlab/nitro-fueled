@@ -81,7 +81,8 @@ Task created successfully.
 2. **ALWAYS read `registry.md` to determine the next ID** — never guess or assume
 3. **Registry row format MUST match**: Task ID | Status | Type | Description | Created
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
-7. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs
+5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
+6. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs
 
 ## References
 
