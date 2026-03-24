@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 
-type McpServerType = 'stdio' | 'http';
+type McpServerType = 'stdio' | 'http' | 'sse';
 
 interface McpServerEntry {
   type?: McpServerType;

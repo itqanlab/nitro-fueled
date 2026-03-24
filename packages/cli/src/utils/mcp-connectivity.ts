@@ -21,6 +21,12 @@ export function testMcpConnectivity(mcpConfig: McpConfigResult): ConnectivityRes
     return { status: 'error', message: 'MCP config entry has no command. Check your configuration.' };
   }
 
+  const allowedCommands = ['node', 'npx', 'python', 'python3', 'deno', 'bun'];
+  const commandBase = command.split('/').pop()?.split('\\').pop() ?? command;
+  if (!allowedCommands.includes(commandBase)) {
+    return { status: 'error', message: `MCP config command "${command}" is not in the allowed list (${allowedCommands.join(', ')}). Check your configuration.` };
+  }
+
   try {
     // Spawn the MCP server binary directly with a short-lived stdio handshake.
     // Send an MCP initialize JSON-RPC request and check for a valid response.

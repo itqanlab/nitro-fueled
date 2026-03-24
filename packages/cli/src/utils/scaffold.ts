@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, copyFileSync, statSync } from 'node:fs';
-import { resolve, join, relative } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CURRENT_FILE = fileURLToPath(import.meta.url);
@@ -61,7 +61,9 @@ export function copyDirRecursive(
     const srcPath = join(src, entry.name);
     const destPath = join(dest, entry.name);
 
-    if (entry.isDirectory()) {
+    if (entry.isSymbolicLink()) {
+      continue;
+    } else if (entry.isDirectory()) {
       const sub = copyDirRecursive(srcPath, destPath, overwrite);
       result.copied += sub.copied;
       result.skipped += sub.skipped;

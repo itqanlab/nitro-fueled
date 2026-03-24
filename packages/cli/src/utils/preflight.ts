@@ -7,7 +7,7 @@ import { detectMcpConfig } from './mcp-config.js';
 import type { McpConfigResult } from './mcp-config.js';
 import { displayMcpSetupGuide } from './mcp-setup-guide.js';
 
-function isClaudeAvailable(): boolean {
+export function isClaudeAvailable(): boolean {
   try {
     execSync('command -v claude', { stdio: 'ignore' });
     return true;

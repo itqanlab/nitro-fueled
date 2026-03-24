@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, basename } from 'node:path';
 
 export function generateClaudeMd(cwd: string, overwrite: boolean): boolean {
   const claudeMdPath = resolve(cwd, 'CLAUDE.md');
@@ -9,7 +9,7 @@ export function generateClaudeMd(cwd: string, overwrite: boolean): boolean {
     return true;
   }
 
-  const projectName = resolve(cwd).split('/').pop() ?? 'project';
+  const projectName = basename(resolve(cwd)) || 'project';
 
   const content = `# ${projectName}
 

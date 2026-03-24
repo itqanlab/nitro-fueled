@@ -16,14 +16,9 @@ function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): boo
     try {
       existing = JSON.parse(readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
     } catch {
-      console.error(`Warning: Could not parse ${filePath}. Existing file will be backed up.`);
-      try {
-        writeFileSync(filePath + '.bak', readFileSync(filePath, 'utf-8'), 'utf-8');
-        console.error(`Backup saved to ${filePath}.bak`);
-      } catch {
-        console.error(`Error: Could not create backup of ${filePath}. Aborting.`);
-        return false;
-      }
+      console.error(`Error: Could not parse ${filePath} as JSON.`);
+      console.error('Please fix or remove the file manually, then re-run init.');
+      return false;
     }
   }
 

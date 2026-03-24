@@ -1,6 +1,6 @@
-import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import type { Command } from 'commander';
 import { detectMcpConfig } from '../utils/mcp-config.js';
@@ -9,6 +9,7 @@ import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffol
 import { detectStack, proposeAgents } from '../utils/stack-detect.js';
 import type { AgentProposal } from '../utils/stack-detect.js';
 import { generateClaudeMd } from '../utils/claude-md.js';
+import { isClaudeAvailable } from '../utils/preflight.js';
 
 interface InitOptions {
   mcpPath: string | undefined;
@@ -26,15 +27,6 @@ function prompt(question: string): Promise<string> {
       resolvePrompt(answer.trim());
     });
   });
-}
-
-function isClaudeAvailable(): boolean {
-  try {
-    execSync('command -v claude', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function generateAgent(cwd: string, proposal: AgentProposal): boolean {
@@ -77,8 +69,11 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): v
   const agentNames = listFiles(resolve(scaffoldRoot, '.claude', 'agents'));
   console.log(`  Agents: ${agentResult.copied} copied, ${agentResult.skipped} existing (${agentNames.length} core agents)`);
 
-  // Skills (each skill is a subdirectory)
-  const skillDirs = ['orchestration', 'auto-pilot', 'technical-content-writer', 'ui-ux-designer'];
+  // Skills (each skill is a subdirectory, discovered dynamically)
+  const skillsSrc = resolve(scaffoldRoot, '.claude', 'skills');
+  const skillDirs = existsSync(skillsSrc)
+    ? readdirSync(skillsSrc, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+    : [];
   let skillsCopied = 0;
   let skillsSkipped = 0;
   for (const skill of skillDirs) {
@@ -242,13 +237,11 @@ export function registerInitCommand(program: Command): void {
       console.log('');
 
       // Step 1: Check prerequisites
-      if (!isClaudeAvailable()) {
-        console.error('Error: Claude Code CLI not found on PATH.');
-        console.error('Install Claude Code CLI: https://docs.anthropic.com/en/docs/claude-code');
-        process.exitCode = 1;
-        return;
+      if (isClaudeAvailable()) {
+        console.log('Prerequisites: Claude CLI found');
+      } else {
+        console.log('Prerequisites: Claude CLI not found (agent generation will be skipped)');
       }
-      console.log('Prerequisites: Claude CLI found');
 
       // Step 2: Handle existing .claude/ directory
       const claudeDir = resolve(cwd, '.claude');
@@ -277,7 +270,14 @@ export function registerInitCommand(program: Command): void {
       // Step 4: Copy all scaffold files
       console.log('');
       console.log('Scaffolding project...');
-      scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
+      try {
+        scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Error: Failed to scaffold project files: ${msg}`);
+        process.exitCode = 1;
+        return;
+      }
 
       // Step 5: Generate CLAUDE.md
       console.log('');

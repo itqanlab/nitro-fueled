@@ -107,12 +107,16 @@ function detectNodeFrameworks(cwd: string): string[] {
     }
   }
 
-  // Conflict resolution: meta-frameworks take priority
-  if (frameworks.includes('nextjs') && frameworks.includes('react')) {
-    frameworks.splice(frameworks.indexOf('react'), 1);
-  }
-  if (frameworks.includes('nuxt') && frameworks.includes('vue')) {
-    frameworks.splice(frameworks.indexOf('vue'), 1);
+  // Conflict resolution: meta-frameworks take priority over their base frameworks
+  const metaOverrides: Record<string, string> = {
+    nextjs: 'react',
+    nuxt: 'vue',
+    sveltekit: 'svelte',
+  };
+  for (const [meta, base] of Object.entries(metaOverrides)) {
+    if (frameworks.includes(meta) && frameworks.includes(base)) {
+      frameworks.splice(frameworks.indexOf(base), 1);
+    }
   }
 
   return frameworks;
@@ -127,11 +131,11 @@ function detectPythonFrameworks(cwd: string): string[] {
     if (content === '') continue;
 
     const lower = content.toLowerCase();
-    if (lower.includes('django') && !frameworks.includes('django')) frameworks.push('django');
-    if (lower.includes('fastapi') && !frameworks.includes('fastapi')) frameworks.push('fastapi');
-    if (lower.includes('flask') && !frameworks.includes('flask')) frameworks.push('flask');
-    if ((lower.includes('torch') || lower.includes('pytorch')) && !frameworks.includes('pytorch')) frameworks.push('pytorch');
-    if (lower.includes('tensorflow') && !frameworks.includes('tensorflow')) frameworks.push('tensorflow');
+    if (/\bdjango\b/.test(lower) && !frameworks.includes('django')) frameworks.push('django');
+    if (/\bfastapi\b/.test(lower) && !frameworks.includes('fastapi')) frameworks.push('fastapi');
+    if (/\bflask\b/.test(lower) && !frameworks.includes('flask')) frameworks.push('flask');
+    if ((/\btorch\b/.test(lower) || /\bpytorch\b/.test(lower)) && !frameworks.includes('pytorch')) frameworks.push('pytorch');
+    if (/\btensorflow\b/.test(lower) && !frameworks.includes('tensorflow')) frameworks.push('tensorflow');
   }
 
   return frameworks;
@@ -153,8 +157,8 @@ function detectRustFrameworks(cwd: string): string[] {
 
   const frameworks: string[] = [];
   if (content.includes('actix-web')) frameworks.push('actix');
-  if (content.includes('rocket')) frameworks.push('rocket');
-  if (content.includes('tauri')) frameworks.push('tauri-rust');
+  if (/\brocket\b/.test(content)) frameworks.push('rocket');
+  if (/\btauri\b/.test(content)) frameworks.push('tauri-rust');
   return frameworks;
 }
 
@@ -225,11 +229,12 @@ export function detectStack(cwd: string): DetectedStack[] {
     stacks.push({ language: lang, frameworks });
   }
 
-  // Deduplicate: if nodejs and typescript both detected, merge frameworks
+  // Deduplicate: if nodejs and typescript both detected, keep typescript with merged frameworks
   const tsIndex = stacks.findIndex((s) => s.language === 'typescript');
   const nodeIndex = stacks.findIndex((s) => s.language === 'nodejs');
   if (tsIndex !== -1 && nodeIndex !== -1) {
-    stacks.splice(tsIndex, 1);
+    stacks[tsIndex].frameworks = stacks[nodeIndex].frameworks;
+    stacks.splice(nodeIndex, 1);
   }
 
   return stacks;
@@ -243,10 +248,13 @@ export function proposeAgents(stacks: DetectedStack[]): AgentProposal[] {
   const seen = new Set<string>();
 
   for (const stack of stacks) {
+    // typescript stacks use nodejs AGENT_MAP entries (frameworks are shared)
+    const lookupLangs = stack.language === 'typescript' ? ['typescript', 'nodejs'] : [stack.language];
+
     if (stack.frameworks.length > 0) {
       for (const fw of stack.frameworks) {
         const match = AGENT_MAP.find(
-          (m) => m.language === stack.language && m.framework === fw
+          (m) => lookupLangs.includes(m.language) && m.framework === fw
         );
         if (match !== undefined && !seen.has(match.agentName)) {
           seen.add(match.agentName);
@@ -259,7 +267,7 @@ export function proposeAgents(stacks: DetectedStack[]): AgentProposal[] {
       }
     } else {
       const match = AGENT_MAP.find(
-        (m) => m.language === stack.language && m.framework === null
+        (m) => lookupLangs.includes(m.language) && m.framework === null
       );
       if (match !== undefined && !seen.has(match.agentName)) {
         seen.add(match.agentName);
