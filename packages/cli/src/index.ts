@@ -22,4 +22,7 @@ registerRunCommand(program);
 registerStatusCommand(program);
 registerCreateCommand(program);
 
-program.parseAsync();
+program.parseAsync().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
