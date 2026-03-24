@@ -84,6 +84,14 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Interrupted session recovery must cover ALL written artifacts** — if an agent writes to multiple files (e.g., task folders, registry.md, AND plan.md), the recovery checklist must validate all of them, not just the obvious ones. A half-written plan.md is just as damaging as a missing registry entry. (TASK_2026_004)
 - **Guidance/enum action tables must include a default/fallback row** — when a step acts on a field that could contain any string (e.g., Supervisor Guidance: PROCEED|REPRIORITIZE|ESCALATE|NO_ACTION), always include an "unrecognized value" row that logs a warning and falls back to safe default behavior. Typos in cross-agent fields should not cause undefined behavior. (TASK_2026_004)
 
+## CLI / npm Package Hygiene
+
+- **Version strings must have a single source of truth** — never hardcode the version in both `package.json` and source code. Read it from `package.json` at runtime using `createRequire` or `readFileSync`. Duplicated versions are a guaranteed drift bug. (TASK_2026_008)
+- **CLI packages must include `files` field in package.json** — without it, `npm publish` ships `src/`, `tsconfig.json`, and test files. Use `"files": ["dist"]` for compiled packages. (TASK_2026_008)
+- **Lock files must be committed or explicitly gitignored — no limbo state** — an untracked lockfile is neither reproducible nor intentionally excluded. Decide and act. For monorepo sub-packages with a root lockfile, add to local `.gitignore`. For standalone, commit it. (TASK_2026_008)
+- **Use `parseAsync()` not `parse()` for CLI entry points** — if any command handler is or will be async, `parse()` silently drops unhandled rejections. Add `.catch()` with `process.exit(1)`. (TASK_2026_008)
+- **Stub commands must exit non-zero** — "not yet implemented" stubs that exit 0 mislead scripts and CI. Use `process.exitCode = 1`. (TASK_2026_008)
+
 ## Documentation Accuracy
 
 - **Documentation listing counts and enumerations must be verified against the filesystem** — when a doc claims "N agents" or lists specific skills/commands, run `ls` or `find` to confirm the count and names match reality. Stale counts (e.g., "15 agents" when 16 exist) and incomplete listings erode trust and mislead contributors. (TASK_2026_007)
