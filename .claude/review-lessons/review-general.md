@@ -51,6 +51,8 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Enum values must match canonical source character-for-character** — if SKILL.md defines statuses or types, every template, command, and guide must use the exact same values, casing, and separators. No synonyms (e.g., `COMPLETE` vs `COMPLETED`), no separator divergence (`|` vs `/`). (TASK_001)
 - **Commands that claim "read template as source of truth" must not hardcode template content** — if a command duplicates enum values inline, changes to the template require multi-file updates, defeating the single-source-of-truth pattern. (TASK_001)
 - **New status/enum values must be added to the canonical reference first** — before any command or guide uses a value like `CREATED`, it must exist in the reference document (e.g., `task-tracking.md` Registry Status table). Undefined values cause downstream tooling failures. (TASK_001)
+- **Named concepts must use one term everywhere** — if a mode, role, or concept has a name (e.g., "Supervisor mode"), every file must use that exact phrase. Do not introduce synonyms like "autonomous mode" or "autonomous (Supervisor) mode" — agents parse terms literally and may not recognize variants as equivalent. (TASK_2026_003)
+- **Prompt templates must reference canonical definitions, not duplicate them** — if a skill defines an Exit Gate checklist, worker prompt templates should reference it ("Run the Exit Gate from orchestration SKILL.md") rather than embedding a simplified copy. Duplicated specs drift silently when the canonical source is updated. (TASK_2026_003)
 
 ## Configuration & Parameter Consistency
 
