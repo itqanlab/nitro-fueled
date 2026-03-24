@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import type { Command } from 'commander';
 import type { RegistryRow } from '../utils/registry.js';
 import { preflightChecks } from '../utils/preflight.js';
+import { testMcpConnectivity } from '../utils/mcp-connectivity.js';
 
 interface RunOptions {
   dryRun: boolean;
@@ -99,6 +100,19 @@ function displayDryRun(rows: RegistryRow[]): void {
   console.log('No workers spawned (dry run).');
 }
 
+function validateOptions(options: RunOptions): string | null {
+  if (options.concurrency !== undefined && !/^\d+$/.test(options.concurrency)) {
+    return `Invalid --concurrency value "${options.concurrency}". Must be a positive integer.`;
+  }
+  if (options.retries !== undefined && !/^\d+$/.test(options.retries)) {
+    return `Invalid --retries value "${options.retries}". Must be a positive integer.`;
+  }
+  if (options.interval !== undefined && !/^\d+[msh]$/.test(options.interval)) {
+    return `Invalid --interval value "${options.interval}". Expected format: <number><unit> (e.g., 5m, 30s, 1h).`;
+  }
+  return null;
+}
+
 function buildAutoPilotArgs(taskId: string | undefined, options: RunOptions): string[] {
   const parts: string[] = [];
 
@@ -158,20 +172,37 @@ export function registerRunCommand(program: Command): void {
     .option('--concurrency <n>', 'Max simultaneous workers (default: 3)')
     .option('--interval <duration>', 'Monitoring interval e.g. 5m (default: 10m)')
     .option('--retries <n>', 'Max retries per task (default: 2)')
-    .action((taskId: string | undefined, opts: RunOptions) => {
+    .option('--skip-connectivity', 'Skip MCP connectivity check', false)
+    .action((taskId: string | undefined, opts: RunOptions & { skipConnectivity: boolean }) => {
       const cwd = process.cwd();
 
-      const rows = preflightChecks(cwd, taskId);
-      if (rows === null) {
+      const result = preflightChecks(cwd, taskId);
+      if (result === null) {
         process.exitCode = 1;
         return;
       }
+
+      const { rows } = result;
 
       displaySummary(rows, taskId, opts);
 
       if (opts.dryRun) {
         displayDryRun(rows);
         return;
+      }
+
+      if (!opts.skipConnectivity) {
+        console.log('Verifying MCP session-orchestrator connectivity...');
+        const connectivity = testMcpConnectivity();
+        if (connectivity.status !== 'ok') {
+          console.error(`Error: ${connectivity.message}`);
+          console.error('');
+          console.error('Use --skip-connectivity to bypass this check.');
+          process.exitCode = 1;
+          return;
+        }
+        console.log(connectivity.message);
+        console.log('');
       }
 
       spawnSupervisor(cwd, taskId, opts);

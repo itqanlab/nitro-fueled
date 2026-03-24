@@ -3,17 +3,25 @@ import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { parseRegistry } from './registry.js';
 import type { RegistryRow } from './registry.js';
+import { detectMcpConfig } from './mcp-config.js';
+import type { McpConfigResult } from './mcp-config.js';
+import { displayMcpSetupGuide } from './mcp-setup-guide.js';
 
 function isClaudeAvailable(): boolean {
   try {
-    execSync('which claude', { stdio: 'ignore' });
+    execSync('command -v claude', { stdio: 'ignore', shell: true });
     return true;
   } catch {
     return false;
   }
 }
 
-export function preflightChecks(cwd: string, taskId: string | undefined): RegistryRow[] | null {
+export interface PreflightResult {
+  rows: RegistryRow[];
+  mcpConfig: McpConfigResult;
+}
+
+export function preflightChecks(cwd: string, taskId: string | undefined): PreflightResult | null {
   const claudeDir = resolve(cwd, '.claude');
   const taskTrackingDir = resolve(cwd, 'task-tracking');
   const registryPath = resolve(cwd, 'task-tracking/registry.md');
@@ -42,6 +50,14 @@ export function preflightChecks(cwd: string, taskId: string | undefined): Regist
     return null;
   }
 
+  const mcpConfig = detectMcpConfig(cwd);
+  if (!mcpConfig.found) {
+    displayMcpSetupGuide();
+    return null;
+  }
+
+  console.log(`MCP session-orchestrator: configured (${mcpConfig.location}, ${mcpConfig.configPath})`);
+
   const rows = parseRegistry(cwd);
 
   if (rows.length === 0) {
@@ -64,24 +80,24 @@ export function preflightChecks(cwd: string, taskId: string | undefined): Regist
       return null;
     }
 
-    if (task.status === 'BLOCKED' || task.status === 'CANCELLED') {
+    if (task.status === 'BLOCKED' || task.status === 'CANCELLED' || task.status === 'FAILED') {
       console.error(`Error: Task ${taskId} is ${task.status} and cannot be processed.`);
       return null;
     }
 
     if (task.status === 'COMPLETE') {
-      console.error(`Warning: Task ${taskId} is already COMPLETE.`);
+      console.warn(`Warning: Task ${taskId} is already COMPLETE.`);
       return null;
     }
   } else {
     const actionable = rows.filter(
-      (r) => r.status !== 'COMPLETE' && r.status !== 'BLOCKED' && r.status !== 'CANCELLED'
+      (r) => r.status !== 'COMPLETE' && r.status !== 'BLOCKED' && r.status !== 'CANCELLED' && r.status !== 'FAILED'
     );
     if (actionable.length === 0) {
-      console.log('All tasks are complete, blocked, or cancelled. Nothing to process.');
+      console.log('All tasks are complete, blocked, cancelled, or failed. Nothing to process.');
       return null;
     }
   }
 
-  return rows;
+  return { rows, mcpConfig };
 }
