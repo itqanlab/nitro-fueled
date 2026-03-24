@@ -9,7 +9,7 @@ import { displayMcpSetupGuide } from './mcp-setup-guide.js';
 
 function isClaudeAvailable(): boolean {
   try {
-    execSync('command -v claude', { stdio: 'ignore', shell: true });
+    execSync('command -v claude', { stdio: 'ignore' });
     return true;
   } catch {
     return false;

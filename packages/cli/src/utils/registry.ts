@@ -36,7 +36,7 @@ export function parseRegistry(cwd: string): RegistryRow[] {
 
   for (const line of lines) {
     const match = line.match(
-      /^\|\s*(TASK_\d{4}_\d{3})\s*\|\s*(\S+)\s*\|\s*(\S+)\s*\|\s*(.+?)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|$/
+      /^\|\s*(TASK_\d{4}_\d{3})\s*\|\s*(\S+)\s*\|\s*(\S+)\s*\|\s*(.+?)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*$/
     );
     if (match !== null) {
       const status = match[2] as string;

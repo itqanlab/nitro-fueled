@@ -117,3 +117,10 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Combined/slash-separated values in lookup tables must be split into separate rows** — entries like `swift / swift-ios` are human-readable but machine-ambiguous for exact-match lookups. (TASK_2026_015)
 - **Templates claiming structural identity must match every structural element** — diff populated output against the reference. Missing sections, code fences, or checklist items are bugs, not stylistic choices. (TASK_2026_015)
 - **Detection registries need conflict resolution rules** — when multiple frameworks are detected for the same language (e.g., `react` + `nextjs`), there must be explicit precedence rules. Without them, the consumer makes ad-hoc decisions. (TASK_2026_015)
+
+## CLI Option Validation & Process Management
+
+- **Validate numeric CLI options at parse boundary** — options like `--concurrency` and `--retries` that flow into prompts or child process args must be validated as positive integers immediately after parsing. Unvalidated string options that reach prompt construction are prompt injection vectors. (TASK_2026_010)
+- **Forward SIGINT/SIGTERM to spawned child processes** — when the CLI spawns a long-running child (e.g., Supervisor session), register signal handlers that forward signals to the child. Clean up handlers on child exit. Without forwarding, Ctrl+C kills the CLI but leaves the child running as an orphan. (TASK_2026_010)
+- **Use `command -v` not `which` for binary detection** — `which` is not a POSIX built-in and is unavailable on some systems. `command -v` is universally available in POSIX shells. (TASK_2026_010)
+- **Handle FAILED status in preflight checks** — FAILED tasks should not be auto-processed. Include FAILED alongside BLOCKED and CANCELLED in non-actionable status filters. (TASK_2026_010)

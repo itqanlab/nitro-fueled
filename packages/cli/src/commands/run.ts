@@ -151,7 +151,17 @@ function spawnSupervisor(cwd: string, taskId: string | undefined, options: RunOp
     }
   );
 
+  const forwardSignal = (signal: NodeJS.Signals): void => {
+    child.kill(signal);
+  };
+
+  process.on('SIGINT', forwardSignal);
+  process.on('SIGTERM', forwardSignal);
+
   child.on('close', (code) => {
+    process.off('SIGINT', forwardSignal);
+    process.off('SIGTERM', forwardSignal);
+
     if (code !== 0) {
       console.error(`Supervisor exited with code ${String(code ?? 'unknown')}`);
       process.exitCode = 1;
@@ -159,6 +169,9 @@ function spawnSupervisor(cwd: string, taskId: string | undefined, options: RunOp
   });
 
   child.on('error', (err) => {
+    process.off('SIGINT', forwardSignal);
+    process.off('SIGTERM', forwardSignal);
+
     console.error(`Failed to start Supervisor: ${err.message}`);
     process.exitCode = 1;
   });
@@ -178,6 +191,13 @@ export function registerRunCommand(program: Command): void {
 
       const result = preflightChecks(cwd, taskId);
       if (result === null) {
+        process.exitCode = 1;
+        return;
+      }
+
+      const validationError = validateOptions(opts);
+      if (validationError !== null) {
+        console.error(`Error: ${validationError}`);
         process.exitCode = 1;
         return;
       }
