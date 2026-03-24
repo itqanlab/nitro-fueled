@@ -1701,56 +1701,83 @@
   <p style="margin-top:4px;">16 agents &middot; 4 skills &middot; 12 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script>
   (() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !window.gsap || !window.ScrollTrigger) return;
 
-    document.body.classList.add('js-animate');
+    gsap.registerPlugin(ScrollTrigger);
 
-    const groups = [
-      document.querySelector('.hero'),
-      ...document.querySelectorAll('section'),
-      document.querySelector('footer'),
-    ].filter(Boolean);
-
-    const targetSelectors = [
-      '.hero-badge', 'h1', '.hero > p', '.hero-summary', '.hero-flow', '.hero-stats',
-      '.section-label', '.section-title', '.section-desc',
-      '.reader-path', '.arch-container', '.flow-container', '.ww-diagram', '.state-machine',
-      '.worker-cards', '.supervisor-flow', '.decision-diagram', '.legend', '.agent-grid',
-      '.skills-grid', '.cmd-grid', '.sup-step', '.agent-card', '.skill-card', '.cmd-card',
-      '.worker-card', 'footer p',
+    const revealGroups = [
+      {
+        scope: '.hero',
+        items: ['.hero-badge', 'h1', '.hero > p', '.hero-summary', '.hero-flow', '.hero-stats'],
+      },
+      {
+        scope: 'section',
+        items: [
+          '.section-label', '.section-title', '.section-desc',
+          '.reader-path', '.arch-container', '.flow-container', '.ww-diagram', '.state-machine',
+          '.worker-cards', '.supervisor-flow', '.decision-diagram', '.legend', '.agent-grid',
+          '.skills-grid', '.cmd-grid'
+        ],
+      },
+      {
+        scope: 'footer',
+        items: ['p'],
+      }
     ];
 
-    groups.forEach((group) => {
-      const items = [];
-      targetSelectors.forEach((selector) => {
-        group.querySelectorAll(selector).forEach((el) => {
-          if (!items.includes(el)) items.push(el);
+    revealGroups.forEach((group) => {
+      document.querySelectorAll(group.scope).forEach((container) => {
+        const elements = [];
+        group.items.forEach((selector) => {
+          container.querySelectorAll(selector).forEach((el) => {
+            if (!elements.includes(el)) elements.push(el);
+          });
         });
-      });
 
-      items.forEach((item, index) => {
-        item.classList.add('reveal-item');
-        item.style.setProperty('--reveal-delay', `${Math.min(index * 55, 420)}ms`);
+        if (!elements.length) return;
+
+        gsap.set(elements, { autoAlpha: 0, y: 24, filter: 'blur(3px)' });
+
+        gsap.timeline({
+          scrollTrigger: {
+            trigger: container,
+            start: 'top 78%',
+            once: true
+          }
+        }).to(elements, {
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 0.68,
+          stagger: 0.06,
+          ease: 'power3.out'
+        });
       });
     });
 
-    if (!('IntersectionObserver' in window)) {
-      groups.forEach((group) => group.classList.add('is-visible'));
-      return;
-    }
+    gsap.to('.state-connector, .ww-arrow, .hero-flow .arrow', {
+      x: 1.5,
+      duration: 1.8,
+      yoyo: true,
+      repeat: -1,
+      ease: 'sine.inOut',
+      stagger: 0.04
+    });
 
-    const observer = new IntersectionObserver((entries, obs) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        obs.unobserve(entry.target);
-      });
-    }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
-
-    groups.forEach((group) => observer.observe(group));
+    gsap.to('.hero-stat .num', {
+      y: -1.5,
+      opacity: 1,
+      duration: 2.1,
+      yoyo: true,
+      repeat: -1,
+      ease: 'sine.inOut',
+      stagger: 0.08
+    });
   })();
 </script>
 
