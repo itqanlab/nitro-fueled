@@ -32,13 +32,13 @@ packages/                  # (TBD) Nx workspace packages
 
 ## Current State
 - .claude/ setup genericized and project-agnostic
+- Auto-pilot skill/command built
 - Need to build CLI package
-- Need to build auto-pilot skill
 
 ## Development Priority
 1. ~~Genericize .claude/ files (remove project-specific references, make project-agnostic)~~ DONE
 2. ~~Build task.md template~~ DONE
-3. Build auto-pilot skill/command
+3. ~~Build auto-pilot skill/command~~ DONE
 4. Build CLI (init, run, status)
 5. Test on a fresh project
 
