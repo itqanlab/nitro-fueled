@@ -18,4 +18,4 @@
 | TASK_2026_014 | CREATED     | RESEARCH    | End-to-End Test Fresh Project   | 2026-03-24 |
 | TASK_2026_015 | IN_REVIEW   | FEATURE     | Stack Detection Registry + Developer Template | 2026-03-24 |
 | TASK_2026_016 | CREATED     | FEATURE     | /create-agent Command + Catalog Integration   | 2026-03-24 |
-| TASK_2026_017 | IN_REVIEW   | FEATURE     | /create-skill Command                         | 2026-03-24 |
+| TASK_2026_017 | COMPLETE    | FEATURE     | /create-skill Command                         | 2026-03-24 |
