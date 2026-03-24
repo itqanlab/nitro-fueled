@@ -33,7 +33,8 @@ Implement the `npx nitro-fueled init` command that scaffolds the orchestration s
 ## Dependencies
 
 - TASK_2026_008 — CLI scaffold must exist
-- TASK_2026_006 — Dynamic agent generation for stack detection
+- TASK_2026_015 — Stack detection registry and developer template
+- TASK_2026_016 — /create-agent command for dynamic agent generation
 
 ## Acceptance Criteria
 
