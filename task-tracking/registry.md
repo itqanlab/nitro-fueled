@@ -27,7 +27,7 @@
 | TASK_2026_023 | CREATED     | FEATURE     | Dashboard Web Client                      | 2026-03-24 |
 | TASK_2026_024 | CREATED     | FEATURE     | Dashboard CLI Command + Service Integration | 2026-03-24 |
 | TASK_2026_025 | COMPLETE    | BUGFIX      | Fix Review Worker Startup Failure (0-msg stuck on first attempt) | 2026-03-24 |
-| TASK_2026_026 | CREATED     | BUGFIX      | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 |
+| TASK_2026_026 | IMPLEMENTED | BUGFIX      | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 |
 | TASK_2026_027 | CREATED     | FEATURE     | Shared Review Context and Task File-Scope Isolation | 2026-03-24 |
 | TASK_2026_028 | CREATED     | BUGFIX      | Enforce tasks.md as Required Build Artifact | 2026-03-24 |
 | TASK_2026_029 | CREATED     | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 |
