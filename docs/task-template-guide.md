@@ -185,5 +185,5 @@ should be fixed.
 
 - **Orchestration skill**: `.claude/skills/orchestration/SKILL.md` — Workflow Selection Matrix, strategy detection
 - **Task tracking reference**: `.claude/skills/orchestration/references/task-tracking.md` — Folder structure, registry format, phase detection
-- **Design doc**: `docs/claude-orchestrate-package-design.md` — Auto-pilot loop, CLI commands, overall architecture
+- **Design doc**: `docs/nitro-fueled-design.md` — Auto-pilot loop, CLI commands, overall architecture
 - **Create task command**: `.claude/commands/create-task.md` — Scaffolds new tasks from the template

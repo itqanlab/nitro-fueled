@@ -16,7 +16,7 @@ nitro-fueled/
     cli/                       # npx nitro-fueled init|run|status|create
     scaffold/                  # Template files copied during init
 
-  scaffold/                    # What gets copied into target projects
+  scaffold/                    # (TBD) What gets copied into target projects
     .claude/
       agents/
         core/                  # Ship as-is (PM, Architect, Team-Leader, Planner, reviewers, etc.)
@@ -24,7 +24,9 @@ nitro-fueled/
       skills/
         orchestration/         # Build Worker orchestration (PM->Architect->Dev->QA)
         auto-pilot/            # Supervisor skill (spawns/monitors Build + Review workers)
-      commands/                # /orchestrate, /plan, /auto-pilot, /review-*, /create-task
+        technical-content-writer/  # Content writing skill
+        ui-ux-designer/        # Visual design skill
+      commands/                # /orchestrate, /plan, /auto-pilot, /review-*, /create-task, etc.
       anti-patterns.md         # Starter checklist (generic, not project-specific)
       review-lessons/          # Empty structure — fills up from QA reviews
         review-general.md
@@ -42,7 +44,7 @@ Agents are split into two categories:
   - project-manager, software-architect, team-leader, planner
   - code-style-reviewer, code-logic-reviewer, visual-reviewer, senior-tester
   - researcher-expert, modernization-detector, devops-engineer
-  - ui-ux-designer, technical-content-writer
+  - systems-developer, ui-ux-designer, technical-content-writer
 
 - **Project agents** are generated at `init` time based on the detected tech stack:
   - frontend-developer (Angular, React, Vue, etc. — prompt tailored to detected framework)
@@ -71,9 +73,9 @@ task-tracking/
     implementation-plan.md # Architect output
     tasks.md               # Team-leader breakdown
     completion-report.md   # Build Worker final report
-    review-logic.md        # Review Worker output
-    review-style.md
-    review-security.md
+    code-logic-review.md   # Review Worker output
+    code-style-review.md
+    code-security-review.md
   TASK_2026_002/
     task.md
     ...
@@ -90,6 +92,7 @@ task-tracking/
 | COMPLETE | Reviews passed, task done |
 | FAILED | Worker failed, needs retry or manual intervention |
 | BLOCKED | Waiting on dependency tasks |
+| CANCELLED | Task abandoned |
 
 **State machine:**
 ```
@@ -215,8 +218,8 @@ The package copies the proven orchestration setup into the target project:
 
 ### Core (copied as-is)
 - Core agent definitions (PM, Architect, Team-Leader, Planner, reviewers, tester, etc.)
-- All skills (orchestration, auto-pilot/Supervisor)
-- All commands (/orchestrate, /plan, /auto-pilot, /review-*, /create-task)
+- All skills (orchestration, auto-pilot/Supervisor, technical-content-writer, ui-ux-designer)
+- All commands (/orchestrate, /plan, /auto-pilot, /review-*, /create-task, /initialize-workspace, /project-status, /orchestrate-help)
 - Anti-patterns checklist (genericized)
 - Review-lessons structure (empty, learns per project)
 - Task tracking folder structure

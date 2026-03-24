@@ -10,12 +10,14 @@ A reusable AI development orchestration package (proven across 55+ tasks complet
 ```
 docs/                      # Design docs and architecture
 .claude/
-  agents/                  # 15 agent definitions (PM, Architect, Planner, Dev, QA, reviewers, etc.)
+  agents/                  # 16 agent definitions (PM, Architect, Planner, Dev, QA, reviewers, etc.)
     planner.md             # Strategic planning agent (roadmap, task creation, backlog)
   skills/
     orchestration/         # Build Worker orchestration (PM->Architect->Dev->QA)
     auto-pilot/            # Supervisor skill (spawns/monitors workers)
-  commands/                # /orchestrate, /plan, /auto-pilot, /review-*, /create-task
+    technical-content-writer/  # Content writing skill
+    ui-ux-designer/        # Visual design skill
+  commands/                # /orchestrate, /plan, /auto-pilot, /review-*, /create-task, /initialize-workspace, /project-status, /orchestrate-help
   anti-patterns.md         # Starter checklist
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure
@@ -46,12 +48,12 @@ packages/                  # (TBD) Nx workspace packages
 2. ~~Build task.md template~~ DONE
 3. ~~Build auto-pilot skill/command (Supervisor architecture)~~ DONE
 4. ~~Planner agent and /plan command~~ DONE
-5. ~~Fix workspace agent setup~~ IN_PROGRESS
+5. Fix workspace agent setup — IN_PROGRESS
 6. Dynamic agent/skill generation at init (tech stack detection)
 7. Build CLI (init, run, status, create)
 8. Test on a fresh project
 
 ## Conventions
 - Git: conventional commits with scopes
-- Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED
+- Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED | CANCELLED
 - Do NOT start git commit/push without explicit user instruction
