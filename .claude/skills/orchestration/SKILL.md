@@ -120,6 +120,13 @@ else
 
 ### CONTINUATION: Phase Detection
 
+> **Worker Scoping**: In Supervisor mode, Build Workers use phases up through
+> "Dev complete" (all COMPLETE in tasks.md). Review Workers start from
+> "Dev complete" and run QA + Completion Phase. In interactive mode
+> (when the orchestration skill is invoked directly by a user via
+> `/orchestrate`, not spawned by the Supervisor), a single session
+> runs the full workflow with user validation checkpoints.
+
 | Documents Present       | Next Action                         |
 | ----------------------- | ----------------------------------- |
 | context.md only         | Invoke project-manager              |
@@ -247,6 +254,11 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 
 ## Completion Phase (MANDATORY — DO NOT SKIP)
 
+> **Scope Note**: In Supervisor mode, this phase runs in the
+> **Review Worker** session only. Build Workers stop after implementation
+> and do NOT execute this phase. In interactive mode, the single session
+> runs this phase as before.
+
 After the QA cycle (reviews + fixes + final commit), the orchestrator MUST complete ALL of these bookkeeping steps BEFORE the final commit. The completion report is the #1 most-skipped deliverable — if you skip it, the task is considered INCOMPLETE regardless of code quality.
 
 **Commit order:**
@@ -294,7 +306,10 @@ Write `task-tracking/TASK_[ID]/completion-report.md` with:
 
 ### 2. Update Registry
 
-Update `task-tracking/registry.md` — set status to COMPLETED.
+Update `task-tracking/registry.md` — set status to COMPLETE.
+
+> In Supervisor mode, the Review Worker sets the status to COMPLETE.
+> In interactive mode, the orchestrator sets this status.
 
 ### 3. Update Implementation Plan
 
@@ -310,6 +325,47 @@ Commit all bookkeeping changes with message: `docs: add TASK_[ID] completion boo
 
 ---
 
+## Exit Gate (MANDATORY)
+
+Before exiting the orchestration session, verify ALL applicable checks pass.
+The Exit Gate ensures workers leave the task in a clean, verifiable state
+that the Supervisor can react to.
+
+### Build Worker Exit Gate
+
+Run these checks after implementation is committed and registry is updated:
+
+| Check | Command | Expected |
+|-------|---------|----------|
+| All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
+| Implementation committed | Check git status | No unstaged implementation files |
+| Registry updated | Grep task ID in registry.md | Status shows IMPLEMENTED |
+| Registry committed | Check git status | registry.md is committed |
+
+If any check fails, fix it before exiting. Do not exit with uncommitted
+work or an un-updated registry.
+
+### Review Worker Exit Gate
+
+Run these checks after reviews, fixes, and completion phase are done:
+
+| Check | Command | Expected |
+|-------|---------|----------|
+| Review files exist | Glob task folder for review-*.md | At least style + logic reviews present |
+| Findings fixed | Check review files for BLOCKING/SERIOUS items | All blocking/serious items resolved |
+| Fix commit exists | Check git log | Commit with review fixes present |
+| completion-report.md exists | Read task folder | File exists and is non-empty |
+| Registry updated | Grep task ID in registry.md | Status shows COMPLETE |
+| All committed | Check git status | Clean working tree for task files |
+
+### Exit Gate Failure
+
+If you cannot pass the Exit Gate (e.g., a blocker prevents completion):
+1. Document the failure in the task folder (create `exit-gate-failure.md`)
+2. Exit cleanly -- the Supervisor will detect the missing state transition and retry
+
+---
+
 ## Key Principles
 
 1. **You are the orchestrator**: Direct tool access, no agent overhead
@@ -319,3 +375,4 @@ Commit all bookkeeping changes with message: `docs: add TASK_[ID] completion boo
 5. **Never bypass hooks**: Always ask user before --no-verify
 6. **Single task folder**: All work in parent task folder
 7. **Review lessons**: Developers read lessons before coding, reviewers update lessons after reviewing
+8. **Exit Gate**: Always run the Exit Gate checks before exiting an autonomous session

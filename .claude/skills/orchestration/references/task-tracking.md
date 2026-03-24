@@ -37,6 +37,8 @@ task-tracking/
     code-style-review.md         # Style review (Code-style-reviewer output)
     code-logic-review.md         # Logic review (Code-logic-reviewer output)
     visual-review.md             # Visual review (Visual-reviewer output)
+    completion-report.md         # Completion report (Review Worker / orchestrator output)
+    exit-gate-failure.md         # Exit gate failure log (worker output, only on failure)
     screenshots/                 # Visual testing screenshots
       baseline.png               # Baseline screenshot
       mobile.png                 # Mobile viewport
@@ -77,8 +79,9 @@ Read(task-tracking/registry.md)
 | Task ID       | Status      | Type          | Description           | Created    |
 | ------------- | ----------- | ------------- | --------------------- | ---------- |
 | TASK_2026_008 | COMPLETE    | FEATURE       | Project settings panel| 2026-01-15 |
-| TASK_2026_009 | IN_PROGRESS | BUGFIX        | Fix sidebar collapse  | 2026-01-18 |
-| TASK_2026_010 | IN_PROGRESS | DOCUMENTATION | Skill conversion      | 2026-01-20 |
+| TASK_2026_009 | IMPLEMENTED | BUGFIX        | Fix sidebar collapse  | 2026-01-18 |
+| TASK_2026_010 | IN_REVIEW   | DOCUMENTATION | Skill conversion      | 2026-01-20 |
+| TASK_2026_011 | IN_PROGRESS | FEATURE       | Dashboard widgets     | 2026-01-22 |
 ```
 
 ### Generating New Task ID
@@ -150,6 +153,8 @@ Created during Phase 0 initialization:
 | code-style-review.md   | code-style-reviewer    | Pattern compliance findings       |
 | code-logic-review.md   | code-logic-reviewer    | Business logic findings           |
 | visual-review.md       | visual-reviewer        | UI/UX visual testing results      |
+| completion-report.md   | Review Worker / Orchestrator | Completion summary, review scores |
+| exit-gate-failure.md   | Build/Review Worker          | Exit gate failure details (when applicable) |
 | future-enhancements.md | modernization-detector | Future improvement opportunities  |
 
 ---
@@ -172,6 +177,10 @@ Glob(task-tracking/TASK_[ID]/*.md)
 ```
 
 ### Phase Detection Table
+
+> **Worker Scoping**: In Supervisor mode, the Build Worker handles phases from
+> "Initialized" through "Dev complete". The Review Worker handles phases from
+> "Dev complete" through "All done".
 
 | Documents Present                | Phase Status           | Next Action                           |
 | -------------------------------- | ---------------------- | ------------------------------------- |
@@ -220,13 +229,15 @@ Orchestrator:
 
 ### Registry Status
 
-| Status      | Meaning                            |
-| ----------- | ---------------------------------- |
-| CREATED     | Task defined, not yet started      |
-| IN_PROGRESS | Task actively being worked         |
-| COMPLETE    | All phases done, workflow finished |
-| BLOCKED     | Waiting on external dependency     |
-| CANCELLED   | Task abandoned                     |
+| Status      | Meaning                                                    |
+| ----------- | ---------------------------------------------------------- |
+| CREATED     | Task defined, not yet started                              |
+| IN_PROGRESS | Build Worker actively implementing                         |
+| IMPLEMENTED | Implementation complete, awaiting review                   |
+| IN_REVIEW   | Review Worker actively reviewing and fixing                |
+| COMPLETE    | All phases done, workflow finished                         |
+| BLOCKED     | Waiting on dependency or retries exhausted                 |
+| CANCELLED   | Task abandoned                                             |
 
 ### Task Status (in tasks.md)
 

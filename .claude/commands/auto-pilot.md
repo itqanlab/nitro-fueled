@@ -1,8 +1,8 @@
-# Auto-Pilot — Autonomous Task Processing
+# Auto-Pilot -- Supervisor Task Processing
 
-Start the autonomous task processing loop. Reads the task backlog, spawns
-workers via MCP session-orchestrator, monitors progress, and loops until
-all tasks are complete or blocked.
+Start the Supervisor loop. Reads the task backlog, spawns Build Workers
+and Review Workers via MCP session-orchestrator, monitors state transitions,
+and loops until all tasks are complete or blocked.
 
 ## Usage
 
@@ -29,8 +29,9 @@ all tasks are complete or blocked.
 
 ### Step 1: Load Skill
 
-Read `.claude/skills/auto-pilot/SKILL.md` — this contains the full
-loop logic, state management, and monitoring protocol.
+Read `.claude/skills/auto-pilot/SKILL.md` -- this contains the full
+Supervisor loop logic, worker type determination, state management,
+and monitoring protocol.
 
 ### Step 2: Parse Arguments
 
@@ -45,27 +46,32 @@ Parse $ARGUMENTS for:
 ### Step 3: Pre-Flight Checks
 
 **3a.** Verify `task-tracking/registry.md` exists.
-If missing: ERROR — "Registry not found. Run /initialize-workspace first."
+If missing: ERROR -- "Registry not found. Run /initialize-workspace first."
 
 **3b.** Verify MCP session-orchestrator is available:
 Call MCP `list_workers` (status_filter: 'all').
-If MCP call fails: ERROR — "MCP session-orchestrator not reachable.
+If MCP call fails: ERROR -- "MCP session-orchestrator not reachable.
 Ensure the MCP server is running. See docs/mcp-session-orchestrator-design.md
 for configuration."
 
 **3c.** If single-task mode: verify the task ID exists in the registry
-and its status is CREATED. If not CREATED, warn and confirm.
+and its status is CREATED or IMPLEMENTED. If status is IN_PROGRESS or
+IN_REVIEW, the Supervisor will spawn the appropriate worker type to resume.
+If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
 
 ### Step 4: Display Summary
 
 Before entering the loop, display:
 
 ```
-AUTO-PILOT STARTING
+SUPERVISOR STARTING
 -------------------
 Total tasks in registry: {N}
-Unblocked (ready to run): {N}
-Already in progress: {N}
+Ready for build (CREATED): {N}
+Building (IN_PROGRESS): {N}
+Ready for review (IMPLEMENTED): {N}
+Reviewing (IN_REVIEW): {N}
+Complete: {N}
 Blocked/Cancelled: {N}
 Concurrency limit: {N}
 Monitoring interval: {N} minutes
@@ -76,25 +82,25 @@ Mode: {all | single-task TASK_ID | dry-run}
 
 **IF `--dry-run`:**
 
-Display the dependency graph, unblocked tasks in priority order,
-and the planned execution order (which tasks would spawn first,
-which would queue). Format:
+Display the dependency graph, task classifications by state,
+and the planned execution order with worker types. Format:
 
 ```
-DRY RUN — Execution Plan
+DRY RUN -- Execution Plan
 ========================
 
 Dependency Graph:
-  TASK_2026_003 -> [no dependencies] (UNBLOCKED)
+  TASK_2026_003 -> [no dependencies] (READY_FOR_BUILD)
   TASK_2026_004 -> TASK_2026_003 (WAITING)
-  TASK_2026_005 -> TASK_2026_003, TASK_2026_004 (WAITING)
-  TASK_2026_006 -> [cycle: TASK_2026_007] (BLOCKED — cycle)
+  TASK_2026_005 -> [no dependencies] (READY_FOR_REVIEW)
 
 Execution Order:
-  Wave 1 (immediate):  TASK_2026_003 (P0-Critical, FEATURE)
-  Wave 2 (after 003):  TASK_2026_004 (P1-High, BUGFIX)
-  Wave 3 (after 003+004): TASK_2026_005 (P2-Medium, FEATURE)
-  Blocked:             TASK_2026_006 (dependency cycle)
+  Wave 1 (immediate):
+    Review: TASK_2026_005 (P1-High, FEATURE) -- Review Worker
+    Build:  TASK_2026_003 (P0-Critical, FEATURE) -- Build Worker
+  Wave 2 (after 003):
+    Build:  TASK_2026_004 (P1-High, BUGFIX) -- Build Worker
+  Blocked: TASK_2026_006 (dependency cycle)
 
 No workers spawned (dry run).
 ```
@@ -103,17 +109,20 @@ STOP. Do not enter the loop.
 
 **IF single-task mode (TASK_ID provided):**
 
-Spawn one worker for the specified task.
-Monitor until that worker completes.
-Handle completion.
-STOP (do not loop to other tasks).
+Determine worker type from current registry state.
+Spawn appropriate worker (Build or Review).
+Monitor until that worker completes and state transitions.
+If state transitioned to IMPLEMENTED (Build Worker done),
+automatically spawn Review Worker and monitor until COMPLETE.
+STOP after task reaches COMPLETE or failure.
 
 **IF all-tasks mode (no task ID, no `--dry-run`):**
 
-Enter the full auto-pilot loop from SKILL.md (Steps 1-8).
+Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 
 ## Quick Reference
 
+**Worker Types**: Build Worker (CREATED -> IMPLEMENTED), Review Worker (IMPLEMENTED -> COMPLETE)
 **Modes**: all-tasks (default), single-task, dry-run
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity,
               get_worker_stats, kill_worker
@@ -122,7 +131,7 @@ Enter the full auto-pilot loop from SKILL.md (Steps 1-8).
 
 ## References
 
-- Auto-pilot skill: `.claude/skills/auto-pilot/SKILL.md`
+- Supervisor skill: `.claude/skills/auto-pilot/SKILL.md`
 - Orchestration skill (used by workers): `.claude/skills/orchestration/SKILL.md`
 - Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
 - MCP session-orchestrator design: `docs/mcp-session-orchestrator-design.md`
