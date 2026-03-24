@@ -43,7 +43,13 @@ function parseActiveWorkers(cwd: string): WorkerEntry[] {
     return [];
   }
 
-  const content = readFileSync(statePath, 'utf-8');
+  let content: string;
+  try {
+    content = readFileSync(statePath, 'utf-8');
+  } catch {
+    console.error(`Warning: Could not read ${statePath}`);
+    return [];
+  }
 
   const loopMatch = content.match(/\*\*Loop Status\*\*:\s*(\S+)/);
   if (loopMatch === null || loopMatch[1] !== 'RUNNING') {
@@ -70,7 +76,6 @@ function parseActiveWorkers(cwd: string): WorkerEntry[] {
     }
 
     if (line.startsWith('|') && line.includes('Worker ID')) {
-      headerPassed = false;
       continue;
     }
 
@@ -81,14 +86,15 @@ function parseActiveWorkers(cwd: string): WorkerEntry[] {
 
     if (headerPassed && line.startsWith('|')) {
       const cells = line.split('|').map((c) => c.trim()).filter((c) => c.length > 0);
+      // Columns: Worker ID | Task | Type | Label | Status | Spawn Time | Health | Started
       if (cells.length >= 7) {
         workers.push({
-          workerId: cells[0] as string,
-          taskId: cells[1] as string,
-          workerType: cells[2] as string,
-          label: cells[3] as string,
-          status: cells[4] as string,
-          health: cells[6] as string,
+          workerId: cells[0]!,
+          taskId: cells[1]!,
+          workerType: cells[2]!,
+          label: cells[3]!,
+          status: cells[4]!,
+          health: cells[6]!,
         });
       }
     }
@@ -103,7 +109,13 @@ function parsePlan(cwd: string): PlanInfo | null {
     return null;
   }
 
-  const content = readFileSync(planPath, 'utf-8');
+  let content: string;
+  try {
+    content = readFileSync(planPath, 'utf-8').replace(/\r\n/g, '\n');
+  } catch {
+    console.error(`Warning: Could not read ${planPath}`);
+    return null;
+  }
 
   const activePhaseMatch = content.match(/\*\*Active Phase\*\*:\s*(.+)/);
   const activeMilestoneMatch = content.match(/\*\*Active Milestone\*\*:\s*(.+)/);

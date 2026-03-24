@@ -30,7 +30,14 @@ export function parseRegistry(cwd: string): RegistryRow[] {
     return [];
   }
 
-  const content = readFileSync(registryPath, 'utf-8');
+  let content: string;
+  try {
+    content = readFileSync(registryPath, 'utf-8');
+  } catch {
+    console.error(`Warning: Could not read ${registryPath}`);
+    return [];
+  }
+
   const lines = content.split('\n');
   const rows: RegistryRow[] = [];
 
@@ -39,14 +46,14 @@ export function parseRegistry(cwd: string): RegistryRow[] {
       /^\|\s*(TASK_\d{4}_\d{3})\s*\|\s*(\S+)\s*\|\s*(\S+)\s*\|\s*(.+?)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*$/
     );
     if (match !== null) {
-      const status = match[2] as string;
-      if (VALID_STATUSES.includes(status as TaskStatus)) {
+      const status = match[2];
+      if (status !== undefined && VALID_STATUSES.includes(status as TaskStatus)) {
         rows.push({
-          id: match[1] as string,
+          id: match[1]!,
           status: status as TaskStatus,
-          type: match[3] as string,
+          type: match[3]!,
           description: match[4]?.trim() ?? '',
-          created: match[5] as string,
+          created: match[5]!,
         });
       }
     }
