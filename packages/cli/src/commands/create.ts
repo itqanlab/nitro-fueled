@@ -6,5 +6,6 @@ export function registerCreateCommand(program: Command): void {
     .description('Interactive task creation')
     .action(() => {
       console.log('nitro-fueled create: not yet implemented');
+      process.exitCode = 1;
     });
 }

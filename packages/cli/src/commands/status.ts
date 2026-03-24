@@ -6,5 +6,6 @@ export function registerStatusCommand(program: Command): void {
     .description('Show task statuses, active workers, and costs')
     .action(() => {
       console.log('nitro-fueled status: not yet implemented');
+      process.exitCode = 1;
     });
 }

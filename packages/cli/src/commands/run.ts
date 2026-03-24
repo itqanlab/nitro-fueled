@@ -10,5 +10,6 @@ export function registerRunCommand(program: Command): void {
       } else {
         console.log('nitro-fueled run: not yet implemented');
       }
+      process.exitCode = 1;
     });
 }
