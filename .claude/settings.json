@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "session-orchestrator": {
-      "command": "node",
-      "args": ["/Volumes/SanDiskSSD/mine/session-orchestrator/dist/index.js"],
-      "env": {}
-    }
-  }
-}
