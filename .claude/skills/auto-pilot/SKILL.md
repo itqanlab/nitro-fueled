@@ -55,7 +55,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 | Parameter           | Default     | Override Flag    | Description                                          |
 |---------------------|-------------|------------------|------------------------------------------------------|
 | Concurrency limit   | 3           | --concurrency N  | Maximum simultaneous workers                         |
-| Monitoring interval | 10 minutes  | --interval Nm    | Time between health checks                           |
+| Monitoring interval | 5 minutes   | --interval Nm    | Time between health checks                           |
 | Retry limit         | 2           | --retries N      | Maximum retry attempts for a failed task. Maximum allowed value: 5. Values above 5 are clamped to 5. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
 
@@ -456,9 +456,45 @@ This means any worker can be replaced at any time — the supervisor never depen
 
 | Condition | Action |
 |-----------|--------|
-| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `orchestrator-state.md` with `loop_status: STOPPED` and session summary (total completed, total failed, total time). **STOP.** |
+| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `orchestrator-state.md` with `loop_status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
 | No actionable tasks **BUT** active workers exist | Log: `"No actionable tasks. Waiting for {N} active workers..."` Go to **Step 6** (monitor, wait for completions that may unblock). |
 | Actionable tasks exist | Go to **Step 4** (select and spawn). |
+
+### Step 8b: Append to Session History
+
+On EVERY session stop (normal completion, compaction limit, MCP unreachable, or manual stop):
+
+1. **Read** `task-tracking/orchestrator-history.md` (create if missing with `# Orchestrator Session History` header).
+2. **Append** the full session block:
+
+```markdown
+
+---
+
+## Session YYYY-MM-DD HH:MM — HH:MM
+
+**Config**: concurrency {N}, interval {N}m, retries {N}
+**Result**: {completed} completed, {failed} failed, {blocked} blocked
+**Total Cost**: ${X.XX}
+**Stop Reason**: {all complete | all blocked | compaction limit | MCP unreachable | manual}
+
+### Workers Spawned
+
+| Worker | Task | Type | Result | Cost | Duration |
+|--------|------|------|--------|------|----------|
+| {label} | TASK_X | Build | IMPLEMENTED | $X.XX | Xm |
+| {label} | TASK_X | Review | COMPLETE | $X.XX | Xm |
+| {label} | TASK_X | Cleanup | salvaged 3 files | $X.XX | Xm |
+
+### Event Log
+
+| Time | Event |
+|------|-------|
+{copy full Session Log from orchestrator-state.md}
+```
+
+3. This file is **append-only** — never overwrite previous sessions.
+4. Keep the file under control: if it exceeds 500 lines, trim the oldest sessions (keep the most recent 10).
 
 ---
 
@@ -748,7 +784,7 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | Parameter           | Value      |
 |---------------------|------------|
 | Concurrency Limit   | 3          |
-| Monitoring Interval | 10 minutes |
+| Monitoring Interval | 5 minutes  |
 | Retry Limit         | 2          |
 
 ## Active Workers
