@@ -5,4 +5,6 @@
 | TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  | 2026-03-23 |
 | TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     | 2026-03-23 |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture        | 2026-03-24 |
-| TASK_2026_004 | CREATED     | FEATURE     | Planner Agent and /plan Command | 2026-03-24 |
+| TASK_2026_004 | COMPLETE    | FEATURE     | Planner Agent and /plan Command | 2026-03-24 |
+| TASK_2026_005 | CREATED     | REFACTORING | Fix Workspace Agent Setup       | 2026-03-24 |
+| TASK_2026_006 | CREATED     | FEATURE     | Dynamic Agent/Skill Generation  | 2026-03-24 |
