@@ -130,22 +130,38 @@ Same logic as `/create-task`:
 3. Increment by 1, zero-pad to 3 digits
 4. Format: `TASK_YYYY_NNN`
 
-### 4c. Task Sizing Enforcement
+### 4c. Task Sizing Enforcement (CRITICAL)
 
-Every task MUST be completable in a single worker session (Build Worker + Review Worker).
+Every task MUST be completable within a single worker session — specifically, within **2 context compactions max**. If a task would fill context so fast that workers die or produce poor output, it is TOO LARGE. This is the single most important rule in task creation.
+
+**Hard limits — a task MUST NOT exceed ANY of these:**
+
+| Dimension | Maximum |
+|-----------|---------|
+| Files created or significantly modified | 5 |
+| Requirements / acceptance criteria groups | 5 |
+| Architectural components | 3 |
+| Task description length (for PM to process) | ~150 lines |
+| Estimated batches in tasks.md | 3 |
 
 **Indicators a task is TOO LARGE:**
 
-- More than 5-7 files need creation or significant modification
+- More than 5 files need creation or significant modification
+- More than 5 distinct requirements or acceptance criteria groups
+- More than 3 separate architectural components or deliverables
 - Multiple unrelated functional areas are touched
 - Description exceeds what a PM can convert to requirements in one pass
 - Complexity is "Complex" AND scope spans multiple architectural layers
+- The task description itself exceeds ~150 lines
+
+**Anti-pattern: "The Kitchen Sink Task"** — A single task that bundles a detection engine, a template system, two commands, and catalog integration (e.g., TASK_2026_006 which was CANCELLED after workers repeatedly died trying to complete it). Every component that can stand on its own SHOULD be its own task.
 
 **When a requirement is too large:** Break into multiple tasks with explicit dependencies. Each resulting task must be:
 
 - Independently testable with clear input/output boundaries
 - Scoped to a single functional area or architectural layer where possible
 - Connected to predecessors/successors via TASK_YYYY_NNN dependencies
+- Completable within 2 context compactions (verify by considering: how many files will the worker need to read + write?)
 
 ### 4d. Dependency Management
 

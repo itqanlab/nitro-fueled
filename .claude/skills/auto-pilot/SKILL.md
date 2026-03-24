@@ -110,6 +110,8 @@ The supervisor MUST maintain a session log in `orchestrator-state.md` under a `#
 | Spawn failure | `[HH:MM:SS] SPAWN FAILED — TASK_X: {error}` |
 | State recovered | `[HH:MM:SS] STATE RECOVERED — {N} active workers, {N} completed` |
 | Reconciliation | `[HH:MM:SS] RECONCILE — worker {id} missing from MCP, treating as finished` |
+| Cleanup spawned | `[HH:MM:SS] CLEANUP — TASK_X: spawning Cleanup Worker to salvage uncommitted work` |
+| Cleanup done | `[HH:MM:SS] CLEANUP DONE — TASK_X: {committed N files | no uncommitted changes}` |
 | Worker replaced | `[HH:MM:SS] REPLACING — TASK_X: spawning new worker (previous {reason})` |
 | Compaction detected | `[HH:MM:SS] COMPACTION — reading orchestrator-state.md to restore context` |
 | Plan consultation | `[HH:MM:SS] PLAN CONSULT — guidance: {PROCEED|REPRIORITIZE|ESCALATE|NO_ACTION}` |
@@ -372,7 +374,8 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
      - Log: `"TASK_X worker stuck for 2 consecutive checks -- killing"`
      - Call MCP `kill_worker`(worker_id, reason=`"stuck for 2 checks"`)
      - **Check return**: If `success: false`, log warning `"Failed to kill TASK_X worker -- will retry next interval"` and skip remaining cleanup (do not change registry or remove from state).
-     - If kill succeeded: leave registry state as-is (do NOT reset to CREATED). Increment `retry_count` in state for this task.
+     - If kill succeeded: trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
+     - Increment `retry_count` in state for this task.
      - **IF** `retry_count > retry_limit`:
        - Set task status to **BLOCKED** in registry
        - Log: `"TASK_X exceeded retry limit -- marked BLOCKED"`
@@ -414,7 +417,9 @@ If the registry shows a state that does not match the expected transition for th
 
 **7e. IF state did NOT transition (still at pre-worker state):**
 
-- Treat as incomplete/failed
+- Trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry)
+- After cleanup, re-check registry — the Cleanup Worker may have advanced the state
+- If state still hasn't transitioned, treat as incomplete/failed
 - Leave registry state as-is (do NOT reset to CREATED)
 - Increment `retry_count` for this task in state
 - **IF** `retry_count > retry_limit`:
@@ -436,15 +441,16 @@ If `get_worker_stats` shows worker is still running but the registry state has a
 
 ### Worker Recovery Protocol
 
-When a worker stops, crashes, or gets killed for ANY reason without the registry state transitioning to the expected end state, the supervisor MUST be able to spawn a **replacement worker** that continues the task:
+When a worker stops, crashes, or gets killed for ANY reason without the registry state transitioning to the expected end state, the supervisor MUST:
 
-1. **Leave task at its current registry state** (do NOT reset to CREATED). The current state (IN_PROGRESS or IN_REVIEW) tells the Supervisor which worker type to respawn.
-2. **Log the event** with the reason (stuck, crashed, MCP reported failure, etc.).
-3. **On next loop iteration**, the task is picked up again based on its current state: IN_PROGRESS spawns a Build Worker, IN_REVIEW spawns a Review Worker (via Step 5a worker type determination).
-4. **The replacement worker's prompt includes RETRY CONTEXT** (see Step 5b), which instructs it to read existing task folder deliverables to resume, not restart.
-5. **The task folder preserves all partial work** — context.md, task-description.md, implementation-plan.md, tasks.md, partial code, review files. The replacement worker uses phase detection to determine where to resume.
+1. **Spawn a Cleanup Worker FIRST** (see Cleanup Worker Prompt below). This lightweight worker salvages any uncommitted work left behind by the dead worker. Wait for the Cleanup Worker to finish before proceeding.
+2. **Leave task at its current registry state** (do NOT reset to CREATED). The Cleanup Worker may have updated the state. Re-read the registry after cleanup completes.
+3. **Log the event** with the reason (stuck, crashed, MCP reported failure, etc.).
+4. **On next loop iteration**, the task is picked up again based on its current state: IN_PROGRESS spawns a Build Worker, IN_REVIEW spawns a Review Worker (via Step 5a worker type determination).
+5. **The replacement worker's prompt includes RETRY CONTEXT** (see Step 5b), which instructs it to read existing task folder deliverables to resume, not restart.
+6. **The task folder preserves all partial work** — context.md, task-description.md, implementation-plan.md, tasks.md, partial code, review files. The replacement worker uses phase detection to determine where to resume.
 
-This means any worker can be replaced at any time — the supervisor never depends on a specific worker session surviving. The task folder contains all the context needed for a new worker to pick up where the previous one left off.
+This means any worker can be replaced at any time — the supervisor never depends on a specific worker session surviving. The Cleanup Worker ensures no work is lost, and the task folder contains all the context needed for a new worker to pick up where the previous one left off.
 
 ### Step 8: Loop Termination Check
 
@@ -673,6 +679,52 @@ AUTONOMOUS MODE — follow these rules strictly:
    - [ ] All changes are committed
    If you cannot pass the Exit Gate, write exit-gate-failure.md
    documenting the failure, then exit.
+
+Working directory: {project_root}
+Task folder: task-tracking/TASK_YYYY_NNN/
+```
+
+### Cleanup Worker Prompt
+
+```
+CLEANUP WORKER — SALVAGE MODE
+
+A worker for TASK_YYYY_NNN has died ({reason: stuck / crashed / killed}).
+Your ONLY job is to salvage uncommitted work and update task status.
+This is a fast, lightweight operation — do NOT continue development.
+
+Follow these steps IN ORDER, then EXIT:
+
+1. Run `git status` in the working directory.
+
+2. IF there are uncommitted changes (modified/untracked files):
+   a. Stage all relevant changes (implementation code, task-tracking
+      files, review files). Do NOT stage unrelated files.
+   b. Commit with message:
+      `salvage(TASK_YYYY_NNN): save uncommitted work from dead worker`
+   c. Log what was committed.
+
+3. IF there are NO uncommitted changes:
+   Log: "No uncommitted changes to salvage."
+
+4. Assess task progress by checking the task folder:
+   - context.md exists? -> PM phase done
+   - task-description.md exists? -> Requirements done
+   - implementation-plan.md exists? -> Architecture done
+   - tasks.md exists? -> Check how many batches are COMPLETE
+   - Review files exist? -> Check if reviews are complete
+   - completion-report.md exists? -> Task is done
+
+5. Update task-tracking/registry.md based on assessment:
+   - If ALL batches in tasks.md are COMPLETE and code is committed
+     -> Set status to IMPLEMENTED
+   - If reviews are done and findings are fixed
+     -> Set status to COMPLETE (only for Review Worker deaths)
+   - Otherwise -> Leave status as-is (IN_PROGRESS or IN_REVIEW)
+   Commit the registry update if changed:
+   `docs: TASK_YYYY_NNN cleanup — status updated to {STATE}`
+
+6. EXIT immediately. Do NOT start any development or review work.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
