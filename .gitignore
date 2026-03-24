@@ -1,0 +1,5 @@
+node_modules/
+dist/
+
+# Supervisor ephemeral state
+task-tracking/orchestrator-state.md
