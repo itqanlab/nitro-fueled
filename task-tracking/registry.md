@@ -11,11 +11,11 @@
 | TASK_2026_007 | COMPLETE    | DOCUMENTATION | Update CLAUDE.md and Design Doc | 2026-03-24 |
 | TASK_2026_008 | COMPLETE    | FEATURE     | CLI Package Scaffold            | 2026-03-24 |
 | TASK_2026_009 | CREATED     | FEATURE     | CLI init Command                | 2026-03-24 |
-| TASK_2026_010 | CREATED     | FEATURE     | CLI run Command                 | 2026-03-24 |
+| TASK_2026_010 | IMPLEMENTED | FEATURE     | CLI run Command                 | 2026-03-24 |
 | TASK_2026_011 | CREATED     | FEATURE     | CLI status Command              | 2026-03-24 |
 | TASK_2026_012 | CREATED     | FEATURE     | CLI create Command              | 2026-03-24 |
 | TASK_2026_013 | CREATED     | DEVOPS      | MCP Server Dependency Handling  | 2026-03-24 |
 | TASK_2026_014 | CREATED     | RESEARCH    | End-to-End Test Fresh Project   | 2026-03-24 |
-| TASK_2026_015 | IMPLEMENTED | FEATURE     | Stack Detection Registry + Developer Template | 2026-03-24 |
+| TASK_2026_015 | IN_REVIEW   | FEATURE     | Stack Detection Registry + Developer Template | 2026-03-24 |
 | TASK_2026_016 | CREATED     | FEATURE     | /create-agent Command + Catalog Integration   | 2026-03-24 |
-| TASK_2026_017 | IMPLEMENTED | FEATURE     | /create-skill Command                         | 2026-03-24 |
+| TASK_2026_017 | IN_REVIEW   | FEATURE     | /create-skill Command                         | 2026-03-24 |
