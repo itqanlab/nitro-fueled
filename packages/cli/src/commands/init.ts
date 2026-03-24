@@ -1,9 +1,10 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import type { Command } from 'commander';
 import { detectMcpConfig } from '../utils/mcp-config.js';
+import { buildMcpConfigEntry } from '../utils/mcp-setup-guide.js';
 
 interface InitOptions {
   mcpPath: string | undefined;
@@ -12,21 +13,35 @@ interface InitOptions {
 
 function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
+  return new Promise((resolvePrompt) => {
     rl.question(question, (answer) => {
       rl.close();
-      resolve(answer.trim());
+      resolvePrompt(answer.trim());
     });
   });
 }
 
-function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): void {
+function expandTilde(inputPath: string): string {
+  if (inputPath.startsWith('~/') || inputPath === '~') {
+    return resolve(homedir(), inputPath.slice(2));
+  }
+  return inputPath;
+}
+
+function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): boolean {
   let existing: Record<string, unknown> = {};
   if (existsSync(filePath)) {
     try {
       existing = JSON.parse(readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
     } catch {
-      console.error(`Warning: Could not parse ${filePath}. Creating new file.`);
+      console.error(`Warning: Could not parse ${filePath}. Existing file will be backed up.`);
+      try {
+        writeFileSync(filePath + '.bak', readFileSync(filePath, 'utf-8'), 'utf-8');
+        console.error(`Backup saved to ${filePath}.bak`);
+      } catch {
+        console.error(`Error: Could not create backup of ${filePath}. Aborting.`);
+        return false;
+      }
     }
   }
 
@@ -40,12 +55,35 @@ function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): voi
     mkdirSync(dir, { recursive: true });
   }
 
-  writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n', 'utf-8');
+  try {
+    writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n', 'utf-8');
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: Could not write ${filePath}: ${msg}`);
+    return false;
+  }
+  return true;
 }
 
 async function configureMcp(cwd: string, serverPath: string, location: 'project' | 'global'): Promise<boolean> {
-  const resolvedServerPath = resolve(serverPath);
-  const entryPoint = resolve(resolvedServerPath, 'dist', 'index.js');
+  const expandedPath = expandTilde(serverPath);
+  const resolvedServerPath = resolve(expandedPath);
+
+  // Validate path exists and resolve symlinks to detect traversal
+  if (!existsSync(resolvedServerPath)) {
+    console.error(`Error: Directory not found: ${resolvedServerPath}`);
+    return false;
+  }
+
+  let realPath: string;
+  try {
+    realPath = realpathSync(resolvedServerPath);
+  } catch {
+    console.error(`Error: Could not resolve path: ${resolvedServerPath}`);
+    return false;
+  }
+
+  const entryPoint = resolve(realPath, 'dist', 'index.js');
 
   if (!existsSync(entryPoint)) {
     console.error(`Error: Server entry point not found at ${entryPoint}`);
@@ -53,15 +91,11 @@ async function configureMcp(cwd: string, serverPath: string, location: 'project'
     return false;
   }
 
-  const mcpEntry = {
-    mcpServers: {
-      'session-orchestrator': {
-        type: 'stdio',
-        command: 'node',
-        args: [entryPoint],
-      },
-    },
-  };
+  const mcpEntry = buildMcpConfigEntry(realPath);
+
+  if (location === 'project') {
+    console.warn('Note: Project-level config uses an absolute path that may not be portable across machines.');
+  }
 
   let targetPath: string;
   if (location === 'project') {
@@ -70,7 +104,10 @@ async function configureMcp(cwd: string, serverPath: string, location: 'project'
     targetPath = resolve(homedir(), '.claude.json');
   }
 
-  mergeJsonFile(targetPath, mcpEntry);
+  const success = mergeJsonFile(targetPath, mcpEntry);
+  if (!success) {
+    return false;
+  }
   console.log(`MCP session-orchestrator configured in ${targetPath}`);
   return true;
 }
@@ -88,12 +125,13 @@ export function registerInitCommand(program: Command): void {
       console.log('=================');
       console.log('');
 
-      // TODO: Full init scaffolding will be implemented in TASK_2026_009.
+      // TODO: Full init scaffolding (copy agents, skills, task-tracking) will be implemented in TASK_2026_009.
       // This command currently handles MCP configuration only.
 
       const mcpConfig = detectMcpConfig(cwd);
       if (mcpConfig.found) {
         console.log(`MCP session-orchestrator: already configured (${mcpConfig.location}, ${mcpConfig.configPath})`);
+        // Do not return early — future scaffolding steps should still run.
         return;
       }
 

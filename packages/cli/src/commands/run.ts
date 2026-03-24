@@ -17,6 +17,7 @@ function displaySummary(rows: RegistryRow[], taskId: string | undefined, options
   const implemented = rows.filter((r) => r.status === 'IMPLEMENTED').length;
   const inReview = rows.filter((r) => r.status === 'IN_REVIEW').length;
   const complete = rows.filter((r) => r.status === 'COMPLETE').length;
+  const failed = rows.filter((r) => r.status === 'FAILED').length;
   const blockedCancelled = rows.filter(
     (r) => r.status === 'BLOCKED' || r.status === 'CANCELLED'
   ).length;
@@ -40,6 +41,7 @@ function displaySummary(rows: RegistryRow[], taskId: string | undefined, options
   console.log(`Ready for review (IMPLEMENTED): ${implemented}`);
   console.log(`Reviewing (IN_REVIEW): ${inReview}`);
   console.log(`Complete: ${complete}`);
+  console.log(`Failed: ${failed}`);
   console.log(`Blocked/Cancelled: ${blockedCancelled}`);
   console.log(`Concurrency limit: ${concurrency}`);
   console.log(`Monitoring interval: ${interval}`);
@@ -101,11 +103,11 @@ function displayDryRun(rows: RegistryRow[]): void {
 }
 
 function validateOptions(options: RunOptions): string | null {
-  if (options.concurrency !== undefined && !/^\d+$/.test(options.concurrency)) {
-    return `Invalid --concurrency value "${options.concurrency}". Must be a positive integer.`;
+  if (options.concurrency !== undefined && !/^[1-9]\d*$/.test(options.concurrency)) {
+    return `Invalid --concurrency value "${options.concurrency}". Must be a positive integer (>= 1).`;
   }
   if (options.retries !== undefined && !/^\d+$/.test(options.retries)) {
-    return `Invalid --retries value "${options.retries}". Must be a positive integer.`;
+    return `Invalid --retries value "${options.retries}". Must be a non-negative integer.`;
   }
   if (options.interval !== undefined && !/^\d+[msh]$/.test(options.interval)) {
     return `Invalid --interval value "${options.interval}". Expected format: <number><unit> (e.g., 5m, 30s, 1h).`;
@@ -213,7 +215,7 @@ export function registerRunCommand(program: Command): void {
 
       if (!opts.skipConnectivity) {
         console.log('Verifying MCP session-orchestrator connectivity...');
-        const connectivity = testMcpConnectivity();
+        const connectivity = testMcpConnectivity(result.mcpConfig);
         if (connectivity.status !== 'ok') {
           console.error(`Error: ${connectivity.message}`);
           console.error('');

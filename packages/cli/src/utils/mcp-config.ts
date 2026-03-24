@@ -37,16 +37,31 @@ function readJsonSafe(filePath: string): Record<string, unknown> | null {
   }
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function extractMcpEntry(data: Record<string, unknown>): McpServerEntry | null {
-  const servers = data['mcpServers'] as McpServersMap | undefined;
-  if (servers === undefined || servers === null) {
+  const servers = data['mcpServers'];
+  if (!isPlainObject(servers)) {
     return null;
   }
   const entry = servers['session-orchestrator'];
-  if (entry === undefined || entry === null) {
+  if (!isPlainObject(entry)) {
     return null;
   }
-  return entry;
+  // Validate the entry has required fields for its type
+  const entryType = (entry['type'] as string | undefined) ?? 'stdio';
+  if (entryType === 'stdio') {
+    if (typeof entry['command'] !== 'string' || entry['command'] === '') {
+      return null;
+    }
+  } else if (entryType === 'http') {
+    if (typeof entry['url'] !== 'string' || entry['url'] === '') {
+      return null;
+    }
+  }
+  return entry as McpServerEntry;
 }
 
 export function detectMcpConfig(cwd: string): McpConfigResult {

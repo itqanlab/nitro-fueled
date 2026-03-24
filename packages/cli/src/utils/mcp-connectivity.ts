@@ -1,4 +1,5 @@
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
+import type { McpConfigResult } from './mcp-config.js';
 
 export type ConnectivityStatus = 'ok' | 'unavailable' | 'error';
 
@@ -7,40 +8,66 @@ export interface ConnectivityResult {
   message: string;
 }
 
-export function testMcpConnectivity(): ConnectivityResult {
-  try {
-    // Use claude CLI to call list_workers via the MCP server.
-    // If the MCP server is running and reachable, this returns a JSON response.
-    // We use a short prompt that just invokes the tool and exits.
-    const output = execSync(
-      'claude --dangerously-skip-permissions -p "Call the list_workers MCP tool with status_filter all and return ONLY the raw JSON result, nothing else" --max-turns 2',
-      {
-        timeout: 30_000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        encoding: 'utf-8',
-      }
-    );
+export function testMcpConnectivity(mcpConfig: McpConfigResult): ConnectivityResult {
+  if (!mcpConfig.found || mcpConfig.entry === null) {
+    return { status: 'error', message: 'MCP session-orchestrator is not configured.' };
+  }
 
-    // If we got any output that looks like it contains worker data, connectivity is OK
-    if (output.includes('workers') || output.includes('[]') || output.includes('list_workers')) {
+  const entry = mcpConfig.entry;
+  const command = entry.command;
+  const args = entry.args ?? [];
+
+  if (command === undefined || command === '') {
+    return { status: 'error', message: 'MCP config entry has no command. Check your configuration.' };
+  }
+
+  try {
+    // Spawn the MCP server binary directly with a short-lived stdio handshake.
+    // Send an MCP initialize JSON-RPC request and check for a valid response.
+    // This avoids consuming API tokens (no Claude CLI needed).
+    const initRequest = JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'nitro-fueled-cli', version: '0.1.0' } },
+    }) + '\n';
+
+    const result = spawnSync(command, args, {
+      input: initRequest,
+      timeout: 5_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf-8',
+      env: { ...process.env, ...entry.env },
+    });
+
+    if (result.error !== undefined) {
+      const msg = result.error.message;
+      if (msg.includes('ENOENT')) {
+        return { status: 'error', message: `MCP server command not found: ${command}` };
+      }
+      if (msg.includes('ETIMEDOUT') || msg.includes('timed out')) {
+        return { status: 'unavailable', message: 'MCP session-orchestrator timed out. Ensure the server is built and runnable.' };
+      }
+      return { status: 'error', message: `MCP connectivity check failed: ${msg.split('\n')[0] ?? 'unknown error'}` };
+    }
+
+    const stdout = result.stdout ?? '';
+    // Check for a JSON-RPC response with a result field (MCP initialize response)
+    if (stdout.includes('"result"') && stdout.includes('"serverInfo"')) {
       return { status: 'ok', message: 'MCP session-orchestrator is reachable.' };
     }
 
-    // Got output but it doesn't look like a valid response
+    // Server started but didn't respond with expected MCP protocol
+    if (result.status === 0 || stdout.length > 0) {
+      return { status: 'ok', message: 'MCP session-orchestrator process is available (server started successfully).' };
+    }
+
     return {
       status: 'error',
-      message: 'MCP server responded but returned unexpected output. Verify the server is running correctly.',
+      message: 'MCP server process exited without a valid response. Verify the server is built correctly.',
     };
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-
-    if (errorMessage.includes('ETIMEDOUT') || errorMessage.includes('timed out')) {
-      return {
-        status: 'unavailable',
-        message: 'MCP session-orchestrator connection timed out. Ensure the server is running.',
-      };
-    }
-
     return {
       status: 'error',
       message: `MCP connectivity check failed: ${errorMessage.split('\n')[0] ?? 'unknown error'}`,

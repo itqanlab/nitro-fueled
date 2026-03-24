@@ -12,8 +12,8 @@ export function displayMcpSetupGuide(): void {
   console.error('-------------------');
   console.error('');
   console.error('1. Install session-orchestrator:');
-  console.error('   git clone <session-orchestrator-repo>');
-  console.error('   cd session-orchestrator && npm install && npm run build');
+  console.error('   Obtain the session-orchestrator package and place it in a local directory.');
+  console.error('   cd <session-orchestrator-dir> && npm install && npm run build');
   console.error('');
   console.error('2. Add to your Claude Code MCP config.');
   console.error('');
