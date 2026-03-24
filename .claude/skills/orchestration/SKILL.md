@@ -69,7 +69,7 @@ See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
 | Keywords Present                              | Task Type     |
 | --------------------------------------------- | ------------- |
-| CI/CD, pipeline, Electron Forge, deploy, pack | DEVOPS        |
+| CI/CD, pipeline, build tool, deploy, pack     | DEVOPS        |
 | landing page, marketing, brand, visual        | CREATIVE      |
 | implement, add, create, build                 | FEATURE       |
 | fix, bug, error, issue                        | BUGFIX        |

@@ -1,6 +1,8 @@
 # Agent Catalog Reference
 
-Comprehensive catalog of all 15 specialist agents with capabilities, triggers, and invocation patterns.
+Comprehensive catalog of all 16 specialist agents with capabilities, triggers, and invocation patterns.
+
+> **Note**: The `planner` agent is included in the count but has its own dedicated section below. It operates outside the team-leader assignment flow and is invoked via the `/plan` command, not through orchestration batch assignment.
 
 ---
 
@@ -23,6 +25,7 @@ Comprehensive catalog of all 15 specialist agents with capabilities, triggers, a
 | modernization-detector   |     -      |   -    |   S    |   -   |  **P**   |    -    |    -    |
 | ui-ux-designer           |     -      | **P**  |   -    |   S   |    -     |    S    |    -    |
 | technical-content-writer |     -      |   S    |   -    |   -   |    -     |  **P**  |    -    |
+| planner                  |     -      |   -    |   -    | **P** |    S     |    -    |    -    |
 
 **Legend**: **P** = Primary capability, S = Secondary capability, - = Not applicable
 
@@ -45,6 +48,7 @@ Comprehensive catalog of all 15 specialist agents with capabilities, triggers, a
 | Brand/visual     | ui-ux-designer                                     | Design system               |
 | Content          | technical-content-writer                           | Blogs, docs, video          |
 | Infrastructure   | devops-engineer                                    | CI/CD, packaging            |
+| Planning         | planner                                            | Roadmap, backlog, task creation |
 
 **Default**: When uncertain, use `/orchestrate` for full workflow analysis.
 
@@ -181,6 +185,54 @@ Task({
 
 Break down the implementation into atomic, batchable tasks.
 See team-leader.md for MODE 1 instructions.`,
+});
+```
+
+---
+
+### planner
+
+**Role**: Strategic planning, roadmap management, task creation, backlog prioritization, Supervisor consultation
+
+**Triggers**:
+
+- Product roadmap planning and phase definition
+- Task creation from user requests
+- Backlog prioritization and reordering
+- Supervisor consultation (what to execute next)
+- New project onboarding
+
+**Inputs**:
+
+- User request / product direction
+- `task-tracking/registry.md` (current task states)
+- `task-tracking/plan.md` (current roadmap)
+- Codebase analysis for sizing
+
+**Outputs**:
+
+- `task-tracking/plan.md` (roadmap and phases)
+- `task-tracking/TASK_[ID]/task.md` (new tasks)
+- `task-tracking/registry.md` (new entries)
+
+**Dependencies**: None (invoked directly by user)
+
+**Parallel With**: None (sequential, interactive)
+
+**Note**: Planner is invoked via `/plan` command, NOT through team-leader batch assignment. It operates at the product level (roadmap, phases) while project-manager operates at the task level (detailed requirements).
+
+**Invocation Example**:
+
+```typescript
+Task({
+  subagent_type: 'planner',
+  description: 'Plan next development phase',
+  prompt: `You are planner.
+
+**Goal**: Plan the next development phase for the project
+**Registry**: Read task-tracking/registry.md for current state
+
+See planner.md for detailed instructions.`,
 });
 ```
 
@@ -531,7 +583,7 @@ See code-logic-reviewer.md for detailed instructions.`,
 **Dependencies**:
 
 - Implementation complete (all batches)
-- Electron app running in dev mode
+- Application running in dev mode
 
 **Parallel With**: senior-tester, code-style-reviewer, code-logic-reviewer
 
@@ -607,7 +659,7 @@ Task({
   prompt: `You are researcher-expert for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
-**Research Question**: "Best approach for LanceDB integration in Electron"
+**Research Question**: "Best approach for vector storage integration in the application"
 
 Investigate options, create comparison matrix, recommend approach.
 See researcher-expert.md for detailed instructions.`,
@@ -743,7 +795,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Design System**: Read .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
-**Goal**: Create landing page content for the Electron desktop app
+**Goal**: Create landing page content for the product
 
 Create design-integrated content specification.
 See technical-content-writer.md for detailed instructions.`,
@@ -756,7 +808,7 @@ See technical-content-writer.md for detailed instructions.`,
 
 | Category    | Agents                                                                   | Purpose                    |
 | ----------- | ------------------------------------------------------------------------ | -------------------------- |
-| Planning    | project-manager, software-architect, team-leader                         | Requirements & design      |
+| Planning    | project-manager, software-architect, team-leader, planner                | Requirements & design      |
 | Development | systems-developer, backend-developer, frontend-developer, devops-engineer | Implementation            |
 | QA          | senior-tester, code-style-reviewer, code-logic-reviewer, visual-reviewer | Quality assurance          |
 | Specialist  | researcher-expert, modernization-detector                                | Research & analysis        |

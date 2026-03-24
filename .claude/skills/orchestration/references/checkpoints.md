@@ -130,7 +130,7 @@ After project-manager completes and creates `task-description.md`
 
 Ask if ANY of these apply:
 
-- Multiple valid architectural approaches exist (e.g., SQLite vs LanceDB for storage)
+- Multiple valid architectural approaches exist (e.g., SQL vs NoSQL for storage)
 - Key technology choices need user preference
 - Integration scope is unclear (standalone vs integrated)
 - Design tradeoffs have significant impact (performance vs simplicity)
@@ -303,8 +303,8 @@ When any agent reports an impediment that prevents continued progress
 - Potential solutions identified by [agent]
 
 ### Options
-1. **Resolve** - [Specific resolution option, e.g., "Downgrade Electron to v28"]
-2. **Alternative** - [Alternative approach, e.g., "Use sql.js instead of better-sqlite3"]
+1. **Resolve** - [Specific resolution option, e.g., "Downgrade dependency to compatible version"]
+2. **Alternative** - [Alternative approach, e.g., "Use alternative library with better compatibility"]
 3. **Research** - Invoke researcher-expert to investigate further
 4. **Abort** - Cancel task (state preserved in task-tracking)
 

@@ -49,20 +49,17 @@ Git conventions for orchestrated task execution.
 
 ## Allowed Scopes (Project-Specific)
 
+> **Note**: These scopes are templates. During `nitro-fueled init`, scopes are generated based on the target project's tech stack. The examples below are generic defaults.
+
 | Scope           | Domain                                              | Example Files                                     |
 | --------------- | --------------------------------------------------- | ------------------------------------------------- |
-| `project`       | Project-wide configuration, workspace settings      | nx.json, tsconfig.base.json                       |
+| `project`       | Project-wide configuration, workspace settings      | package.json, tsconfig.json                       |
 | `task`          | Task tracking, orchestration artifacts              | task-tracking/\*                                  |
-| `library`       | Nx library creation or configuration                | libs/\*/project.json                              |
-| `provider`      | AI provider integrations                            | libs/main-process/providers/\*                    |
 | `orchestration` | Orchestration system, agent configurations          | .claude/skills/\*, .claude/agents/\*              |
-| `ui`            | Angular components, templates, styles               | libs/renderer/\*, apps/renderer/\*                |
-| `db`            | SQLite, LanceDB, database schemas and operations    | libs/main-process/db/\*                           |
-| `sync`          | File watching, synchronization, chokidar            | libs/main-process/sync/\*                         |
-| `theme`         | Theming, dark/light mode, design tokens             | libs/renderer/theme/\*                            |
-| `electron`      | Electron main process, IPC, window management       | apps/desktop/\*, libs/main-process/\*             |
-| `renderer`      | Renderer process services, Angular app bootstrap    | apps/renderer/\*, libs/renderer/\*                |
-| `shared`        | Shared libraries, interfaces, types, utilities      | libs/shared/\*                                    |
+| `ui`            | UI components, templates, styles                    | src/components/\*, src/pages/\*                   |
+| `db`            | Database schemas and operations                     | src/db/\*, migrations/\*                          |
+| `api`           | API routes, handlers, middleware                    | src/api/\*, src/handlers/\*                       |
+| `shared`        | Shared libraries, interfaces, types, utilities      | src/shared/\*, src/utils/\*                       |
 
 ---
 
@@ -96,8 +93,8 @@ Each developer agent uses specific type+scope combinations based on their domain
 ```
 feat(shared): add project settings interface and types
 feat(db): create settings table with migration
-feat(electron): implement settings IPC handlers
-fix(electron): handle null config values on first launch
+feat(api): implement settings API handlers
+fix(api): handle null config values on first request
 refactor(shared): extract common validation utilities
 ```
 
@@ -105,22 +102,22 @@ refactor(shared): extract common validation utilities
 
 ```
 feat(ui): add settings panel component with form controls
-feat(renderer): create settings signal store
-feat(theme): add custom color palette tokens
+feat(ui): create settings state store
+feat(ui): add custom color palette tokens
 feat(ui): implement responsive sidebar layout
-fix(ui): correct NG-ZORRO select dropdown alignment
-refactor(renderer): migrate settings service to signals
+fix(ui): correct select dropdown alignment
+refactor(ui): migrate settings service to reactive state
 style(ui): apply consistent spacing to form sections
 ```
 
 ### devops-engineer
 
 ```
-ci(electron): add macOS code signing to build pipeline
-build(project): configure Nx caching for CI
-chore(electron): update Electron Forge to v7
+ci(project): add macOS code signing to build pipeline
+build(project): configure build caching for CI
+chore(project): update build tooling dependencies
 ci(project): add GitHub Actions workflow for PR checks
-build(renderer): optimize Angular production build config
+build(project): optimize production build config
 ```
 
 ---

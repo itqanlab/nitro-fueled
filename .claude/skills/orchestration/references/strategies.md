@@ -70,7 +70,7 @@ Phase 8: modernization-detector --> Creates future-enhancements.md
 | Agent             | Invoke When                                                 |
 | ----------------- | ----------------------------------------------------------- |
 | researcher-expert | Technical complexity > 3, unknown libraries/APIs, needs POC |
-| ui-ux-designer    | New UI components, visual redesigns, NG-ZORRO customization |
+| ui-ux-designer    | New UI components, visual redesigns, component library customization |
 
 ---
 
@@ -121,7 +121,7 @@ team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
 Refactoring requirements are typically clear:
 
 - "Extract service from component"
-- "Optimize SQLite queries"
+- "Optimize database queries"
 - "Consolidate duplicate signal stores"
 
 The architect designs HOW to refactor; no scope discovery needed.
@@ -183,7 +183,7 @@ If research concludes implementation is needed:
 
 ## DEVOPS (Infrastructure & Deployment)
 
-**When to use**: CI/CD, Electron Forge config, packaging, distribution, monitoring
+**When to use**: CI/CD, build tool config, packaging, distribution, monitoring
 
 ```
 Phase 1: project-manager --> Creates task-description.md
