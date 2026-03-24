@@ -62,6 +62,19 @@ Add a new row to `task-tracking/registry.md`:
 
 Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created**
 
+### Step 5b: Validate Auto-Pilot Readiness
+
+Before displaying the summary, verify the task is ready for auto-pilot pickup:
+
+| Check | Requirement | If Missing |
+|-------|------------|------------|
+| Type | Must be a valid enum value | Prompt user to pick one |
+| Priority | Must be a valid enum value | Default to P2-Medium |
+| Description | At least 2 sentences | Warn user: "Description may be too brief for the PM agent to generate requirements autonomously. Consider adding more detail." |
+| Acceptance Criteria | At least 1 criterion | Warn user: "No acceptance criteria — QA will have nothing to verify against." |
+
+These checks ensure the task won't be skipped by auto-pilot's Step 2b validation.
+
 ### Step 6: Display Summary
 
 ```
@@ -71,8 +84,12 @@ Task created successfully.
   Folder:   task-tracking/TASK_YYYY_NNN/
   Type:     [Type]
   Priority: [Priority]
+  Status:   CREATED (ready for auto-pilot or /orchestrate)
 
-  Next: Run /orchestrate TASK_YYYY_NNN to begin the workflow.
+  Next steps:
+  - Run /orchestrate TASK_YYYY_NNN to start this task manually
+  - Or add more tasks and run /auto-pilot to process the backlog
+  - Or run /auto-pilot --dry-run to see the execution plan
 ```
 
 ## Important Rules

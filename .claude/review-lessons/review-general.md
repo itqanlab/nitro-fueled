@@ -52,6 +52,12 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Commands that claim "read template as source of truth" must not hardcode template content** — if a command duplicates enum values inline, changes to the template require multi-file updates, defeating the single-source-of-truth pattern. (TASK_001)
 - **New status/enum values must be added to the canonical reference first** — before any command or guide uses a value like `CREATED`, it must exist in the reference document (e.g., `task-tracking.md` Registry Status table). Undefined values cause downstream tooling failures. (TASK_001)
 
+## Configuration & Parameter Consistency
+
+- **Every configurable parameter must be consumed by logic** — if a Configuration table exposes a parameter (e.g., `--stuck Nm`), there must be a corresponding step in the core logic that reads and uses that value. Dead configuration that has no effect is worse than no configuration — it misleads users and erodes trust. (TASK_2026_002)
+- **Parameter sets must be synchronized across skill and command** — if a skill's Configuration table defines overridable parameters, the command's Parameters table and argument parsing must include all of them. Split definitions cause silent omissions. (TASK_2026_002)
+- **Behavioral specifications should live in the skill, not split across skill and command** — if a skill has multiple operating modes (e.g., single-task, dry-run, all-tasks), all modes should be at least referenced in the skill. The command handles argument parsing and pre-flight, but the skill should be the complete behavioral reference. (TASK_2026_002)
+
 ## Security Basics (all agents must know)
 
 - **All SQL queries use parameterized `?` placeholders** — never interpolate. (all tasks)
