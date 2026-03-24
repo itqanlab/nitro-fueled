@@ -1,0 +1,132 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createHttpServer } from './server/http.js';
+import { WebSocketBroadcaster } from './server/websocket.js';
+import { ChokidarWatcher } from './watcher/chokidar.watcher.js';
+import { createEventBus } from './events/event-bus.js';
+import { StateStore } from './state/store.js';
+import { FileRouter } from './parsers/file-router.js';
+import type { Server } from 'node:http';
+
+export interface DashboardServiceOptions {
+  readonly taskTrackingDir: string;
+  readonly antiPatternsPath?: string;
+  readonly reviewLessonsDir?: string;
+  readonly port: number;
+}
+
+export class DashboardService {
+  private readonly store: StateStore;
+  private readonly eventBus: ReturnType<typeof createEventBus>;
+  private readonly watcher: ChokidarWatcher;
+  private readonly wsBroadcaster: WebSocketBroadcaster;
+  private readonly fileRouter: FileRouter;
+  private readonly options: DashboardServiceOptions;
+  private httpServer: Server | null = null;
+
+  public constructor(options: DashboardServiceOptions) {
+    this.options = options;
+    this.store = new StateStore();
+    this.eventBus = createEventBus();
+    this.watcher = new ChokidarWatcher();
+    this.wsBroadcaster = new WebSocketBroadcaster();
+    this.fileRouter = new FileRouter(this.store, this.eventBus);
+  }
+
+  public async start(): Promise<void> {
+    const server = createHttpServer(this.store);
+    this.httpServer = server;
+
+    this.wsBroadcaster.attach(server, this.eventBus);
+
+    await new Promise<void>((res) => {
+      server.listen(this.options.port, () => res());
+    });
+
+    this.watchTaskTracking();
+    this.watchAntiPatterns();
+    this.watchReviewLessons();
+    this.registerShutdownHandlers();
+
+    console.log(`[dashboard-service] Listening on http://localhost:${this.options.port}`);
+    console.log(`[dashboard-service] WebSocket available on ws://localhost:${this.options.port}`);
+    console.log(`[dashboard-service] Watching: ${this.options.taskTrackingDir}`);
+  }
+
+  public async stop(): Promise<void> {
+    console.log('[dashboard-service] Shutting down...');
+    await this.watcher.close();
+    this.wsBroadcaster.close();
+    if (this.httpServer) {
+      await new Promise<void>((res) => {
+        this.httpServer!.close(() => res());
+      });
+      this.httpServer = null;
+    }
+  }
+
+  public getStore(): StateStore {
+    return this.store;
+  }
+
+  private watchTaskTracking(): void {
+    this.watcher.watch(this.options.taskTrackingDir, (filePath, event) => {
+      if (!filePath.endsWith('.md')) return;
+
+      if (event === 'unlink') {
+        this.fileRouter.handleRemoval(filePath);
+        return;
+      }
+
+      this.fileRouter.handleChange(filePath);
+    });
+  }
+
+  private watchAntiPatterns(): void {
+    const path = this.options.antiPatternsPath;
+    if (path && existsSync(path)) {
+      this.fileRouter.handleChange(path);
+    }
+  }
+
+  private watchReviewLessons(): void {
+    const dir = this.options.reviewLessonsDir;
+    if (!dir || !existsSync(dir)) return;
+
+    this.watcher.watch(dir, (filePath, event) => {
+      if (!filePath.endsWith('.md') || event === 'unlink') return;
+      this.fileRouter.handleChange(filePath);
+    });
+  }
+
+  private registerShutdownHandlers(): void {
+    const shutdown = async (): Promise<void> => {
+      await this.stop();
+      process.exit(0);
+    };
+
+    process.on('SIGINT', () => { void shutdown(); });
+    process.on('SIGTERM', () => { void shutdown(); });
+  }
+}
+
+export function discoverTaskTrackingDir(cwd: string): string | null {
+  const candidate = resolve(cwd, 'task-tracking');
+  return existsSync(candidate) ? candidate : null;
+}
+
+export { StateStore } from './state/store.js';
+export type {
+  TaskRecord,
+  PlanData,
+  OrchestratorState,
+  TaskDefinition,
+  ReviewData,
+  CompletionReport,
+  AntiPatternRule,
+  LessonEntry,
+  FullTaskData,
+  DashboardStats,
+  DashboardEvent,
+  DashboardEventType,
+} from './events/event-types.js';
