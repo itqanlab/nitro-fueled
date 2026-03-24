@@ -3,3 +3,6 @@ dist/
 
 # Supervisor ephemeral state
 task-tracking/orchestrator-state.md
+
+# Worker logs from print-mode sessions
+.worker-logs/
