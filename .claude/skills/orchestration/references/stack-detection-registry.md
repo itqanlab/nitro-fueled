@@ -16,26 +16,27 @@ Confidence levels: **high** = file is definitive for that stack; **medium** = co
 
 ## Language Detection Rules
 
-| Manifest File | Stack ID | Category | Confidence | Content Patterns |
-|---------------|----------|----------|------------|------------------|
-| `package.json` | `nodejs` | Language | high | `"dependencies"` or `"devDependencies"` present |
-| `tsconfig.json` | `typescript` | Language | high | Confirms TypeScript on top of Node.js |
-| `requirements.txt` | `python` | Language | high | pip dependency list |
-| `pyproject.toml` | `python` | Language | high | `[tool.poetry]` or `[project]` section |
-| `Pipfile` | `python` | Language | high | Pipenv lockfile |
-| `setup.py` | `python` | Language | medium | May be legacy; check for `install_requires` |
-| `pom.xml` | `java` | Language | high | `<groupId>` and `<artifactId>` present |
-| `build.gradle` | `java` | Language | high | `plugins` or `dependencies` block |
-| `build.gradle.kts` | `kotlin` | Language | high | Kotlin DSL build file |
-| `Package.swift` | `swift` | Language | high | `import PackageDescription` |
-| `*.xcodeproj` | `swift-ios` | Language | high | Xcode project directory |
-| `pubspec.yaml` | `dart` | Language | high | `dependencies:` section |
-| `go.mod` | `go` | Language | high | `module` directive present |
-| `Cargo.toml` | `rust` | Language | high | `[package]` with `name` and `version` |
-| `Gemfile` | `ruby` | Language | high | `source` and `gem` declarations |
-| `*.csproj` | `csharp` | Language | high | `<Project Sdk="Microsoft.NET.Sdk">` |
-| `*.sln` | `csharp` | Language | medium | Solution file; confirms .NET project |
-| `composer.json` | `php` | Language | high | `"require"` section present |
+| Manifest File | Stack ID | Confidence | Content Pattern |
+|---------------|----------|------------|-----------------|
+| `package.json` | `nodejs` | high | `"dependencies"` or `"devDependencies"` present |
+| `tsconfig.json` | `typescript` | high | Confirms TypeScript on top of Node.js |
+| `requirements.txt` | `python` | high | pip dependency list |
+| `pyproject.toml` | `python` | high | `[tool.poetry]` or `[project]` section |
+| `Pipfile` | `python` | high | Pipenv lockfile |
+| `setup.py` | `python` | medium | May be legacy; check for `install_requires` |
+| `pom.xml` | `java` | high | `<groupId>` and `<artifactId>` present |
+| `build.gradle` | `java` | high | `plugins` or `dependencies` block |
+| `build.gradle.kts` | `java` | medium | Kotlin DSL build file; check source dirs for `.kt` files to confirm Kotlin vs Java |
+| `src/**/*.kt` | `kotlin` | high | Kotlin source files present in project |
+| `Package.swift` | `swift` | high | `import PackageDescription` |
+| `*.xcodeproj` | `swift-ios` | high | Xcode project directory |
+| `pubspec.yaml` | `dart` | high | `dependencies:` section |
+| `go.mod` | `go` | high | `module` directive present |
+| `Cargo.toml` | `rust` | high | `[package]` with `name` and `version` |
+| `Gemfile` | `ruby` | high | `source` and `gem` declarations |
+| `*.csproj` | `csharp` | high | `<Project Sdk="Microsoft.NET.Sdk">` |
+| `*.sln` | `csharp` | medium | Solution file; confirms .NET project |
+| `composer.json` | `php` | high | `"require"` section present |
 
 ---
 
@@ -181,29 +182,50 @@ Confidence levels: **high** = file is definitive for that stack; **medium** = co
 | `nodejs` + `nextjs` | `nextjs-developer` | Next.js Developer |
 | `nodejs` + `angular` | `angular-developer` | Angular Developer |
 | `nodejs` + `vue` | `vue-developer` | Vue Developer |
+| `nodejs` + `nuxt` | `nuxt-developer` | Nuxt Developer |
+| `nodejs` + `svelte` | `svelte-developer` | Svelte Developer |
 | `nodejs` + `express` | `express-developer` | Express Developer |
+| `nodejs` + `fastify` | `fastify-developer` | Fastify Developer |
 | `nodejs` + `nestjs` | `nestjs-developer` | NestJS Developer |
 | `nodejs` + `electron` | `electron-developer` | Electron Developer |
+| `nodejs` + `tauri` | `tauri-developer` | Tauri Developer |
 | `typescript` (no framework) | `typescript-developer` | TypeScript Developer |
 | `python` + `django` | `django-developer` | Django Developer |
 | `python` + `fastapi` | `fastapi-developer` | FastAPI Developer |
 | `python` + `flask` | `flask-developer` | Flask Developer |
 | `python` + `pytorch` | `ml-developer` | ML/AI Developer |
+| `python` + `tensorflow` | `ml-developer` | ML/AI Developer |
 | `python` (no framework) | `python-developer` | Python Developer |
 | `java` + `spring-boot` | `spring-developer` | Spring Boot Developer |
+| `java` + `quarkus` | `quarkus-developer` | Quarkus Developer |
+| `java` + `micronaut` | `micronaut-developer` | Micronaut Developer |
 | `java` + `android` | `android-developer` | Android Developer |
+| `java` (no framework) | `java-developer` | Java Developer |
 | `kotlin` + `android` | `android-developer` | Android Developer |
-| `swift` / `swift-ios` | `ios-developer` | iOS Developer |
+| `kotlin` (no framework) | `kotlin-developer` | Kotlin Developer |
+| `swift` (no framework) | `ios-developer` | iOS Developer |
+| `swift-ios` | `ios-developer` | iOS Developer |
 | `dart` + `flutter` | `flutter-developer` | Flutter Developer |
+| `dart` (no framework) | `dart-developer` | Dart Developer |
 | `go` (any) | `go-developer` | Go Developer |
-| `rust` (any) | `rust-developer` | Rust Developer |
+| `rust` + `actix` | `rust-developer` | Rust Developer |
+| `rust` + `rocket` | `rust-developer` | Rust Developer |
+| `rust` + `tauri-rust` | `tauri-developer` | Tauri Developer |
+| `rust` (no framework) | `rust-developer` | Rust Developer |
 | `ruby` + `rails` | `rails-developer` | Rails Developer |
+| `ruby` + `sinatra` | `sinatra-developer` | Sinatra Developer |
+| `ruby` (no framework) | `ruby-developer` | Ruby Developer |
 | `csharp` + `aspnet` | `dotnet-developer` | .NET Developer |
+| `csharp` + `xamarin` | `xamarin-developer` | Xamarin Developer |
+| `csharp` + `maui` | `maui-developer` | .NET MAUI Developer |
+| `csharp` (no framework) | `dotnet-developer` | .NET Developer |
 | `php` + `laravel` | `laravel-developer` | Laravel Developer |
 | `php` + `symfony` | `symfony-developer` | Symfony Developer |
+| `php` (no framework) | `php-developer` | PHP Developer |
 
 **Mapping Rules:**
 - When both language and framework are detected, use the framework-specific agent
 - When only a language is detected (no framework), use the language-level agent
 - Monorepo projects may produce multiple agents (one per workspace with distinct stacks)
 - Infrastructure and database detections inform agent content but do not generate separate agents
+- **Conflict resolution**: When multiple frameworks are detected for the same language (e.g., `react` + `nextjs`), prefer the meta-framework (`nextjs` over `react`, `nuxt` over `vue`). If no hierarchy exists, generate one agent per framework.
