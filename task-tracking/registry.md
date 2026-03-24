@@ -15,14 +15,23 @@
 | TASK_2026_011 | COMPLETE    | FEATURE     | CLI status Command              | 2026-03-24 |
 | TASK_2026_012 | COMPLETE    | FEATURE     | CLI create Command              | 2026-03-24 |
 | TASK_2026_013 | COMPLETE    | DEVOPS      | MCP Server Dependency Handling  | 2026-03-24 |
-| TASK_2026_014 | CREATED     | RESEARCH    | End-to-End Test Fresh Project   | 2026-03-24 |
+| TASK_2026_014 | COMPLETE    | RESEARCH    | End-to-End Test Fresh Project   | 2026-03-24 |
 | TASK_2026_015 | COMPLETE    | FEATURE     | Stack Detection Registry + Developer Template | 2026-03-24 |
 | TASK_2026_016 | COMPLETE    | FEATURE     | /create-agent Command + Catalog Integration   | 2026-03-24 |
 | TASK_2026_017 | COMPLETE    | FEATURE     | /create-skill Command                         | 2026-03-24 |
 | TASK_2026_018 | COMPLETE    | CREATIVE    | Nitro-Fueled Landing Hero Visual Redesign | 2026-03-24 |
-| TASK_2026_019 | CREATED     | BUGFIX      | Fix Print Mode Token/Cost Tracking        | 2026-03-24 |
+| TASK_2026_019 | IMPLEMENTED | BUGFIX      | Fix Print Mode Token/Cost Tracking        | 2026-03-24 |
 | TASK_2026_020 | CREATED     | FEATURE     | Per-Task Model Selection                  | 2026-03-24 |
 | TASK_2026_021 | CREATED     | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 |
 | TASK_2026_022 | CREATED     | FEATURE     | Dashboard Data Service                    | 2026-03-24 |
 | TASK_2026_023 | CREATED     | FEATURE     | Dashboard Web Client                      | 2026-03-24 |
 | TASK_2026_024 | CREATED     | FEATURE     | Dashboard CLI Command + Service Integration | 2026-03-24 |
+| TASK_2026_025 | COMPLETE    | BUGFIX      | Fix Review Worker Startup Failure (0-msg stuck on first attempt) | 2026-03-24 |
+| TASK_2026_026 | CREATED     | BUGFIX      | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 |
+| TASK_2026_027 | CREATED     | FEATURE     | Shared Review Context and Task File-Scope Isolation | 2026-03-24 |
+| TASK_2026_028 | CREATED     | BUGFIX      | Enforce tasks.md as Required Build Artifact | 2026-03-24 |
+| TASK_2026_029 | CREATED     | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 |
+| TASK_2026_030 | CREATED     | BUGFIX      | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-24 |
+| TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 |
+| TASK_2026_032 | CREATED     | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 |
+| TASK_2026_033 | CREATED     | FEATURE     | Pre-Flight Validation Before Auto-Pilot Spawns Workers | 2026-03-24 |
