@@ -1,0 +1,32 @@
+{
+  "name": "nitro-fueled",
+  "version": "0.1.0",
+  "description": "AI development orchestration — full PM -> Architect -> Dev -> QA pipeline",
+  "type": "module",
+  "bin": {
+    "nitro-fueled": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "ai",
+    "orchestration",
+    "claude",
+    "development",
+    "automation"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.0"
+  }
+}
