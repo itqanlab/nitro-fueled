@@ -50,9 +50,14 @@ If missing: ERROR -- "Registry not found. Run /initialize-workspace first."
 
 **3b.** Verify MCP session-orchestrator is available:
 Call MCP `list_workers` (status_filter: 'all').
-If MCP call fails: ERROR -- "MCP session-orchestrator not reachable.
-Ensure the MCP server is running. See docs/mcp-session-orchestrator-design.md
-for configuration."
+If MCP call fails or the tool does not exist: **STOP IMMEDIATELY.**
+Display: "FATAL: MCP session-orchestrator is not configured or not running.
+The Supervisor REQUIRES the MCP session-orchestrator to spawn separate
+worker sessions in their own terminal windows. Without it, tasks cannot
+be processed. Do NOT use the Agent tool as a fallback — sub-agents share
+context and break the architecture. Configure the MCP server in
+.claude/settings.json and restart."
+**EXIT. Do not continue to Step 4.**
 
 **3c.** If single-task mode: verify the task ID exists in the registry
 and its status is CREATED or IMPLEMENTED. If status is IN_PROGRESS or

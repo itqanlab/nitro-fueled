@@ -138,9 +138,25 @@ Single-task and dry-run modes are handled by the command entry point (`.claude/c
 
 ---
 
+## MCP Requirement (MANDATORY — HARD FAIL)
+
+**BEFORE ANYTHING ELSE**, verify that the MCP `spawn_worker` tool exists and is callable:
+
+1. Call MCP `list_workers` (with no filters).
+2. **IF the tool exists and returns a response** (even an empty list): MCP is available. Continue.
+3. **IF the tool does NOT exist, times out, or returns an error**: **STOP IMMEDIATELY.**
+   - Display: `"FATAL: MCP session-orchestrator is not configured or not running. The Supervisor REQUIRES the MCP session-orchestrator to spawn separate worker sessions. Without it, tasks cannot be processed. Please configure the MCP server in .claude/settings.json and restart."`
+   - **Do NOT fall back to the Agent tool, sub-agents, or any other mechanism.**
+   - **Do NOT attempt to process tasks inline.**
+   - **EXIT.**
+
+The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions with fresh context windows. Using the Agent tool (sub-agents) defeats the entire architecture — sub-agents share the parent's context, have no isolation, and break the Build Worker / Review Worker separation. This is not a suggestion — it is a hard requirement.
+
+---
+
 ## Concurrent Session Guard
 
-On startup, **before entering the loop**:
+On startup, **after MCP validation passes, before entering the loop**:
 
 1. If `orchestrator-state.md` exists and `Loop Status` is `RUNNING`:
    - Log: `"WARNING: A previous supervisor session may still be running (state shows RUNNING)."`
