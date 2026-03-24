@@ -1,0 +1,130 @@
+# Project Status Report Command
+
+**Purpose**: Generate a verified project status report by cross-referencing three sources of truth: the actual codebase, task-tracking folder, and the implementation plan. Never trust docs alone — verify from code.
+
+## Execution Steps
+
+### Phase 1: Gather Data from All Three Sources
+
+**Run these in parallel using Agent tool (subagent_type: Explore) — one agent per wave/group of tasks.**
+
+#### Source A — Implementation Plan (docs/24-implementation-task-plan.md)
+- Read the full task plan
+- Extract: task ID, name, wave, dependencies, documented STATUS for every task
+
+#### Source B — Task Registry (task-tracking/registry.md)
+- Read the registry
+- Extract: task ID, title, strategy, status, dates
+- Note any discrepancies with Source A
+
+#### Source C — Task Tracking Folders (task-tracking/TASK_*)
+- For each task folder, check for:
+  - `context.md` (task was started)
+  - `tasks.md` (decomposition happened)
+  - `implementation-plan.md` (architecture was done)
+  - `review-*.md` files (review happened — note review scores)
+  - Any status markers in the files
+
+### Phase 2: Verify from Codebase
+
+**For each task that claims COMPLETED or IN PROGRESS, verify the actual code exists.**
+
+Use targeted searches (Glob + Grep) to verify deliverables. Check these patterns:
+
+| Task Area | What to Search For |
+|-----------|-------------------|
+| Database/Repository | `libs/main-process/database/src/repositories/*.repository.ts` — check class exists with real methods (not empty) |
+| IPC Handlers | `apps/desktop/src/app/ipc/handlers/*.handlers.ts` — check handler registered in `ipc-bootstrap.ts` |
+| IPC Channels | `libs/shared/types/src/ipc/channels/*.channels.ts` — check Zod schemas defined |
+| Preload Allowlist | `apps/desktop/src/preload.ts` — check channels are whitelisted |
+| Angular Components | `apps/renderer/src/app/features/*/` — check component `.ts` file exists with real template (not placeholder) |
+| NgRx Stores | Search for `signalStore(` in the feature directory |
+| Services | `libs/main-process/*/src/` — check service class exists with methods |
+| Seeds/Migrations | `libs/main-process/database/src/migrations/` and `*/seed/` |
+| Provider Adapters | `libs/main-process/providers/src/runtime/adapters/` |
+| Orchestration | `libs/main-process/orchestration/src/` |
+| File Sync | `libs/main-process/file-sync/src/` |
+| Project Scanner | `libs/main-process/project-scanner/src/` |
+
+**Verification rules:**
+- A file with only `// Placeholder` or empty export = NOT STARTED
+- A component using `PlaceholderPageComponent` = NOT STARTED (route stub only)
+- A repository with real CRUD methods + parameterized queries = COMPLETED
+- An adapter with streaming implementation + error handling = COMPLETED
+- A store with `signalStore(` + real methods + IPC calls = COMPLETED
+- Check line counts: <20 lines is likely a stub, >100 lines is likely real
+
+### Phase 3: Cross-Reference and Detect Discrepancies
+
+Compare all three sources. Flag:
+- Tasks marked COMPLETED in docs but missing code
+- Tasks marked NOT STARTED in docs but with partial code
+- Tasks with review findings that haven't been addressed
+- Missing `seedLibrary()` calls or similar integration gaps
+- IPC channels defined but handlers not registered
+- Components that exist but route to PlaceholderPageComponent
+
+### Phase 4: Generate Report
+
+Output the report in this exact format:
+
+---
+
+```
+# Project Status Report
+Generated: {date}
+Sources: codebase + task-tracking + docs/24-implementation-task-plan.md
+
+## Summary
+- Total tasks: {n}
+- Completed: {n} (verified from code)
+- In Review: {n}
+- Partial: {n} (with % estimate and what's missing)
+- Not Started: {n}
+- Discrepancies found: {n}
+
+## Completed Tasks (Verified)
+| Wave | Task | Code Evidence | LOC |
+|------|------|---------------|-----|
+| ...  | ...  | ...           | ... |
+
+## In Review
+| Task | Review Score | Key Findings | Blocking Issues |
+|------|-------------|--------------|-----------------|
+| ...  | ...         | ...          | ...             |
+
+## Partial / In Progress
+| Task | Docs Say | Code Says | What's Done | What's Missing |
+|------|----------|-----------|-------------|----------------|
+| ...  | ...      | ...       | ...         | ...            |
+
+## Not Started
+| Wave | Task | Dependencies Met? | Blocked By |
+|------|------|-------------------|------------|
+| ...  | ...  | ...               | ...        |
+
+## Discrepancies
+| Task | Plan Says | Registry Says | Code Says | Resolution |
+|------|-----------|---------------|-----------|------------|
+| ...  | ...       | ...           | ...       | ...        |
+
+## Critical Path
+{What needs to happen next in dependency order, based on verified data}
+
+## Immediate Priorities
+1. {Quick wins — tasks that are 90%+ done}
+2. {Blockers — tasks on the critical path}
+3. {Review queue — tasks waiting for review}
+4. {Ready to start — tasks with all dependencies met}
+```
+
+---
+
+## Important Rules
+
+1. **Never trust STATUS fields in docs alone.** Always verify from code.
+2. **Use parallel agents** to speed up verification — one per wave or task group.
+3. **Count real lines of code**, not comments or imports, to assess completion.
+4. **Check integration points**: a component exists but is it routed? A handler exists but is it registered? A seed exists but is it called?
+5. **Report discrepancies honestly** — if docs say COMPLETED but code is a stub, say so.
+6. **Include the critical path** — what's the shortest sequence of tasks to get the app working end-to-end.
