@@ -21,6 +21,35 @@ export interface PreflightResult {
   mcpConfig: McpConfigResult;
 }
 
+/**
+ * Lightweight checks: workspace dirs exist + Claude CLI available.
+ * Used by commands that don't need registry/MCP validation (e.g. create).
+ */
+export function basicPreflightChecks(cwd: string): boolean {
+  const claudeDir = resolve(cwd, '.claude');
+  const taskTrackingDir = resolve(cwd, 'task-tracking');
+
+  if (!existsSync(claudeDir)) {
+    console.error('Error: .claude/ directory not found.');
+    console.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
+    return false;
+  }
+
+  if (!existsSync(taskTrackingDir)) {
+    console.error('Error: task-tracking/ directory not found.');
+    console.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
+    return false;
+  }
+
+  if (!isClaudeAvailable()) {
+    console.error('Error: Claude Code CLI not found on PATH.');
+    console.error('Install Claude Code CLI: https://docs.anthropic.com/en/docs/claude-code');
+    return false;
+  }
+
+  return true;
+}
+
 export function preflightChecks(cwd: string, taskId: string | undefined): PreflightResult | null {
   const claudeDir = resolve(cwd, '.claude');
   const taskTrackingDir = resolve(cwd, 'task-tracking');

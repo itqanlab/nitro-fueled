@@ -1,8 +1,8 @@
-import { spawn } from 'node:child_process';
 import type { Command } from 'commander';
 import type { RegistryRow } from '../utils/registry.js';
 import { preflightChecks } from '../utils/preflight.js';
 import { testMcpConnectivity } from '../utils/mcp-connectivity.js';
+import { spawnClaude } from '../utils/spawn-claude.js';
 
 interface RunOptions {
   dryRun: boolean;
@@ -141,41 +141,10 @@ function spawnSupervisor(cwd: string, taskId: string | undefined, options: RunOp
   const autoPilotParts = buildAutoPilotArgs(taskId, options);
   const prompt = ['/auto-pilot', ...autoPilotParts].join(' ');
 
-  console.log(`Starting Supervisor: claude --dangerously-skip-permissions -p "${prompt}"`);
-  console.log('');
-
-  const child = spawn(
-    'claude',
-    ['--dangerously-skip-permissions', '-p', prompt],
-    {
-      cwd,
-      stdio: 'inherit',
-    }
-  );
-
-  const forwardSignal = (signal: NodeJS.Signals): void => {
-    child.kill(signal);
-  };
-
-  process.on('SIGINT', forwardSignal);
-  process.on('SIGTERM', forwardSignal);
-
-  child.on('close', (code) => {
-    process.off('SIGINT', forwardSignal);
-    process.off('SIGTERM', forwardSignal);
-
-    if (code !== 0) {
-      console.error(`Supervisor exited with code ${String(code ?? 'unknown')}`);
-      process.exitCode = 1;
-    }
-  });
-
-  child.on('error', (err) => {
-    process.off('SIGINT', forwardSignal);
-    process.off('SIGTERM', forwardSignal);
-
-    console.error(`Failed to start Supervisor: ${err.message}`);
-    process.exitCode = 1;
+  spawnClaude({
+    cwd,
+    args: ['--dangerously-skip-permissions', '-p', prompt],
+    label: 'Supervisor',
   });
 }
 
