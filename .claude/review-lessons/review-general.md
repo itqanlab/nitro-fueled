@@ -132,3 +132,18 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **File writes in CLI tools must be wrapped in try/catch** — `writeFileSync` throws on EACCES, ENOSPC, and other filesystem errors. CLI tools that write config files must catch these and display user-friendly messages. Unhandled exceptions violate the "no crash" UX requirement. (TASK_2026_013)
 - **Back up existing files before overwriting on parse failure** — when a CLI tool detects a malformed config file and decides to create a new one, it must back up the original first. Silent overwrites destroy user data. (TASK_2026_013)
 - **Expand tilde in interactive path input** — `resolve('~/path')` does NOT expand `~` to the home directory. Interactive prompts that accept file paths must explicitly handle tilde expansion before passing to `resolve()`. (TASK_2026_013)
+
+## Duplication & Dead Code
+
+- **Shared logic must live in exactly one place** — when the same function (health assessment, path shortening, constants) appears in 2+ files, extract to a shared utility immediately. Duplicated logic with subtle inconsistencies (e.g., one copy uses lowercase enum values, another uses SCREAMING_CASE) causes silent behavioral divergence. (TASK_2026_019)
+- **Dead module files must be deleted or wired up** — if `src/tools/*.ts` exports functions that nothing imports, either delete the files or migrate the inline implementations to use them. Two diverging implementations of the same tool is a maintenance trap: someone will edit the wrong one. (TASK_2026_019)
+- **Unused imports and variables are blocking issues** — imported-but-unused symbols and assigned-but-never-read variables indicate incomplete refactoring. They mislead readers about data flow and waste computation (e.g., unnecessary syscalls for `isProcessAlive`). Treat as errors, not warnings. (TASK_2026_019)
+
+## Spawn & Process Safety
+
+- **Never use non-null assertions (`!`) on `child.pid`** — `child_process.spawn()` sets `pid` to `undefined` when the process fails to launch (e.g., binary not on PATH). Using `child.pid!` in the return value propagates `undefined` as a number, causing downstream `process.kill(undefined, 0)` to throw or behave unpredictably. Always guard with an explicit check and throw a descriptive error. (TASK_2026_019)
+
+## Type Safety at Boundaries
+
+- **Callback parameter types must match actual usage** — if a callback receives `Record<string, unknown>` but the consumer casts it to a specific interface via `as`, the type system is being bypassed. Either type the callback parameter correctly (accepting coupling) or add a runtime type guard at the boundary. `as` casts on external data are a runtime crash waiting to happen. (TASK_2026_019)
+- **Interface field optionality must match reality** — if a field is declared as required (`field: number`) but accessed with a nullish fallback (`field ?? 0`), either the interface is wrong (field should be optional) or the fallback is unnecessary noise. Mismatched optionality confuses readers about the data contract. (TASK_2026_019)
