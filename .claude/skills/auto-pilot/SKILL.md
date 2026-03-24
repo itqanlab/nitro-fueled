@@ -92,12 +92,13 @@ The supervisor MUST maintain a session log in `orchestrator-state.md` under a `#
 | Worker healthy | `[HH:MM:SS] HEALTH CHECK — TASK_X: healthy` |
 | Worker high context | `[HH:MM:SS] HEALTH CHECK — TASK_X: high_context ({context_percent}%)` |
 | Worker compacting | `[HH:MM:SS] HEALTH CHECK — TASK_X: compacting` |
+| Worker starting | `[HH:MM:SS] HEALTH CHECK — TASK_X: starting (no messages yet)` |
 | Worker stuck (strike 1) | `[HH:MM:SS] WARNING — TASK_X: stuck (strike 1/2)` |
 | Worker stuck (strike 2, killing) | `[HH:MM:SS] KILLING — TASK_X: stuck for 2 consecutive checks` |
 | Kill failed | `[HH:MM:SS] KILL FAILED — TASK_X: {error}` |
 | State transitioned (success) | `[HH:MM:SS] STATE TRANSITIONED — TASK_X: {old_state} -> {new_state}` |
 | No transition (failure) | `[HH:MM:SS] NO TRANSITION — TASK_X: expected {expected_state}, still {current_state} (retry {N}/{limit})` |
-| Build done | `[HH:MM:SS] BUILD DONE — TASK_X: IMPLEMENTED ($X.XX), spawning Review Worker` |
+| Build done | `[HH:MM:SS] BUILD DONE — TASK_X: IMPLEMENTED ($X.XX), queuing Review Worker` |
 | Review done | `[HH:MM:SS] REVIEW DONE — TASK_X: COMPLETE ($X.XX)` |
 | Retry scheduled | `[HH:MM:SS] RETRY — TASK_X: attempt {N}/{retry_limit}` |
 | Task blocked (max retries) | `[HH:MM:SS] BLOCKED — TASK_X: exceeded {retry_limit} retries` |
@@ -197,7 +198,7 @@ This prevents accidental duplicate supervisor sessions from competing for the sa
 
 **ELSE** (no state file):
 
-1. Initialize fresh state with default or overridden configuration.
+1. Initialize fresh state with default or overridden configuration (include Session Cost section with all zeroes).
 2. Proceed to Step 2.
 
 ### Step 2: Read Registry and Task Folders
@@ -377,7 +378,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
      - Log: `"TASK_X worker stuck for 2 consecutive checks -- killing"`
      - Call MCP `kill_worker`(worker_id, reason=`"stuck for 2 checks"`)
      - **Check return**: If `success: false`, log warning `"Failed to kill TASK_X worker -- will retry next interval"` and skip remaining cleanup (do not change registry or remove from state).
-     - If kill succeeded: extract the `Final cost: $X.XX` from the kill response and record it in the worker's Cost column and Session Cost accumulator. Then trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
+     - If kill succeeded: extract `final_stats.cost.total_usd` from the kill response and record it in the worker's Cost column and Session Cost accumulator. Then trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
      - Increment `retry_count` in state for this task.
      - **IF** `retry_count > retry_limit`:
        - Set task status to **BLOCKED** in registry
@@ -456,7 +457,7 @@ If `get_worker_stats` shows worker is still running but the registry state has a
 
 When a worker stops, crashes, or gets killed for ANY reason without the registry state transitioning to the expected end state, the supervisor MUST:
 
-1. **Spawn a Cleanup Worker FIRST** (see Cleanup Worker Prompt below). This lightweight worker salvages any uncommitted work left behind by the dead worker. Wait for the Cleanup Worker to finish before proceeding.
+1. **Spawn a Cleanup Worker FIRST** (see Cleanup Worker Prompt below). This lightweight worker salvages any uncommitted work left behind by the dead worker. Wait for the Cleanup Worker to finish before proceeding. Then call `get_worker_stats` on the Cleanup Worker to record its cost in the Session Cost accumulator.
 2. **Leave task at its current registry state** (do NOT reset to CREATED). The Cleanup Worker may have updated the state. Re-read the registry after cleanup completes.
 3. **Log the event** with the reason (stuck, crashed, MCP reported failure, etc.).
 4. **On next loop iteration**, the task is picked up again based on its current state: IN_PROGRESS spawns a Build Worker, IN_REVIEW spawns a Review Worker (via Step 5a worker type determination).
@@ -845,9 +846,10 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | Total Cost         | $5.55   |
 | Total Input Tokens | 320,000 |
 | Total Output Tokens| 45,000  |
+| Total Cache Tokens | 210,000 |
 | Workers Spawned    | 4       |
 
-> Updated after each worker completion. The Total Cost is the sum of all worker costs (completed + failed + active). Active worker costs are snapshots from the last `get_worker_stats` call and may increase until the worker finishes.
+> Updated after each worker completion. The Total Cost is the sum of all worker costs (completed + failed + active). When updating, recalculate: sum Completed Tasks Cost + Failed Tasks Cost + Active Workers Cost columns. Active worker costs are snapshots from the last `get_worker_stats` call and may increase until the worker finishes.
 
 ## Session Log
 
@@ -859,7 +861,8 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | 10:10:00 | HEALTH CHECK — TASK_2026_003: healthy |
 | 10:10:02 | HEALTH CHECK — TASK_2026_004: high_context (82%) |
 | 10:20:00 | STATE TRANSITIONED — TASK_2026_004: IN_REVIEW -> COMPLETE |
-| 10:20:01 | REVIEW DONE — TASK_2026_004: COMPLETE |
+| 10:20:01 | REVIEW DONE — TASK_2026_004: COMPLETE ($0.45) |
+| 10:20:02 | COST — TASK_2026_004: $0.45 (input: 38k, output: 5k, cache: 22k) |
 | 10:20:05 | SPAWNED ghi-789 for TASK_2026_006 (Build: FEATURE) |
 | 10:30:00 | WARNING — TASK_2026_003: stuck (strike 1/2) |
 | 10:40:00 | KILLING — TASK_2026_003: stuck for 2 consecutive checks |

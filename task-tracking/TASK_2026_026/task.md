@@ -35,7 +35,7 @@ Note: TASK_2026_019 covers fixing print-mode token tracking in the MCP server. T
 - [ ] `orchestrator-state.md` Completed Tasks table includes cost per worker
 - [ ] `orchestrator-history.md` Workers Spawned table includes Cost column with real values
 - [ ] `orchestrator-history.md` includes `**Total Cost**: $X.XX` with real value
-- [ ] Worker log files include final token count and cost
+- [ ] Session Log includes COST events with final token count and cost per worker
 - [ ] Total session cost is calculated and displayed at supervisor stop
 
 ## References
