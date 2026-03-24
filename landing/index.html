@@ -701,9 +701,143 @@
   </div>
 </section>
 
+<!-- ═══════════════ TRACKING & CONTROL ═══════════════ -->
+<section>
+  <div class="section-label">Step 11 · Standards</div>
+  <div class="section-title">Tracking &amp; Control Layer</div>
+  <div class="section-desc">Every task produces structured artifacts. These files are the system's memory &mdash; they give the Supervisor, reviewers, and you full observability into what happened, why, and what's next.</div>
+
+  <!-- Folder Structure -->
+  <div class="tracking-structure">
+    <h4 class="tracking-heading">Task Folder Structure</h4>
+    <p class="tracking-intro">Each task lives in its own folder under <code>task-tracking/</code>. The Supervisor and workers read and write these files at every stage.</p>
+    <div class="folder-tree">
+      <div class="folder-root"><span class="folder-icon">&#128193;</span> task-tracking/</div>
+      <div class="folder-level-1">
+        <div class="folder-file"><span class="file-icon file-registry">&#9632;</span> registry.md <span class="file-role">Central task index &mdash; status, type, dates</span></div>
+        <div class="folder-file"><span class="file-icon file-plan">&#9632;</span> plan.md <span class="file-role">Phased roadmap, milestones, decisions log</span></div>
+        <div class="folder-file"><span class="file-icon file-state">&#9632;</span> orchestrator-state.md <span class="file-role">Live Supervisor state &mdash; workers, queue, session log</span></div>
+        <div class="folder-file"><span class="file-icon file-template">&#9632;</span> task-template.md <span class="file-role">Canonical template for new tasks</span></div>
+      </div>
+      <div class="folder-level-1">
+        <div class="folder-dir"><span class="folder-icon">&#128193;</span> TASK_2026_NNN/</div>
+        <div class="folder-level-2">
+          <div class="folder-file"><span class="file-icon file-task">&#9632;</span> task.md <span class="file-role">Task definition &mdash; type, priority, acceptance criteria</span></div>
+          <div class="folder-file"><span class="file-icon file-ctx">&#9632;</span> context.md <span class="file-role">PM-generated requirements and scope</span></div>
+          <div class="folder-file"><span class="file-icon file-plan">&#9632;</span> implementation-plan.md <span class="file-role">Architect's design decisions and file targets</span></div>
+          <div class="folder-file"><span class="file-icon file-tasks">&#9632;</span> tasks.md <span class="file-role">Team Leader's developer batch breakdown</span></div>
+          <div class="folder-file"><span class="file-icon file-review">&#9632;</span> code-style-review.md <span class="file-role">Style reviewer findings</span></div>
+          <div class="folder-file"><span class="file-icon file-review">&#9632;</span> code-logic-review.md <span class="file-role">Logic reviewer findings</span></div>
+          <div class="folder-file"><span class="file-icon file-review">&#9632;</span> security-review.md <span class="file-role">Security reviewer findings</span></div>
+          <div class="folder-file"><span class="file-icon file-complete">&#9632;</span> completion-report.md <span class="file-role">Final summary &mdash; what shipped, tradeoffs, follow-ups</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Control Files Grid -->
+  <h4 class="tracking-heading" style="margin-top:48px;">Control &amp; Observability Files</h4>
+  <p class="tracking-intro">These top-level files form the control plane. The Supervisor reads them every loop iteration to make decisions.</p>
+
+  <div class="control-grid">
+    <div class="control-card" style="border-left:3px solid var(--accent);">
+      <div class="control-file">registry.md</div>
+      <div class="control-purpose">Single source of truth</div>
+      <p>Central index of every task: ID, status, type, description, and creation date. The Supervisor's first read on every loop. All state transitions are recorded here.</p>
+      <div class="control-who">Read by: Supervisor, Planner, /project-status</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--blue);">
+      <div class="control-file">plan.md</div>
+      <div class="control-purpose">Strategic roadmap</div>
+      <p>Phased project plan with milestones, task maps, and a decisions log. Contains <strong>Supervisor Guidance</strong> directives (PROCEED, REPRIORITIZE, ESCALATE) that steer the auto-pilot loop.</p>
+      <div class="control-who">Written by: Planner &middot; Read by: Supervisor</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--yellow);">
+      <div class="control-file">orchestrator-state.md</div>
+      <div class="control-purpose">Live session state</div>
+      <p>Active workers, completed tasks, failed tasks, retry tracker, task queue, and a timestamped session log. Survives context compactions so the Supervisor can resume without data loss.</p>
+      <div class="control-who">Written by: Supervisor &middot; Read by: Supervisor, /project-status</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--green);">
+      <div class="control-file">task-template.md</div>
+      <div class="control-purpose">Task creation standard</div>
+      <p>Canonical template with metadata fields (type, priority, complexity), description, dependencies, acceptance criteria, and references. Ensures every task is machine-parseable by the Supervisor.</p>
+      <div class="control-who">Used by: /create-task, Planner, PM</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--red);">
+      <div class="control-file">anti-patterns.md</div>
+      <div class="control-purpose">QA-derived rules</div>
+      <p>Rules extracted from 142+ QA findings across completed tasks. Covers file size limits, resource cleanup, silent failures, race conditions, and framework-specific pitfalls. Checked before every code submission.</p>
+      <div class="control-who">Read by: All developers, all reviewers</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--purple);">
+      <div class="control-file">review-lessons/</div>
+      <div class="control-purpose">Per-domain learned patterns</div>
+      <p>Growing library of reviewer-discovered patterns split by domain: backend, frontend, and general. Each review worker appends new lessons, so knowledge compounds across tasks.</p>
+      <div class="control-who">Written by: Reviewers &middot; Read by: Developers, Reviewers</div>
+    </div>
+  </div>
+
+  <!-- Task Artifacts Timeline -->
+  <h4 class="tracking-heading" style="margin-top:48px;">Artifact Production Timeline</h4>
+  <p class="tracking-intro">Each stage of the pipeline writes specific files. Nothing is implicit &mdash; every decision and outcome is captured.</p>
+
+  <div class="artifact-timeline">
+    <div class="artifact-phase">
+      <div class="artifact-stage" style="background:var(--blue-dim);color:var(--blue);">CREATED</div>
+      <div class="artifact-files">
+        <span class="artifact-file">task.md</span>
+      </div>
+    </div>
+    <div class="artifact-arrow">&rarr;</div>
+    <div class="artifact-phase">
+      <div class="artifact-stage" style="background:var(--accent-glow);color:var(--accent);">PM</div>
+      <div class="artifact-files">
+        <span class="artifact-file">context.md</span>
+        <span class="artifact-file">task-description.md</span>
+      </div>
+    </div>
+    <div class="artifact-arrow">&rarr;</div>
+    <div class="artifact-phase">
+      <div class="artifact-stage" style="background:var(--purple-dim);color:var(--purple);">Architect</div>
+      <div class="artifact-files">
+        <span class="artifact-file">implementation-plan.md</span>
+      </div>
+    </div>
+    <div class="artifact-arrow">&rarr;</div>
+    <div class="artifact-phase">
+      <div class="artifact-stage" style="background:var(--yellow-dim);color:var(--yellow);">Team Lead</div>
+      <div class="artifact-files">
+        <span class="artifact-file">tasks.md</span>
+      </div>
+    </div>
+    <div class="artifact-arrow">&rarr;</div>
+    <div class="artifact-phase">
+      <div class="artifact-stage" style="background:var(--cyan-dim);color:var(--cyan);">Review</div>
+      <div class="artifact-files">
+        <span class="artifact-file">code-style-review.md</span>
+        <span class="artifact-file">code-logic-review.md</span>
+        <span class="artifact-file">security-review.md</span>
+      </div>
+    </div>
+    <div class="artifact-arrow">&rarr;</div>
+    <div class="artifact-phase">
+      <div class="artifact-stage" style="background:var(--green-dim);color:var(--green);">COMPLETE</div>
+      <div class="artifact-files">
+        <span class="artifact-file">completion-report.md</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
 <section>
-  <div class="section-label">Step 11 · Getting Started</div>
+  <div class="section-label">Step 12 · Getting Started</div>
   <div class="section-title">How It Works</div>
   <div class="section-desc">Run these three actions to apply everything above in a real project.</div>
 

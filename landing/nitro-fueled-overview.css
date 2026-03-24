@@ -983,6 +983,209 @@
     }
   }
 
+  /* ─── Tracking & Control ─── */
+  .tracking-heading {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+  .tracking-intro {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    max-width: 680px;
+  }
+  .tracking-intro code {
+    background: rgba(148,163,184,0.12);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  /* Folder Tree */
+  .folder-tree {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .folder-root {
+    font-weight: 700;
+    color: var(--text-bright);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .folder-icon { margin-right: 6px; }
+  .folder-level-1 {
+    padding-left: 24px;
+    border-left: 1px solid var(--border);
+    margin-left: 8px;
+  }
+  .folder-level-2 {
+    padding-left: 24px;
+    border-left: 1px solid var(--border);
+    margin-left: 8px;
+  }
+  .folder-file {
+    color: var(--text);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .folder-dir {
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-top: 4px;
+  }
+  .file-icon {
+    font-size: 10px;
+    margin-right: 4px;
+  }
+  .file-icon.file-registry { color: var(--accent); }
+  .file-icon.file-plan { color: var(--blue); }
+  .file-icon.file-state { color: var(--yellow); }
+  .file-icon.file-template { color: var(--green); }
+  .file-icon.file-task { color: var(--accent); }
+  .file-icon.file-ctx { color: var(--blue); }
+  .file-icon.file-tasks { color: var(--yellow); }
+  .file-icon.file-review { color: var(--cyan); }
+  .file-icon.file-complete { color: var(--green); }
+  .file-role {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Control Grid */
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .control-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    transition: all 0.2s;
+  }
+  .control-card:hover {
+    border-color: var(--border-accent);
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+  }
+  .control-file {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 2px;
+  }
+  .control-purpose {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .control-card p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .control-who {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-style: italic;
+  }
+
+  /* Artifact Timeline */
+  .artifact-timeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding: 8px 0 12px;
+  }
+  .artifact-phase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+  .artifact-stage {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+  }
+  .artifact-files {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .artifact-file {
+    padding: 4px 10px;
+    background: rgba(148,163,184,0.08);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    white-space: nowrap;
+  }
+  .artifact-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 20px;
+    min-width: 24px;
+    padding-top: 6px;
+    flex-shrink: 0;
+    animation: flowPulse 2s ease-in-out infinite;
+  }
+  @media (max-width: 980px) {
+    .control-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 768px) {
+    .artifact-timeline {
+      flex-direction: column;
+      align-items: center;
+    }
+    .artifact-arrow {
+      transform: rotate(90deg);
+      min-width: 0;
+      padding: 4px 0;
+    }
+    .folder-tree {
+      font-size: 12px;
+      padding: 16px;
+    }
+    .folder-level-1 { padding-left: 16px; }
+    .folder-level-2 { padding-left: 16px; }
+  }
+
   /* ─── Footer ─── */
   footer {
     text-align: center;

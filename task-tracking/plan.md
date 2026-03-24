@@ -96,3 +96,18 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | 2026-03-24 | Core vs project agent separation | Core agents are universal, project agents generated per tech stack at init |
 | 2026-03-24 | Systems-developer as core agent | Needed for orchestration-level work (specs, skills, agents, commands) |
 | 2026-03-24 | Supervisor consultation via plan.md artifacts | Clean context separation — Supervisor reads plan.md, doesn't spawn Planner |
+
+### Phase 5: Landing Experience
+**Status**: COMPLETE
+**Description**: Design and implement the Nitro-Fueled landing hero identity and interactive visual system.
+
+#### Milestones
+- [x] Replace generic hero background with Nitro-themed visual system
+- [x] Preserve readability and premium composition
+- [x] Keep static-file compatibility and reduced-motion behavior
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_018 | Nitro-Fueled Landing Hero Visual Redesign | COMPLETE | P1-High |
+
