@@ -7,7 +7,7 @@ This document shows a complete BUGFIX workflow trace from bug report to resoluti
 ## User Command
 
 ```
-/orchestrate Fix memory leak in chat history - messages not being cleaned up when session closes
+/orchestrate Fix registry parsing crash when task status field contains pipe characters
 ```
 
 ---
@@ -17,8 +17,8 @@ This document shows a complete BUGFIX workflow trace from bug report to resoluti
 **Orchestrator Analysis**:
 
 ```
-Keywords detected: "fix", "memory leak" -> BUGFIX
-Affected areas: Chat module, session management
+Keywords detected: "fix", "crash" -> BUGFIX
+Affected areas: CLI utils, registry parser
 Complexity estimate: Medium (debugging required)
 Confidence: 92% BUGFIX
 
@@ -46,7 +46,7 @@ Note: Unknown cause detected - invoking researcher first...
 **Orchestrator Decision**:
 
 ```
-Bug cause: Unknown (memory leak symptoms described, root cause unclear)
+Bug cause: Unknown (crash symptoms described, root cause unclear)
 Action: Invoke researcher-expert for investigation
 ```
 
@@ -55,13 +55,13 @@ Action: Invoke researcher-expert for investigation
 ```typescript
 Task({
   subagent_type: 'researcher-expert',
-  description: 'Investigate memory leak for TASK_2026_046',
+  description: 'Investigate registry crash for TASK_2026_046',
   prompt: `You are researcher-expert for TASK_2026_046.
 
 **Task Folder**: task-tracking/TASK_2026_046
-**Bug Report**: "Memory leak in chat history - messages not being cleaned up when session closes"
+**Bug Report**: "Registry parsing crash when task status field contains pipe characters"
 
-Investigate the memory leak:
+Investigate the crash:
 1. Identify affected code paths
 2. Determine root cause
 3. Propose fix approach
@@ -77,47 +77,42 @@ See researcher-expert.md for detailed instructions.`,
 
 ## Investigation Summary
 
-### Memory Profiling Results
+### Error Reproduction
 
-- Memory grows ~2MB per session close
-- Objects retained: MessageBubbleComponent instances
-- Garbage collection not reclaiming chat messages
+- Running `nitro-fueled status` crashes when registry.md has status like `BLOCKED | WAITING`
+- Error: `Cannot read properties of undefined (reading 'trim')`
+- Affects both CLI status command and Supervisor registry reads
 
 ### Root Cause Analysis
 
-**Location**: `libs/renderer/chat/src/lib/stores/chat.store.ts`
+**Location**: `packages/cli/src/utils/registry.ts`
 
-**Issue**: Signal effect leak in message cleanup
+**Issue**: Markdown table parser splits on `|` without handling escaped pipes in cell content
 
 ```typescript
-// PROBLEM: Line 145
-this.effect(() => {
-  const messages = this.messages();
-  // This effect never unsubscribes when session closes
-});
+// PROBLEM: Line 42
+const cells = line.split('|').map(c => c.trim()).filter(Boolean);
+// A status like "BLOCKED | WAITING" creates extra cells, shifting all columns
 ```
 
-**Secondary Issue**: `libs/renderer/chat/src/lib/components/message-bubble.component.ts`
+**Secondary Issue**: `packages/cli/src/commands/status.ts`
 
 ```typescript
-// PROBLEM: Line 78
-ngOnInit() {
-  this.scrollService.onScroll$.subscribe(/* no unsubscribe */);
-}
+// PROBLEM: Line 87
+const status = row.status; // undefined when columns shift
+status.trim(); // crash
 ```
 
 ### Recommended Fix
 
-1. Add `DestroyRef` injection to ChatStore
-2. Use `takeUntilDestroyed()` for all subscriptions
-3. Implement `clearMessages()` method called on session close
-4. Add `ngOnDestroy` cleanup to MessageBubbleComponent
+1. Use a proper markdown table parser that handles cell content with pipes
+2. Add null-safety to status field access in status.ts
+3. Add validation for expected column count per row
 
 ### Files to Modify
 
-- chat.store.ts (main fix)
-- message-bubble.component.ts (secondary fix)
-- chat.service.ts (add cleanup trigger)
+- packages/cli/src/utils/registry.ts (main fix)
+- packages/cli/src/commands/status.ts (defensive check)
 ````
 
 ---
@@ -148,13 +143,13 @@ TASKS.MD CREATED - TASK_2026_046
 
 Created 4 tasks in 1 batch:
 
-Batch 1 - Memory Leak Fix (frontend-developer):
-  1.1 Add DestroyRef to ChatStore with takeUntilDestroyed
-  1.2 Implement clearMessages() method in ChatStore
-  1.3 Add ngOnDestroy cleanup to MessageBubbleComponent
-  1.4 Connect session close to clearMessages trigger
+Batch 1 - Registry Parser Fix (backend-developer):
+  1.1 Fix markdown table parser to handle pipes in cell content
+  1.2 Add column count validation per row
+  1.3 Add null-safety to status field access in status.ts
+  1.4 Add test cases for edge-case registry content
 
-NEXT BATCH ASSIGNED: Batch 1 to frontend-developer
+NEXT BATCH ASSIGNED: Batch 1 to backend-developer
 
 [Developer prompt provided]
 ```
@@ -165,41 +160,36 @@ NEXT BATCH ASSIGNED: Batch 1 to frontend-developer
 
 ### Batch 1 Execution
 
-**Orchestrator Invokes Frontend Developer**:
+**Orchestrator Invokes Backend Developer**:
 
 ```typescript
 Task({
-  subagent_type: 'frontend-developer',
-  description: 'Fix memory leak for TASK_2026_046',
-  prompt: `You are frontend-developer for TASK_2026_046.
+  subagent_type: 'backend-developer',
+  description: 'Fix registry parser for TASK_2026_046',
+  prompt: `You are backend-developer for TASK_2026_046.
 
 **Task Folder**: task-tracking/TASK_2026_046
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
 **Research**: Read research-report.md for root cause details
 
-Fix all memory leak issues. Update status to IMPLEMENTED when done.
-See frontend-developer.md for detailed instructions.`,
+Fix all registry parsing issues. Update status to IMPLEMENTED when done.
+See backend-developer.md for detailed instructions.`,
 });
 ```
 
-**Frontend Developer Output**:
+**Backend Developer Output**:
 
 ```
 BATCH 1 IMPLEMENTATION COMPLETE
 
 Files Modified:
-- libs/renderer/chat/src/lib/stores/chat.store.ts
-  - Added DestroyRef injection
-  - All effects now use takeUntilDestroyed()
-  - Added clearMessages() method
+- packages/cli/src/utils/registry.ts
+  - Replaced naive split with proper markdown table cell parser
+  - Added column count validation (skip malformed rows)
 
-- libs/renderer/chat/src/lib/components/message-bubble.component.ts
-  - Added ngOnDestroy lifecycle hook
-  - Subscription cleanup via takeUntilDestroyed()
-
-- libs/renderer/chat/src/lib/services/chat.service.ts
-  - Added session close listener
-  - Calls chatStore.clearMessages() on close
+- packages/cli/src/commands/status.ts
+  - Added null-safety checks on row field access
+  - Added warning log for skipped malformed rows
 
 Build: PASSING
 Tasks: 1.1, 1.2, 1.3, 1.4 marked IMPLEMENTED
@@ -210,12 +200,11 @@ Tasks: 1.1, 1.2, 1.3, 1.4 marked IMPLEMENTED
 ```
 BATCH 1 VERIFIED AND COMMITTED
 
-Commit: jkl3456 - fix(renderer): resolve memory leak in chat message cleanup
+Commit: jkl3456 - fix(cli): resolve registry parsing crash on pipe characters in status field
 
 Files verified:
-- chat.store.ts: DestroyRef properly injected, effects cleaned up
-- message-bubble.component.ts: Subscription cleanup confirmed
-- chat.service.ts: Session close triggers clearMessages
+- registry.ts: Proper cell parsing, column validation added
+- status.ts: Null-safety confirmed, warning logging added
 
 ALL BATCHES COMPLETE
 ```
@@ -235,10 +224,10 @@ Implementation Summary:
 - 1 commit created
 
 Commit:
-1. jkl3456 - fix(renderer): resolve memory leak in chat message cleanup
+1. jkl3456 - fix(cli): resolve registry parsing crash on pipe characters in status field
 
 Build Status: PASSING
-Memory Test: Verified - no growth on session close
+Regression Test: Verified - pipes in status field handled correctly
 
 Ready for QA phase.
 ```
@@ -260,33 +249,33 @@ Ready for QA phase.
 
 ## Regression Tests Created
 
-- chat.store.spec.ts: 8 tests (clearMessages, DestroyRef cleanup, effect lifecycle)
-- message-bubble.component.spec.ts: 5 tests (subscription cleanup, destroy lifecycle)
+- registry.spec.ts: 8 tests (pipe handling, empty rows, malformed columns, valid parsing)
+- status.spec.ts: 5 tests (null status, missing fields, display formatting)
 
 ## Test Results
 
-| Test Suite                       | Tests | Passed | Failed |
-| -------------------------------- | ----- | ------ | ------ |
-| chat.store.spec.ts               | 8     | 8      | 0      |
-| message-bubble.component.spec.ts | 5     | 5      | 0      |
+| Test Suite         | Tests | Passed | Failed |
+| ------------------ | ----- | ------ | ------ |
+| registry.spec.ts   | 8     | 8      | 0      |
+| status.spec.ts     | 5     | 5      | 0      |
 
 **Total**: 13 tests, all passing
 
-## Memory Verification
+## Edge Case Verification
 
-1. Opened 5 chat sessions sequentially
-2. Closed each session
-3. Memory returned to baseline after each close
-4. No leaked MessageBubbleComponent instances
+1. Status with pipe: "BLOCKED | WAITING" -> parsed correctly
+2. Empty registry rows -> skipped with warning
+3. Missing columns -> skipped with warning
+4. Normal registry -> unchanged behavior
 
-**Verdict**: Memory leak RESOLVED
+**Verdict**: Registry parser crash RESOLVED
 ```
 
 ---
 
 ## Phase 4: Modernization Detector
 
-Creates `future-enhancements.md` with suggestions for memory monitoring, cleanup audit of similar components, and WeakMap for message caching.
+Creates `future-enhancements.md` with suggestions for structured registry format (YAML/JSON), registry schema validation, and typed registry row interface.
 
 ---
 
@@ -295,7 +284,7 @@ Creates `future-enhancements.md` with suggestions for memory monitoring, cleanup
 ```
 WORKFLOW COMPLETE - TASK_2026_046
 
-Memory Leak Fix in Chat History
+Registry Parsing Crash Fix
 
 Summary:
 - Strategy: BUGFIX (Streamlined)
@@ -304,8 +293,8 @@ Summary:
 - Commits: 1
 - Tests: 13 new regression tests
 
-Root Cause: Signal effect leak + missing ngOnDestroy
-Fix Applied: DestroyRef + takeUntilDestroyed() + clearMessages()
+Root Cause: Naive pipe-split in markdown table parser
+Fix Applied: Proper cell parser + column validation + null-safety
 
 Time Elapsed: ~1.5 hours
 Status: SUCCESS

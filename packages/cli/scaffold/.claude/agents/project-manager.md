@@ -554,9 +554,9 @@ When multiple independent tasks exist:
 
 | Task ID  | Agent              | Domain/Library               | Priority |
 | -------- | ------------------ | ---------------------------- | -------- |
-| TASK_007 | backend-developer  | libs/main-process/data-access | High     |
-| TASK_008 | frontend-developer | domain libraries              | High     |
-| TASK_015 | software-architect | libs/renderer/ui              | Medium   |
+| TASK_007 | backend-developer  | packages/cli/src/commands     | High     |
+| TASK_008 | frontend-developer | docs/                         | High     |
+| TASK_015 | software-architect | .claude/skills/orchestration  | Medium   |
 
 ### Coordination Strategy
 
@@ -683,8 +683,8 @@ Create sophisticated completion-report.md:
   {
     "task_id": "TASK_CMD_007",
     "agent": "backend-developer",
-    "target": "libs/main-process/data-access",
-    "focus": "IPC Event Manager Service",
+    "target": "packages/cli/src/commands",
+    "focus": "CLI status command implementation",
     "current_progress": "40%",
     "next_steps": "Event type definitions and routing logic"
   },

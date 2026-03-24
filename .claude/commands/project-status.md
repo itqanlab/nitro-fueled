@@ -33,25 +33,21 @@ Use targeted searches (Glob + Grep) to verify deliverables. Check these patterns
 
 | Task Area | What to Search For |
 |-----------|-------------------|
-| Database/Repository | `libs/main-process/database/src/repositories/*.repository.ts` — check class exists with real methods (not empty) |
-| IPC Handlers | `apps/desktop/src/app/ipc/handlers/*.handlers.ts` — check handler registered in `ipc-bootstrap.ts` |
-| IPC Channels | `libs/shared/types/src/ipc/channels/*.channels.ts` — check Zod schemas defined |
-| Preload Allowlist | `apps/desktop/src/preload.ts` — check channels are whitelisted |
-| Angular Components | `apps/renderer/src/app/features/*/` — check component `.ts` file exists with real template (not placeholder) |
-| NgRx Stores | Search for `signalStore(` in the feature directory |
-| Services | `libs/main-process/*/src/` — check service class exists with methods |
-| Seeds/Migrations | `libs/main-process/database/src/migrations/` and `*/seed/` |
-| Provider Adapters | `libs/main-process/providers/src/runtime/adapters/` |
-| Orchestration | `libs/main-process/orchestration/src/` |
-| File Sync | `libs/main-process/file-sync/src/` |
-| Project Scanner | `libs/main-process/project-scanner/src/` |
+| CLI Commands | `packages/cli/src/commands/*.ts` — check command has real logic (not stubs) |
+| CLI Utilities | `packages/cli/src/utils/*.ts` — check utility has real implementation |
+| Agents | `.claude/agents/*.md` — check agent file exists with real content |
+| Skills | `.claude/skills/*/SKILL.md` — check skill file exists with real instructions |
+| Commands | `.claude/commands/*.md` — check command file exists with real content |
+| Scaffold | `packages/cli/scaffold/` — check scaffold mirrors .claude/ |
+| Task Tracking | `task-tracking/registry.md` — check registry is up to date |
+| Documentation | `docs/*.md`, `docs/*.html` — check docs exist and are substantial |
+| Landing Page | `docs/index.html`, `docs/*.css` — check page is real (not placeholder) |
 
 **Verification rules:**
 - A file with only `// Placeholder` or empty export = NOT STARTED
-- A component using `PlaceholderPageComponent` = NOT STARTED (route stub only)
-- A repository with real CRUD methods + parameterized queries = COMPLETED
-- An adapter with streaming implementation + error handling = COMPLETED
-- A store with `signalStore(` + real methods + IPC calls = COMPLETED
+- A command with real Commander.js options + logic = COMPLETED
+- An agent .md with >100 lines of real role definition = COMPLETED
+- A skill SKILL.md with workflow instructions + reference index = COMPLETED
 - Check line counts: <20 lines is likely a stub, >100 lines is likely real
 
 ### Phase 3: Cross-Reference and Detect Discrepancies

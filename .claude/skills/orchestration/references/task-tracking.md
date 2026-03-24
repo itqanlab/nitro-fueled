@@ -257,7 +257,7 @@ Orchestrator:
 
 ```
 Correct:  task-tracking/TASK_2026_010/context.md
-Correct:  libs/main-process/settings/src/lib/settings.service.ts
+Correct:  src/services/settings.service.ts
 Incorrect: /absolute/path/to/file.ts (avoid absolute paths in task documents)
 ```
 

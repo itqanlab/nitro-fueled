@@ -102,11 +102,12 @@ This is how the team learns. Your findings today prevent the same mistake tomorr
 ### Architecture Layers
 
 ```
-apps/desktop/     -> Electron main process entry point
-apps/renderer/    -> Angular 19 renderer app
-libs/main-process/ -> IPC handlers, services, SQLite repositories
-libs/renderer/    -> Shared Angular components/directives
-libs/shared/      -> Cross-process types, utils, platform abstraction
+packages/cli/src/commands/  -> CLI command implementations
+packages/cli/src/utils/    -> Shared utilities (registry, scaffold, MCP)
+packages/cli/scaffold/     -> Template files for project initialization
+.claude/agents/            -> Agent role definitions
+.claude/skills/            -> Skill workflows and references
+.claude/commands/          -> Command entry points
 ```
 
 ### Naming Conventions

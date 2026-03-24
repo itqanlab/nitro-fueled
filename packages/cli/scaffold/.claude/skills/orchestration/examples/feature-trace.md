@@ -7,7 +7,7 @@ This document shows a complete FEATURE workflow trace from user request to task 
 ## User Command
 
 ```
-/orchestrate Add real-time file watching with chokidar for automatic project sync
+/orchestrate Add CLI status command that shows task progress, active workers, and plan phase
 ```
 
 ---
@@ -17,9 +17,9 @@ This document shows a complete FEATURE workflow trace from user request to task 
 **Orchestrator Analysis**:
 
 ```
-Keywords detected: "add", "support" -> FEATURE
-Affected areas: Main process (chokidar), Renderer (sync status display)
-Complexity estimate: High (new infrastructure)
+Keywords detected: "add", "command" -> FEATURE
+Affected areas: CLI package, task registry, plan parsing
+Complexity estimate: High (new command with multiple data sources)
 Confidence: 85% FEATURE
 
 Decision: Proceed with FEATURE strategy
@@ -52,7 +52,7 @@ Task({
   prompt: `You are project-manager for TASK_2026_045.
 
 **Task Folder**: task-tracking/TASK_2026_045
-**User Request**: "Add real-time file watching with chokidar for automatic project sync"
+**User Request**: "Add CLI status command that shows task progress, active workers, and plan phase"
 
 Analyze the request and create comprehensive requirements.
 See project-manager.md for detailed instructions.`,
@@ -66,33 +66,33 @@ See project-manager.md for detailed instructions.`,
 
 ## Title
 
-Real-Time File Watching with Automatic Project Sync
+CLI Status Command with Task Progress Display
 
 ## Business Requirements
 
-1. Users shall see file changes reflected in real-time without manual refresh
-2. File watching shall start automatically when a project is opened
-3. System shall handle rapid successive changes with debouncing (300ms)
-4. Watcher shall respect .gitignore patterns
+1. Users shall see task breakdown by status (COMPLETE, IN_PROGRESS, CREATED, etc.)
+2. Active workers from orchestrator-state.md shall be displayed when running
+3. Plan phase progress from plan.md shall be shown
+4. Two output modes: brief (one-liner) and full (detailed table)
 
 ## Technical Scope
 
-- Chokidar watcher service in main process
-- IPC channel for file change events
-- Renderer-side sync status indicator
-- SQLite tracking of watched paths
+- New status.ts command in packages/cli/src/commands/
+- Registry parser utility in packages/cli/src/utils/
+- Plan.md parser for phase extraction
+- Orchestrator-state.md parser for active workers
 
 ## Out of Scope
 
-- Remote/network file system watching
-- Binary file content diffing
-- Cloud sync
+- Real-time streaming updates
+- Web dashboard display
+- Historical task analytics
 
 ## Success Criteria
 
-- File changes detected within 500ms
-- No duplicate events for single file changes
-- Graceful handling of watched directory deletion
+- Brief mode shows one-line summary in <500ms
+- Full mode shows detailed table with all task statuses
+- Works without MCP server running (reads files directly)
 ```
 
 ---
@@ -108,9 +108,9 @@ Real-Time File Watching with Automatic Project Sync
 **Deliverable**: task-tracking/TASK_2026_045/task-description.md
 
 ### Summary
-- Real-time file watching for automatic project sync
-- Chokidar-based, debounced, .gitignore-aware
-- Out of scope: remote FS, cloud sync
+- CLI status command with brief and full output modes
+- Reads from registry.md, plan.md, orchestrator-state.md
+- No real-time or MCP dependency
 
 ### Options
 1. **Proceed** - Continue to architecture phase
@@ -121,64 +121,6 @@ Real-Time File Watching with Automatic Project Sync
 ```
 
 **User Response**: `APPROVED`
-
----
-
-## Phase 2: Research (Conditional - Triggered)
-
-**Orchestrator Decision**:
-
-```
-Technical unknowns detected:
-- Chokidar performance with large monorepos
-- IPC event throttling patterns for Electron
-
-Invoking researcher-expert...
-```
-
-**Orchestrator Invocation**:
-
-```typescript
-Task({
-  subagent_type: 'researcher-expert',
-  description: 'Research file watching options for TASK_2026_045',
-  prompt: `You are researcher-expert for TASK_2026_045.
-
-**Task Folder**: task-tracking/TASK_2026_045
-**Research Questions**:
-1. Chokidar performance characteristics with 10k+ files
-2. Best IPC event batching patterns for Electron file watchers
-
-Investigate options, create comparison matrix, recommend approach.
-See researcher-expert.md for detailed instructions.`,
-});
-```
-
-**Researcher Output** (research-report.md excerpt):
-
-```markdown
-# Research Report - TASK_2026_045
-
-## Chokidar Performance
-
-| Scenario            | Init Time | Memory  | CPU Idle |
-| ------------------- | --------- | ------- | -------- |
-| 1k files            | 200ms     | 15MB    | <1%      |
-| 10k files           | 1.2s      | 45MB    | <1%      |
-| 50k files           | 5.8s      | 120MB   | 2%       |
-
-**Recommendation**: Use `ignoreInitial: true`, `awaitWriteFinish: true`
-
-## IPC Event Batching
-
-Simple debounce sufficient for file change events:
-
-- Batch events in 300ms windows
-- Send aggregated change sets via IPC
-- Renderer processes batch, not individual events
-
-**Recommendation**: Main process debounce + batch IPC sends
-```
 
 ---
 
@@ -194,7 +136,6 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_045
 **Requirements**: Read task-description.md
-**Research**: Read research-report.md
 
 Design the technical implementation plan.
 See software-architect.md for detailed instructions.`,
@@ -208,59 +149,42 @@ See software-architect.md for detailed instructions.`,
 
 ## Architecture Overview
 
-+-------------------+    IPC     +-------------------+
-| Renderer          | <--------> | Main Process      |
-| (Sync Status UI)  |            | (Chokidar Watcher)|
 +-------------------+            +-------------------+
-        |                                |
-        v                                v
-+-------------------+            +-------------------+
-| Signal Store      |            | SQLite            |
-| (sync.store.ts)   |            | (watched_paths)   |
-+-------------------+            +-------------------+
+| CLI Entry Point   | ---------> | Status Command    |
+| (packages/cli/    |            | (status.ts)       |
+| src/index.ts)     |            +-------------------+
++-------------------+                    |
+                              +----------+----------+
+                              |          |          |
+                              v          v          v
+                        +---------+ +--------+ +----------+
+                        | Registry| | Plan   | | State    |
+                        | Parser  | | Parser | | Parser   |
+                        +---------+ +--------+ +----------+
+                              |          |          |
+                              v          v          v
+                        registry.md  plan.md  orchestrator-state.md
 
 ## Implementation Tasks
 
-### Backend Tasks (Batch 1)
-1. Create FileWatcherService with chokidar
-2. Implement watched paths SQLite table
-3. Create IPC handlers for watcher control
+### Utility Tasks (Batch 1)
+1. Create registry parser utility (packages/cli/src/utils/registry.ts)
+2. Create plan parser for phase extraction
 
-### Frontend Tasks (Batch 2)
-4. Create sync status signal store
-5. Implement sync indicator component
-6. Add file change event display
+### Command Tasks (Batch 2)
+3. Create status command with Commander.js options
+4. Implement brief output mode (one-liner)
+5. Implement full output mode (detailed table)
 
 ### Integration Tasks (Batch 3)
-7. Connect renderer to watcher IPC channels
-8. Add project open/close watcher lifecycle
-9. Implement error recovery for deleted paths
+6. Register status command in packages/cli/src/index.ts
+7. Add orchestrator-state.md parsing for active workers
+8. Handle missing file gracefully (no plan.md, no state file)
 ```
 
 ---
 
 ## Checkpoint 2: Architecture Validation
-
-**Orchestrator Presents**:
-
-```
-## Checkpoint: Architecture
-
-**Status**: Software architect completed implementation plan
-**Deliverable**: task-tracking/TASK_2026_045/implementation-plan.md
-
-### Summary
-- 3 batches: Backend (3 tasks), Frontend (3 tasks), Integration (3 tasks)
-- Chokidar with debounced IPC batching
-- SQLite tracking of watched paths
-
-### Options
-1. **Proceed** - Continue to development phase
-2. **Adjust** - Modify architecture
-3. **Abort** - Cancel task
-
-> Waiting for your decision...
-```
 
 **User Response**: `APPROVED`
 
@@ -268,44 +192,26 @@ See software-architect.md for detailed instructions.`,
 
 ## Phase 5: Team-Leader MODE 1
 
-**Orchestrator Invocation**:
-
-```typescript
-Task({
-  subagent_type: 'team-leader',
-  description: 'Decompose tasks for TASK_2026_045',
-  prompt: `You are team-leader for TASK_2026_045.
-
-**MODE**: 1 - DECOMPOSITION
-**Task Folder**: task-tracking/TASK_2026_045
-**Implementation Plan**: Read implementation-plan.md
-
-Break down the implementation into atomic, batchable tasks.
-See team-leader.md for MODE 1 instructions.`,
-});
-```
-
 **Team-Leader Output**:
 
 ```
 TASKS.MD CREATED - TASK_2026_045
 
-Created 9 tasks in 3 batches:
+Created 8 tasks in 3 batches:
 
-Batch 1 - Main Process Watcher (backend-developer):
-  1.1 Create FileWatcherService class
-  1.2 Implement watched_paths SQLite table
-  1.3 Create watcher IPC handlers
+Batch 1 - Utilities (backend-developer):
+  1.1 Create registry.ts with markdown table parser
+  1.2 Create plan parser for phase/milestone extraction
 
-Batch 2 - Renderer Sync UI (frontend-developer):
-  2.1 Create SyncStatusStore signal store
-  2.2 Implement SyncIndicator component
-  2.3 Add FileChangeList component
+Batch 2 - Status Command (backend-developer):
+  2.1 Create status.ts command skeleton with Commander.js
+  2.2 Implement brief output mode
+  2.3 Implement full output mode with table display
 
 Batch 3 - Integration (backend-developer):
-  3.1 IPC channel connection
-  3.2 Project lifecycle watcher management
-  3.3 Error recovery implementation
+  3.1 Register command in index.ts
+  3.2 Add orchestrator-state.md worker parsing
+  3.3 Graceful handling of missing files
 
 NEXT BATCH ASSIGNED: Batch 1 to backend-developer
 
@@ -340,12 +246,11 @@ See backend-developer.md for detailed instructions.`,
 BATCH 1 IMPLEMENTATION COMPLETE
 
 Files Created:
-- libs/main-process/sync/src/lib/services/file-watcher.service.ts
-- libs/main-process/sync/src/lib/services/watched-paths.repository.ts
-- apps/desktop/src/ipc/watcher.handler.ts
+- packages/cli/src/utils/registry.ts
+- packages/cli/src/utils/plan-parser.ts
 
 Build: PASSING
-Tasks: 1.1, 1.2, 1.3 marked IMPLEMENTED
+Tasks: 1.1, 1.2 marked IMPLEMENTED
 ```
 
 **Orchestrator Returns to Team-Leader MODE 2**:
@@ -370,14 +275,13 @@ See team-leader.md for MODE 2 instructions.`,
 ```
 BATCH 1 VERIFIED AND COMMITTED
 
-Commit: abc1234 - feat(sync): add file watcher service with chokidar integration
+Commit: abc1234 - feat(cli): add registry and plan parser utilities
 
 Files verified:
-- file-watcher.service.ts: Real implementation, proper debouncing
-- watched-paths.repository.ts: SQLite CRUD complete
-- watcher.handler.ts: IPC handlers registered
+- registry.ts: Proper markdown table parsing with typed RegistryRow output
+- plan-parser.ts: Phase extraction with milestone progress tracking
 
-NEXT BATCH ASSIGNED: Batch 2 to frontend-developer
+NEXT BATCH ASSIGNED: Batch 2 to backend-developer
 
 [Developer prompt provided]
 ```
@@ -397,13 +301,13 @@ ALL BATCHES COMPLETE - TASK_2026_045
 
 Implementation Summary:
 - 3 batches completed
-- 9 tasks implemented
+- 8 tasks implemented
 - 3 commits created
 
 Commits:
-1. abc1234 - feat(sync): add file watcher service with chokidar integration
-2. def5678 - feat(ui): add sync status indicator and file change display
-3. ghi9012 - feat(electron): integrate watcher lifecycle with project management
+1. abc1234 - feat(cli): add registry and plan parser utilities
+2. def5678 - feat(cli): implement status command with brief and full modes
+3. ghi9012 - feat(cli): integrate status command with worker state display
 
 Build Status: PASSING
 All Files: Production-ready
@@ -424,7 +328,7 @@ Ready for QA phase.
 **Deliverable**: task-tracking/TASK_2026_045/MODE3-integration-report.md
 
 ### Summary
-- 9 files created across 3 batches
+- 5 files created across 3 batches
 - Full build passes
 - 3 commits created
 
@@ -446,15 +350,15 @@ Ready for QA phase.
 
 **QA Outputs**:
 
-_senior-tester_: 15 tests created, all passing, 87% coverage
-_code-style-reviewer_: 2 minor issues (missing JSDoc, import ordering)
+_senior-tester_: 12 tests created, all passing, 90% coverage
+_code-style-reviewer_: 1 minor issue (missing type annotation on helper function)
 _code-logic-reviewer_: 0 issues, all error paths handled
 
 ---
 
 ## Phase 8: Modernization Detector
 
-Creates `future-enhancements.md` with suggestions for virtual file system support, binary file change detection, and performance monitoring.
+Creates `future-enhancements.md` with suggestions for real-time streaming mode, JSON output format for scripting, and web dashboard integration.
 
 ---
 
@@ -463,15 +367,15 @@ Creates `future-enhancements.md` with suggestions for virtual file system suppor
 ```
 WORKFLOW COMPLETE - TASK_2026_045
 
-Real-Time File Watching with Automatic Project Sync
+CLI Status Command with Task Progress Display
 
 Summary:
 - Strategy: FEATURE (Full Workflow)
 - Phases Completed: 8/8
-- Tasks: 9/9 complete
+- Tasks: 8/8 complete
 - Commits: 3
-- Tests: 15 passing (87% coverage)
-- Reviews: Style (2 minor), Logic (0 issues)
+- Tests: 12 passing (90% coverage)
+- Reviews: Style (1 minor), Logic (0 issues)
 
 Time Elapsed: ~4 hours
 Status: SUCCESS

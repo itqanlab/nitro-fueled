@@ -189,11 +189,11 @@ Glob(**/__tests__/**/*.ts)
 **Analyze 2-3 existing test files:**
 
 ```bash
-# Read similar test examples in main process
-Read(libs/main-process/*/src/**/*.spec.ts)
+# Read similar test examples in CLI package
+Read(packages/cli/src/**/*.spec.ts)
 
-# Read similar test examples in renderer
-Read(libs/renderer/*/src/**/*.spec.ts)
+# Read similar test examples in other source files
+Read(src/**/*.spec.ts)
 
 # Read shared utility tests
 Read(libs/shared/*/src/**/*.spec.ts)
@@ -375,13 +375,12 @@ describe('ProjectStore', () => {
 
 ```
 MUST TEST (critical paths):
-  libs/main-process/orchestration/ - Engine logic, step handlers
-  libs/main-process/database/     - Repository queries (in-memory SQLite)
-  libs/shared/utils/              - Utility functions
+  packages/cli/src/commands/     - CLI command logic
+  packages/cli/src/utils/        - Utility functions (registry parser, stack detect)
   Core service business logic
 
 SKIP IN V1 (test manually):
-  Angular component rendering
+  UI component rendering
   E2E flows
   Provider adapter tests (mock-heavy)
   File sync edge cases
@@ -502,8 +501,8 @@ Otherwise:
 
 **Test Files Created**:
 
-- `libs/main-process/[lib]/src/[feature].spec.ts` (unit tests)
-- `libs/shared/utils/src/[util].spec.ts` (utility tests)
+- `packages/cli/src/commands/[command].spec.ts` (command tests)
+- `packages/cli/src/utils/[util].spec.ts` (utility tests)
 
 ## Test Results
 

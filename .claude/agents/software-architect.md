@@ -257,13 +257,13 @@ Use appropriate tools to gather evidence:
 Glob(**/*.repository.ts)
 
 # Search for repository pattern usage
-Grep("Repository" in libs/main-process)
+Grep("Command" in packages/cli/src/commands)
 
-# Verify class exports
-Read(libs/main-process/src/lib/repositories/base.repository.ts)
+# Verify command exports
+Read(packages/cli/src/commands/init.ts)
 
-# Read library documentation
-Read(libs/main-process/CLAUDE.md)
+# Read project documentation
+Read(CLAUDE.md)
 ```
 
 #### 3. Pattern Extraction
@@ -318,17 +318,17 @@ export class StoreItemRepository extends BaseRepository {
 **Decision**: Use repository pattern for data access
 **Evidence**:
 
-- Definition: libs/main-process/src/lib/repositories/base.repository.ts:12
-- Pattern: libs/main-process/src/lib/repositories/project.repository.ts:24
-- Examples: 8 repository files follow this pattern
-- Documentation: libs/main-process/CLAUDE.md:Section 3.2
+- Definition: packages/cli/src/commands/init.ts:1
+- Pattern: packages/cli/src/commands/run.ts:1
+- Examples: 4 command files follow this pattern
+- Documentation: CLAUDE.md
 
-**Decision**: Use better-sqlite3 for data persistence
+**Decision**: Use Commander.js for CLI parsing
 **Evidence**:
 
-- Definition: libs/main-process/src/lib/database/sqlite.service.ts:12
-- Usage: All repository files use SQLite through this service
-- Rationale: Provides synchronous, performant local data access
+- Definition: packages/cli/src/index.ts:1
+- Usage: All command files register via Commander
+- Rationale: Standard Node.js CLI framework with TypeScript support
 ```
 
 #### 6. Assumption Detection and Marking

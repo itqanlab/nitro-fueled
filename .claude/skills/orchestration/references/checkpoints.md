@@ -358,7 +358,7 @@ When discovered work during development significantly exceeds the original plan
 ### Summary
 - Original plan: [original scope summary]
 - Discovery: [what additional work was found]
-- Impact: [+N additional batches, affects libs/main-process/X]
+- Impact: [+N additional batches, affects src/X]
 
 ### Options
 1. **Expand** - Accept expanded scope, add batches to current task

@@ -125,16 +125,16 @@ build(project): optimize production build config
 ## Valid Examples
 
 ```bash
-feat(ui): add semantic search for chat messages
-fix(electron): resolve IPC communication timeout issue
+feat(cli): add status command with task progress display
+fix(cli): resolve registry parsing when status contains pipes
 docs(orchestration): update agent catalog references
-refactor(renderer): simplify settings store computed signals
-chore(project): update @angular/core to v19.1.2
-perf(ui): optimize message list rendering with virtual scroll
-test(electron): add unit tests for IPC handlers
-build(project): upgrade esbuild to v0.20.0
+refactor(orchestration): simplify completion phase instructions
+chore(project): update commander dependency to latest
+perf(cli): optimize stack detection for large monorepos
+test(cli): add unit tests for registry parser
+build(project): upgrade typescript to v5.4.0
 ci(project): add parallel test execution
-style(ui): format chat component files
+style(orchestration): format skill reference files
 ```
 
 ---
@@ -210,12 +210,12 @@ feat(project): implement entire settings feature with backend, frontend, and tes
 ### Just right
 
 ```
-feat(shared): add project settings interfaces and type exports
-feat(db): create settings table with CRUD operations
-feat(electron): implement settings IPC handlers with validation
-feat(renderer): create settings signal store with IPC integration
-feat(ui): add settings panel with theme and path configuration
-test(renderer): add settings store unit tests
+feat(cli): add CLI scaffold with package.json and tsconfig
+feat(cli): implement init command with stack detection
+feat(cli): implement run command with supervisor spawning
+feat(cli): add status command with registry parsing
+feat(orchestration): add completion phase plan.md update step
+test(cli): add init command integration tests
 ```
 
 ---
@@ -298,46 +298,46 @@ Please choose how to proceed:
 ### FEATURE Strategy
 
 ```
-feat(shared): add task model interfaces
-feat(db): create tasks table with indexes
-feat(electron): implement task CRUD IPC handlers
-feat(renderer): create task list signal store
-feat(ui): add task list page with filtering
-feat(ui): add task detail panel with CodeMirror editor
-test(renderer): add task store unit tests
-docs(shared): add TSDoc to task interfaces
+feat(shared): add task template interfaces and types
+feat(orchestration): create task-tracking folder structure
+feat(cli): implement create command with planner integration
+feat(orchestration): add supervisor skill with worker spawning
+feat(cli): add status command with plan.md parsing
+feat(orchestration): add exit gate verification checks
+test(cli): add create command unit tests
+docs(orchestration): add task template usage guide
 ```
 
 ### BUGFIX Strategy
 
 ```
-fix(electron): prevent window crash on invalid project path
-test(electron): add regression test for invalid path handling
+fix(cli): prevent crash when registry.md has empty rows
+test(cli): add regression test for empty registry handling
 ```
 
 ### REFACTORING Strategy
 
 ```
-refactor(renderer): migrate observable services to signal-based
-refactor(ui): convert settings module to standalone components
-refactor(shared): consolidate duplicate type definitions
+refactor(orchestration): consolidate completion phase into single step
+refactor(cli): extract common preflight checks into shared utility
+refactor(orchestration): simplify agent catalog capability matrix
 ```
 
 ### DEVOPS Strategy
 
 ```
 ci(project): add GitHub Actions CI pipeline
-ci(electron): configure auto-update publishing
-build(electron): add DMG and NSIS installer configuration
-chore(project): update Nx to v19
+ci(project): configure npm publish workflow
+build(cli): add prepublish scaffold preparation step
+chore(project): update build tooling to latest
 ```
 
 ### DOCUMENTATION Strategy
 
 ```
-docs(project): add architecture overview
-docs(shared): add API reference for IPC channels
-docs(electron): add development setup guide
+docs(project): add architecture overview to README
+docs(orchestration): add task template usage guide
+docs(project): add development setup guide
 ```
 
 ---

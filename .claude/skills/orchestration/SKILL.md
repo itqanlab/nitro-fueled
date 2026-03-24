@@ -59,7 +59,7 @@ See [strategies.md](references/strategies.md) for detailed flow diagrams.
 | Planning       | project-manager                                           |
 | Infrastructure | devops-engineer                                           |
 
-**Default**: When in doubt, delegate. See [agent-catalog.md](references/agent-catalog.md) for all 14 agents.
+**Default**: When in doubt, delegate. See [agent-catalog.md](references/agent-catalog.md) for all 16 agents.
 
 ---
 
@@ -295,10 +295,9 @@ Write `task-tracking/TASK_[ID]/completion-report.md` with:
 - [what was appended to .claude/review-lessons/, or "none"]
 
 ## Integration Checklist
-- [ ] Handlers registered in ipc-bootstrap.ts
-- [ ] Channels whitelisted in preload.ts
-- [ ] Barrel exports added
-- [ ] Migrations wired in migration-runner
+- [ ] [Project-specific integration checks — adapt to your stack]
+- [ ] Barrel exports / public API updated
+- [ ] New dependencies documented
 
 ## Verification Commands
 [grep/glob commands to confirm deliverables]
@@ -311,13 +310,13 @@ Update `task-tracking/registry.md` — set status to COMPLETE.
 > In Supervisor mode, the Review Worker sets the status to COMPLETE.
 > In interactive mode, the orchestrator sets this status.
 
-### 3. Update Implementation Plan
+### 3. Update Plan
 
-Add STATUS tag under the task's description in `docs/24-implementation-task-plan.md`:
+Update `task-tracking/plan.md`:
 
-```markdown
-> **STATUS: COMPLETED** — [Summary of what was built, LOC, commit hash]. TASK_[ID].
-```
+1. **Update task status** in the relevant Phase's Task Map table — set this task's status to COMPLETE.
+2. **Check phase completion**: If ALL tasks in the phase are now COMPLETE or CANCELLED, update the phase status to COMPLETE and check all milestone boxes.
+3. **Update Current Focus**: If the active phase just completed, advance "Active Phase" to the next incomplete phase and update "Next Priorities" accordingly.
 
 ### 4. Final Commit
 
