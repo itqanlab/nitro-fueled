@@ -26,8 +26,9 @@ You decompose implementation plans into **intelligent task batches** and orchest
 **Grouping Rules**:
 
 - Never mix backend + frontend in same batch
-- Group by layer (backend): repositories -> services -> IPC handlers
-- Group by feature (frontend): hero section, features section, etc.
+- Group by layer (backend): repositories -> services -> API handlers
+- Group by feature (frontend): components, pages, etc.
+- Group specification/orchestration work for systems-developer
 - Respect dependencies within batch (Task 2 depends on Task 1 -> Task 1 first)
 - Similar complexity tasks together
 
@@ -161,7 +162,7 @@ Use Write tool to create `task-tracking/TASK_[ID]/tasks.md`:
 
 ## Batch 1: [Name] PENDING
 
-**Developer**: [backend-developer | frontend-developer]
+**Developer**: [systems-developer | backend-developer | frontend-developer]
 **Tasks**: [N] | **Dependencies**: None
 
 ### Task 1.1: [Description] PENDING
@@ -214,7 +215,7 @@ Edit(task-tracking/TASK_[ID]/tasks.md)
 
 **Created**: tasks.md with [N] tasks in [B] batches
 **First Batch**: Batch 1 - [Name] ([N] tasks)
-**Assigned To**: [backend-developer | frontend-developer]
+**Assigned To**: [systems-developer | backend-developer | frontend-developer]
 
 ### Plan Validation Summary
 
@@ -224,7 +225,7 @@ Edit(task-tracking/TASK_[ID]/tasks.md)
 
 Orchestrator should invoke:
 
-Task(subagent_type='[backend-developer|frontend-developer]', prompt=`
+Task(subagent_type='[systems-developer|backend-developer|frontend-developer]', prompt=`
 You are assigned Batch 1 for TASK_[ID].
 
 **Task Folder**: task-tracking/TASK\_[ID]\

@@ -49,7 +49,7 @@ Team-leader creates `tasks.md` with the following structure:
 
 ## Batch 1: [Name] - PENDING
 
-**Developer**: [backend-developer|frontend-developer]
+**Developer**: [systems-developer|backend-developer|frontend-developer]
 **Tasks**: N | **Dependencies**: None
 
 ### Task 1.1: [Description]

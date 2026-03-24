@@ -149,12 +149,13 @@ Git
 
 ### Developer Selection
 
-| Documentation Type     | Developer          |
-| ---------------------- | ------------------ |
-| Main process docs      | backend-developer  |
-| Renderer/UI docs       | frontend-developer |
-| CI/CD, build docs      | devops-engineer    |
-| General guides         | frontend-developer |
+| Documentation Type        | Developer              |
+| ------------------------- | ---------------------- |
+| Orchestration/agent docs  | systems-developer      |
+| Server-side/API docs      | backend-developer      |
+| UI/component docs         | frontend-developer     |
+| CI/CD, build docs         | devops-engineer        |
+| General guides            | systems-developer      |
 
 ---
 
@@ -214,11 +215,10 @@ Phase 6: modernization-detector --> Creates future-enhancements.md
 Invoke DEVOPS strategy when task involves:
 
 - CI/CD pipelines, GitHub Actions
-- Electron Forge packaging/publishing
-- Installer configuration (DMG, NSIS, deb, rpm)
-- Auto-update infrastructure (electron-updater)
-- Build system configuration (Nx, webpack, esbuild)
-- Code signing, notarization (macOS/Windows)
+- Packaging and distribution
+- Build system configuration
+- Deployment pipelines
+- Code signing, security hardening
 
 **Key Signal**: Work is 100% infrastructure (no application business logic)
 
@@ -228,7 +228,7 @@ Invoke DEVOPS strategy when task involves:
 
 ## Hybrid Task Handling
 
-**When to detect**: Tasks classified as FEATURE, REFACTORING, or BUGFIX that also involve Electron Forge configuration, build system changes, IPC channel setup, or infrastructure work. These are not pure DEVOPS tasks but contain a meaningful infrastructure component alongside application code.
+**When to detect**: Tasks classified as FEATURE, REFACTORING, or BUGFIX that also involve build system changes, infrastructure work, or orchestration specification work. These are not pure DEVOPS tasks but contain a meaningful infrastructure or specification component alongside application code.
 
 ### How Team-Leader Handles Hybrid Tasks
 
@@ -236,39 +236,41 @@ In MODE 1 (DECOMPOSITION), the team-leader can assign specific batches to `devop
 
 **Batch Assignment Rules**:
 
-- If a batch is **100% infrastructure** (Electron config, build, packaging) --> assign to `devops-engineer`
-- If a batch is **application code with minor infra** (e.g., an Angular component that also updates an IPC channel) --> assign to `frontend-developer` (they can handle minor IPC changes inline)
+- If a batch is **100% infrastructure** (build config, CI/CD, packaging) --> assign to `devops-engineer`
+- If a batch is **100% specification/orchestration** (agents, skills, commands, references) --> assign to `systems-developer`
+- If a batch is **application code with minor infra** (e.g., a component that also updates an API handler) --> assign to `frontend-developer` or `backend-developer` (they can handle minor infra changes inline)
 - The team-leader makes this decision based on batch content, not overall task classification
 
 ### Mixed Batch Assignment Example
 
 ```
-Batch 1 (backend-developer): Main process service, IPC handlers, SQLite schema
-Batch 2 (devops-engineer):   Electron Forge config, build scripts, packaging
-Batch 3 (frontend-developer): Angular components, signal stores, UI integration
+Batch 1 (systems-developer):  Agent definitions, skill files, command files
+Batch 2 (backend-developer):  Server-side services, API handlers, data layer
+Batch 3 (devops-engineer):    Build config, CI/CD, packaging
+Batch 4 (frontend-developer): UI components, state management, client integration
 ```
 
 ### Decision Heuristic for Team-Leader
 
-| Infrastructure Portion                                    | Assignment Strategy                          |
-| --------------------------------------------------------- | -------------------------------------------- |
-| < 15% of task (e.g., add 1 IPC channel)                  | backend/frontend-developer handles it inline |
-| 15-40% of task (e.g., Forge config + build + packaging)   | Dedicated devops-engineer batch              |
-| > 40% of task                                             | Consider reclassifying as DEVOPS strategy    |
+| Non-Application Portion                                   | Assignment Strategy                                |
+| --------------------------------------------------------- | -------------------------------------------------- |
+| < 15% of task (e.g., add 1 API endpoint)                  | backend/frontend-developer handles it inline       |
+| 15-40% infrastructure (e.g., build config + CI)            | Dedicated devops-engineer batch                    |
+| 15-40% specification (e.g., agent + skill + references)    | Dedicated systems-developer batch                  |
+| > 40% infrastructure                                      | Consider reclassifying as DEVOPS strategy          |
 
 ### Real-World Example
 
-**TASK: LanceDB Vector Storage Library** (classified as FEATURE)
+**TASK: Add Planner Agent** (classified as FEATURE)
 
-- Primary work: Main process library with service, IPC handlers, vector operations
-- Infrastructure work: LanceDB native module build config, Electron rebuild scripts
+- Primary work: Agent definition, skill files, command file, reference updates
+- Infrastructure work: None
 
 **Team-leader decomposition**:
 
 ```
-Batch 1 (backend-developer): LanceDB service, vector operations, IPC handlers
-Batch 2 (devops-engineer):   Native module rebuild config, Electron Forge plugin setup
-Batch 3 (frontend-developer): Angular search UI, signal store, renderer integration
+Batch 1 (systems-developer): Planner agent definition, skill file, command file
+Batch 2 (systems-developer): Reference updates (agent-catalog, strategies, team-leader-modes)
 ```
 
 ---
@@ -463,7 +465,7 @@ Developer should:
 Use this decision tree for quick strategy selection:
 
 ```
-Is task DEVOPS (CI/CD, Electron Forge, packaging, build config)?
+Is task DEVOPS (CI/CD, packaging, build config, deployment)?
     YES -> DEVOPS strategy
     NO  -> continue
 

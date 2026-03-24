@@ -1,6 +1,6 @@
 # Agent Catalog Reference
 
-Comprehensive catalog of all 14 specialist agents with capabilities, triggers, and invocation patterns.
+Comprehensive catalog of all 15 specialist agents with capabilities, triggers, and invocation patterns.
 
 ---
 
@@ -11,6 +11,7 @@ Comprehensive catalog of all 14 specialist agents with capabilities, triggers, a
 | project-manager          |     -      |   -    |   -    | **P** |    S     |    -    |    -    |
 | software-architect       |     -      | **P**  |   S    | **P** |    S     |    -    |    -    |
 | team-leader              |     -      |   -    |   S    | **P** |    -     |    -    |    -    |
+| systems-developer        |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
 | backend-developer        |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
 | frontend-developer       |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
 | devops-engineer          |   **P**    |   S    |   -    |   -   |    S     |    -    |    -    |
@@ -29,20 +30,21 @@ Comprehensive catalog of all 14 specialist agents with capabilities, triggers, a
 
 ## Agent Selection Matrix
 
-| Request Type   | Agent Path                                         | Trigger              |
-| -------------- | -------------------------------------------------- | -------------------- |
-| Implement X    | project-manager -> architect -> team-leader -> dev | New features         |
-| Fix bug        | team-leader -> dev -> test -> review               | Bug reports          |
-| Research X     | researcher-expert -> architect                     | Technical questions  |
-| Review style   | code-style-reviewer                                | Pattern checks       |
-| Review logic   | code-logic-reviewer                                | Completeness checks  |
-| Review visual  | visual-reviewer                                    | UI/UX visual testing |
-| Test X         | senior-tester                                      | Testing              |
-| Architecture   | software-architect                                 | Design               |
-| Landing page   | ui-ux-designer -> technical-content-writer         | Marketing pages      |
-| Brand/visual   | ui-ux-designer                                     | Design system        |
-| Content        | technical-content-writer                           | Blogs, docs, video   |
-| Infrastructure | devops-engineer                                    | CI/CD, packaging     |
+| Request Type     | Agent Path                                         | Trigger                     |
+| ---------------- | -------------------------------------------------- | --------------------------- |
+| Implement X      | project-manager -> architect -> team-leader -> dev | New features                |
+| Fix bug          | team-leader -> dev -> test -> review               | Bug reports                 |
+| Orchestration    | architect -> team-leader -> systems-developer      | Agents, skills, commands    |
+| Research X       | researcher-expert -> architect                     | Technical questions         |
+| Review style     | code-style-reviewer                                | Pattern checks              |
+| Review logic     | code-logic-reviewer                                | Completeness checks         |
+| Review visual    | visual-reviewer                                    | UI/UX visual testing        |
+| Test X           | senior-tester                                      | Testing                     |
+| Architecture     | software-architect                                 | Design                      |
+| Landing page     | ui-ux-designer -> technical-content-writer         | Marketing pages             |
+| Brand/visual     | ui-ux-designer                                     | Design system               |
+| Content          | technical-content-writer                           | Blogs, docs, video          |
+| Infrastructure   | devops-engineer                                    | CI/CD, packaging            |
 
 **Default**: When uncertain, use `/orchestrate` for full workflow analysis.
 
@@ -186,26 +188,74 @@ See team-leader.md for MODE 1 instructions.`,
 
 ## Development Agents
 
+### systems-developer
+
+**Role**: Orchestration infrastructure, agent definitions, skill files, command files, markdown specifications
+
+**Triggers**:
+
+- Specification/orchestration tasks assigned by team-leader
+- Agent definition creation or modification
+- Skill file creation or modification
+- Command file creation or modification
+- Reference document updates
+- Workflow configuration changes
+
+**Inputs**:
+
+- `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
+- `task-tracking/TASK_[ID]/implementation-plan.md`
+- Existing agent/skill/command files for pattern matching
+
+**Outputs**:
+
+- Files in `.claude/agents/`, `.claude/skills/`, `.claude/commands/`
+- Reference files in `.claude/skills/orchestration/references/`
+- Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
+
+**Dependencies**: team-leader (batch assignment)
+
+**Parallel With**: backend-developer, frontend-developer (different batches)
+
+**Invocation Example**:
+
+```typescript
+Task({
+  subagent_type: 'systems-developer',
+  description: 'Implement Batch 1 for TASK_2026_042',
+  prompt: `You are systems-developer for TASK_2026_042.
+
+**Task Folder**: task-tracking/TASK_2026_042
+**Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
+**Plan**: Read implementation-plan.md for context
+
+Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
+See systems-developer.md for detailed instructions.`,
+});
+```
+
+---
+
 ### backend-developer
 
-**Role**: Backend implementation, Electron main process, IPC handlers, data layer
+**Role**: Backend implementation, server-side services, API handlers, data layer
 
 **Triggers**:
 
 - Backend-focused tasks assigned by team-leader
-- Electron main process work, IPC handlers
-- SQLite/LanceDB operations
+- Server-side service work, API handlers
+- Database operations
 - Node.js/TypeScript backend work
 
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
 - `task-tracking/TASK_[ID]/implementation-plan.md`
-- Library CLAUDE.md files
+- Library/module CLAUDE.md files
 
 **Outputs**:
 
-- Source files in `libs/main-process/`, `apps/desktop/`
+- Server-side source files
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
 **Dependencies**: team-leader (batch assignment)
@@ -233,24 +283,24 @@ See backend-developer.md for detailed instructions.`,
 
 ### frontend-developer
 
-**Role**: Frontend implementation, UI components, Angular work
+**Role**: Frontend implementation, UI components, client-side logic
 
 **Triggers**:
 
 - Frontend-focused tasks assigned by team-leader
-- Angular component development
-- Renderer process changes
-- Signal-based state management
+- UI component development
+- Client-side state management
+- Visual/interactive features
 
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
 - `task-tracking/TASK_[ID]/implementation-plan.md`
-- Library CLAUDE.md files
+- Library/module CLAUDE.md files
 
 **Outputs**:
 
-- Source files in `libs/renderer/`, `apps/renderer/`
+- Frontend source files
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
 **Dependencies**: team-leader (batch assignment)
@@ -278,27 +328,26 @@ See frontend-developer.md for detailed instructions.`,
 
 ### devops-engineer
 
-**Role**: Infrastructure, CI/CD, Electron packaging, build configuration
+**Role**: Infrastructure, CI/CD, build configuration, deployment
 
 **Triggers**:
 
 - DEVOPS strategy Phase 3
-- Electron Forge packaging/publishing
-- Build system configuration (Nx, webpack, esbuild)
-- Installer configuration (DMG, NSIS, deb, rpm)
-- Auto-update infrastructure
+- Build system configuration and optimization
+- Packaging and distribution setup
+- Deployment pipeline creation
 - Infrastructure-focused batches within FEATURE/REFACTORING workflows (assigned by team-leader)
 
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/implementation-plan.md`
 - Existing workflow files (`.github/workflows/`)
-- Build configs (`forge.config.ts`, `project.json`)
+- Build configs
 
 **Outputs**:
 
-- Configuration files (`.github/workflows/`, `forge.config.ts`, etc.)
-- Build and packaging scripts
+- Configuration files (`.github/workflows/`, build configs, etc.)
+- Build, packaging, and deployment scripts
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
 **Dependencies**: software-architect (for DEVOPS strategy)
@@ -705,13 +754,13 @@ See technical-content-writer.md for detailed instructions.`,
 
 ## Agent Category Summary
 
-| Category    | Agents                                                                   | Purpose               |
-| ----------- | ------------------------------------------------------------------------ | --------------------- |
-| Planning    | project-manager, software-architect, team-leader                         | Requirements & design |
-| Development | backend-developer, frontend-developer, devops-engineer                   | Implementation        |
-| QA          | senior-tester, code-style-reviewer, code-logic-reviewer, visual-reviewer | Quality assurance     |
-| Specialist  | researcher-expert, modernization-detector                                | Research & analysis   |
-| Creative    | ui-ux-designer, technical-content-writer                                 | Design & content      |
+| Category    | Agents                                                                   | Purpose                    |
+| ----------- | ------------------------------------------------------------------------ | -------------------------- |
+| Planning    | project-manager, software-architect, team-leader                         | Requirements & design      |
+| Development | systems-developer, backend-developer, frontend-developer, devops-engineer | Implementation            |
+| QA          | senior-tester, code-style-reviewer, code-logic-reviewer, visual-reviewer | Quality assurance          |
+| Specialist  | researcher-expert, modernization-detector                                | Research & analysis        |
+| Creative    | ui-ux-designer, technical-content-writer                                 | Design & content           |
 
 ---
 
