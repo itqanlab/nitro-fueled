@@ -10,7 +10,7 @@
 | Priority   | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity | [Simple | Medium | Complex]                                                   |
 
-<!-- Type: Determines the agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
+<!-- Type: Determines agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
        BUGFIX        — [Research] -> Team-Leader -> QA
        REFACTORING   — Architect -> Team-Leader -> QA
@@ -28,13 +28,13 @@
 
 ## Description
 
-[What needs to be built, fixed, or changed. Be specific enough for the PM agent to produce requirements without further clarification.]
+[What needs to be built, fixed, or changed. Be specific enough for PM agent to produce requirements without further clarification.]
 
 ## Dependencies
 
 - None
 
-<!-- List task IDs this depends on. Auto-pilot uses this to build the dependency
+<!-- List task IDs this depends on. Auto-pilot uses this to build a dependency
      graph and determine which tasks are unblocked.
      Format: TASK_YYYY_NNN — brief description of what this task needs from that one
      Use "None" if this task is independent. -->
@@ -51,5 +51,13 @@
 
 - [Files, docs, URLs, or related tasks relevant to this work]
 
-<!-- Point to existing code, design docs, or external resources the developer
-     will need. Helps the Architect ground decisions in codebase evidence. -->
+<!-- Point to existing code, design docs, or external resources that developer
+     will need. Helps Architect ground decisions in codebase evidence. -->
+
+## File Scope
+
+- [None]
+
+<!-- Files this task will create or modify. Build workers populate this after implementation.
+     Used by supervisor to detect overlapping file scopes between concurrent tasks.
+     If overlap is detected, reviews are serialized to prevent cross-task interference. -->

@@ -207,7 +207,7 @@ This prevents accidental duplicate supervisor sessions from competing for the sa
 2. Parse every row: extract **Task ID**, **Status**, **Type**, **Description**.
 3. For each task with status **CREATED**, **IN_PROGRESS**, **IMPLEMENTED**, or **IN_REVIEW**:
    - Read `task-tracking/TASK_YYYY_NNN/task.md`
-   - Extract: **Type**, **Priority**, **Complexity**, **Dependencies** list
+   - Extract: **Type**, **Priority**, **Complexity**, **Dependencies** list, **File Scope** list
 4. If a `task.md` is missing or malformed:
    - Log warning: `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`
    - Continue with remaining tasks.
@@ -262,6 +262,22 @@ For each task, parse the **Dependencies** field into a list of task IDs. Classif
 
 ### Step 3b: Check Strategic Plan (Optional)
 
+### Step 3b: File Scope Overlap Detection
+
+For each IMPLEMENTED task (ready for review), check file scope overlaps:
+
+1. Extract File Scope from each task'\''s File Scope section
+2. Build overlap matrix: compare file scopes between concurrent tasks
+3. If ANY files appear in multiple tasks'\'' File Scopes:
+   - Log warning: `"OVERLAP DETECTED — TASK_A and TASK_B share files: {shared-files}"`
+   - Mark those tasks for serialization (do NOT spawn parallel reviews)
+4. Record serialized tasks in orchestrator-state.md under a new `## Serialized Reviews` table:
+   | Task ID | Reason |
+   |---------|---------|
+   | TASK_A  | Overlaps with TASK_B on {file-list} |
+   | TASK_B  | Overlaps with TASK_A on {file-list} |
+
+
 IF `task-tracking/plan.md` exists:
 
 1. Read the "Current Focus" section of plan.md.
@@ -288,6 +304,13 @@ IF `task-tracking/plan.md` does NOT exist:
 - Continue to Step 4 with default ordering (Priority then Task ID). No consultation needed.
 
 ### Step 4: Order Task Queue
+3. Select tasks: first from **Review Queue**, then from **Build Queue**, until slots filled. Review Workers take priority over Build Workers (finishing tasks is more valuable than starting new ones).
+
+**Serialization check**: Before selecting tasks from Review Queue, check the `## Serialized Reviews` table in orchestrator-state.md. If a task is in that table, SKIP it for this spawn cycle (it will be handled in a serial pass after current parallel reviews complete).
+
+4. If `slots <= 0`, skip to **Step 6** (monitoring).
+
+### Step 5: Spawn Workers
 
 1. Build two queues, both sorted by Priority (P0 > P1 > P2 > P3) then Task ID (lower NNN first):
    - **Review Queue**: READY_FOR_REVIEW tasks (need Review Worker)
@@ -602,6 +625,17 @@ AUTONOMOUS MODE — follow these rules strictly:
 4. Do NOT restart from scratch. Resume from the detected phase.
 
 5. Before developers write code, ensure they read
+
+4. Do NOT restart from scratch. Resume from detected phase.
+
+5. Before developers write code, ensure they read
+   .claude/review-lessons/ for accumulated rules.
+
+6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
+   a. Create a git commit with all implementation code
+   b. **Populate file scope**: Add list of files created/modified to the task'\''s File Scope section
+   c. Update registry.md: set task status to IMPLEMENTED
+   d. Commit the registry update
    .claude/review-lessons/ for accumulated rules.
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
@@ -641,6 +675,22 @@ Follow these rules strictly:
    ALL checkpoints and continue immediately. No human at this terminal.
 
 2. The task is already implemented. Do NOT re-run PM, Architect,
+
+2. The task is already implemented. Do NOT re-run PM, Architect,
+   or development phases. Start from review phase.
+
+3. **FIRST: Read shared review context**:
+   - Read `task-tracking/review-context.md` if it exists
+   - Apply project conventions and style decisions to your review
+   - If review-context.md does not exist, proceed without it
+
+4. **ALSO: Read and respect file scope**:
+   - Read the task'\''s File Scope section from task.md
+   - Review and fix ONLY issues within your task'\''s file scope
+   - If you find an issue outside the task'\''s scope, document it in the review but do NOT fix it
+   - Use `git blame` if needed to verify code ownership for ambiguous changes
+
+5. Run ALL available reviewers: style, logic, and security.
    or development phases. Start from the QA/review phase.
 
 3. Run ALL available reviewers: style, logic, and security.
@@ -807,6 +857,21 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | Retry Limit         | 2          |
 
 ## Active Workers
+## Active Workers
+
+| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State | Cost   |
+|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|--------|
+| abc-123   | TASK_2026_003 | Build       | TASK_2026_003-FEATURE-BUILD  | running | 2026-03-24 10:00:00 | healthy     | 0           | IMPLEMENTED        | $1.23  |
+| def-456   | TASK_2026_004 | Review      | TASK_2026_004-BUGFIX-REVIEW  | running | 2026-03-24 10:05:00 | healthy     | 0           | COMPLETE           | $0.45  |
+
+## Serialized Reviews
+
+| Task ID | Reason |
+|---------|---------|
+| TASK_2026_001 | Overlaps with TASK_2026_002 on index.html |
+| TASK_2026_002 | Overlaps with TASK_2026_001 on index.html |
+
+## Completed Tasks
 
 | Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State | Cost   |
 |-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|--------|
