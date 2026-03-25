@@ -59,7 +59,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 | Retry limit         | 2           | --retries N      | Maximum retry attempts for a failed task. Maximum allowed value: 5. Values above 5 are clamped to 5. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
 
-> **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (120 seconds since last action). Workers with zero messages get a 5-minute startup grace period (reported as `starting` instead of `stuck`). The supervisor does not configure these thresholds; it reacts to the health states via two-strike detection.
+> **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
 
 When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `orchestrator-state.md`.
 
@@ -92,14 +92,13 @@ The supervisor MUST maintain a session log in `orchestrator-state.md` under a `#
 | Worker healthy | `[HH:MM:SS] HEALTH CHECK — TASK_X: healthy` |
 | Worker high context | `[HH:MM:SS] HEALTH CHECK — TASK_X: high_context ({context_percent}%)` |
 | Worker compacting | `[HH:MM:SS] HEALTH CHECK — TASK_X: compacting` |
-| Worker starting | `[HH:MM:SS] HEALTH CHECK — TASK_X: starting (no messages yet)` |
 | Worker stuck (strike 1) | `[HH:MM:SS] WARNING — TASK_X: stuck (strike 1/2)` |
 | Worker stuck (strike 2, killing) | `[HH:MM:SS] KILLING — TASK_X: stuck for 2 consecutive checks` |
 | Kill failed | `[HH:MM:SS] KILL FAILED — TASK_X: {error}` |
 | State transitioned (success) | `[HH:MM:SS] STATE TRANSITIONED — TASK_X: {old_state} -> {new_state}` |
 | No transition (failure) | `[HH:MM:SS] NO TRANSITION — TASK_X: expected {expected_state}, still {current_state} (retry {N}/{limit})` |
-| Build done | `[HH:MM:SS] BUILD DONE — TASK_X: IMPLEMENTED ($X.XX), queuing Review Worker` |
-| Review done | `[HH:MM:SS] REVIEW DONE — TASK_X: COMPLETE ($X.XX)` |
+| Build done | `[HH:MM:SS] BUILD DONE — TASK_X: IMPLEMENTED, spawning Review Worker` |
+| Review done | `[HH:MM:SS] REVIEW DONE — TASK_X: COMPLETE` |
 | Retry scheduled | `[HH:MM:SS] RETRY — TASK_X: attempt {N}/{retry_limit}` |
 | Task blocked (max retries) | `[HH:MM:SS] BLOCKED — TASK_X: exceeded {retry_limit} retries` |
 | Task blocked (cycle) | `[HH:MM:SS] BLOCKED — TASK_X: dependency cycle with TASK_Y` |
@@ -113,15 +112,13 @@ The supervisor MUST maintain a session log in `orchestrator-state.md` under a `#
 | Reconciliation | `[HH:MM:SS] RECONCILE — worker {id} missing from MCP, treating as finished` |
 | Cleanup spawned | `[HH:MM:SS] CLEANUP — TASK_X: spawning Cleanup Worker to salvage uncommitted work` |
 | Cleanup done | `[HH:MM:SS] CLEANUP DONE — TASK_X: {committed N files | no uncommitted changes}` |
-| Cost recorded | `[HH:MM:SS] COST — TASK_X: $X.XX (input: Xk, output: Xk, cache: Xk)` |
-| Cost unknown | `[HH:MM:SS] COST UNKNOWN — TASK_X: worker stats unavailable` |
 | Worker replaced | `[HH:MM:SS] REPLACING — TASK_X: spawning new worker (previous {reason})` |
 | Compaction detected | `[HH:MM:SS] COMPACTION — reading orchestrator-state.md to restore context` |
 | Plan consultation | `[HH:MM:SS] PLAN CONSULT — guidance: {PROCEED|REPRIORITIZE|ESCALATE|NO_ACTION}` |
 | Plan escalation | `[HH:MM:SS] PLAN ESCALATION — {guidance_note}` |
 | Plan no action | `[HH:MM:SS] PLAN — no action needed` |
 | Plan not found | `[HH:MM:SS] PLAN — no plan.md found, using default ordering` |
-| Loop stopped | `[HH:MM:SS] SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked, total cost: ${X.XX}` |
+| Loop stopped | `[HH:MM:SS] SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked` |
 
 The log is part of `orchestrator-state.md` and survives compactions. Keep the last 100 entries max (trim older entries on write). After compaction, the log tells you exactly what happened before context was lost.
 
@@ -198,7 +195,7 @@ This prevents accidental duplicate supervisor sessions from competing for the sa
 
 **ELSE** (no state file):
 
-1. Initialize fresh state with default or overridden configuration (include Session Cost section with all zeroes).
+1. Initialize fresh state with default or overridden configuration.
 2. Proceed to Step 2.
 
 ### Step 2: Read Registry and Task Folders
@@ -262,22 +259,6 @@ For each task, parse the **Dependencies** field into a list of task IDs. Classif
 
 ### Step 3b: Check Strategic Plan (Optional)
 
-### Step 3b: File Scope Overlap Detection
-
-For each IMPLEMENTED task (ready for review), check file scope overlaps:
-
-1. Extract File Scope from each task'\''s File Scope section
-2. Build overlap matrix: compare file scopes between concurrent tasks
-3. If ANY files appear in multiple tasks'\'' File Scopes:
-   - Log warning: `"OVERLAP DETECTED — TASK_A and TASK_B share files: {shared-files}"`
-   - Mark those tasks for serialization (do NOT spawn parallel reviews)
-4. Record serialized tasks in orchestrator-state.md under a new `## Serialized Reviews` table:
-   | Task ID | Reason |
-   |---------|---------|
-   | TASK_A  | Overlaps with TASK_B on {file-list} |
-   | TASK_B  | Overlaps with TASK_A on {file-list} |
-
-
 IF `task-tracking/plan.md` exists:
 
 1. Read the "Current Focus" section of plan.md.
@@ -302,15 +283,23 @@ IF `task-tracking/plan.md` exists:
 
 IF `task-tracking/plan.md` does NOT exist:
 - Continue to Step 4 with default ordering (Priority then Task ID). No consultation needed.
+### Step 3c: File Scope Overlap Detection
+
+For each IMPLEMENTED task (ready for review), check file scope overlaps:
+
+1. Extract File Scope from each task's File Scope section
+2. Build overlap matrix: compare file scopes between concurrent tasks
+3. If ANY files appear in multiple tasks' File Scopes:
+   - Log warning: `"OVERLAP DETECTED — TASK_A and TASK_B share files: {shared-files}"`
+   - Mark those tasks for serialization (do NOT spawn parallel reviews)
+4. Record serialized tasks in orchestrator-state.md under a new `## Serialized Reviews` table:
+   | Task ID | Reason |
+   |---------|---------|
+   | TASK_A  | Overlaps with TASK_B on {file-list} |
+   | TASK_B  | Overlaps with TASK_A on {file-list} |
+
 
 ### Step 4: Order Task Queue
-3. Select tasks: first from **Review Queue**, then from **Build Queue**, until slots filled. Review Workers take priority over Build Workers (finishing tasks is more valuable than starting new ones).
-
-**Serialization check**: Before selecting tasks from Review Queue, check the `## Serialized Reviews` table in orchestrator-state.md. If a task is in that table, SKIP it for this spawn cycle (it will be handled in a serial pass after current parallel reviews complete).
-
-4. If `slots <= 0`, skip to **Step 6** (monitoring).
-
-### Step 5: Spawn Workers
 
 1. Build two queues, both sorted by Priority (P0 > P1 > P2 > P3) then Task ID (lower NNN first):
    - **Review Queue**: READY_FOR_REVIEW tasks (need Review Worker)
@@ -322,6 +311,9 @@ IF `task-tracking/plan.md` does NOT exist:
    ```
 
 3. Select tasks: first from **Review Queue**, then from **Build Queue**, until slots filled. Review Workers take priority over Build Workers (finishing tasks is more valuable than starting new ones).
+
+**Serialization check**: Before selecting tasks from Review Queue, check the `## Serialized Reviews` table in orchestrator-state.md. If a task is in that table, SKIP it for this spawn cycle (it will be handled in a serial pass after current parallel reviews complete).
+
 
 4. If `slots <= 0`, skip to **Step 6** (monitoring).
 
@@ -377,14 +369,13 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
    - **Always escalate** if the worker's `stuck_count > 0` from a previous check
    - Otherwise, trust the activity summary for healthy workers
 
-   When escalating, call MCP `get_worker_stats`(worker_id) for the structured `health` field. **Also record the worker's current `cost.total_usd`** in the Active Workers table's Cost column. This serves as a running cost snapshot and as a fallback if `get_worker_stats` is unavailable at completion time.
+   When escalating, call MCP `get_worker_stats`(worker_id) for the structured `health` field.
 
    **6c.** Health state handling:
 
    | Health State     | Action |
    |------------------|--------|
    | `healthy`        | Log activity summary. No action needed. |
-   | `starting`       | Log: `"TASK_X worker starting up (no messages yet)"`. No action. Workers get a 5-minute startup grace period before stuck detection kicks in. |
    | `high_context`   | Log: `"TASK_X worker at high context usage -- still progressing"`. No action. Worker will compact automatically. |
    | `compacting`     | Log: `"TASK_X worker is compacting context"`. No action. This is normal for long tasks. |
    | `stuck`          | Apply two-strike detection (see below). |
@@ -401,7 +392,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
      - Log: `"TASK_X worker stuck for 2 consecutive checks -- killing"`
      - Call MCP `kill_worker`(worker_id, reason=`"stuck for 2 checks"`)
      - **Check return**: If `success: false`, log warning `"Failed to kill TASK_X worker -- will retry next interval"` and skip remaining cleanup (do not change registry or remove from state).
-     - If kill succeeded: extract `final_stats.cost.total_usd` from the kill response and record it in the worker's Cost column and Session Cost accumulator. Then trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
+     - If kill succeeded: trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
      - Increment `retry_count` in state for this task.
      - **IF** `retry_count > retry_limit`:
        - Set task status to **BLOCKED** in registry
@@ -416,43 +407,33 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 
 For each worker with health `finished` (or discovered missing during reconciliation in Step 1):
 
-**7a. Fetch final cost data.**
+**7a. Read current registry state for the task.**
 
-Call MCP `get_worker_stats`(worker_id) to get the worker's final token usage and cost. Extract:
-- `cost.total_usd` — the worker's total cost
-- `tokens.total_input`, `tokens.total_output`, `tokens.total_cache_creation`, `tokens.total_cache_read`, `tokens.total_combined` — token breakdown
-
-Record `cost.total_usd` for this worker in `orchestrator-state.md` (Completed Tasks or Failed Tasks table). Add it to the running `Session Total Cost` accumulator.
-
-> If `get_worker_stats` fails (worker already cleaned up by MCP), use the last known cost from the Active Workers table (recorded during monitoring in Step 6). If no cost was ever recorded, log: `"COST UNKNOWN — TASK_X: worker stats unavailable"` and record `$?.??`.
-
-**7b. Read current registry state for the task.**
-
-**7c. Determine if state transitioned:**
+**7b. Determine if state transitioned:**
 
 - Look up `expected_end_state` from `orchestrator-state.md` for this worker
 - Read current state from registry
 
-**7d. Validate state transition against expected transitions for worker type:**
+**7c. Validate state transition against expected transitions for worker type:**
 
 - **Build Worker** expected transitions: CREATED/IN_PROGRESS to IMPLEMENTED (only)
 - **Review Worker** expected transitions: IMPLEMENTED/IN_REVIEW to COMPLETE (only)
 
 If the registry shows a state that does not match the expected transition for the worker type (e.g., a Build Worker set COMPLETE, or a Review Worker set IMPLEMENTED), log a warning: `"SUSPICIOUS TRANSITION — TASK_X: {worker_type} produced unexpected state {state}, marking BLOCKED"`. Set the task status to **BLOCKED** in the registry instead of accepting the transition.
 
-**7e. IF state transitioned to expected end state (validated):**
+**7d. IF state transitioned to expected end state (validated):**
 
 - If new state is **IMPLEMENTED** (Build Worker succeeded):
-  - Log: `"BUILD DONE — TASK_X: IMPLEMENTED ($X.XX), queuing Review Worker"` (use cost from 7a)
-  - Move worker from active to completed list in state (include cost in Completed Tasks table)
+  - Log: `"BUILD DONE — TASK_X: IMPLEMENTED, queuing Review Worker"`
+  - Move worker from active to completed list in state
   - Task will be picked up as READY_FOR_REVIEW on next loop iteration (Step 3)
 
 - If new state is **COMPLETE** (Review Worker succeeded):
-  - Log: `"REVIEW DONE — TASK_X: COMPLETE ($X.XX)"` (use cost from 7a)
-  - Move worker from active to completed list in state (include cost in Completed Tasks table)
-  - Record: task_id, completion_timestamp, cost
+  - Log: `"REVIEW DONE — TASK_X: COMPLETE"`
+  - Move worker from active to completed list in state
+  - Record: task_id, completion_timestamp
 
-**7f. IF state did NOT transition (still at pre-worker state):**
+**7e. IF state did NOT transition (still at pre-worker state):**
 
 - Trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry)
 - After cleanup, re-check registry — the Cleanup Worker may have advanced the state
@@ -464,13 +445,13 @@ If the registry shows a state that does not match the expected transition for th
   - Log: `"TASK_X: {worker_type} failed {N} times — marked BLOCKED"`
 - **ELSE**:
   - Log: `"TASK_X: {worker_type} finished without state transition — will retry (attempt {N}/{retry_limit})"`
-- Move worker from active to failed list in state (include cost in Failed Tasks table)
+- Move worker from active to failed list in state
 
-**7g. After processing all completions**, immediately re-evaluate:
+**7f. After processing all completions**, immediately re-evaluate:
 
 A completed task may unblock downstream tasks. Go back to **Step 2** (read registry, rebuild dependency graph).
 
-**7h. Edge case -- worker still running after expected state reached:**
+**7g. Edge case -- worker still running after expected state reached:**
 
 If `get_worker_stats` shows worker is still running but the registry state has already transitioned to the expected end state:
 - Wait one monitoring interval.
@@ -480,7 +461,7 @@ If `get_worker_stats` shows worker is still running but the registry state has a
 
 When a worker stops, crashes, or gets killed for ANY reason without the registry state transitioning to the expected end state, the supervisor MUST:
 
-1. **Spawn a Cleanup Worker FIRST** (see Cleanup Worker Prompt below). This lightweight worker salvages any uncommitted work left behind by the dead worker. Wait for the Cleanup Worker to finish before proceeding. Then call `get_worker_stats` on the Cleanup Worker to record its cost in the Session Cost accumulator.
+1. **Spawn a Cleanup Worker FIRST** (see Cleanup Worker Prompt below). This lightweight worker salvages any uncommitted work left behind by the dead worker. Wait for the Cleanup Worker to finish before proceeding.
 2. **Leave task at its current registry state** (do NOT reset to CREATED). The Cleanup Worker may have updated the state. Re-read the registry after cleanup completes.
 3. **Log the event** with the reason (stuck, crashed, MCP reported failure, etc.).
 4. **On next loop iteration**, the task is picked up again based on its current state: IN_PROGRESS spawns a Build Worker, IN_REVIEW spawns a Review Worker (via Step 5a worker type determination).
@@ -530,13 +511,8 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 {copy full Session Log from orchestrator-state.md}
 ```
 
-3. **Populate cost data from orchestrator-state.md**:
-   - `**Total Cost**`: Sum from Session Cost section's Total Cost metric
-   - Per-worker `| Cost |` column: From Completed Tasks and Failed Tasks tables' Cost columns
-   - Per-worker `| Duration |`: Calculate from spawn time to completion time
-   - If a worker's cost is unknown (`$?.??`), carry it through to history as-is
-4. This file is **append-only** — never overwrite previous sessions.
-5. Keep the file under control: if it exceeds 500 lines, trim the oldest sessions (keep the most recent 10).
+3. This file is **append-only** — never overwrite previous sessions.
+4. Keep the file under control: if it exceeds 500 lines, trim the oldest sessions (keep the most recent 10).
 
 ---
 
@@ -566,7 +542,8 @@ through implementation. Follow these rules strictly:
 
 4. After ALL development is complete (all batches COMPLETE in tasks.md):
    a. Create a git commit with all implementation code
-   b. Update task-tracking/registry.md: set task status to IMPLEMENTED
+   b. **Populate file scope**: Add list of files created/modified to the task's File Scope section
+   c. Update task-tracking/registry.md: set task status to IMPLEMENTED
    c. Commit the registry update: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
    Write your registry update as the FINAL action before exit.
    If another worker has modified registry.md since you read it,
@@ -625,17 +602,6 @@ AUTONOMOUS MODE — follow these rules strictly:
 4. Do NOT restart from scratch. Resume from the detected phase.
 
 5. Before developers write code, ensure they read
-
-4. Do NOT restart from scratch. Resume from detected phase.
-
-5. Before developers write code, ensure they read
-   .claude/review-lessons/ for accumulated rules.
-
-6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
-   a. Create a git commit with all implementation code
-   b. **Populate file scope**: Add list of files created/modified to the task'\''s File Scope section
-   c. Update registry.md: set task status to IMPLEMENTED
-   d. Commit the registry update
    .claude/review-lessons/ for accumulated rules.
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
@@ -675,9 +641,7 @@ Follow these rules strictly:
    ALL checkpoints and continue immediately. No human at this terminal.
 
 2. The task is already implemented. Do NOT re-run PM, Architect,
-
-2. The task is already implemented. Do NOT re-run PM, Architect,
-   or development phases. Start from review phase.
+   or development phases. Start from the QA/review phase.
 
 3. **FIRST: Read shared review context**:
    - Read `task-tracking/review-context.md` if it exists
@@ -685,15 +649,12 @@ Follow these rules strictly:
    - If review-context.md does not exist, proceed without it
 
 4. **ALSO: Read and respect file scope**:
-   - Read the task'\''s File Scope section from task.md
-   - Review and fix ONLY issues within your task'\''s file scope
-   - If you find an issue outside the task'\''s scope, document it in the review but do NOT fix it
+   - Read the task's File Scope section from task.md
+   - Review and fix ONLY issues within your task's file scope
+   - If you find an issue outside the task's scope, document it in the review but do NOT fix it
    - Use `git blame` if needed to verify code ownership for ambiguous changes
 
 5. Run ALL available reviewers: style, logic, and security.
-   or development phases. Start from the QA/review phase.
-
-3. Run ALL available reviewers: style, logic, and security.
    Do not ask which reviewers to run -- run all of them.
 
 4. After reviews complete, fix ALL review findings. Do not skip any
@@ -857,12 +818,12 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | Retry Limit         | 2          |
 
 ## Active Workers
-## Active Workers
 
-| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State | Cost   |
-|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|--------|
-| abc-123   | TASK_2026_003 | Build       | TASK_2026_003-FEATURE-BUILD  | running | 2026-03-24 10:00:00 | healthy     | 0           | IMPLEMENTED        | $1.23  |
-| def-456   | TASK_2026_004 | Review      | TASK_2026_004-BUGFIX-REVIEW  | running | 2026-03-24 10:05:00 | healthy     | 0           | COMPLETE           | $0.45  |
+| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State |
+|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|
+| abc-123   | TASK_2026_003 | Build       | TASK_2026_003-FEATURE-BUILD  | running | 2026-03-24 10:00:00 | healthy     | 0           | IMPLEMENTED        |
+| def-456   | TASK_2026_004 | Review      | TASK_2026_004-BUGFIX-REVIEW  | running | 2026-03-24 10:05:00 | healthy     | 0           | COMPLETE           |
+
 
 ## Serialized Reviews
 
@@ -873,22 +834,15 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 
 ## Completed Tasks
 
-| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State | Cost   |
-|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|--------|
-| abc-123   | TASK_2026_003 | Build       | TASK_2026_003-FEATURE-BUILD  | running | 2026-03-24 10:00:00 | healthy     | 0           | IMPLEMENTED        | $1.23  |
-| def-456   | TASK_2026_004 | Review      | TASK_2026_004-BUGFIX-REVIEW  | running | 2026-03-24 10:05:00 | healthy     | 0           | COMPLETE           | $0.45  |
-
-## Completed Tasks
-
-| Task ID       | Completed At         | Worker Type | Cost   | Total Tokens |
-|---------------|----------------------|-------------|--------|--------------|
-| TASK_2026_001 | 2026-03-24 10:45:00  | Build       | $2.15  | 145,230      |
+| Task ID       | Completed At         |
+|---------------|----------------------|
+| TASK_2026_001 | 2026-03-24 10:45:00  |
 
 ## Failed Tasks
 
-| Task ID       | Reason                    | Retry Count | Cost   |
-|---------------|---------------------------|-------------|--------|
-| TASK_2026_005 | No state transition (x2)  | 2           | $3.40  |
+| Task ID       | Reason                    | Retry Count |
+|---------------|---------------------------|-------------|
+| TASK_2026_005 | No state transition (x2)  | 2           |
 
 ## Task Queue (Next Actionable)
 
@@ -904,18 +858,6 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 |---------------|-------------|
 | TASK_2026_005 | 2           |
 
-## Session Cost
-
-| Metric             | Value   |
-|--------------------|---------|
-| Total Cost         | $5.55   |
-| Total Input Tokens | 320,000 |
-| Total Output Tokens| 45,000  |
-| Total Cache Tokens | 210,000 |
-| Workers Spawned    | 4       |
-
-> Updated after each worker completion. The Total Cost is the sum of all worker costs (completed + failed + active). When updating, recalculate: sum Completed Tasks Cost + Failed Tasks Cost + Active Workers Cost columns. Active worker costs are snapshots from the last `get_worker_stats` call and may increase until the worker finishes.
-
 ## Session Log
 
 | Timestamp | Event |
@@ -926,8 +868,7 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | 10:10:00 | HEALTH CHECK — TASK_2026_003: healthy |
 | 10:10:02 | HEALTH CHECK — TASK_2026_004: high_context (82%) |
 | 10:20:00 | STATE TRANSITIONED — TASK_2026_004: IN_REVIEW -> COMPLETE |
-| 10:20:01 | REVIEW DONE — TASK_2026_004: COMPLETE ($0.45) |
-| 10:20:02 | COST — TASK_2026_004: $0.45 (input: 38k, output: 5k, cache: 22k) |
+| 10:20:01 | REVIEW DONE — TASK_2026_004: COMPLETE |
 | 10:20:05 | SPAWNED ghi-789 for TASK_2026_006 (Build: FEATURE) |
 | 10:30:00 | WARNING — TASK_2026_003: stuck (strike 1/2) |
 | 10:40:00 | KILLING — TASK_2026_003: stuck for 2 consecutive checks |
@@ -943,7 +884,6 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 - **Standard markdown**: All tables use standard markdown syntax, parseable by any agent after compaction.
 - **Retry persistence**: Retry Tracker persists across loop iterations and compactions -- not just for active workers.
 - **Task Queue is informational**: Recalculated each loop iteration, but useful for context recovery after compaction.
-- **Cost tracking**: Session Cost section accumulates costs from all workers. Updated after each worker completion (Step 7a) and monitoring escalation (Step 6b). Active Worker costs are snapshots; final costs come from `get_worker_stats` at completion.
 
 ---
 
@@ -954,7 +894,7 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 | `spawn_worker`        | Step 5       | Launch a new worker session for a task                |
 | `list_workers`        | Step 1       | Reconcile state after compaction/recovery              |
 | `get_worker_activity` | Step 6       | Routine monitoring (compact, context-efficient)        |
-| `get_worker_stats`    | Step 6, 7    | Detailed check when stuck/finished suspected; final cost on completion |
+| `get_worker_stats`    | Step 6       | Detailed check when stuck/finished suspected           |
 | `kill_worker`         | Step 6, 7    | Terminate stuck or post-completion workers             |
 
 ### MCP Tool Signatures
@@ -970,7 +910,7 @@ get_worker_activity(worker_id: string, last_n_messages?: number)
   -> { summary: string }
 
 get_worker_stats(worker_id: string)
-  -> { worker_id, label, status, tokens: {...}, cost: {...}, progress: {...}, health: 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished' }
+  -> { worker_id, label, status, tokens: {...}, cost: {...}, progress: {...}, health: 'healthy' | 'high_context' | 'compacting' | 'stuck' | 'finished' }
 
 kill_worker(worker_id: string, reason?: string)
   -> { success: boolean, final_stats: {...} }
@@ -979,7 +919,7 @@ kill_worker(worker_id: string, reason?: string)
 ### Context Efficiency Rule
 
 - **DEFAULT** to `get_worker_activity` for routine checks (returns ~5-10 lines).
-- **ESCALATE** to `get_worker_stats` only when activity summary indicates issues (stuck, finished, or health unclear). Do NOT escalate for `starting` — it is expected during the first 5 minutes.
+- **ESCALATE** to `get_worker_stats` only when activity summary indicates issues (stuck, finished, or health unclear).
 - **NEVER** call `get_worker_stats` on every worker every interval -- this wastes supervisor context.
 
 ---
@@ -1044,4 +984,3 @@ On any unexpected error:
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
 11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
 12. **Review Workers take priority** -- finishing tasks is more valuable than starting new ones
-13. **Track cost at every exit** -- call `get_worker_stats` when any worker completes, fails, or is killed. Record in state file and session log. Never leave a worker's cost as unknown if stats are available
