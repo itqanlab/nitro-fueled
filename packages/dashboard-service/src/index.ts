@@ -13,6 +13,7 @@ export interface DashboardServiceOptions {
   readonly antiPatternsPath?: string;
   readonly reviewLessonsDir?: string;
   readonly port: number;
+  readonly webDistPath?: string;
 }
 
 export class DashboardService {
@@ -34,7 +35,7 @@ export class DashboardService {
   }
 
   public async start(): Promise<void> {
-    const server = createHttpServer(this.store);
+    const server = createHttpServer(this.store, this.options.webDistPath);
     this.httpServer = server;
 
     this.wsBroadcaster.attach(server, this.eventBus);

@@ -1,5 +1,18 @@
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
+import { readFile } from 'node:fs';
+import { extname, join } from 'node:path';
 import type { StateStore } from '../state/store.js';
+
+const MIME_TYPES: Readonly<Record<string, string>> = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+};
 
 type RouteHandler = (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) => void;
 
@@ -10,7 +23,7 @@ interface Route {
   readonly handler: RouteHandler;
 }
 
-export function createHttpServer(store: StateStore): Server {
+export function createHttpServer(store: StateStore, webDistPath?: string): Server {
   const routes: Route[] = [];
 
   function addRoute(method: string, path: string, handler: RouteHandler): void {
@@ -105,6 +118,36 @@ export function createHttpServer(store: StateStore): Server {
         route.handler(req, res, params);
         return;
       }
+    }
+
+    // Serve static files from webDistPath
+    if (webDistPath && (url === '/' || url.startsWith('/assets'))) {
+      const filePath = url === '/' ? 'index.html' : url.slice(1);
+      const fullPath = join(webDistPath, filePath);
+      const ext = extname(filePath);
+      const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
+
+      readFile(fullPath, (err, data) => {
+        if (err) {
+          // Fall back to index.html for SPA routing
+          if (filePath !== 'index.html') {
+            readFile(join(webDistPath, 'index.html'), (fallbackErr, indexData) => {
+              if (fallbackErr) {
+                sendJson(res, { error: 'Not found' }, 404);
+                return;
+              }
+              res.writeHead(200, { 'Content-Type': 'text/html' });
+              res.end(indexData);
+            });
+          } else {
+            sendJson(res, { error: 'Not found' }, 404);
+          }
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(data);
+      });
+      return;
     }
 
     sendJson(res, { error: 'Not found' }, 404);
