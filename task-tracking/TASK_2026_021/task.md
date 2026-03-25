@@ -1,4 +1,4 @@
-# Task: Smart Provider & Model Routing
+# Task: Three-Provider Routing — Claude, GLM, OpenCode
 
 ## Metadata
 
@@ -6,157 +6,149 @@
 |------------|------------|
 | Type       | FEATURE    |
 | Priority   | P1-High    |
-| Complexity | Complex    |
+| Complexity | Medium     |
 
 ## Description
 
-Build an intelligent cost-routing system that selects the cheapest capable provider and model for each task. The goal is to avoid burning expensive Claude tokens on work that a cheaper provider or lighter model can handle.
+Add support for 3 providers in the session orchestrator so workers can be routed to the best-fit provider and model. Right model for the right job — quality first, cost savings second.
 
-### The Problem
+### The 3 providers
 
-Today every task runs on Claude Opus — the most expensive option. A simple README fix costs the same as a complex multi-service refactor. There's no cost intelligence.
+All three use the same `claude` binary. GLM works by swapping environment variables to redirect API calls to Z.AI servers. OpenCode is separate for non-Claude models.
 
-### The Solution
-
-Three layers of intelligence:
-
-**Layer 1 — Provider Abstraction (Session Orchestrator)**
-
-Add a provider adapter system to the session-orchestrator with two concrete implementations:
-
-**Claude adapter (primary — full orchestration):**
-- Binary: `claude`
-- Flags: `--print`, `--dangerously-skip-permissions`, `--model <model>`, `--output-format stream-json`
+**1. Claude (subscription)** — full orchestration, best reasoning
+- Binary: `claude --print`
+- Env: normal (uses logged-in subscription)
 - Models: `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`
-- Capabilities: Full orchestration (agents, MCP, tools, multi-step pipelines)
-- Output parsing: Stream JSON from stdout (per TASK_2026_019)
+- Capabilities: Full orchestration — agents, MCP, tools, skills, multi-step pipelines
 
-**OpenCode adapter (secondary — single-shot execution):**
-- Binary: `opencode`
-- Command: `opencode run --model <provider/model> --format json "prompt"`
-- Models: Any model available through configured providers — OpenAI (`openai/o3`, `openai/o4-mini`, `openai/gpt-4.1`), Anthropic (`anthropic/claude-sonnet-4-6`), Google (`google/gemini-2.5-flash`), local (Ollama), and 75+ providers via Models.dev
-- Capabilities: Single-shot execution only — prompt in, code out, no internal agent orchestration
-- Output parsing: JSON format from `--format json` flag for token/cost extraction
-- Concurrency-safe: Each spawn passes `--model` inline, no shared config. `OPENCODE_CONFIG` env var available as fallback for advanced overrides.
+**2. GLM (Z.AI)** — full orchestration, saves Claude quota
+- Binary: `claude --print` (same CLI, different API endpoint)
+- Env: Z.AI env vars override Anthropic endpoint
+  - `ANTHROPIC_AUTH_TOKEN` = Z.AI API key
+  - `ANTHROPIC_BASE_URL` = `https://api.z.ai/api/anthropic`
+  - `ANTHROPIC_DEFAULT_OPUS_MODEL` = `glm-5`
+  - `ANTHROPIC_DEFAULT_SONNET_MODEL` = `glm-4.7`
+  - `ANTHROPIC_DEFAULT_HAIKU_MODEL` = `glm-4.5-air`
+- Models: GLM-5, GLM-5-Turbo, GLM-4.7, GLM-4.6, GLM-4.5-Air
+- Capabilities: Full orchestration — same as Claude (agents, MCP, tools, skills)
 
-Each adapter implements:
-- `buildCommand(prompt, model, workingDir)` → spawn args
-- `parseOutput(line)` → normalized `{ tokens, cost, progress, isDone }`
-- `getModels()` → available models with pricing
-- `detectCompletion(output)` → boolean
+**3. OpenCode (GPT and others)** — single-shot focused tasks
+- Binary: `opencode run --model <provider/model> --format json "prompt"`
+- Models: `openai/gpt-5.4`, `openai/gpt-4.1`, `openai/gpt-4.1-mini`, `openai/o4-mini`, and any provider OpenCode supports
+- Capabilities: Single-shot only — prompt in, output out, no orchestration
 
-The `spawn_worker` MCP tool gets two new optional params:
-- `provider`: `claude | opencode` (default: `claude`)
-- `model`: provider-specific model string (default: provider's default)
+### Implementation
 
-**Layer 2 — Model-Aware Orchestration (Nitro-Fueled)**
+**print-launcher.ts changes:**
 
-The orchestration skill adapts its pipeline based on what the provider and model can handle:
+Add a `provider` option that controls the environment:
 
-| Provider | Model Tier | Pipeline |
-|----------|-----------|----------|
-| Claude | Opus | Full: PM → Architect → Team Leader → Dev → Review |
-| Claude | Sonnet | Simplified: PM → Architect → Dev → Review (skip Team Leader, fewer nested agents) |
-| Claude | Haiku | Minimal: Single-pass Dev → Review (no multi-agent nesting) |
-| OpenCode | Any | Bare: Single-shot prompt → code output (no orchestration skill, no agents) |
+```typescript
+type Provider = 'claude' | 'glm' | 'opencode';
 
-The Build Worker prompt should include a `## Model Constraints` section that tells the orchestration skill what to simplify. The auto-pilot skill reads provider + model from task.md and adjusts the worker prompt accordingly.
+// Claude: normal env
+// GLM: swap env vars to Z.AI endpoint
+// OpenCode: different binary entirely
+```
 
-**Layer 3 — Smart Cost Router (Auto-Pilot Supervisor)**
+For Claude and GLM, the only difference is environment variables. The same `claude --print` binary is used. This keeps it simple — no new adapter classes, just an env builder function.
 
-The Supervisor gains a cost-routing decision function that runs before spawning each worker. It evaluates:
+For OpenCode, spawn `opencode run` instead of `claude --print`.
 
-| Signal | Source | What it tells the router |
-|--------|--------|------------------------|
-| Task type | task.md `Type` field | BUGFIX/DOCUMENTATION → simpler, FEATURE/REFACTORING → may be complex |
-| Complexity | task.md `Complexity` field | Simple → cheap model, Complex → expensive model |
-| Priority | task.md `Priority` field | P0-Critical → prefer accuracy (Opus), P3-Low → prefer cost (Sonnet/OpenCode) |
-| Explicit override | task.md `Provider` and `Model` fields | User's explicit choice always wins |
-| Estimated scope | Acceptance criteria count, description length | More criteria → more complex → stronger model |
+**spawn_worker MCP tool:**
 
-**Default routing table (when no explicit Provider/Model is set):**
+Add `provider` parameter:
+```
+spawn_worker(prompt, working_directory, label, model?, provider?)
+  provider: 'claude' | 'glm' | 'opencode' (default: 'claude')
+```
 
-| Complexity | Priority | Recommended | Rationale |
-|-----------|----------|-------------|-----------|
-| Simple | Any | OpenCode `openai/o4-mini` | Cheapest option for trivial work |
-| Simple | P0-Critical | Claude Sonnet | Critical but simple — needs reliability |
-| Medium | P3-Low / P2-Medium | Claude Sonnet | Good enough, saves cost |
-| Medium | P1-High / P0-Critical | Claude Opus | Needs full reasoning |
-| Complex | Any | Claude Opus | Full pipeline, max capability |
+**GLM env builder:**
 
-The user can always override by setting `Provider` and `Model` explicitly in task.md. The router's suggestions are defaults, not mandates.
+```typescript
+function buildGlmEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    ANTHROPIC_AUTH_TOKEN: process.env.ZAI_API_KEY,
+    ANTHROPIC_BASE_URL: 'https://api.z.ai/api/anthropic',
+    ANTHROPIC_DEFAULT_OPUS_MODEL: 'glm-5',
+    ANTHROPIC_DEFAULT_SONNET_MODEL: 'glm-4.7',
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: 'glm-4.5-air',
+    API_TIMEOUT_MS: '3000000',
+  };
+}
+```
 
-### Task Template Changes
+The Z.AI API key is read from `ZAI_API_KEY` env var (user sets this once).
+
+### Routing table
+
+The Supervisor or Lead picks the provider based on what the work needs:
+
+| Work needs | Provider | Model | Why |
+|---|---|---|---|
+| Best reasoning (architecture, complex logic) | Claude | Opus | Top quality for critical decisions |
+| Full orchestration (Build Worker, Leads) | GLM | GLM-5 / GLM-4.7 | Full Claude Code capabilities, saves Claude quota |
+| Deep code review (logic reviewer) | Claude | Opus | Needs strongest reasoning |
+| Medium orchestration (style review, test lead) | GLM | GLM-4.7 | Good enough, full tool access |
+| Simple focused task (checklist review, unit tests) | OpenCode | GPT-4.1-mini | Single-shot, cheapest |
+
+User can override per task by setting `Provider` and `Model` in task.md. If not set, the Supervisor uses the routing table.
+
+### Task template changes
 
 Add to `task-tracking/task-template.md` Metadata table:
 
 ```
-| Provider   | [claude | opencode | default]                                                   |
-| Model      | [provider-specific model or default]                                            |
+| Provider   | [claude | glm | opencode | default]  |
+| Model      | [model name or default]               |
 ```
-
-When both are `default`, the cost router decides. When set explicitly, the router is bypassed.
-
-### OpenCode Model Format
-
-OpenCode models use `provider/model` format:
-- `openai/o4-mini`, `openai/o3`, `openai/gpt-4.1`
-- `anthropic/claude-sonnet-4-6`, `anthropic/claude-haiku-4-5-20251001`
-- `google/gemini-2.5-flash`, `google/gemini-2.5-pro`
-- Any model from Models.dev catalog
 
 ### Reporting
 
-- Registry gets `Provider` and `Model` columns for completed tasks
-- Orchestrator-state Active Workers table shows provider + model per worker
+- Registry shows Provider + Model per completed task
+- Orchestrator-state Active Workers table shows provider + model
 - `get_worker_stats` response includes provider and model
-- After a batch completes, the Supervisor logs a cost summary: total tokens, total cost, breakdown by provider/model
 
-### Key Files
+### Key files to change
 
 **Session Orchestrator** (`/Volumes/SanDiskSSD/mine/session-orchestrator/`):
-- `src/core/print-launcher.ts` → refactor into provider adapters
-- `src/core/token-calculator.ts` → add OpenAI/multi-provider pricing table
-- `src/core/worker-registry.ts` → add provider field
-- `src/index.ts` → add provider/model params to spawn_worker
+- `src/core/print-launcher.ts` — add provider param, env builder for GLM
+- `src/core/token-calculator.ts` — add GLM and OpenAI pricing
+- `src/core/worker-registry.ts` — add provider field
+- `src/index.ts` — add provider param to spawn_worker
+- New: `src/core/opencode-launcher.ts` — spawns `opencode run`
 
 **Nitro-Fueled** (this repo):
-- `task-tracking/task-template.md` → add Provider and Model fields
-- `.claude/skills/auto-pilot/SKILL.md` → cost router logic, model-aware spawning
-- `.claude/skills/orchestration/SKILL.md` → model-aware strategy adaptation
-- `.claude/commands/create-task.md` → prompt for provider/model (optional)
+- `task-tracking/task-template.md` — add Provider and Model fields
+- `.claude/skills/auto-pilot/SKILL.md` — routing table, provider-aware spawning
+- `.claude/commands/create-task.md` — prompt for provider/model (optional)
 
 ## Dependencies
 
-- TASK_2026_019 — Fix Print Mode Token/Cost Tracking (stdout parsing foundation)
+- TASK_2026_019 — Fix Print Mode Token/Cost Tracking (done)
 - TASK_2026_020 — Per-Task Model Selection (model field plumbing)
 
 ## Acceptance Criteria
 
-- [ ] Session orchestrator supports Claude and OpenCode as providers via adapter pattern
-- [ ] `spawn_worker` accepts `provider` and `model` parameters
-- [ ] OpenCode adapter spawns `opencode run --model <model> --format json "prompt"`
-- [ ] OpenCode adapter parses JSON output for token/cost data
-- [ ] Concurrent OpenCode workers can use different models without conflict
-- [ ] Orchestration skill adapts pipeline depth based on provider and model tier
-- [ ] OpenCode tasks bypass orchestration skill and run as single-shot execution
-- [ ] Cost router recommends provider/model based on task type, complexity, and priority
-- [ ] Explicit Provider/Model in task.md overrides the cost router
-- [ ] Registry and orchestrator-state show provider + model per task/worker
-- [ ] `get_worker_stats` includes provider and model in response
-- [ ] Supervisor logs cost summary after batch completion
+- [ ] print-launcher supports `provider` param: `claude`, `glm`, `opencode`
+- [ ] GLM workers spawn `claude --print` with Z.AI env vars
+- [ ] Claude and GLM workers can run concurrently without env conflicts
+- [ ] OpenCode workers spawn `opencode run --model X --format json`
+- [ ] `spawn_worker` MCP tool accepts `provider` parameter
+- [ ] `ZAI_API_KEY` env var used for GLM auth
+- [ ] Routing table in auto-pilot skill selects best-fit provider
+- [ ] Explicit Provider/Model in task.md overrides routing
+- [ ] Registry and orchestrator-state show provider + model per worker
+- [ ] `get_worker_stats` includes provider and model
 - [ ] Task template includes optional Provider and Model fields
-- [ ] /create-task supports provider and model selection
 
 ## References
 
-- Session orchestrator repo: `/Volumes/SanDiskSSD/mine/session-orchestrator/`
-- Auto-pilot skill: `.claude/skills/auto-pilot/SKILL.md`
-- Orchestration skill: `.claude/skills/orchestration/SKILL.md`
-- Task template: `task-tracking/task-template.md`
-- OpenCode CLI docs: https://opencode.ai/docs/cli/
-- OpenCode config docs: https://opencode.ai/docs/config/
-- OpenCode providers: https://opencode.ai/docs/providers/
-- OpenCode GitHub: https://github.com/opencode-ai/opencode
-- TASK_2026_019: Fix Print Mode Token/Cost Tracking
-- TASK_2026_020: Per-Task Model Selection
+- Session orchestrator: `/Volumes/SanDiskSSD/mine/session-orchestrator/`
+- Z.AI Claude Code integration: https://docs.z.ai/devpack/tool/claude
+- Z.AI GLM Coding Plan: https://z.ai/subscribe
+- OpenCode CLI: https://github.com/opencode-ai/opencode
+- `src/core/print-launcher.ts` — current launcher (env swap happens here)
+- TASK_2026_020 — Per-Task Model Selection

@@ -89,13 +89,13 @@ ws.onmessage = (msg) => {
 
 ### Dashboard Views
 
-**Task Board** — Kanban columns: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | BLOCKED | CANCELLED. Cards show task ID, title, type badge, priority, model/provider. Drag not needed — states are controlled by the Supervisor.
+**Task Board** — Kanban columns: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | FIXING | COMPLETE | BLOCKED | CANCELLED. Cards show task ID, title, type badge, priority, model/provider. Drag not needed — states are controlled by the Supervisor.
 
 **Roadmap** — Phase cards with progress bars (complete/total tasks). Milestone checklist. Decisions log table. Current focus highlight.
 
 **Live Workers** — Cards for each active worker: worker ID, task ID, worker type (Build/Review/Cleanup), model, provider, health status (healthy/stuck/compacting), elapsed time, token count, last action. Updates in real-time via WebSocket.
 
-**Task Detail** — Tabbed view: Definition (task.md) | Requirements (context.md) | Architecture (implementation-plan.md) | Dev Batches (tasks.md) | Reviews (style + logic + security) | Completion Report. Markdown rendered to HTML.
+**Task Detail** — Tabbed view: Definition (task.md) | Requirements (context.md) | Architecture (implementation-plan.md) | Dev Batches (tasks.md) | Reviews (style + logic + security) | Tests (test-report.md) | Completion Report. Markdown rendered to HTML.
 
 **Queue** — Next actionable tasks sorted by priority. Shows dependency graph (which tasks are blocked by which). Estimated worker type (Build vs Review).
 
@@ -114,15 +114,15 @@ ws.onmessage = (msg) => {
 Match the landing page aesthetic:
 - Dark theme: `--bg: #0a0e17`, `--bg-card: #111827`
 - Accent: `--accent: #f97316` (orange)
-- State colors: blue (CREATED), yellow (IN_PROGRESS), purple (IMPLEMENTED), cyan (IN_REVIEW), green (COMPLETE), red (BLOCKED)
+- State colors: blue (CREATED), yellow (IN_PROGRESS), purple (IMPLEMENTED), cyan (IN_REVIEW), amber (FIXING), green (COMPLETE), red (BLOCKED)
 - Monospace for code/file paths: SF Mono, Fira Code
 - Cards with `border-radius: 12px`, subtle borders, hover lift
 
 ### Build & Serve
 
-The frontend builds to static files via Vite. The Data Service (Elysia) serves them:
+The frontend builds to static files via Vite. The Data Service (Hono) serves them:
 - `vite build` → `packages/dashboard-web/dist/`
-- Data Service serves `dist/` as static files at the root via Elysia static plugin
+- Data Service serves `dist/` as static files at the root via Hono static middleware
 - In dev: `vite dev` proxy to data service API
 
 Production bundle ships inside the CLI package so `npx nitro-fueled dashboard` works without any additional install.
@@ -140,7 +140,7 @@ Production bundle ships inside the CLI package so `npx nitro-fueled dashboard` w
 - [ ] Task Board view shows all tasks in correct state columns
 - [ ] Roadmap view shows phases with progress bars and decisions log
 - [ ] Live Workers view updates in real-time (spawn, progress, completion)
-- [ ] Task Detail view renders all artifacts (definition, plan, reviews, report)
+- [ ] Task Detail view renders all artifacts (definition, plan, reviews, tests, report)
 - [ ] Session Log view shows timestamped events with auto-scroll
 - [ ] Cost Dashboard shows charts for cost/tokens (gracefully handles zero data)
 - [ ] WebSocket reconnection on disconnect with visual indicator

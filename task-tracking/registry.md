@@ -23,7 +23,7 @@
 | TASK_2026_019 | COMPLETE    | BUGFIX      | Fix Print Mode Token/Cost Tracking        | 2026-03-24 |
 | TASK_2026_020 | CREATED     | FEATURE     | Per-Task Model Selection                  | 2026-03-24 |
 | TASK_2026_021 | CREATED     | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 |
-| TASK_2026_022 | CREATED     | FEATURE     | Dashboard Data Service                    | 2026-03-24 |
+| TASK_2026_022 | IN_PROGRESS | FEATURE     | Dashboard Data Service                    | 2026-03-24 |
 | TASK_2026_023 | CREATED     | FEATURE     | Dashboard Web Client                      | 2026-03-24 |
 | TASK_2026_024 | CREATED     | FEATURE     | Dashboard CLI Command + Service Integration | 2026-03-24 |
 | TASK_2026_025 | COMPLETE    | BUGFIX      | Fix Review Worker Startup Failure (0-msg stuck on first attempt) | 2026-03-24 |
@@ -35,3 +35,12 @@
 | TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 |
 | TASK_2026_032 | CREATED     | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 |
 | TASK_2026_033 | CREATED     | FEATURE     | Pre-Flight Validation Before Auto-Pilot Spawns Workers | 2026-03-24 |
+| TASK_2026_034 | CREATED     | REFACTORING | Session-Scoped State Directories (Multi-Supervisor Support) | 2026-03-24 |
+| TASK_2026_035 | CREATED     | FEATURE     | Review Lead — Parallel Reviews with Model Routing | 2026-03-25 |
+| TASK_2026_036 | CREATED     | FEATURE     | Test Lead — Parallel Test Writing and Execution with Model Routing | 2026-03-25 |
+| TASK_2026_037 | CREATED     | REFACTORING | Updated Pipeline — Parallel Review + Test with Fix Phase | 2026-03-25 |
+| TASK_2026_038 | CREATED     | FEATURE     | Dashboard Session Support — Multi-Session View and History | 2026-03-25 |
+| TASK_2026_039 | CREATED     | FEATURE     | Dashboard Pipeline and Squad Visualization | 2026-03-25 |
+| TASK_2026_040 | CREATED     | FEATURE     | Dashboard Dependency Graph Visualization | 2026-03-25 |
+| TASK_2026_041 | CREATED     | FEATURE     | Dashboard Historical Analytics — Cross-Session Trends | 2026-03-25 |
+| TASK_2026_042 | CREATED     | FEATURE     | CLI Provider Configuration and Dependency Validation | 2026-03-25 |

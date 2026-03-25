@@ -12,7 +12,7 @@
 
 Build the Data Service layer — a persistent local server that is the ONLY component that touches task-tracking MD files. It watches for file changes, parses markdown into structured JSON, maintains an in-memory state cache, and broadcasts changes to connected clients via WebSocket events and a REST API.
 
-This is the foundation that all dashboard clients (web, desktop, TUI, mobile) will build on. The service must be designed so that any component can be replaced independently — swap Elysia for Hono, chokidar for fs.watch, gray-matter for another parser — without affecting the API contract.
+This is the foundation that all dashboard clients (web, desktop, TUI, mobile) will build on. The service must be designed so that any component can be replaced independently — swap Hono for another framework, chokidar for fs.watch, gray-matter for another parser — without affecting the API contract.
 
 ### Architecture
 
@@ -21,8 +21,8 @@ packages/dashboard-service/
 ├── src/
 │   ├── index.ts                 # Server bootstrap, CLI integration
 │   ├── server/
-│   │   ├── http.ts              # Elysia HTTP server setup (with @elysiajs/node adapter)
-│   │   └── websocket.ts         # WebSocket server + client management
+│   │   ├── http.ts              # Hono HTTP server setup (@hono/node-server)
+│   │   └── websocket.ts         # WebSocket server (ws) + client management
 │   ├── parsers/                  # MD → JSON parsers (one per file type)
 │   │   ├── parser.interface.ts   # Common parser contract
 │   │   ├── registry.parser.ts    # registry.md → TaskRecord[]
@@ -119,8 +119,8 @@ interface DashboardEventBus {
 
 | Component | Choice | Replaceable via |
 |-----------|--------|----------------|
-| HTTP Server | Elysia + @elysiajs/node | Swap `server/http.ts` |
-| WebSocket | Elysia WebSocket (built-in) | Swap `server/websocket.ts` |
+| HTTP Server | Hono + @hono/node-server | Swap `server/http.ts` |
+| WebSocket | ws (Node-native WebSocket lib) | Swap `server/websocket.ts` |
 | File Watcher | chokidar | Implement `watcher.interface.ts` |
 | MD Parser | gray-matter + unified/remark | Implement `parser.interface.ts` |
 | Event Bus | mitt | Implement `event-bus.ts` |
