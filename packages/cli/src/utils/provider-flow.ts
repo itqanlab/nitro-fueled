@@ -141,6 +141,31 @@ export async function runOpenCodeFirstTimeMenu(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+async function promptAuthMethod(existing: OpenCodeProviderConfig | undefined): Promise<'api-key' | 'subscription'> {
+  const existingAuthMethod = existing?.authMethod ?? 'api-key';
+  const authHint = existingAuthMethod === 'subscription' ? 'subscription' : 'api-key';
+  console.log(`  ? OpenCode auth method [${authHint}]:`);
+  console.log('    1) ChatGPT Plus/Pro subscription (OAuth)');
+  console.log('    2) API key');
+  const hasExisting = existing !== undefined;
+  const keepLabel = hasExisting ? 'Enter = keep current' : 'Enter = api-key';
+  const authAnswer = await prompt(`  Choice (${keepLabel}): `);
+
+  if (authAnswer === '1') return 'subscription';
+  if (authAnswer === '2') return 'api-key';
+  return existingAuthMethod;
+}
+
+async function promptApiKey(existing: OpenCodeProviderConfig | undefined): Promise<string> {
+  const defaultKeyHint = existing?.apiKey !== undefined
+    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
+    : '$OPENAI_API_KEY';
+  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
+  return keyAnswer !== ''
+    ? keyAnswer
+    : (existing?.apiKey ?? '$OPENAI_API_KEY');
+}
+
 async function reconfigureGlm(existing?: GlmProviderConfig): Promise<GlmProviderConfig | null> {
   const defaultKeyHint = existing !== undefined
     ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
@@ -197,23 +222,7 @@ async function reconfigureOpenCode(
     if (!installed) return null;
   }
 
-  const existingAuthMethod = existing?.authMethod ?? 'api-key';
-  const authHint = existingAuthMethod === 'subscription'
-    ? 'subscription'
-    : 'api-key';
-  console.log(`  ? OpenCode auth method [${authHint}]:`);
-  console.log('    1) ChatGPT Plus/Pro subscription (OAuth)');
-  console.log('    2) API key');
-  const authAnswer = await prompt('  Choice (Enter = keep current): ');
-
-  let authMethod: 'api-key' | 'subscription';
-  if (authAnswer === '1') {
-    authMethod = 'subscription';
-  } else if (authAnswer === '2') {
-    authMethod = 'api-key';
-  } else {
-    authMethod = existingAuthMethod;
-  }
+  const authMethod = await promptAuthMethod(existing);
 
   const defaultModel = existing?.defaultModel ?? 'openai/gpt-4.1-mini';
   let modelAnswer = await prompt(`  ? Default model [${defaultModel}]: `);
@@ -229,13 +238,7 @@ async function reconfigureOpenCode(
     return { enabled: true, authMethod: 'subscription', defaultModel: modelAnswer };
   }
 
-  const defaultKeyHint = existing?.apiKey !== undefined
-    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
-    : '$OPENAI_API_KEY';
-  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
-  const apiKey = keyAnswer !== ''
-    ? keyAnswer
-    : (existing?.apiKey ?? '$OPENAI_API_KEY');
+  const apiKey = await promptApiKey(existing);
 
   const resolvedKey = resolveApiKey(apiKey);
   if (resolvedKey === '') {

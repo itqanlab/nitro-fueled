@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import {
   readConfig,
   testGlmConnection,
@@ -49,7 +52,12 @@ export async function getProviderStatus(cwd: string): Promise<ProviderStatusResu
   const opencode = config.providers.opencode;
   if (opencode?.enabled === true) {
     if (opencode.authMethod === 'subscription') {
-      results.push({ name: 'OpenCode', status: 'connected', detail: `${opencode.defaultModel} (subscription)` });
+      const authFile = join(homedir(), '.local', 'share', 'opencode', 'auth.json');
+      if (existsSync(authFile)) {
+        results.push({ name: 'OpenCode', status: 'connected', detail: `${opencode.defaultModel} (subscription)` });
+      } else {
+        results.push({ name: 'OpenCode', status: 'failed', detail: "Run 'opencode auth login' first" });
+      }
     } else {
       const keyOk = resolveApiKey(opencode.apiKey ?? '') !== '';
       if (keyOk) {
