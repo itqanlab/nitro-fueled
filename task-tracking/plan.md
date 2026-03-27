@@ -180,6 +180,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_067 | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | COMPLETE | P1-High |
 | TASK_2026_068 | Provider Config UX — State Display, Per-Provider Test and Unload | COMPLETE | P1-High |
 | TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | COMPLETE | P1-High |
+| TASK_2026_065 | Orchestration Analytics — Per-Run Token and Cost Logging | COMPLETE | P2-Medium |
 | TASK_2026_070 | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | CREATED | P1-High |
 
 ### Phase 10: Agent Calibration
