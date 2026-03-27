@@ -221,9 +221,25 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_052 | Validate Workspace Init End-to-End | CREATED | P1-High |
 | TASK_2026_053 | Update Docs and Workspace to Reflect Package Vision | COMPLETE | P1-High |
 
+### Phase 13: Documentation Site
+**Status**: IN_PROGRESS
+**Description**: Build a professional Astro Starlight documentation site at packages/docs/ with GitHub Pages deployment, replacing the hand-rolled HTML docs.
+
+#### Milestones
+- [x] Astro Starlight scaffold at packages/docs/ (TASK_2026_055)
+- [ ] Full landing page (TASK_2026_056)
+- [ ] Content migration from docs/ (TASK_2026_057)
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_055 | Scaffold Astro Starlight Docs Site | COMPLETE | P1-High |
+| TASK_2026_056 | Build Full Landing Page | CREATED | P1-High |
+| TASK_2026_057 | Migrate docs/ Content to Starlight | CREATED | P2-Medium |
+
 ## Current Focus
 
-**Active Phase**: Phase 12 (CLI Maturity)
+**Active Phase**: Phase 12 (CLI Maturity) + Phase 13 (Docs Site)
 **Active Milestone**: Agent rename complete; docs, scaffold sync, and /run update in progress
 **Next Priorities**:
 1. Complete Phase 12 — tasks 049, 050, 052, 053 pending
