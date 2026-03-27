@@ -222,20 +222,20 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_053 | Update Docs and Workspace to Reflect Package Vision | COMPLETE | P1-High |
 
 ### Phase 13: Documentation Site
-**Status**: IN_PROGRESS
+**Status**: COMPLETE
 **Description**: Build a professional Astro Starlight documentation site at packages/docs/ with GitHub Pages deployment, replacing the hand-rolled HTML docs.
 
 #### Milestones
 - [x] Astro Starlight scaffold at packages/docs/ (TASK_2026_055)
 - [x] Full landing page (TASK_2026_056)
-- [ ] Content migration from docs/ (TASK_2026_057)
+- [x] Content migration from docs/ (TASK_2026_057)
 
 #### Task Map
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
 | TASK_2026_055 | Scaffold Astro Starlight Docs Site | COMPLETE | P1-High |
 | TASK_2026_056 | Build Full Landing Page | COMPLETE | P1-High |
-| TASK_2026_057 | Migrate docs/ Content to Starlight | CREATED | P2-Medium |
+| TASK_2026_057 | Migrate docs/ Content to Starlight | COMPLETE | P2-Medium |
 
 ## Current Focus
 
