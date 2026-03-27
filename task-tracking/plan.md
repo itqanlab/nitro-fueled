@@ -193,7 +193,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 #### Task Map
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_061 | Agent Record Schema and Failure Taxonomy | CREATED | P1-High |
+| TASK_2026_061 | Agent Record Schema and Failure Taxonomy | COMPLETE | P1-High |
 | TASK_2026_062 | /evaluate-agent Command | CREATED | P1-High |
 
 ## Current Focus
@@ -204,8 +204,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 1. TASK_2026_068 — Provider Config UX (P1-High, unblocked)
 2. TASK_2026_069 — Supervisor Spawn Fallback (P1-High, unblocked)
 3. TASK_2026_070 — Session Artifact Commit Ownership (P1-High, after 060 ✓ + 067 ✓)
-4. TASK_2026_061 — Agent Record Schema and Failure Taxonomy (P1-High, unblocked, can run in parallel)
-5. TASK_2026_062 — /evaluate-agent Command (P1-High, after 061)
+4. TASK_2026_062 — /evaluate-agent Command (P1-High, unblocked — 061 COMPLETE)
 
 **Supervisor Guidance**: PROCEED
 **Guidance Note**: Phase 11 (Supervisor Reliability) added with 059, 060, 067. Run 059+060 first (parallel), then 067. Phase 10 (Agent Calibration) continues in parallel. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
