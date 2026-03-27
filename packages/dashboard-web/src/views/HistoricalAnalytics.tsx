@@ -3,18 +3,21 @@ import { tokens } from '../theme/tokens.js';
 import { api } from '../api/client.js';
 import type {
   AnalyticsCostData,
+  AnalyticsEfficiencyData,
   AnalyticsModelsData,
   AnalyticsSessionsData,
 } from '../types/index.js';
 import { AnalyticsCostChart } from './AnalyticsCostChart.js';
 import { AnalyticsSessionsTable } from './AnalyticsSessionsTable.js';
 import { AnalyticsModelsChart } from './AnalyticsModelsChart.js';
+import { AnalyticsEfficiencyTable } from './AnalyticsEfficiencyTable.js';
 import { StatCard, SectionCard } from './AnalyticsCards.js';
 
 export function HistoricalAnalytics(): React.JSX.Element {
   const [costData, setCostData] = React.useState<AnalyticsCostData | null>(null);
   const [modelsData, setModelsData] = React.useState<AnalyticsModelsData | null>(null);
   const [sessionsData, setSessionsData] = React.useState<AnalyticsSessionsData | null>(null);
+  const [efficiencyData, setEfficiencyData] = React.useState<AnalyticsEfficiencyData | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -28,12 +31,14 @@ export function HistoricalAnalytics(): React.JSX.Element {
       api.getAnalyticsCost(),
       api.getAnalyticsModels(),
       api.getAnalyticsSessions(),
+      api.getAnalyticsEfficiency(),
     ])
-      .then(([cost, models, sessions]) => {
+      .then(([cost, models, sessions, efficiency]) => {
         if (cancelled) return;
         setCostData(cost);
         setModelsData(models);
         setSessionsData(sessions);
+        setEfficiencyData(efficiency);
         setIsLoading(false);
       })
       .catch((err: unknown) => {
@@ -105,6 +110,11 @@ export function HistoricalAnalytics(): React.JSX.Element {
         <AnalyticsModelsChart
           data={modelsData ?? { models: [], totalCost: 0, hypotheticalOpusCost: 0, actualSavings: 0 }}
         />
+      </SectionCard>
+
+      {/* Section 5: Efficiency metrics */}
+      <SectionCard title="Efficiency Metrics">
+        <AnalyticsEfficiencyTable sessions={efficiencyData?.sessions ?? []} />
       </SectionCard>
     </div>
   );

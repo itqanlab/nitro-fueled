@@ -55,37 +55,44 @@ export function AnalyticsSessionsTable({ sessions }: Props): React.JSX.Element {
   const [sortKey, setSortKey] = React.useState<SortKey>('date');
   const [sortDir, setSortDir] = React.useState<SortDir>('desc');
 
+  const sorted = React.useMemo(
+    () =>
+      [...sessions].sort((a, b) => {
+        const av = a[sortKey];
+        const bv = b[sortKey];
+        if (typeof av === 'number' && typeof bv === 'number') {
+          return sortDir === 'asc' ? av - bv : bv - av;
+        }
+        const aStr = String(av);
+        const bStr = String(bv);
+        return sortDir === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+      }),
+    [sessions, sortKey, sortDir],
+  );
+
+  const handleSort = React.useCallback(
+    (key: SortKey): void => {
+      if (key === sortKey) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortKey(key);
+        setSortDir('desc');
+      }
+    },
+    [sortKey],
+  );
+
+  function sortIndicator(key: SortKey): string {
+    if (key !== sortKey) return '';
+    return sortDir === 'asc' ? ' ↑' : ' ↓';
+  }
+
   if (sessions.length === 0) {
     return (
       <div style={{ padding: '24px', textAlign: 'center', color: tokens.colors.textDim, fontSize: '13px' }}>
         No session data available yet
       </div>
     );
-  }
-
-  const sorted = [...sessions].sort((a, b) => {
-    const av = a[sortKey];
-    const bv = b[sortKey];
-    if (typeof av === 'number' && typeof bv === 'number') {
-      return sortDir === 'asc' ? av - bv : bv - av;
-    }
-    const aStr = String(av);
-    const bStr = String(bv);
-    return sortDir === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
-  });
-
-  function handleSort(key: SortKey): void {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
-  }
-
-  function sortIndicator(key: SortKey): string {
-    if (key !== sortKey) return '';
-    return sortDir === 'asc' ? ' ↑' : ' ↓';
   }
 
   return (

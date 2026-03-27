@@ -6,6 +6,11 @@ interface Props {
   readonly data: AnalyticsModelsData;
 }
 
+// Track background: textDim at 15% opacity (muted neutral fill for bar backgrounds)
+const TRACK_BG = 'rgba(148,163,184,0.15)';
+// Savings box background: green at 8% opacity
+const SAVINGS_BG = tokens.colors.greenDim;
+
 const MODEL_COLORS: Record<string, string> = {
   'claude-opus-4-6': tokens.colors.purple,
   'claude-sonnet-4-6': tokens.colors.cyan,
@@ -56,7 +61,7 @@ export function AnalyticsModelsChart({ data }: Props): React.JSX.Element {
                 <div
                   style={{
                     height: '8px',
-                    backgroundColor: 'rgba(148,163,184,0.15)',
+                    backgroundColor: TRACK_BG,
                     borderRadius: '999px',
                     overflow: 'hidden',
                   }}
@@ -81,7 +86,7 @@ export function AnalyticsModelsChart({ data }: Props): React.JSX.Element {
           style={{
             marginTop: '20px',
             padding: '12px 16px',
-            backgroundColor: 'rgba(34,197,94,0.08)',
+            backgroundColor: SAVINGS_BG,
             border: `1px solid ${tokens.colors.green}`,
             borderRadius: tokens.radius.sm,
             display: 'flex',

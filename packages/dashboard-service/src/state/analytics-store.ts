@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import type {
   AnalyticsCostData,
   AnalyticsEfficiencyData,
@@ -17,8 +17,9 @@ import {
   buildComparisonRow,
 } from './analytics-helpers.js';
 
-// Opus cost per million tokens (approximate — for hypothetical comparison only)
-const OPUS_COST_PER_MTK = 15.0;
+// Multiplier used to estimate hypothetical all-Opus cost from actual mixed-model cost.
+// Reflects approximate Sonnet-to-Opus price ratio for comparison purposes only.
+const OPUS_MULTIPLIER = 1.8;
 const CACHE_TTL_MS = 30_000;
 
 export class AnalyticsStore {
@@ -27,6 +28,7 @@ export class AnalyticsStore {
   private efficiencyCache: AnalyticsEfficiencyData | null = null;
   private modelsCache: AnalyticsModelsData | null = null;
   private sessionsCache: AnalyticsSessionsData | null = null;
+  private buildPromise: Promise<void> | null = null;
 
   public constructor(private readonly projectRoot: string) {}
 
@@ -43,10 +45,11 @@ export class AnalyticsStore {
     try {
       const entries = await readdir(sessionsPath, { withFileTypes: true });
       return entries
-        .filter((e) => e.isDirectory() && e.name.startsWith('SESSION_'))
+        .filter((e) => e.isDirectory() && !e.isSymbolicLink() && e.name.startsWith('SESSION_'))
         .map((e) => join(sessionsPath, e.name))
         .sort();
-    } catch {
+    } catch (err) {
+      console.error('[analytics-store] Failed to read sessions directory:', err);
       return [];
     }
   }
@@ -74,9 +77,9 @@ export class AnalyticsStore {
       tokenCount: 0,
     }));
     const totalCost = models.reduce((s, m) => s + m.totalCost, 0);
-    const estimatedTokens = totalCost > 0 ? (totalCost / OPUS_COST_PER_MTK) * 1_000_000 : 0;
-    const hypOpus = (estimatedTokens / 1_000_000) * OPUS_COST_PER_MTK;
-    return { models, totalCost, hypotheticalOpusCost: hypOpus, actualSavings: Math.max(0, hypOpus - totalCost) };
+    const hypotheticalOpusCost = totalCost * OPUS_MULTIPLIER;
+    const actualSavings = Math.max(0, hypotheticalOpusCost - totalCost);
+    return { models, totalCost, hypotheticalOpusCost, actualSavings };
   }
 
   private async aggregateAllSessions(): Promise<{
@@ -90,8 +93,7 @@ export class AnalyticsStore {
     const compRows = [];
 
     for (const dir of sessionDirs) {
-      const parts = dir.split('/');
-      const sessionId = parts[parts.length - 1];
+      const sessionId = basename(dir);
       const date = parseSessionIdDate(sessionId);
 
       const stateContent = await this.readTextFile(join(dir, 'state.md'));
@@ -112,20 +114,28 @@ export class AnalyticsStore {
 
     const cumulativeCost = costPoints.reduce((s, p) => s + p.totalCost, 0);
     return {
-      costData: { sessions: costPoints, cumulativeCost, hypotheticalOpusCost: cumulativeCost * 1.8 },
+      costData: { sessions: costPoints, cumulativeCost, hypotheticalOpusCost: cumulativeCost * OPUS_MULTIPLIER },
       efficiencyData: { sessions: effPoints },
       sessionsData: { sessions: compRows },
     };
   }
 
-  private async buildCaches(): Promise<void> {
-    if (this.isCacheValid()) return;
+  private async _doBuildCaches(): Promise<void> {
     const { costData, efficiencyData, sessionsData } = await this.aggregateAllSessions();
     this.costCache = costData;
     this.efficiencyCache = efficiencyData;
     this.sessionsCache = sessionsData;
     this.modelsCache = this.buildModelsData(costData.sessions);
     this.cacheTs = Date.now();
+  }
+
+  private async buildCaches(): Promise<void> {
+    if (this.isCacheValid()) return;
+    if (this.buildPromise) return this.buildPromise;
+    this.buildPromise = this._doBuildCaches().finally(() => {
+      this.buildPromise = null;
+    });
+    return this.buildPromise;
   }
 
   public async getCostData(): Promise<AnalyticsCostData> {

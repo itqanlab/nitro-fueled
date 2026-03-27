@@ -6,6 +6,12 @@ interface Props {
   readonly sessions: ReadonlyArray<SessionCostPoint>;
 }
 
+const LEGEND_ITEMS = [
+  { color: tokens.colors.blue, label: 'Other' },
+  { color: tokens.colors.cyan, label: 'Sonnet' },
+  { color: tokens.colors.purple, label: 'Opus' },
+] as const;
+
 const BAR_W = 600;
 const BAR_H = 180;
 const PAD = { top: 10, right: 10, bottom: 40, left: 50 };
@@ -15,14 +21,7 @@ const CHART_H = BAR_H - PAD.top - PAD.bottom;
 export function AnalyticsCostChart({ sessions }: Props): React.JSX.Element {
   if (sessions.length < 2) {
     return (
-      <div
-        style={{
-          padding: '32px',
-          textAlign: 'center',
-          color: tokens.colors.textDim,
-          fontSize: '13px',
-        }}
-      >
+      <div style={{ padding: '32px', textAlign: 'center', color: tokens.colors.textDim, fontSize: '13px' }}>
         Not enough data (need ≥ 2 sessions)
       </div>
     );
@@ -33,6 +32,7 @@ export function AnalyticsCostChart({ sessions }: Props): React.JSX.Element {
   const gap = CHART_W / sessions.length;
 
   return (
+    <>
     <svg
       width="100%"
       viewBox={`0 0 ${BAR_W} ${BAR_H}`}
@@ -130,5 +130,16 @@ export function AnalyticsCostChart({ sessions }: Props): React.JSX.Element {
         strokeWidth="1"
       />
     </svg>
+
+    {/* Color legend */}
+    <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap', fontSize: '11px', color: tokens.colors.textDim }}>
+      {LEGEND_ITEMS.map(({ color, label }) => (
+        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: color, flexShrink: 0 }} />
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+    </>
   );
 }

@@ -25,8 +25,10 @@ export function parseCostFromContent(content: string): ParsedSessionCost {
   }
   if (sonnetCost > 0) costByModel['claude-sonnet-4-6'] = sonnetCost;
 
-  const completeMatches = content.match(/COMPLETE/g);
-  const taskCount = completeMatches ? Math.floor(completeMatches.length / 2) : 0;
+  // Count tasks by matching registry table rows of the form: | TASK_YYYY_NNN | ... | COMPLETE |
+  // This avoids over-counting the word "COMPLETE" which appears multiple times per task in state.md.
+  const taskRows = content.match(/\|\s*TASK_\d{4}_\d{3}\s*\|[^\n]*\|\s*COMPLETE\s*\|/g);
+  const taskCount = taskRows ? taskRows.length : 0;
 
   let durationMinutes = 0;
   const durationMatch = content.match(/(\d+)h\s*(\d+)m/);
@@ -57,12 +59,6 @@ export function parseAvgReviewScore(analyticsContent: string | null): number {
     count++;
   }
   return count > 0 ? sum / count : 0;
-}
-
-export interface AggregatedSessionData {
-  readonly costPoints: ReadonlyArray<SessionCostPoint>;
-  readonly effPoints: ReadonlyArray<EfficiencyPoint>;
-  readonly compRows: ReadonlyArray<SessionComparisonRow>;
 }
 
 export function buildSessionCostPoint(

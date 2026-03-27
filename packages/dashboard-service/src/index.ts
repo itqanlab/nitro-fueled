@@ -102,6 +102,11 @@ export class DashboardService {
     this.watcher.watch(this.options.taskTrackingDir, (filePath, event) => {
       if (!filePath.endsWith('.md')) return;
 
+      // When session state changes, invalidate analytics cache
+      if (filePath.includes('task-tracking/sessions/')) {
+        this.analyticsStore.invalidate();
+      }
+
       if (event === 'unlink') {
         this.fileRouter.handleRemoval(filePath);
         return;
@@ -195,4 +200,12 @@ export type {
   WorkerTreeNode,
   WorkerHealth,
   SessionAnalytics,
+  AnalyticsCostData,
+  AnalyticsEfficiencyData,
+  AnalyticsModelsData,
+  AnalyticsSessionsData,
+  SessionCostPoint,
+  EfficiencyPoint,
+  ModelUsagePoint,
+  SessionComparisonRow,
 } from './events/event-types.js';
