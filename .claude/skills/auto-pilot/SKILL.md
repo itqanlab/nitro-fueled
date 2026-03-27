@@ -173,6 +173,8 @@ On startup (after MCP validation passes and Concurrent Session Guard passes), th
 Timestamp is the wall-clock start time (local time, zero-padded, including seconds). Example:
 `task-tracking/sessions/SESSION_2026-03-24_22-00-00/`
 
+All datetime fields written inside session files must include the local timezone offset (e.g., `+0200`).
+
 ### Startup Sequence
 
 The supervisor startup follows this exact order:
@@ -198,6 +200,7 @@ The supervisor startup follows this exact order:
 
 0. (Run after MCP validation and Concurrent Session Guard — see those sections for prerequisites.)
 1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` using current timestamp.
+   When writing datetime values to state.md or worker logs, use local time with timezone offset (`YYYY-MM-DD HH:MM:SS +ZZZZ`). To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
 2. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
 3. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
    ```markdown
@@ -635,6 +638,8 @@ After any worker completion (successful or failed state transition confirmed in 
 | Duration | {duration_minutes}m |
 | Outcome | IMPLEMENTED \| COMPLETE \| FAILED \| STUCK |
 
+> Timestamps (`spawn_time`, `current_time`) must use local time with timezone offset: `YYYY-MM-DD HH:MM:SS +ZZZZ`. To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
+
 ## Exit Stats
 
 | Metric | Value |
@@ -703,7 +708,7 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 
 ---
 
-## Session YYYY-MM-DD HH:MM — HH:MM
+## Session YYYY-MM-DD HH:MM+ZZZZ — HH:MM+ZZZZ
 
 **Config**: concurrency {N}, interval {N}m, retries {N}
 **Result**: {completed} completed, {failed} failed, {blocked} blocked
@@ -1102,8 +1107,8 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 # Orchestrator State
 
 **Loop Status**: RUNNING | STOPPED
-**Last Updated**: YYYY-MM-DD HH:MM:SS
-**Session Started**: YYYY-MM-DD HH:MM:SS
+**Last Updated**: YYYY-MM-DD HH:MM:SS +ZZZZ
+**Session Started**: YYYY-MM-DD HH:MM:SS +ZZZZ
 **Session Directory**: task-tracking/sessions/SESSION_2026-03-24_22-00-00/
 
 ## Configuration
@@ -1118,8 +1123,8 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 
 | Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State |
 |-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|
-| abc-123   | TASK_2026_003 | Build       | TASK_2026_003-FEATURE-BUILD  | running | 2026-03-24 10:00:00 | healthy     | 0           | IMPLEMENTED        |
-| def-456   | TASK_2026_004 | Review      | TASK_2026_004-BUGFIX-REVIEW  | running | 2026-03-24 10:05:00 | healthy     | 0           | COMPLETE           |
+| abc-123   | TASK_2026_003 | Build       | TASK_2026_003-FEATURE-BUILD  | running | 2026-03-24 10:00:00 +0200 | healthy     | 0           | IMPLEMENTED        |
+| def-456   | TASK_2026_004 | Review      | TASK_2026_004-BUGFIX-REVIEW  | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | COMPLETE           |
 
 
 ## Serialized Reviews
@@ -1133,7 +1138,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 
 | Task ID       | Completed At         |
 |---------------|----------------------|
-| TASK_2026_001 | 2026-03-24 10:45:00  |
+| TASK_2026_001 | 2026-03-24 10:45:00 +0200  |
 
 ## Failed Tasks
 
