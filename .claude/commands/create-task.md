@@ -82,6 +82,7 @@ Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no tr
 > - Priority: the task's Priority field value (e.g., `P1-High`)
 > - Dependencies: comma-separated Task IDs (e.g., `TASK_2026_052, TASK_2026_051`), or `None`
 > - COMPLETE/CANCELLED rows use `—` for both Priority and Dependencies
+> - Legacy rows (pre-TASK_2026_064) missing Priority/Dependencies columns are handled by the Supervisor's Step 2 fallback (treated as P2-Medium, no deps).
 
 ### Step 6: Post-Creation Validation
 
