@@ -24,13 +24,13 @@
 | TASK_2026_020 | COMPLETE    | FEATURE     | Per-Task Model Selection                  | 2026-03-24 | default |
 | TASK_2026_021 | COMPLETE    | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 | default |
 | TASK_2026_022 | COMPLETE    | FEATURE     | Dashboard Data Service                    | 2026-03-24 | — |
-| TASK_2026_023 | IMPLEMENTED | FEATURE     | Dashboard Web Client                      | 2026-03-24 | — |
+| TASK_2026_023 | COMPLETE    | FEATURE     | Dashboard Web Client                      | 2026-03-24 | — |
 | TASK_2026_024 | COMPLETE    | FEATURE     | Dashboard CLI Command + Service Integration | 2026-03-24 | default |
 | TASK_2026_025 | COMPLETE    | BUGFIX      | Fix Review Worker Startup Failure (0-msg stuck on first attempt) | 2026-03-24 | — |
 | TASK_2026_026 | COMPLETE    | BUGFIX      | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 | — |
 | TASK_2026_027 | COMPLETE    | FEATURE     | Shared Review Context and Task File-Scope Isolation | 2026-03-24 | — |
 | TASK_2026_028 | COMPLETE    | BUGFIX      | Enforce tasks.md as Required Build Artifact | 2026-03-24 | — |
-| TASK_2026_029 | IMPLEMENTED | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 | default |
+| TASK_2026_029 | COMPLETE    | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 | default |
 | TASK_2026_030 | COMPLETE    | BUGFIX      | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-24 | — |
 | TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 | default |
 | TASK_2026_032 | COMPLETE    | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 | default |
