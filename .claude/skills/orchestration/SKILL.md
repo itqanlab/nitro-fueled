@@ -336,7 +336,8 @@ Run these checks after implementation is committed and registry is updated:
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| tasks.md exists | Glob task-tracking/TASK_[ID]/ for tasks.md | File exists with at least one subtask row |
+| tasks.md exists | Glob task-tracking/TASK_[ID]/ for tasks.md | File found |
+| tasks.md has content | Grep "Task" in tasks.md | At least one `### Task N.N:` heading present |
 | All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
 | Implementation committed | Check git status | No unstaged implementation files |
 | Registry updated | Grep task ID in registry.md | Status shows IMPLEMENTED |
@@ -345,7 +346,20 @@ Run these checks after implementation is committed and registry is updated:
 If any check fails, fix it before exiting. Do not exit with uncommitted
 work or an un-updated registry.
 
-**If tasks.md is missing**: Create it by listing all implementation steps you completed as COMPLETE rows. See the tasks.md format in `.claude/skills/orchestration/references/team-leader-modes.md` (MODE 1 — Expected Output section).
+**If tasks.md is missing**: Create it by listing all implementation steps you completed as task entries with `**Status**: COMPLETE`. See the tasks.md format under `## MODE 1: DECOMPOSITION` > `### Expected Output` in `.claude/skills/orchestration/references/team-leader-modes.md`. If that file is unavailable, use this minimal structure:
+
+```markdown
+# Development Tasks - TASK_[ID]
+
+## Batch 1: [Description] - COMPLETE
+
+**Developer**: systems-developer
+
+### Task 1.1: [What you implemented]
+
+**File**: [path/to/file]
+**Status**: COMPLETE
+```
 
 ### Review Worker Exit Gate
 
