@@ -77,6 +77,11 @@ This analysis is **mandatory** — every task must have a Parallelism section.
 Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no trailing newline, no extra whitespace).
 
 > The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
+>
+> **Canonical registry row format** (for reference when regenerating): `Task ID | Status | Type | Description | Priority | Dependencies | Created | Model`
+> - Priority: the task's Priority field value (e.g., `P1-High`)
+> - Dependencies: comma-separated Task IDs (e.g., `TASK_2026_052, TASK_2026_051`), or `None`
+> - COMPLETE/CANCELLED rows use `—` for both Priority and Dependencies
 
 ### Step 6: Post-Creation Validation
 

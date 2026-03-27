@@ -403,39 +403,22 @@ If `active-sessions.md` is missing or the row is not found, scan `task-tracking/
 1. Initialize fresh state with default or overridden configuration.
 2. Proceed to Step 2.
 
-### Step 2: Read Registry and Task Folders
+### Step 2: Read Registry
 
 1. Read `task-tracking/registry.md`.
-2. Parse every row: extract **Task ID**, **Type**, **Description** (metadata only — do NOT use the registry Status column as the live state).
+2. Parse every row: extract **Task ID**, **Status** (registry column — used only as fallback if status file is missing), **Type**, **Description**, **Priority**, **Dependencies** (from the new registry columns — do NOT rely on the registry Status column as the live state for routing decisions).
 3. For each Task ID parsed from the registry, read `task-tracking/TASK_YYYY_NNN/status` to get the current state (trim all whitespace). If the `status` file is missing, fall back to registry column 2 and log warning: `"[warn] TASK_YYYY_NNN: status file missing, reading state from registry.md"`.
-4. For each task with current state **CREATED**, **IN_PROGRESS**, **IMPLEMENTED**, **IN_REVIEW**, or **FIXING**:
-   - Read `task-tracking/TASK_YYYY_NNN/task.md`
-   - Extract: **Type**, **Priority**, **Complexity**, **Model** (treat as `default` if the field is absent or not present in the task), **Provider** (treat as `default` if the field is absent), **Dependencies** list, **File Scope** list
-5. If a `task.md` is missing or malformed:
-   - Log warning: `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`
-   - Continue with remaining tasks.
+4. If a row is missing Priority or Dependencies columns (legacy registry format):
+   - Treat Priority as `P2-Medium` and Dependencies as empty.
+   - Log warning: `"[warn] TASK_YYYY_NNN: registry row missing Priority/Dependencies — treating as P2-Medium, no deps"`
 
-### Step 2b: Validate Task Quality
+### Step 2b: Task Quality Validation — Deferred to Just-in-Time
 
-For each CREATED task, verify its `task.md` has sufficient content for the orchestration pipeline to process it autonomously. A task is **well-described** if it has:
+Task quality validation (Type/Priority enum validity, Description completeness, Acceptance Criteria presence) is **not performed at startup**. It runs just-in-time immediately before calling `spawn_worker` — see **Step 5: Spawn Workers → 5-jit. Just-in-Time Quality Gate**.
 
-| Field | Minimum Requirement |
-|-------|-------------------|
-| **Type** | Must be one of: FEATURE, BUGFIX, REFACTORING, DOCUMENTATION, RESEARCH, DEVOPS, CREATIVE |
-| **Priority** | Must be one of: P0-Critical, P1-High, P2-Medium, P3-Low |
-| **Description** | Must be at least 2 sentences — enough for the PM agent to produce requirements without clarification |
-| **Acceptance Criteria** | Must have at least 1 criterion |
+This avoids reading all task bodies upfront on large backlogs. Only the task about to be spawned next is validated and read.
 
-**If a task fails validation:**
-- Log: `"TASK_X: task.md incomplete — missing {fields}. Skipping."`
-- Leave the task as CREATED but skip it this iteration.
-- Do NOT mark it BLOCKED — the user needs to fill in the missing fields, then it will be picked up on the next loop.
-
-**If validation passes**, the task proceeds to the dependency graph.
-
-> This validation ensures the supervisor never spawns a worker for a vague task that will waste a session asking clarifying questions with no human to answer.
-
-> **Pre-flight note**: The Pre-Flight Task Validation step in the `/auto-pilot` command entry point already ran task completeness and sizing checks before entering this context. This step is a belt-and-suspenders check inside the supervisor — tasks that passed pre-flight should pass here too, but new tasks added mid-session would not have been pre-flighted.
+> **Pre-flight note**: The Pre-Flight Task Validation step in the `/auto-pilot` command entry point already ran task completeness and sizing checks before entering this context. The JIT gate inside Step 5 is a belt-and-suspenders check — tasks that passed pre-flight should pass here too, but tasks added mid-session would not have been pre-flighted.
 
 ### Step 3: Build Dependency Graph
 
@@ -529,6 +512,23 @@ For each IMPLEMENTED task (ready for review), check file scope overlaps:
 ### Step 5: Spawn Workers
 
 For each selected task:
+
+**5-jit. Just-in-Time Quality Gate (run before any other spawn logic):**
+
+1. Read `task-tracking/TASK_YYYY_NNN/task.md`.
+2. Extract: **Complexity**, **Model** (treat as `default` if absent), **Provider** (treat as `default` if absent), **File Scope** list, **Testing** flag.
+3. Validate quality:
+
+   | Field | Requirement | If Fails |
+   |-------|-------------|----------|
+   | **Type** | Must be one of: FEATURE, BUGFIX, REFACTORING, DOCUMENTATION, RESEARCH, DEVOPS, CREATIVE | Skip task this iteration |
+   | **Priority** | Must be one of: P0-Critical, P1-High, P2-Medium, P3-Low | Skip task this iteration |
+   | **Description** | At least 2 sentences | Skip task this iteration |
+   | **Acceptance Criteria** | At least 1 criterion | Skip task this iteration |
+
+4. If validation fails: log `"TASK_X: task.md incomplete — missing {fields}. Skipping."` Leave the task as CREATED. Move to the next task in the queue.
+5. If task.md is missing or unreadable: log `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`. Move to the next task in the queue.
+6. **If validation passes**: proceed to 5a using the Complexity, Model, Provider, File Scope, and Testing values extracted here.
 
 **5a. Determine Worker Type:**
 
