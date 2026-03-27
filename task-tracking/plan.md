@@ -161,16 +161,16 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_048 | /retrospective Command — Post-Session Analysis and Learning Loop | COMPLETE | P1-High |
 
 ### Phase 11: Supervisor Reliability & Performance
-**Status**: NOT STARTED
+**Status**: COMPLETE
 **Description**: Make the Supervisor production-grade — persistent MCP state, event-driven completion detection, file-system-first reconciliation, provider fallback, and a usable provider config UX.
 
 #### Milestones
-- [ ] MCP worker registry persisted to disk (survives server restart)
-- [ ] Supervisor reconciles via status files when MCP returns empty
-- [ ] Event-driven completion: workers fire events instead of supervisor polling every 5 min
-- [ ] 30-second event drain loop replaces 5-minute polling as primary completion detection
+- [x] MCP worker registry persisted to disk (survives server restart)
+- [x] Supervisor reconciles via status files when MCP returns empty
+- [x] Event-driven completion: workers fire events instead of supervisor polling every 5 min
+- [x] 30-second event drain loop replaces 5-minute polling as primary completion detection
 - [x] Supervisor falls back to Claude Sonnet when a non-Claude provider spawn fails
-- [ ] `nitro-fueled config` shows provider state upfront with per-provider test/unload actions
+- [x] `nitro-fueled config` shows provider state upfront with per-provider test/unload actions
 
 #### Task Map
 | Task ID | Title | Status | Priority |
@@ -182,7 +182,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_068 | Provider Config UX — State Display, Per-Provider Test and Unload | COMPLETE | P1-High |
 | TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | COMPLETE | P1-High |
 | TASK_2026_065 | Orchestration Analytics — Per-Run Token and Cost Logging | COMPLETE | P2-Medium |
-| TASK_2026_070 | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | CREATED | P1-High |
+| TASK_2026_070 | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | COMPLETE | P1-High |
 
 ### Phase 10: Agent Calibration
 **Status**: NOT STARTED
@@ -200,11 +200,11 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 
 ## Current Focus
 
-**Active Phase**: Multiple active phases
-**Active Milestone**: Various
+**Active Phase**: Phase 10 (Agent Calibration) — all Phase 11 tasks complete
+**Active Milestone**: Agent calibration system
 **Next Priorities**:
-1. TASK_2026_070 — Session Artifact Commit Ownership (P1-High, unblocked — 060 ✓ + 067 ✓)
-2. TASK_2026_062 — /evaluate-agent Command (P1-High, unblocked — 061 COMPLETE)
+1. Phase 11 COMPLETE — all Supervisor Reliability tasks done
+2. See backlog for next wave of tasks
 
 **Supervisor Guidance**: PROCEED
 **Guidance Note**: Phase 11 (Supervisor Reliability) added with 059, 060, 067. Run 059+060 first (parallel), then 067. Phase 10 (Agent Calibration) continues in parallel. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
