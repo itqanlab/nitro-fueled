@@ -41,7 +41,7 @@
     <div class="hero-stats">
       <div class="hero-stat"><div class="num">16</div><div class="label">Agents</div></div>
       <div class="hero-stat"><div class="num">4</div><div class="label">Skills</div></div>
-      <div class="hero-stat"><div class="num">12</div><div class="label">Commands</div></div>
+      <div class="hero-stat"><div class="num">15</div><div class="label">Commands</div></div>
       <div class="hero-stat"><div class="num">7</div><div class="label">Workflows</div></div>
       <div class="hero-stat"><div class="num">MCP</div><div class="label">Worker Orchestration</div></div>
     </div>
@@ -251,15 +251,15 @@
     </div>
 
     <div class="ww-lane ww-lane-review">
-      <div class="ww-lane-header">Review Worker Lane</div>
+      <div class="ww-lane-header">Review Lead Lane</div>
       <div class="ww-track">
         <div class="ww-step state">Task READY_FOR_REVIEW</div>
         <div class="ww-arrow">&rarr;</div>
-        <div class="ww-step review">Code Style Review</div>
+        <div class="ww-step review">Review Lead (Sonnet)</div>
         <div class="ww-arrow">&rarr;</div>
-        <div class="ww-step review">Logic Review</div>
+        <div class="ww-step review">Style + Logic + Security <span style="font-size:11px;opacity:0.7;">(parallel)</span></div>
         <div class="ww-arrow">&rarr;</div>
-        <div class="ww-step review">Security Review</div>
+        <div class="ww-step review">Fix Phase</div>
         <div class="ww-arrow">&rarr;</div>
         <div class="ww-step state">COMPLETE</div>
       </div>
@@ -338,8 +338,8 @@
 
     <div class="worker-card">
       <div class="worker-icon" style="background:var(--cyan-dim);color:var(--cyan);">&#128270;</div>
-      <h4>Review Worker</h4>
-      <p>Runs style, logic, and security reviewers. Fixes findings, appends review lessons, writes completion report. Marks COMPLETE.</p>
+      <h4>Review Lead</h4>
+      <p>Spawns three parallel sub-workers: Style Reviewer (Sonnet), Logic Reviewer (Opus), Security Reviewer (Sonnet). Collects results, runs fix phase, appends review lessons, writes completion report. Marks COMPLETE.</p>
       <div class="worker-transition" style="background:var(--cyan-dim);color:var(--cyan);">IMPLEMENTED &rarr; COMPLETE</div>
     </div>
 
@@ -360,9 +360,14 @@
 
   <div class="supervisor-flow">
     <div class="sup-step">
+      <div class="sup-num">0</div>
+      <h4>Pre-Flight Validation</h4>
+      <p>Runs before the loop starts. Checks dependency satisfiability, circular deps, file overlap, task completeness, MCP health, and task sizing. Blocking issues abort; warnings log and proceed.</p>
+    </div>
+    <div class="sup-step">
       <div class="sup-num">1</div>
       <h4>Read State &amp; Recover</h4>
-      <p>Read orchestrator-state.md, reconcile active workers against MCP, validate registry states. Recover from compactions.</p>
+      <p>Read session state directory, reconcile active workers against MCP, validate registry states. Recover from compactions.</p>
     </div>
     <div class="sup-step">
       <div class="sup-num">2</div>
@@ -467,7 +472,7 @@
     <div class="agent-card">
       <div><span class="cat-dot dot-plan"></span><span class="agent-name">Planner</span></div>
       <div class="agent-cat cat-plan">Planning</div>
-      <div class="agent-desc">Strategic planning partner between Product Owner and Supervisor. Owns the roadmap, creates well-scoped tasks, manages the backlog.</div>
+      <div class="agent-desc">Strategic planning partner between Product Owner and Supervisor. Owns the roadmap, creates well-scoped tasks, manages the backlog. Retroactively detects oversized tasks in the backlog and proposes splits.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Plan</span><span class="cap-tag cap-secondary">Research</span></div>
     </div>
 
@@ -699,6 +704,23 @@
       <div class="cmd-desc">Quick reference for orchestration system</div>
     </div>
   </div>
+
+  <h4 class="tracking-heading" style="margin-top:40px;">Unified Entry Points</h4>
+  <p class="tracking-intro">Three top-level commands mirror the CLI interface and route intelligently to the right underlying command.</p>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-left:3px solid var(--accent);">
+      <div class="cmd-name">/run [TASK_ID]</div>
+      <div class="cmd-desc">No arg &rarr; auto-pilot (batch). With TASK_ID &rarr; single-task orchestrate.</div>
+    </div>
+    <div class="cmd-card" style="border-left:3px solid var(--accent);">
+      <div class="cmd-name">/create [description]</div>
+      <div class="cmd-desc">No flag &rarr; Planner discussion. <code>--quick</code> &rarr; form-based /create-task.</div>
+    </div>
+    <div class="cmd-card" style="border-left:3px solid var(--accent);">
+      <div class="cmd-name">/status</div>
+      <div class="cmd-desc">Alias for /project-status &mdash; unified with the CLI status command.</div>
+    </div>
+  </div>
 </section>
 
 <!-- ═══════════════ TRACKING & CONTROL ═══════════════ -->
@@ -716,8 +738,20 @@
       <div class="folder-level-1">
         <div class="folder-file"><span class="file-icon file-registry">&#9632;</span> registry.md <span class="file-role">Central task index &mdash; status, type, dates</span></div>
         <div class="folder-file"><span class="file-icon file-plan">&#9632;</span> plan.md <span class="file-role">Phased roadmap, milestones, decisions log</span></div>
-        <div class="folder-file"><span class="file-icon file-state">&#9632;</span> orchestrator-state.md <span class="file-role">Live Supervisor state &mdash; workers, queue, session log</span></div>
         <div class="folder-file"><span class="file-icon file-template">&#9632;</span> task-template.md <span class="file-role">Canonical template for new tasks</span></div>
+        <div class="folder-file"><span class="file-icon file-template">&#9632;</span> sizing-rules.md <span class="file-role">Shared task sizing limits — enforced at creation and pre-flight</span></div>
+      </div>
+      <div class="folder-level-1">
+        <div class="folder-dir"><span class="folder-icon">&#128193;</span> sessions/</div>
+        <div class="folder-level-2">
+          <div class="folder-dir"><span class="folder-icon">&#128193;</span> SESSION_yyyy-mm-dd_HH-MM/</div>
+          <div class="folder-level-2" style="margin-left:16px;">
+            <div class="folder-file"><span class="file-icon file-state">&#9632;</span> state.md <span class="file-role">Live Supervisor state &mdash; workers, queue (per-session)</span></div>
+            <div class="folder-file"><span class="file-icon file-state">&#9632;</span> log.md <span class="file-role">Unified event log &mdash; all orchestration paths write here</span></div>
+            <div class="folder-file"><span class="file-icon file-state">&#9632;</span> analytics.md <span class="file-role">Post-session analytics</span></div>
+            <div class="folder-dir"><span class="folder-icon">&#128193;</span> worker-logs/ <span class="file-role">Worker logs scoped to this session</span></div>
+          </div>
+        </div>
       </div>
       <div class="folder-level-1">
         <div class="folder-dir"><span class="folder-icon">&#128193;</span> TASK_2026_NNN/</div>
@@ -755,9 +789,9 @@
     </div>
 
     <div class="control-card" style="border-left:3px solid var(--yellow);">
-      <div class="control-file">orchestrator-state.md</div>
-      <div class="control-purpose">Live session state</div>
-      <p>Active workers, completed tasks, failed tasks, retry tracker, task queue, and a timestamped session log. Survives context compactions so the Supervisor can resume without data loss.</p>
+      <div class="control-file">sessions/SESSION_xxx/</div>
+      <div class="control-purpose">Per-session state directory</div>
+      <p>Replaces the single <code>orchestrator-state.md</code>. Each run gets its own directory with <code>state.md</code> (live worker queue), <code>log.md</code> (unified event log all orchestration paths write to), and <code>analytics.md</code>. Enables concurrent supervisors and full history retention.</p>
       <div class="control-who">Written by: Supervisor &middot; Read by: Supervisor, /project-status</div>
     </div>
 
@@ -857,15 +891,15 @@
     <div class="sup-step" style="text-align:center;">
       <div class="sup-num">3</div>
       <h4>Run</h4>
-      <p style="font-family:'SF Mono','Fira Code',monospace;color:var(--accent);font-size:14px;margin-bottom:8px;">/auto-pilot</p>
-      <p>The Supervisor takes over. Spawns workers, monitors health, handles failures, and loops until everything is done.</p>
+      <p style="font-family:'SF Mono','Fira Code',monospace;color:var(--accent);font-size:14px;margin-bottom:8px;">/run</p>
+      <p>The Supervisor takes over. Runs pre-flight validation, spawns workers, monitors health, handles failures, and loops until everything is done.</p>
     </div>
   </div>
 </section>
 
 <footer>
   <p>Built with <span style="color:var(--accent)">Nitro-Fueled</span> &mdash; Reusable AI Development Orchestration</p>
-  <p style="margin-top:4px;">16 agents &middot; 4 skills &middot; 12 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
+  <p style="margin-top:4px;">16 agents &middot; 4 skills &middot; 15 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
