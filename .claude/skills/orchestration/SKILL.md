@@ -230,11 +230,13 @@ invocations are visible in the same audit trail as auto-pilot-spawned workers.
 6. Append startup entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | orchestrate | STARTED TASK_{ID} ({task_type}) |`
 
-On finish (after Completion Phase bookkeeping commit):
+On finish (included in the Completion Phase bookkeeping commit — see Step 5):
 
 1. Append final entry:
    `| {HH:MM:SS} | orchestrate | FINISHED TASK_{ID} — {COMPLETE | FAILED} |`
 2. Remove this session's row from `task-tracking/active-sessions.md`.
+3. Stage both files: `git add {SESSION_DIR}log.md task-tracking/active-sessions.md`
+   These are staged as part of the bookkeeping commit, not after it.
 
 ### Phase Transition Log Entries
 
@@ -460,7 +462,21 @@ Before committing, append this task's completion entry to `task-tracking/orchest
    `{worker_type}` = `interactive` for orchestration sessions started by a user directly; `Review` for Review Workers; `Build` is not expected here (Build Workers do not run the Completion Phase).
 3. Stage the file: `git add task-tracking/orchestrator-history.md`
 
-Then commit all bookkeeping changes (completion-report.md, status file, plan.md, session-analytics.md, orchestrator-history.md) with message: `docs: add TASK_[ID] completion bookkeeping`
+**Pre-commit verification (mandatory before staging):**
+
+Run `git status` and confirm ALL of the following are present and staged (or about to be staged):
+- `task-tracking/TASK_[ID]/completion-report.md`
+- `task-tracking/TASK_[ID]/status` (contains `COMPLETE`)
+- `task-tracking/TASK_[ID]/session-analytics.md`
+- `task-tracking/plan.md`
+- `task-tracking/orchestrator-history.md`
+- `task-tracking/active-sessions.md` (session row removed)
+- `{SESSION_DIR}log.md` (FINISHED entry appended)
+- Any review-lesson files written by reviewers during this task's QA phase
+
+If any file is missing or shows as unstaged, fix it before committing. Do not skip this check.
+
+Then commit all bookkeeping changes with message: `docs: add TASK_[ID] completion bookkeeping`
 
 ---
 
