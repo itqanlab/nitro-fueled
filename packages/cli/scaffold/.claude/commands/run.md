@@ -16,6 +16,7 @@ Start a single task or the full Supervisor batch loop. Routes intelligently base
 Parse $ARGUMENTS:
 - Empty → batch mode
 - Matches `/^TASK_\d{4}_\d{3}$/` → single-task mode
+- Otherwise → display usage error: "Invalid argument. Expected a full task ID (TASK_YYYY_NNN) or no argument for batch mode."
 
 ### Step 2: Route
 
@@ -31,4 +32,4 @@ Load and execute `/orchestrate $ARGUMENTS`. This runs the full PM → Architect 
 
 - The existing `/auto-pilot` and `/orchestrate` commands remain available as power-user direct access.
 - This command is a thin router — all logic lives in the underlying skills.
-- For batch options (--dry-run, --concurrency, --interval), use `/auto-pilot` directly.
+- For batch options (--dry-run, --concurrency, --interval, --retries), use `/auto-pilot` directly.

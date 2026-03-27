@@ -4,7 +4,8 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import type { Command } from 'commander';
 import type { RegistryRow } from '../utils/registry.js';
-import { preflightChecks } from '../utils/preflight.js';
+import { parseRegistry } from '../utils/registry.js';
+import { basicPreflightChecks, preflightChecks } from '../utils/preflight.js';
 import { testMcpConnectivity } from '../utils/mcp-connectivity.js';
 import { spawnClaude } from '../utils/spawn-claude.js';
 import {
@@ -22,9 +23,10 @@ interface RunOptions {
   interval: string | undefined;
   retries: string | undefined;
   task: string | undefined;
+  skipConnectivity: boolean;
 }
 
-function displaySummary(rows: RegistryRow[], taskId: string | undefined, options: RunOptions): void {
+function displaySummary(rows: RegistryRow[], options: RunOptions): void {
   const created = rows.filter((r) => r.status === 'CREATED').length;
   const inProgress = rows.filter((r) => r.status === 'IN_PROGRESS').length;
   const implemented = rows.filter((r) => r.status === 'IMPLEMENTED').length;
@@ -37,13 +39,7 @@ function displaySummary(rows: RegistryRow[], taskId: string | undefined, options
 
   const concurrency = options.concurrency ?? '3';
   const interval = options.interval ?? '10m';
-
-  let mode = 'all';
-  if (options.dryRun) {
-    mode = 'dry-run';
-  } else if (taskId !== undefined) {
-    mode = `single-task ${taskId}`;
-  }
+  const mode = options.dryRun ? 'dry-run' : 'all';
 
   console.log('');
   console.log('SUPERVISOR STARTING');
@@ -115,7 +111,7 @@ function displayDryRun(rows: RegistryRow[]): void {
   console.log('No workers spawned (dry run).');
 }
 
-function validateOptions(options: RunOptions): string | null {
+function validateBatchOptions(options: RunOptions): string | null {
   if (options.concurrency !== undefined && !/^[1-9]\d*$/.test(options.concurrency)) {
     return `Invalid --concurrency value "${options.concurrency}". Must be a positive integer (>= 1).`;
   }
@@ -128,12 +124,8 @@ function validateOptions(options: RunOptions): string | null {
   return null;
 }
 
-function buildAutoPilotArgs(taskId: string | undefined, options: RunOptions): string[] {
+function buildAutoPilotArgs(options: RunOptions): string[] {
   const parts: string[] = [];
-
-  if (taskId !== undefined) {
-    parts.push(taskId);
-  }
 
   if (options.concurrency !== undefined) {
     parts.push('--concurrency', options.concurrency);
@@ -195,8 +187,8 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
   return child;
 }
 
-function spawnSupervisor(cwd: string, taskId: string | undefined, options: RunOptions): void {
-  const autoPilotParts = buildAutoPilotArgs(taskId, options);
+function spawnSupervisor(cwd: string, options: RunOptions): void {
+  const autoPilotParts = buildAutoPilotArgs(options);
   const prompt = ['/auto-pilot', ...autoPilotParts].join(' ');
 
   spawnClaude({
@@ -210,7 +202,7 @@ function spawnOrchestrate(cwd: string, taskId: string): void {
   spawnClaude({
     cwd,
     args: ['--dangerously-skip-permissions', '-p', `/orchestrate ${taskId}`],
-    label: `Orchestrate ${taskId}`,
+    label: 'Orchestrator',
   });
 }
 
@@ -230,20 +222,80 @@ export function registerRunCommand(program: Command): void {
   program
     .command('run [taskId]')
     .description('Start the Supervisor loop, or orchestrate a single task inline')
-    .option('--task <n>', 'Single task shorthand: 043 expands to TASK_YYYY_043')
-    .option('--dry-run', 'Show execution plan without spawning workers', false)
+    .option('--task <n>', 'Task number shorthand (e.g. 043 → TASK_<current-year>_043)')
+    .option('--dry-run', 'Show execution plan without spawning workers (batch mode only)', false)
     .option('--concurrency <n>', 'Max simultaneous workers (default: 3) — batch mode only')
     .option('--interval <duration>', 'Monitoring interval e.g. 5m (default: 10m) — batch mode only')
     .option('--retries <n>', 'Max retries per task (default: 2) — batch mode only')
-    .option('--skip-connectivity', 'Skip MCP connectivity check — batch mode only', false)
-    .action(async (positionalTaskId: string | undefined, opts: RunOptions & { skipConnectivity: boolean }) => {
+    .option('--skip-connectivity', 'Skip MCP connectivity check (batch mode only)', false)
+    .action(async (positionalTaskId: string | undefined, opts: RunOptions) => {
       const cwd = process.cwd();
+
+      // Validate --task shorthand format before expanding
+      if (opts.task !== undefined && !/^\d{1,3}$/.test(opts.task)) {
+        console.error(`Error: Invalid --task value "${opts.task}". Expected a 1-3 digit number (e.g., 43 or 043).`);
+        process.exitCode = 1;
+        return;
+      }
+
       const taskId = resolveTaskId(positionalTaskId, opts.task);
 
       if (taskId !== undefined) {
         // Single-task mode: spawn Claude with /orchestrate TASK_ID (inline, no MCP workers)
-        const result = preflightChecks(cwd, taskId);
-        if (result === null) {
+
+        // Reject batch-only options — they are silently ignored in this path otherwise
+        const batchOnlyUsed: string[] = [];
+        if (opts.dryRun) batchOnlyUsed.push('--dry-run');
+        if (opts.concurrency !== undefined) batchOnlyUsed.push('--concurrency');
+        if (opts.interval !== undefined) batchOnlyUsed.push('--interval');
+        if (opts.retries !== undefined) batchOnlyUsed.push('--retries');
+        if (opts.skipConnectivity) batchOnlyUsed.push('--skip-connectivity');
+        if (batchOnlyUsed.length > 0) {
+          const plural = batchOnlyUsed.length === 1 ? 'is a batch-only option' : 'are batch-only options';
+          console.error(`Error: ${batchOnlyUsed.join(', ')} ${plural} and cannot be used with a task ID.`);
+          console.error('Remove the option(s) to run a single task, or omit the task ID for batch mode.');
+          process.exitCode = 1;
+          return;
+        }
+
+        // Basic workspace + Claude CLI check (no MCP needed — /orchestrate runs inline)
+        if (!basicPreflightChecks(cwd)) {
+          process.exitCode = 1;
+          return;
+        }
+
+        const registryPath = resolve(cwd, 'task-tracking/registry.md');
+        if (!existsSync(registryPath)) {
+          console.error('Error: task-tracking/registry.md not found.');
+          console.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
+          process.exitCode = 1;
+          return;
+        }
+
+        const taskIdPattern = /^TASK_\d{4}_\d{3}$/;
+        if (!taskIdPattern.test(taskId)) {
+          console.error(`Error: Invalid task ID format "${taskId}".`);
+          console.error('Expected format: TASK_YYYY_NNN (e.g., TASK_2026_010)');
+          process.exitCode = 1;
+          return;
+        }
+
+        const rows = parseRegistry(cwd);
+        const task = rows.find((r) => r.id === taskId);
+        if (task === undefined) {
+          console.error(`Error: Task ${taskId} not found in registry.`);
+          process.exitCode = 1;
+          return;
+        }
+
+        if (task.status === 'BLOCKED' || task.status === 'CANCELLED' || task.status === 'FAILED') {
+          console.error(`Error: Task ${taskId} is ${task.status} and cannot be processed.`);
+          process.exitCode = 1;
+          return;
+        }
+
+        if (task.status === 'COMPLETE') {
+          console.warn(`Warning: Task ${taskId} is already COMPLETE.`);
           process.exitCode = 1;
           return;
         }
@@ -265,7 +317,7 @@ export function registerRunCommand(program: Command): void {
         return;
       }
 
-      const validationError = validateOptions(opts);
+      const validationError = validateBatchOptions(opts);
       if (validationError !== null) {
         console.error(`Error: ${validationError}`);
         process.exitCode = 1;
@@ -274,7 +326,7 @@ export function registerRunCommand(program: Command): void {
 
       const { rows } = result;
 
-      displaySummary(rows, undefined, opts);
+      displaySummary(rows, opts);
 
       if (opts.dryRun) {
         displayDryRun(rows);
@@ -315,6 +367,6 @@ export function registerRunCommand(program: Command): void {
         });
       }
 
-      spawnSupervisor(cwd, undefined, opts);
+      spawnSupervisor(cwd, opts);
     });
 }

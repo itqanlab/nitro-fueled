@@ -12,4 +12,4 @@ Show the current project status. Alias for `/project-status`.
 
 Load and execute `/project-status`.
 
-This generates a verified status report by cross-referencing the codebase, task-tracking folder, and implementation plan. See `.claude/commands/project-status.md` for the full report format.
+This generates a verified status report by cross-referencing the codebase, task-tracking folder, and implementation plan. See the `project-status` command for the full report format.

@@ -14,8 +14,10 @@ Create a new task. Routes to the Planner for discussion-based creation or the qu
 ### Step 1: Parse Arguments
 
 Parse $ARGUMENTS:
-- Contains `--quick` flag → quick mode (strip the flag, pass remaining text as description)
-- No `--quick` flag → Planner mode (pass full $ARGUMENTS as intent)
+- Contains `--quick` anywhere in the string → quick mode
+  - Strip all occurrences of `--quick` from $ARGUMENTS, then trim whitespace from the result
+  - The trimmed remainder is the description (may be empty — `/create-task` will prompt interactively)
+- No `--quick` present → Planner mode (pass full $ARGUMENTS as intent, trimmed)
 
 ### Step 2: Route
 
