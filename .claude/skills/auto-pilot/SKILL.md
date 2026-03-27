@@ -65,7 +65,11 @@ When the loop starts, merge command-line overrides with these defaults. Write th
 
 > **Concurrency and Review+Test phase**: Spawning a Review Lead + Test Lead for one task consumes 2 concurrency slots (one per worker). A task in the review/test phase uses 2 of the available slots. Example: `concurrency_limit=3`, one task reaches IMPLEMENTED → spawn both workers (2 slots used) → 1 slot remains for a Build Worker.
 >
-> If `concurrency_limit == 1`: spawn Review Lead first (higher priority — it owns state transitions). Spawn Test Lead only after Review Lead finishes or a slot opens.
+> If `concurrency_limit == 1`: spawn Review Lead first (higher priority — it owns state
+> transitions). Note: with concurrency_limit == 1, the Test Lead will likely never execute —
+> once Review Lead sets the registry to COMPLETE, the Supervisor closes the task before
+> a slot opens for the Test Lead. Users with concurrency_limit == 1 should accept that
+> test coverage may be skipped for tasks that complete in a single review cycle.
 
 ---
 
@@ -1134,13 +1138,14 @@ Follow these rules strictly:
 1. Verify MCP is available: call mcp__session-orchestrator__list_workers.
    If MCP is unavailable, write test-report.md noting "MCP unavailable —
    tests not written" and exit.
+   Do NOT modify registry.md — the Review Lead owns registry state transitions.
 
 2. Check for existing artifacts (continuation support):
    - test-context.md exists? -> skip context generation
    - test-unit-results.md exists with Results section? -> skip Unit Test Writer spawn
    - test-integration-results.md exists with Results section? -> skip Integration Test Writer spawn
    - test-e2e-results.md exists with Results section? -> skip E2E Test Writer spawn
-   - test-report.md exists with Results section? -> skip to exit gate
+   - test-report.md contains `## Test Results`? -> skip to exit gate
 
 3. Generate test-context.md (if not already done).
 
@@ -1174,12 +1179,14 @@ The previous Test Lead {reason: stuck / crashed / stopped}.
 
 AUTONOMOUS MODE — follow these rules strictly:
 
+Do NOT modify registry.md — the Review Lead owns registry state transitions.
+
 1. Check existing artifacts to determine where to resume:
    - test-context.md exists? -> context done
    - test-unit-results.md with Results section? -> unit tests done
    - test-integration-results.md with Results section? -> integration tests done
    - test-e2e-results.md with Results section? -> e2e tests done
-   - test-report.md with Results section? -> report done
+   - test-report.md contains `## Test Results`? -> report done, skip directly to Exit Gate
    Resume from the first incomplete step.
 
 2. For any test type not yet complete, spawn a sub-worker via MCP.

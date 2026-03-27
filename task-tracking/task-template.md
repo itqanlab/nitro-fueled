@@ -36,7 +36,7 @@
 
 <!-- Testing: Optional override for the test type decision matrix.
        required — force test phase even if task type would normally skip
-       optional — run tests if framework detected (default for most task types)
+       optional — use default decision matrix based on task type (default behavior if field is omitted)
        skip     — suppress test phase entirely (use for tasks that touch no testable code)
      Omit this field to use the default matrix behavior based on task type. -->
 

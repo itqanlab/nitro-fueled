@@ -63,6 +63,9 @@ Before spawning any sub-workers, generate `task-tracking/TASK_{TASK_ID}/test-con
    | CREATIVE     | No                      | No                                                         | Optional (only if Playwright/Cypress detected and UI files in scope) |
    | DEVOPS       | No                      | Yes (pipeline/infra test)                                  | No                                                                 |
    | RESEARCH     | No                      | No                                                         | No                                                                 |
+   | DOCUMENTATION | No                     | No                                                         | No                                                                 |
+
+   > DOCUMENTATION and RESEARCH task types exit before reaching this matrix (see Step 3). The rows are included for completeness.
 
 7. Write `task-tracking/TASK_{TASK_ID}/test-context.md`:
 
@@ -102,7 +105,7 @@ Before issuing any `spawn_worker` calls, check which results files already exist
 - If `task-tracking/TASK_{TASK_ID}/test-integration-results.md` contains `## Results Section` → skip Integration Test Writer spawn.
 - If `task-tracking/TASK_{TASK_ID}/test-e2e-results.md` contains `## Results Section` → skip E2E Test Writer spawn.
 
-If `test-report.md` already exists with a `## Results` section → skip to Exit Gate.
+If `test-report.md` already exists with a `## Test Results` section → skip all spawning and proceed to Phase 5 (report is already written from a prior run).
 
 ### Step 0: Substitute placeholders
 
@@ -177,6 +180,7 @@ Your ONLY job:
 3. Read each file in the File Scope
 4. Run your unit test writing following your agent instructions
 5. Write your results to task-tracking/TASK_{TASK_ID}/test-unit-results.md
+   Your results file MUST include a `## Results Section` heading — the Test Lead uses this exact heading to detect that you completed successfully. Without it, you will be re-spawned unnecessarily.
 6. Commit: test(TASK_{TASK_ID}): add unit tests
 7. EXIT
 
@@ -200,6 +204,7 @@ Your ONLY job:
 3. Read each file in the File Scope
 4. Run your integration test writing following your agent instructions
 5. Write your results to task-tracking/TASK_{TASK_ID}/test-integration-results.md
+   Your results file MUST include a `## Results Section` heading — the Test Lead uses this exact heading to detect that you completed successfully. Without it, you will be re-spawned unnecessarily.
 6. Commit: test(TASK_{TASK_ID}): add integration tests
 7. EXIT
 
@@ -214,7 +219,7 @@ Test context: task-tracking/TASK_{TASK_ID}/test-context.md
 ### E2E Test Writer Prompt
 
 ```
-You are an E2E test writer for TASK_{TASK_ID}.
+You are the e2e-tester agent for TASK_{TASK_ID}.
 
 AUTONOMOUS MODE — no human at this terminal. Do NOT pause.
 
@@ -225,6 +230,7 @@ Your ONLY job:
 4. Discover existing E2E test patterns via Glob — read 2-3 examples
 5. Write E2E tests using the detected framework (Playwright or Cypress)
 6. Write results to task-tracking/TASK_{TASK_ID}/test-e2e-results.md with ## Results Section heading
+   Your results file MUST include a `## Results Section` heading — the Test Lead uses this heading to detect that you completed successfully. Without it, you will be re-spawned unnecessarily.
 7. Commit: test(TASK_{TASK_ID}): add e2e tests
 8. EXIT
 
@@ -263,6 +269,15 @@ Continue polling until all sub-workers reach `finished` or `failed` state.
 ---
 
 ## Phase 4: Execute Test Suite
+
+0. Validate the test command: confirm it begins with one of these known-safe prefixes:
+   - `npm test`
+   - `npm run test`
+   - `npx vitest`
+   - `npx jest`
+   - `pytest`
+   - `go test`
+   If the resolved command does not begin with one of these prefixes, write a note in test-report.md ("test command not recognized — skipping execution for safety") and skip execution. Do NOT run an unrecognized command.
 
 1. Read `test-context.md` to get the test command.
 2. Run the test command (`npm test`, `npx vitest run`, `npx jest`, `pytest`, `go test ./...`).

@@ -25,6 +25,10 @@ You run in AUTONOMOUS MODE. Every action is mechanical: read files, discover pat
 
 Execute in order. Do not skip steps.
 
+### Step 0: Validate TASK_ID
+
+Validate the `{TASK_ID}` extracted from `test-context.md`: confirm it matches the pattern `\d{4}_\d{3}` (e.g., `2026_036`). If it does not match, EXIT immediately without writing any files.
+
 ### Step 1: Read test context
 
 Read `task-tracking/TASK_{TASK_ID}/test-context.md`.
