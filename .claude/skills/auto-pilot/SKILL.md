@@ -126,6 +126,7 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | MCP failure (per-worker) | `\| {HH:MM:SS} \| auto-pilot \| MCP SKIP — TASK_X: {tool_name} failed, will retry next interval \|` |
 | MCP failure (global) | `\| {HH:MM:SS} \| auto-pilot \| MCP UNREACHABLE — pausing supervisor, state saved \|` |
 | Spawn failure | `\| {HH:MM:SS} \| auto-pilot \| SPAWN FAILED — TASK_X: {error} \|` |
+| Spawn fallback triggered | `\| {HH:MM:SS} \| auto-pilot \| SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet \|` |
 | State recovered | `\| {HH:MM:SS} \| auto-pilot \| STATE RECOVERED — {N} active workers, {N} completed \|` |
 | Reconciliation | `\| {HH:MM:SS} \| auto-pilot \| RECONCILE — worker {id} missing from MCP, treating as finished \|` |
 | Cleanup spawned | `\| {HH:MM:SS} \| auto-pilot \| CLEANUP — TASK_X: spawning Cleanup Worker to salvage uncommitted work \|` |
@@ -585,19 +586,19 @@ On success: log `"SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s
 
 **5f. On spawn failure (MCP error):**
 
-First, distinguish provider failure from MCP-unreachable:
-- **MCP unreachable**: error contains "connection refused", "ECONNREFUSED", or `list_workers` itself fails — apply global MCP failure handler (Step 3b) and EXIT.
-- **Provider failure**: `spawn_worker` returns an error but `list_workers` still succeeds.
+First, distinguish provider failure from MCP-unreachable. Immediately call `list_workers` after the failed `spawn_worker`:
+- **MCP unreachable**: `list_workers` fails, times out, or returns an error — apply global MCP failure handler (Step 3b) and EXIT. (String markers "connection refused" / "ECONNREFUSED" in the original error are a secondary signal only — `list_workers` failure is the authoritative check.)
+- **Provider failure**: `list_workers` succeeds — treat as provider failure and continue below.
 
 On **provider failure**:
 - IF the resolved provider (from step 5c) is NOT `claude`:
-  1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error}), retrying with claude/claude-sonnet-4-6"`
+  1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error truncated to 200 chars}), retrying with claude/claude-sonnet-4-6"`
   2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet |`
   3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override: `provider=claude`, `model=claude-sonnet-4-6`
-  4. **If retry succeeds**: Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Continue normally (go to step 5e subscriptions).
-  5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
+  4. **If retry succeeds**: Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5e** (state.md recording and `subscribe_worker`).
+  5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error truncated to 200 chars}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
 - IF the resolved provider is already `claude`:
-  - Log: `"Failed to spawn worker for TASK_X: {error}"`
+  - Log: `"Failed to spawn worker for TASK_X: {error truncated to 200 chars}"`
   - Leave task status as-is (will retry next loop iteration)
   - Continue with remaining tasks
 
@@ -1644,7 +1645,8 @@ Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on se
 ### MCP Tool Signatures
 
 ```
-spawn_worker(prompt: string, working_directory: string, label: string, model?: string, allowed_tools?: string[])
+spawn_worker(prompt: string, working_directory: string, label: string, model?: string, provider?: string, allowed_tools?: string[])
+  // provider: omit if `claude` — that is the MCP default; listing it explicitly is also accepted
   -> { worker_id: string, pid: number, session_id: string, iterm_tab: string }
 
 subscribe_worker(worker_id: string, conditions: WatchCondition[])
