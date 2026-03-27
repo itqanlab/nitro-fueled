@@ -22,7 +22,7 @@
 | TASK_2026_018 | COMPLETE    | CREATIVE    | Nitro-Fueled Landing Hero Visual Redesign | 2026-03-24 | — |
 | TASK_2026_019 | COMPLETE    | BUGFIX      | Fix Print Mode Token/Cost Tracking        | 2026-03-24 | — |
 | TASK_2026_020 | COMPLETE    | FEATURE     | Per-Task Model Selection                  | 2026-03-24 | default |
-| TASK_2026_021 | CREATED     | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 | default |
+| TASK_2026_021 | IMPLEMENTED | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 | default |
 | TASK_2026_022 | IMPLEMENTED | FEATURE     | Dashboard Data Service                    | 2026-03-24 | — |
 | TASK_2026_023 | IMPLEMENTED | FEATURE     | Dashboard Web Client                      | 2026-03-24 | — |
 | TASK_2026_024 | COMPLETE    | FEATURE     | Dashboard CLI Command + Service Integration | 2026-03-24 | default |
@@ -33,7 +33,7 @@
 | TASK_2026_029 | CREATED     | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 | default |
 | TASK_2026_030 | CREATED     | BUGFIX      | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-24 | default |
 | TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 | default |
-| TASK_2026_032 | CREATED     | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 | default |
+| TASK_2026_032 | IN_PROGRESS | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 | default |
 | TASK_2026_033 | CANCELLED   | FEATURE     | Pre-Flight Validation Before Auto-Pilot Spawns Workers (absorbed by TASK_2026_044) | 2026-03-24 | — |
 | TASK_2026_034 | COMPLETE    | REFACTORING | Session-Scoped State Directories with Unified Event Log | 2026-03-24 | default |
 | TASK_2026_035 | CREATED     | FEATURE     | Review Lead — Parallel Reviews with Model Routing | 2026-03-25 | default |

@@ -9,6 +9,8 @@
 | Type       | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
 | Priority   | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity | [Simple | Medium | Complex]                                                   |
+| Provider   | [claude | glm | opencode | default]                                           |
+| Model      | [model name or default]                                                       |
 
 <!-- Type: Determines the agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
@@ -24,7 +26,19 @@
      Complexity: Determines model selection and worker strategy
        Simple  — single layer, follow established patterns, ≤3 files
        Medium  — 1-2 layers, some architectural decisions needed, 4-7 files
-       Complex — cross-cutting concerns, novel architecture, creative problem-solving -->
+       Complex — cross-cutting concerns, novel architecture, creative problem-solving
+
+     Provider: Which AI provider to use for this task's worker session
+       claude    — Claude subscription (best reasoning, full orchestration)
+       glm       — Z.AI GLM via same claude CLI with env var override (saves Claude quota)
+       opencode  — OpenCode CLI single-shot (non-Claude models, no orchestration)
+       default   — auto-selected by Supervisor routing table based on task type/complexity
+
+     Model: Specific model to use (or "default" to let Supervisor routing table decide)
+       Claude models: claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5-20251001
+       GLM models:    glm-5, glm-4.7, glm-4.5-air
+       OpenAI models: openai/gpt-5.4, openai/gpt-4.1, openai/gpt-4.1-mini, openai/o4-mini
+     Omit both Provider and Model (or set to "default") to use the routing table. -->
 
 ## Description
 

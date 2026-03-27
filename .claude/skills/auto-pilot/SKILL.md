@@ -310,7 +310,7 @@ If `active-sessions.md` is missing or the row is not found, scan `task-tracking/
 2. Parse every row: extract **Task ID**, **Status**, **Type**, **Description**.
 3. For each task with status **CREATED**, **IN_PROGRESS**, **IMPLEMENTED**, or **IN_REVIEW**:
    - Read `task-tracking/TASK_YYYY_NNN/task.md`
-   - Extract: **Type**, **Priority**, **Complexity**, **Model** (treat as `default` if the field is absent or not present in the task), **Dependencies** list, **File Scope** list
+   - Extract: **Type**, **Priority**, **Complexity**, **Model** (treat as `default` if the field is absent or not present in the task), **Provider** (treat as `default` if the field is absent), **Dependencies** list, **File Scope** list
 4. If a `task.md` is missing or malformed:
    - Log warning: `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`
    - Continue with remaining tasks.
@@ -443,26 +443,42 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 - Review Worker + retry count 0 --> **First-Run Review Worker Prompt**
 - Review Worker + retry count > 0 --> **Retry Review Worker Prompt**
 
-**5c. Call MCP `spawn_worker`:**
+**5c. Resolve Provider and Model:**
+
+If the task's Provider field is `default` or absent, use the **Provider Routing Table** below to select the best-fit provider and model based on the task's Type, Complexity, and worker type. If explicitly set (not `default`), use it as-is. Similarly, if the task's Model field is `default` or absent, use the routing table default for the resolved provider.
+
+**Provider Routing Table** (used when Provider is `default` or absent):
+
+| Condition | Provider | Model | Reason |
+|-----------|----------|-------|--------|
+| Review Worker (any type) | `claude` | `claude-opus-4-6` | Deep reasoning needed for code review |
+| Build Worker + Complexity=Complex | `claude` | `claude-opus-4-6` | Top quality for critical/novel decisions |
+| Build Worker + Complexity=Medium | `glm` | `glm-5` | Full orchestration, saves Claude quota |
+| Build Worker + Complexity=Simple | `glm` | `glm-4.7` | Good enough, full tool access |
+
+If an explicit Provider is set in task.md, always honor it — no routing table override.
+
+**5d. Call MCP `spawn_worker`:**
 
 - `prompt`: the generated prompt from 5b
 - `working_directory`: project root absolute path
 - `label`: `"TASK_YYYY_NNN-TYPE-BUILD"` or `"TASK_YYYY_NNN-TYPE-REVIEW"` (e.g., `"TASK_2026_003-FEATURE-BUILD"`)
-- `model`: the Model field from task.md (omit this parameter entirely if the field is absent, set to `default`, or the task was created before model selection was added — this causes spawn_worker to use the system default)
+- `model`: the resolved model from step 5c (omit if `default` sentinel was never resolved — should not happen after routing table lookup)
+- `provider`: the resolved provider from step 5c (omit if `claude` — that is the MCP default, so omitting is equivalent)
 
-**5d. On successful spawn:**
+**5e. On successful spawn:**
 
 - Do NOT update the registry (workers update their own registry states)
 - Record in `{SESSION_DIR}state.md` active workers table:
-  - worker_id, task_id, worker_type=`"Build"|"Review"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — if the task's Model field was `default` or absent, record the actual system default model ID that spawn_worker will use, e.g. `claude-opus-4-6`; never record the sentinel `"default"`)
+  - worker_id, task_id, worker_type=`"Build"|"Review"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — never record the sentinel `"default"`), provider (the **resolved** provider — never record `"default"`)
 
-**5e. On spawn failure (MCP error):**
+**5f. On spawn failure (MCP error):**
 
 - Log: `"Failed to spawn worker for TASK_X: {error}"`
 - Leave task status as-is (will retry next loop iteration)
 - Continue with remaining tasks
 
-**5f. Write `{SESSION_DIR}state.md`** after **each** successful spawn (not after all spawns). This prevents orphaned workers if the session compacts mid-spawn sequence.
+**5g. Write `{SESSION_DIR}state.md`** after **each** successful spawn (not after all spawns). This prevents orphaned workers if the session compacts mid-spawn sequence.
 
 ### Step 6: Monitor Active Workers
 
