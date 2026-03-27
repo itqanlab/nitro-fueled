@@ -801,12 +801,12 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 (Copy Timestamp and Event columns only — omit the Source column. History entries use two columns: `| Time | Event |`.)
 ```
 
-3. **Computing the Quality line** (must be done BEFORE writing the session block):
+3. **Computing the Quality line** (must be done BEFORE writing the session block, using data collected in this step):
    - **avg review**: average of all `X/10` scores found in `{SESSION_DIR}worker-logs/*.md` Review Verdicts tables across all Review Workers that ran this session. Write `n/a` if no Review Workers ran.
    - **blocking findings fixed**: count of blocking findings marked fixed in `completion-report.md` files for tasks completed this session. Write `0` if none.
-   - **recurring patterns**: count of unique finding categories that appeared in 3 or more tasks reviewed this session. Write `0` if fewer than 3 tasks were reviewed.
+   - **recurring patterns (this session)**: count of unique finding categories that appeared in 3 or more tasks reviewed this session. Write `0` if fewer than 3 tasks were reviewed. Label as "session-scope" — this reflects current session only, not all-time patterns.
    - If any metric is unavailable, write `n/a` for that value only.
-   - This data is already partially available from Step 8c; compute the Quality line using the same worker log collection pass.
+   - (Step 8c performs a more detailed analytics pass on the same worker logs after this step completes.)
 
 4. This file is **append-only** — never overwrite previous sessions.
 5. Keep the file under control: if it exceeds 500 lines, trim the oldest sessions (keep the most recent 10).
