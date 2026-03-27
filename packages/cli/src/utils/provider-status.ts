@@ -45,14 +45,18 @@ export async function getProviderStatus(cwd: string): Promise<ProviderStatusResu
     results.push({ name: 'GLM', status: 'not configured' });
   }
 
-  // OpenCode — binary + key presence (no live test needed)
+  // OpenCode — subscription auth needs no key; api-key auth requires a resolvable key
   const opencode = config.providers.opencode;
   if (opencode?.enabled === true) {
-    const keyOk = resolveApiKey(opencode.apiKey) !== '';
-    if (keyOk) {
-      results.push({ name: 'OpenCode', status: 'connected', detail: opencode.defaultModel });
+    if (opencode.authMethod === 'subscription') {
+      results.push({ name: 'OpenCode', status: 'connected', detail: `${opencode.defaultModel} (subscription)` });
     } else {
-      results.push({ name: 'OpenCode', status: 'failed', detail: 'API key unset' });
+      const keyOk = resolveApiKey(opencode.apiKey ?? '') !== '';
+      if (keyOk) {
+        results.push({ name: 'OpenCode', status: 'connected', detail: opencode.defaultModel });
+      } else {
+        results.push({ name: 'OpenCode', status: 'failed', detail: 'API key unset' });
+      }
     }
   } else {
     results.push({ name: 'OpenCode', status: 'not configured' });

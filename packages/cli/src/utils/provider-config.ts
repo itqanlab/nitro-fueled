@@ -19,7 +19,8 @@ export interface GlmProviderConfig {
 
 export interface OpenCodeProviderConfig {
   enabled: boolean;
-  apiKey: string;
+  authMethod?: 'api-key' | 'subscription';
+  apiKey?: string;
   defaultModel: string;
 }
 
@@ -129,8 +130,8 @@ export function checkProviderConfig(cwd: string): ProviderConfigIssue[] {
   }
 
   const opencode = config.providers.opencode;
-  if (opencode?.enabled === true) {
-    const key = resolveApiKey(opencode.apiKey);
+  if (opencode?.enabled === true && opencode.authMethod !== 'subscription') {
+    const key = resolveApiKey(opencode.apiKey ?? '');
     if (key === '') {
       issues.push({ provider: 'OpenCode', message: `API key is empty (set ${OPENAI_API_KEY_ENV} or run 'npx nitro-fueled config')` });
     }

@@ -197,13 +197,23 @@ async function reconfigureOpenCode(
     if (!installed) return null;
   }
 
-  const defaultKeyHint = existing !== undefined
-    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
-    : '$OPENAI_API_KEY';
-  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
-  const apiKey = keyAnswer !== ''
-    ? keyAnswer
-    : (existing?.apiKey ?? '$OPENAI_API_KEY');
+  const existingAuthMethod = existing?.authMethod ?? 'api-key';
+  const authHint = existingAuthMethod === 'subscription'
+    ? 'subscription'
+    : 'api-key';
+  console.log(`  ? OpenCode auth method [${authHint}]:`);
+  console.log('    1) ChatGPT Plus/Pro subscription (OAuth)');
+  console.log('    2) API key');
+  const authAnswer = await prompt('  Choice (Enter = keep current): ');
+
+  let authMethod: 'api-key' | 'subscription';
+  if (authAnswer === '1') {
+    authMethod = 'subscription';
+  } else if (authAnswer === '2') {
+    authMethod = 'api-key';
+  } else {
+    authMethod = existingAuthMethod;
+  }
 
   const defaultModel = existing?.defaultModel ?? 'openai/gpt-4.1-mini';
   let modelAnswer = await prompt(`  ? Default model [${defaultModel}]: `);
@@ -213,6 +223,20 @@ async function reconfigureOpenCode(
     console.log(`  Warning: "${modelAnswer}" does not match the expected format (provider/model). Saved anyway.`);
   }
 
+  if (authMethod === 'subscription') {
+    console.log('  ✓ OpenCode reconfigured (subscription auth)');
+    console.log('  → Run: opencode auth login');
+    return { enabled: true, authMethod: 'subscription', defaultModel: modelAnswer };
+  }
+
+  const defaultKeyHint = existing?.apiKey !== undefined
+    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
+    : '$OPENAI_API_KEY';
+  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
+  const apiKey = keyAnswer !== ''
+    ? keyAnswer
+    : (existing?.apiKey ?? '$OPENAI_API_KEY');
+
   const resolvedKey = resolveApiKey(apiKey);
   if (resolvedKey === '') {
     console.log('  ✗ API key is empty or env var unset — verify before running.');
@@ -220,5 +244,5 @@ async function reconfigureOpenCode(
     console.log(`  ✓ OpenCode reconfigured (${modelAnswer})`);
   }
 
-  return { enabled: true, apiKey, defaultModel: modelAnswer };
+  return { enabled: true, authMethod: 'api-key', apiKey, defaultModel: modelAnswer };
 }
