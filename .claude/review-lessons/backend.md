@@ -85,3 +85,15 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **In-memory queues need persistence or recovery** — purely in-memory task queues are lost on app restart. Persist to SQLite or serialize on change. (T86)
 - **Stub resolveWorkDir breaks dependent features** — if conflict guard and parallel runner both use a hardcoded `process.cwd()`, all tasks conflict with each other, making parallel execution impossible. (T86)
 - **Prevent duplicate enqueue** — check for existing taskId in queue before pushing. Double-enqueue causes pipeline "already running" throws. (T86)
+
+## Service Discovery / CLI Services
+
+- **File-based service discovery needs identity validation** — checking `resp.ok` on a `/health` endpoint accepts any HTTP 200, including from unrelated local servers. The health endpoint must return a distinctive JSON body (e.g., `{"service":"nitro-dashboard"}`) and callers must validate it. (T024)
+- **Service startup must use `process.once` not `process.on` for signals** — `process.on('SIGINT')` accumulates handlers on each `start()` call. Use `process.once` and store the reference for removal in `stop()`. (T024)
+- **Non-critical background services must not block the main command** — wrap optional service startup (e.g., dashboard in `run`) in try/catch. If the optional service fails, log a warning and continue; never let it abort the primary command path. (T024)
+- **Port files survive SIGKILL — document and provide `--force-restart`** — SIGTERM/SIGINT cleanup cannot protect against SIGKILL or OOM. Any file-based port/lock scheme must include a `--force-restart` flag that deletes stale files before starting fresh. (T024)
+- **Atomic service startup guard requires `O_EXCL` lock file** — polling a port file does not prevent two concurrent CLI invocations from both spawning the same service. Use `fs.openSync(lockPath, 'wx')` to create a lock atomically; if it throws EEXIST, wait and retry. (T024)
+- **Watcher/resource setup after port file write needs error boundary** — if `start()` writes the port file and then throws in watcher setup, the port file is orphaned. Wrap post-write setup in try/catch and call `stop()` (which deletes the port file) before re-throwing. (T024)
+- **Published CLI packages must embed their web assets** — `findWebDistPath` that resolves to a sibling package's `dist/` only works in a monorepo. For a published npm package, a `postbuild` script must copy web assets into the CLI's own `dist/` and the `files` array in `package.json` must include them. (T024)
+- **`exec` for browser open must use `execFile`** — `exec(\`open ${url}\`)` interprets the URL in a shell string. Use `execFile(command, [url], cb)` to prevent shell injection if the URL derivation ever changes. (T024)
+- **Duplicate signal handlers from multiple spawned children** — when a CLI command spawns both a dashboard child and a Supervisor child, each adds its own `SIGINT`/`SIGTERM` listeners. Use `process.once` for parent-level shutdown handlers and coordinate kill order explicitly to avoid races. (T024)

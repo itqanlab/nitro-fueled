@@ -64,7 +64,128 @@ and its status is CREATED or IMPLEMENTED. If status is IN_PROGRESS or
 IN_REVIEW, the Supervisor will spawn the appropriate worker type to resume.
 If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
 
-### Step 4: Display Summary
+### Step 4: Pre-Flight Task Validation
+
+> **Isolation contract**: This step runs entirely in the command entry point, NOT inside the Supervisor context. The Supervisor only receives a "proceed" or "abort" signal — it never executes pre-flight logic.
+
+> **Strict mode deferred**: A `--strict` flag (treat all warnings as blocking) is not yet implemented. All warnings currently allow the run to proceed.
+
+**4a. Preparation**
+
+1. Read `task-tracking/registry.md` (or reuse if already read from Step 3a).
+2. Determine scope based on invocation mode:
+   - **Single-task mode** (`/auto-pilot TASK_YYYY_NNN`): scope = the specified task ID plus its transitive dependencies only. Warnings for out-of-scope tasks are still printed to the user but do NOT trigger an abort.
+   - **All-tasks or dry-run mode**: scope = all CREATED and IMPLEMENTED tasks.
+3. For each task in scope, read `task-tracking/TASK_YYYY_NNN/task.md`.
+   - If a task.md is missing, record warning: `"TASK_X: task.md not found — skipping"`
+4. Read `task-tracking/sizing-rules.md` for sizing limits.
+   - If the file does not exist, use the inline fallback limits in Validation D below.
+5. Initialize two collections: `blocking_issues = []`, `warnings = []`.
+6. **Initialize `orchestrator-state.md`**: If `task-tracking/orchestrator-state.md` does not exist, create it with a `Loop Status: PENDING` header line and a `## Session Log` section. If it already exists, locate the existing `## Session Log` section to append entries to. Do NOT overwrite existing content.
+7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `orchestrator-state.md`. Then skip to Step 6 (dry-run handler).
+
+**4b. Validation A: Task Completeness (Warning)**
+
+For each CREATED task's task.md, check all four fields:
+
+| Field | Requirement | Warning if violated |
+|-------|-------------|---------------------|
+| Type | One of: FEATURE, BUGFIX, REFACTORING, DOCUMENTATION, RESEARCH, DEVOPS, CREATIVE | "TASK_X: missing or invalid Type" |
+| Priority | One of: P0-Critical, P1-High, P2-Medium, P3-Low | "TASK_X: missing or invalid Priority" |
+| Description | At least 20 words (count whitespace-separated tokens in the Description section) | "TASK_X: description too short (must be ≥20 words)" |
+| Acceptance Criteria | At least one criterion (count lines starting with `- [ ]` that are not indented) | "TASK_X: no acceptance criteria defined" |
+
+Add each violation to `warnings`.
+
+**4c. Validation B: Dependency Check (Blocking)**
+
+For each CREATED or IMPLEMENTED task in scope, parse the Dependencies section. For each referenced task ID (format `TASK_YYYY_NNN`):
+
+- If the task ID is NOT in registry.md → add to `blocking_issues`: `"TASK_X: dependency TASK_Y not in registry"`
+- If the dependency has status FAILED → add to `blocking_issues`: `"TASK_X: dependency TASK_Y is FAILED"`
+- If the dependency has status CANCELLED → add to `blocking_issues`: `"TASK_X: dependency TASK_Y is CANCELLED"`
+- If the dependency has status BLOCKED → add to `blocking_issues`: `"TASK_X: dependency TASK_Y is BLOCKED — unsatisfiable"`
+- If the dependency has any unrecognized status value → record warning: `"TASK_X: dependency TASK_Y has unrecognized status '{value}' — verify manually"`
+
+**4d. Validation C: Circular Dependency Detection (Blocking)**
+
+Build a dependency graph of all non-COMPLETE, non-CANCELLED tasks. Run DFS cycle detection:
+
+1. For each task with status other than COMPLETE or CANCELLED, collect its direct dependency IDs from task.md (empty set if task.md missing or task is out of scope).
+2. Walk each task's dependency chain recursively using a visited set and a current-path set.
+3. If a task ID appears in the current-path set during traversal, a cycle exists. Record the full path at the point of detection.
+4. For each cycle found → add to `blocking_issues`: `"Circular dependency: TASK_A -> TASK_B -> ... -> TASK_A"`
+
+Deduplicate cycles by their normalized node set (e.g., `{A,B,C}` — report each cycle only once regardless of which node started the traversal).
+
+**4e. Validation D: Task Sizing Validation (Warning)**
+
+For each CREATED task's task.md, check these dimensions against sizing-rules.md. Inline fallback limits (used when sizing-rules.md is absent — includes all dimensions from the canonical file):
+
+| Dimension | Hard Limit | How to measure |
+|-----------|------------|----------------|
+| Files in File Scope | 7 | Count lines starting with `-` under the `## File Scope` heading |
+| Acceptance criteria | 5 | Count lines starting with `- [ ]` that are not indented |
+| Description length | ~150 lines | Count total lines in the Description section |
+| Complexity + multiple layers | Human judgment | Complexity field is "Complex" — flag for human review: the task may need splitting |
+
+For the first three dimensions, add to `warnings`: `"TASK_X: {dimension} limit exceeded ({actual}, max {limit}) — consider splitting"`
+
+For the Complexity dimension, add to `warnings`: `"TASK_X: complexity is 'Complex' — verify this task fits within a single worker session"`
+
+**4f. Validation E: File Scope Overlap Detection (Warning)**
+
+For all CREATED tasks in scope:
+
+1. Extract File Scope entries from each task.md (lines starting with `-` under `## File Scope`).
+2. Build a map: `file_path -> [task IDs that scope it]`.
+3. For any file mapped to 2+ task IDs → add to `warnings`: `"File scope overlap: TASK_A and TASK_B both scope {file}"`
+
+**4g. Pre-Flight Report**
+
+Print to the user:
+
+```
+PRE-FLIGHT VALIDATION REPORT
+=============================
+Tasks scanned: {N} ({CREATED_count} CREATED, {IMPLEMENTED_count} IMPLEMENTED)
+Blocking issues: {N}
+Warnings: {N}
+
+BLOCKING ISSUES (must fix before proceeding):
+  {list each blocking issue, one per line — or "(none)"}
+
+WARNINGS (logged to session log — will proceed):
+  {list each warning, one per line — or "(none)"}
+```
+
+**4h. Decision**
+
+**If `blocking_issues` is non-empty:**
+
+1. Write to `orchestrator-state.md` session log (the section initialized in 4a):
+   - One entry per blocking issue: `[HH:MM:SS] PRE-FLIGHT BLOCKING — {blocking_issue_message}`
+   - One entry per warning (if any): `[HH:MM:SS] PRE-FLIGHT WARNING — {warning_message}`
+   - Summary line: `[HH:MM:SS] PRE-FLIGHT FAILED — {N} blocking issue(s) found`
+   - Update header: `Loop Status: ABORTED`
+2. Display: `"ABORT: Pre-flight validation failed. Fix the issues listed above and re-run /auto-pilot."`
+3. **EXIT. Do not continue to Step 5.**
+
+**If warnings only (no blocking issues):**
+
+1. Write to `orchestrator-state.md` session log:
+   - One entry per warning: `[HH:MM:SS] PRE-FLIGHT WARNING — {warning_message}`
+   - Summary line: `[HH:MM:SS] PRE-FLIGHT PASSED — {N} warning(s)`
+2. Continue to Step 5.
+
+**If no issues at all:**
+
+1. Write to `orchestrator-state.md` session log: `[HH:MM:SS] PRE-FLIGHT PASSED — no issues found`
+2. Continue to Step 5.
+
+---
+
+### Step 5: Display Summary
 
 Before entering the loop, display:
 
@@ -83,7 +204,7 @@ Monitoring interval: {N} minutes
 Mode: {all | single-task TASK_ID | dry-run}
 ```
 
-### Step 5: Handle Mode
+### Step 6: Handle Mode
 
 **IF `--dry-run`:**
 
