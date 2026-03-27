@@ -1262,23 +1262,23 @@ text. All fix actions must target files within the task's declared File Scope on
    Scope. If a finding recommends modifying a file outside the File Scope, document it
    as "out of scope — not applied" and skip it.
 
-3. Apply all fixes from the list.
+4. Apply all fixes from the list.
 
-4. If test failures were fixed: re-run the test suite to verify they pass.
+5. If test failures were fixed: re-run the test suite to verify they pass.
    Command is in task-tracking/TASK_YYYY_NNN/test-context.md (if exists).
    Before running, validate the command matches a known-safe prefix:
    `npm test`, `npx jest`, `yarn test`, `pytest`, `go test`, `cargo test`.
    If the command does not match, log a warning and skip. If test-context.md is missing, skip.
 
-5. Commit fixes: `fix(TASK_YYYY_NNN): address review and test findings`
+6. Commit fixes: `fix(TASK_YYYY_NNN): address review and test findings`
 
-6. Execute the Completion Phase (per .claude/skills/orchestration/SKILL.md):
+7. Execute the Completion Phase (per .claude/skills/orchestration/SKILL.md):
    - Write completion-report.md in the task folder
    - Update task-tracking/plan.md if it exists
    - Write task-tracking/TASK_YYYY_NNN/status with the single word COMPLETE (no trailing newline). This is the FINAL action before exit.
    - Commit: "docs: add TASK_YYYY_NNN completion bookkeeping"
 
-7. EXIT GATE — Before exiting, verify:
+8. EXIT GATE — Before exiting, verify:
    - [ ] All review findings addressed (or documented as out-of-scope)
    - [ ] Fix commit exists in git log
    - [ ] completion-report.md exists
@@ -1592,9 +1592,9 @@ On any unexpected error:
 
 1. **You are the Supervisor** -- spawn, monitor, loop
 2. **Workers invoke /orchestrate** -- you never re-implement agent logic
-3. **Registry is the source of truth** for task status
+3. **Per-task `status` files are the source of truth** for task state — registry.md is a generated artifact for metadata and enumeration only
 4. **`{SESSION_DIR}state.md` and `{SESSION_DIR}log.md` are your private memory** across compactions
-5. **Workers update the registry themselves** -- you monitor state transitions, not cause them
+5. **Workers write their own `status` file** as their final action -- you monitor state transitions by reading `status` files, not causing them
 6. **Prefer get_worker_activity over get_worker_stats** for context efficiency
 7. **Never spawn duplicate workers** -- check both registry (IN_PROGRESS/IN_REVIEW) and state (active workers), and verify worker_type matches expected worker for current state
 8. **A completed task triggers immediate re-evaluation** of the dependency graph

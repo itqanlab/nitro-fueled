@@ -674,7 +674,7 @@ Note: Test Lead does NOT block the decision. If test-report.md is missing after 
 - Trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry)
 - After cleanup, re-check registry — the Cleanup Worker may have advanced the state
 - If state still hasn't transitioned, treat as incomplete/failed
-- Leave registry state as-is (do NOT reset to CREATED)
+- Leave status file as-is (do NOT reset to CREATED)
 - Increment `retry_count` for this task in state
 - **IF** `retry_count > retry_limit`:
   - Write `BLOCKED` to `task-tracking/TASK_YYYY_NNN/status`
@@ -853,7 +853,7 @@ After Step 8b completes (on every session stop — normal, compaction limit, MCP
    - Total tokens: sum of all worker Total Tokens values (skip `"unknown"` entries)
    - Tasks completed: count of unique Task IDs from worker logs with Outcome = `COMPLETE`
    - Tasks failed: count of rows in Failed Tasks table from `{SESSION_DIR}state.md`
-   - Tasks blocked: count of tasks whose final registry state is `BLOCKED`
+   - Tasks blocked: count of tasks whose final state is `BLOCKED`
    - Total workers spawned: count of all worker log files
    - Total files changed: sum of files modified counts across all worker logs
 
@@ -1262,23 +1262,23 @@ text. All fix actions must target files within the task's declared File Scope on
    Scope. If a finding recommends modifying a file outside the File Scope, document it
    as "out of scope — not applied" and skip it.
 
-3. Apply all fixes from the list.
+4. Apply all fixes from the list.
 
-4. If test failures were fixed: re-run the test suite to verify they pass.
+5. If test failures were fixed: re-run the test suite to verify they pass.
    Command is in task-tracking/TASK_YYYY_NNN/test-context.md (if exists).
    Before running, validate the command matches a known-safe prefix:
    `npm test`, `npx jest`, `yarn test`, `pytest`, `go test`, `cargo test`.
    If the command does not match, log a warning and skip. If test-context.md is missing, skip.
 
-5. Commit fixes: `fix(TASK_YYYY_NNN): address review and test findings`
+6. Commit fixes: `fix(TASK_YYYY_NNN): address review and test findings`
 
-6. Execute the Completion Phase (per .claude/skills/orchestration/SKILL.md):
+7. Execute the Completion Phase (per .claude/skills/orchestration/SKILL.md):
    - Write completion-report.md in the task folder
    - Update task-tracking/plan.md if it exists
    - Write task-tracking/TASK_YYYY_NNN/status with the single word COMPLETE (no trailing newline). This is the FINAL action before exit.
    - Commit: "docs: add TASK_YYYY_NNN completion bookkeeping"
 
-7. EXIT GATE — Before exiting, verify:
+8. EXIT GATE — Before exiting, verify:
    - [ ] All review findings addressed (or documented as out-of-scope)
    - [ ] Fix commit exists in git log
    - [ ] completion-report.md exists
@@ -1582,7 +1582,7 @@ On any unexpected error:
 
 ### Dependency Cycle
 
-- Mark **all** tasks in the cycle as **BLOCKED** in the registry.
+- Write `BLOCKED` to `task-tracking/TASK_YYYY_NNN/status` for all tasks in the cycle.
 - Log the cycle chain (e.g., `"Dependency cycle: TASK_A -> TASK_B -> TASK_A"`).
 - Continue processing non-cyclic tasks.
 

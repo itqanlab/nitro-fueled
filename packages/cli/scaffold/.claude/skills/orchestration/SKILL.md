@@ -331,7 +331,7 @@ After the QA cycle (reviews + fixes + final commit), the orchestrator MUST compl
 **Commit order:**
 1. First commit: implementation code (after dev, before QA)
 2. Second commit: QA fixes
-3. Third commit: completion bookkeeping (report + registry + plan update)
+3. Third commit: completion bookkeeping (report + status file + plan update)
 
 All three commits are REQUIRED. Do not combine them.
 
@@ -400,7 +400,7 @@ that the Supervisor can react to.
 
 ### Build Worker Exit Gate
 
-Run these checks after implementation is committed and registry is updated:
+Run these checks after implementation is committed and status file is written:
 
 | Check | Command | Expected |
 |-------|---------|----------|
@@ -418,7 +418,7 @@ listed rules. If a violation is found, fix it before committing. This check cann
 it requires you to read the file and compare against your implementation.
 
 If any check fails, fix it before exiting. Do not exit with uncommitted
-work or an un-updated registry.
+work or an un-written status file.
 
 **If tasks.md is missing**: Create it by listing all implementation steps you completed as task entries with `**Status**: COMPLETE`. See the tasks.md format under `## MODE 1: DECOMPOSITION` > `### Expected Output` in `.claude/skills/orchestration/references/team-leader-modes.md`. If that file is unavailable, use this minimal structure:
 

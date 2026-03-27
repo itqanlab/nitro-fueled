@@ -25,7 +25,7 @@ interface PlanInfo {
 }
 
 const STATUS_ORDER: ReadonlyArray<TaskStatus> = [
-  'IN_PROGRESS', 'CREATED', 'IMPLEMENTED', 'IN_REVIEW',
+  'IN_PROGRESS', 'FIXING', 'CREATED', 'IMPLEMENTED', 'IN_REVIEW',
   'COMPLETE', 'BLOCKED', 'FAILED', 'CANCELLED',
 ];
 
