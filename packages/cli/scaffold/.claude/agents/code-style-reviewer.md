@@ -267,6 +267,9 @@ if (node().status === 'pending_review')  // Magic string - should be enum/const
 ### Step 1: Context Gathering (Do Not Skip)
 
 ```bash
+# Read project anti-patterns FIRST — violations here are automatic blocking issues
+Read(.claude/anti-patterns.md)
+
 # Read task requirements
 Read(task-tracking/TASK_[ID]/context.md)
 Read(task-tracking/TASK_[ID]/implementation-plan.md)
@@ -275,6 +278,10 @@ Read(task-tracking/TASK_[ID]/implementation-plan.md)
 Glob(**/*similar*.ts)
 Read([similar implementation for comparison])
 ```
+
+**Anti-patterns are first-class review criteria.** Any rule in `.claude/anti-patterns.md` that
+applies to the implementation's tech stack is a blocking issue if violated. The file is
+stack-specific — sections that don't match the project's stack can be skipped.
 
 ### Step 2: Code Deep Dive
 

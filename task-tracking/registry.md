@@ -30,7 +30,7 @@
 | TASK_2026_026 | COMPLETE    | BUGFIX      | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 | — |
 | TASK_2026_027 | COMPLETE    | FEATURE     | Shared Review Context and Task File-Scope Isolation | 2026-03-24 | — |
 | TASK_2026_028 | COMPLETE    | BUGFIX      | Enforce tasks.md as Required Build Artifact | 2026-03-24 | — |
-| TASK_2026_029 | CREATED     | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 | default |
+| TASK_2026_029 | IMPLEMENTED | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 | default |
 | TASK_2026_030 | COMPLETE    | BUGFIX      | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-24 | — |
 | TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 | default |
 | TASK_2026_032 | COMPLETE    | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 | default |

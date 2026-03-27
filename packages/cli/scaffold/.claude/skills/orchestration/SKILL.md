@@ -337,9 +337,15 @@ Run these checks after implementation is committed and registry is updated:
 | Check | Command | Expected |
 |-------|---------|----------|
 | All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
+| Anti-patterns consulted | Read `.claude/anti-patterns.md` | Reviewed relevant sections; no violations in implementation |
 | Implementation committed | Check git status | No unstaged implementation files |
 | Registry updated | Grep task ID in registry.md | Status shows IMPLEMENTED |
 | Registry committed | Check git status | registry.md is committed |
+
+**Anti-patterns check**: Before finalizing the commit, read `.claude/anti-patterns.md`. For each
+section that applies to your implementation's tech stack, verify your code does not violate the
+listed rules. If a violation is found, fix it before committing. This check cannot be automated —
+it requires you to read the file and compare against your implementation.
 
 If any check fails, fix it before exiting. Do not exit with uncommitted
 work or an un-updated registry.

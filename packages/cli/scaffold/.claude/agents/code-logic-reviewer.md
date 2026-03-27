@@ -233,15 +233,22 @@ What happens when each integration point fails?
 ### Step 1: Requirements Deep Dive
 
 ```bash
+# Read project anti-patterns — logic violations in these are blocking
+Read(.claude/anti-patterns.md)
+
 # Read original request
 Read(task-tracking/TASK_[ID]/context.md)
 
 # CRITICAL: List what's NOT mentioned
 # - Window close during operation?
 # - IPC timeout handling?
-# - SQLite lock contention?
-# - Concurrent operations from multiple windows?
+# - Concurrent operations?
+# - Error propagation across layers?
 ```
+
+**Anti-patterns relevant to logic**: Focus on Silent Failures, Race Conditions, and any
+database/concurrency sections that apply to this project's stack. These represent known
+failure modes from prior tasks and must be checked against the implementation.
 
 ### Step 2: Implementation Trace
 

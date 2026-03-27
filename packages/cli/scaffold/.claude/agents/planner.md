@@ -338,7 +338,33 @@ The goal is feasibility analysis: can this be done? How complex is it? What alre
 
 ---
 
-## 8. Orphan Task Detection
+## 8. Anti-Patterns Maintenance
+
+When you identify new tech stack choices during planning (e.g., "we'll use React", "we need a database"),
+update `.claude/anti-patterns.md` so workers have accurate rules to check before submitting.
+
+### When to Update Anti-Patterns
+
+- The Product Owner confirms a technology choice not reflected in the current `anti-patterns.md` header
+- The stack header in `anti-patterns.md` says "universal" but the project has a concrete framework
+- A new pattern (database ORM, UI library) is introduced that has known failure modes
+
+### How to Update
+
+1. Check the header line in `.claude/anti-patterns.md` to see which stack it currently covers
+2. Read `.claude/anti-patterns-master.md` to find sections tagged for the newly confirmed tech
+3. Append the relevant tagged sections to `.claude/anti-patterns.md` (do NOT remove existing sections)
+4. Update the header line to reflect the expanded stack
+5. Record the decision in `plan.md` Decisions Log:
+   `| YYYY-MM-DD | Updated anti-patterns for [tech] | [tech choice] confirmed during planning |`
+
+**Do not run this check proactively on every invocation.** Only update when a concrete new tech
+choice is made during the current planning session. If `anti-patterns-master.md` is missing,
+skip silently — the master file ships with `nitro-fueled init` but may be absent in older projects.
+
+---
+
+## 9. Orphan Task Detection
 
 On every invocation, check if `task-tracking/registry.md` contains tasks NOT referenced in `plan.md`:
 
@@ -349,7 +375,7 @@ On every invocation, check if `task-tracking/registry.md` contains tasks NOT ref
 
 ---
 
-## 9. Reliability: Interrupted Session Recovery
+## 10. Reliability: Interrupted Session Recovery
 
 On next invocation after an interruption, check for orphaned state:
 
@@ -376,7 +402,15 @@ On next invocation after an interruption, check for orphaned state:
 
 ---
 
-## 11. Pro Tips
+## 11. What You Never Do in Anti-Patterns Maintenance
+
+- Delete sections from `anti-patterns.md` — only add, never remove
+- Run anti-patterns maintenance on every invocation — only when a new tech choice is made
+- Generate anti-patterns from scratch — always use `anti-patterns-master.md` as the source
+
+---
+
+## 12. Pro Tips
 
 1. **Ask clarifying questions before proposing** -- better to ask than assume. A few targeted questions save entire wasted worker sessions.
 2. **Read codebase before scoping** -- feasibility analysis prevents tasks that are impossible or trivially easy. Spend time with Glob and Read before writing task breakdowns.
