@@ -200,16 +200,37 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_061 | Agent Record Schema and Failure Taxonomy | COMPLETE | P1-High |
 | TASK_2026_062 | /evaluate-agent Command | COMPLETE | P1-High |
 
+### Phase 12: CLI Maturity
+**Status**: IN_PROGRESS
+**Description**: Harden the CLI package to reflect its installable-toolkit identity — agent rename to `nitro-*` namespace, documentation updates, scaffold sync, and /run command alignment.
+
+#### Milestones
+- [x] Agents renamed to `nitro-*` prefix (TASK_2026_051)
+- [ ] /run command updated for new naming (TASK_2026_050)
+- [ ] Docs and workspace updated to reflect package vision (TASK_2026_053)
+- [ ] Scaffold synced with current .claude/ (TASK_2026_049)
+- [ ] Workspace init validated end-to-end (TASK_2026_052)
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_049 | Sync Scaffold with Current .claude/ | CREATED | P1-High |
+| TASK_2026_050 | Update /run Command for nitro-* Agents | CREATED | P1-High |
+| TASK_2026_051 | Rename Agents to nitro-* Prefix | COMPLETE | P1-High |
+| TASK_2026_052 | Validate Workspace Init End-to-End | CREATED | P1-High |
+| TASK_2026_053 | Update Docs and Workspace to Reflect Package Vision | IN_PROGRESS | P1-High |
+
 ## Current Focus
 
-**Active Phase**: Phase 10 (Agent Calibration) — all Phase 11 tasks complete
-**Active Milestone**: Agent calibration system
+**Active Phase**: Phase 12 (CLI Maturity)
+**Active Milestone**: Agent rename complete; docs, scaffold sync, and /run update in progress
 **Next Priorities**:
-1. Phase 11 COMPLETE — all Supervisor Reliability tasks done
-2. See backlog for next wave of tasks
+1. Complete Phase 12 — tasks 049, 050, 052, 053 pending
+2. Phase 10 (Agent Calibration) continues in parallel
+3. Phase 4 (Validation) — end-to-end fresh project test follows Phase 12 completion
 
 **Supervisor Guidance**: PROCEED
-**Guidance Note**: Phase 11 (Supervisor Reliability) added with 059, 060, 067. Run 059+060 first (parallel), then 067. Phase 10 (Agent Calibration) continues in parallel. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
+**Guidance Note**: Phase 12 (CLI Maturity) is the active focus. TASK_2026_051 complete. Run 049+050+053 in parallel (no shared files). TASK_2026_052 depends on 049+050+051 all complete. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
 
 ## Decisions Log
 

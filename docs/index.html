@@ -39,7 +39,7 @@
       <span class="stage">Complete</span>
     </div>
     <div class="hero-stats">
-      <div class="hero-stat"><div class="num">16</div><div class="label">Agents</div></div>
+      <div class="hero-stat"><div class="num">22</div><div class="label">Agents</div></div>
       <div class="hero-stat"><div class="num">4</div><div class="label">Skills</div></div>
       <div class="hero-stat"><div class="num">15</div><div class="label">Commands</div></div>
       <div class="hero-stat"><div class="num">7</div><div class="label">Workflows</div></div>
@@ -47,6 +47,38 @@
     </div>
   </div>
 </div>
+
+<!-- ═══════════════ INSTALL ═══════════════ -->
+<section>
+  <div class="section-label">Get Started</div>
+  <div class="section-title">Install in Any Project</div>
+  <div class="section-desc">One command sets up the full orchestration pipeline. Nitro-Fueled detects your tech stack, installs core agents, and generates project-specific configuration.</div>
+
+  <div class="supervisor-flow three-col">
+    <div class="sup-step">
+      <div class="sup-num">1</div>
+      <h4>Init</h4>
+      <p style="font-family:'SF Mono','Fira Code',monospace;color:var(--accent);font-size:13px;margin-bottom:8px;">npx nitro-fueled init</p>
+      <p>Detects your workspace. Installs core agents and skills. AI analyzes your stack and proposes custom developer agents. Generates stack-specific anti-patterns checklist.</p>
+    </div>
+    <div class="sup-step">
+      <div class="sup-num">2</div>
+      <h4>Plan</h4>
+      <p style="font-family:'SF Mono','Fira Code',monospace;color:var(--accent);font-size:13px;margin-bottom:8px;">/plan</p>
+      <p>Discuss your vision with <code>nitro-planner</code>. It investigates the codebase, proposes a phased task backlog, and writes a roadmap to <code>plan.md</code>.</p>
+    </div>
+    <div class="sup-step">
+      <div class="sup-num">3</div>
+      <h4>Run</h4>
+      <p style="font-family:'SF Mono','Fira Code',monospace;color:var(--accent);font-size:13px;margin-bottom:8px;">/run</p>
+      <p>The Supervisor takes over. Pre-flight validation, worker spawning, health monitoring, failure recovery, and loop until the backlog is drained — all autonomous.</p>
+    </div>
+  </div>
+
+  <div class="ww-note" style="margin-top:32px;">
+    Keep agents current with <code style="color:var(--accent);font-family:'SF Mono','Fira Code',monospace;">npx nitro-fueled update</code> — pulls the latest agent definitions and skills while preserving your project-specific customizations.
+  </div>
+</section>
 
 <!-- ═══════════════ READING GUIDE ═══════════════ -->
 <section>
@@ -455,7 +487,7 @@
 <section>
   <div class="section-label">Step 8 · Team</div>
   <div class="section-title">Agent Roster</div>
-  <div class="section-desc">16 specialist agents organized into functional teams. Each agent has defined capabilities, inputs, outputs, and trigger conditions.</div>
+  <div class="section-desc">22 specialist agents organized into functional teams. All agents use the <code>nitro-</code> prefix to avoid name conflicts in target projects. Each agent has defined capabilities, inputs, outputs, and trigger conditions.</div>
 
   <div class="legend">
     <div class="legend-item"><div class="legend-dot dot-plan"></div> Planning</div>
@@ -470,21 +502,21 @@
   <div class="agent-grid">
     <!-- Planning -->
     <div class="agent-card">
-      <div><span class="cat-dot dot-plan"></span><span class="agent-name">Planner</span></div>
+      <div><span class="cat-dot dot-plan"></span><span class="agent-name">nitro-planner</span></div>
       <div class="agent-cat cat-plan">Planning</div>
       <div class="agent-desc">Strategic planning partner between Product Owner and Supervisor. Owns the roadmap, creates well-scoped tasks, manages the backlog. Retroactively detects oversized tasks in the backlog and proposes splits.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Plan</span><span class="cap-tag cap-secondary">Research</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-plan"></span><span class="agent-name">Project Manager</span></div>
+      <div><span class="cat-dot dot-plan"></span><span class="agent-name">nitro-project-manager</span></div>
       <div class="agent-cat cat-plan">Planning</div>
       <div class="agent-desc">Technical Lead for task-level orchestration. Produces detailed requirements (task-description.md) inside worker sessions.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Plan</span><span class="cap-tag cap-secondary">Content</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-plan"></span><span class="agent-name">Software Architect</span></div>
+      <div><span class="cat-dot dot-plan"></span><span class="agent-name">nitro-software-architect</span></div>
       <div class="agent-cat cat-plan">Planning</div>
       <div class="agent-desc">Elite system designer. Investigates the codebase, designs implementation plans grounded in evidence, produces architecture docs.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Design</span><span class="cap-tag cap-primary">Plan</span><span class="cap-tag cap-secondary">Review</span></div>
@@ -492,36 +524,50 @@
 
     <!-- Orchestration -->
     <div class="agent-card">
-      <div><span class="cat-dot dot-orch"></span><span class="agent-name">Team Leader</span></div>
+      <div><span class="cat-dot dot-orch"></span><span class="agent-name">nitro-team-leader</span></div>
       <div class="agent-cat cat-orch">Orchestration</div>
       <div class="agent-desc">Task decomposition and batch orchestration. Breaks architect's plan into developer-assignable batches with dependency ordering.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Plan</span><span class="cap-tag cap-secondary">Review</span></div>
     </div>
 
+    <div class="agent-card">
+      <div><span class="cat-dot dot-orch"></span><span class="agent-name">nitro-review-lead</span></div>
+      <div class="agent-cat cat-orch">Orchestration</div>
+      <div class="agent-desc">Spawns parallel review sub-workers (style, logic, security), collects findings, runs fix phase, appends review lessons, and marks tasks COMPLETE.</div>
+      <div class="agent-caps"><span class="cap-tag cap-primary">Review</span><span class="cap-tag cap-secondary">Plan</span></div>
+    </div>
+
+    <div class="agent-card">
+      <div><span class="cat-dot dot-orch"></span><span class="agent-name">nitro-test-lead</span></div>
+      <div class="agent-cat cat-orch">Orchestration</div>
+      <div class="agent-desc">Coordinates parallel test writing and execution across unit, integration, and e2e testers with model routing.</div>
+      <div class="agent-caps"><span class="cap-tag cap-primary">Plan</span><span class="cap-tag cap-secondary">Code</span></div>
+    </div>
+
     <!-- Development -->
     <div class="agent-card">
-      <div><span class="cat-dot dot-dev"></span><span class="agent-name">Backend Developer</span></div>
+      <div><span class="cat-dot dot-dev"></span><span class="agent-name">nitro-backend-developer</span></div>
       <div class="agent-cat cat-dev">Development</div>
       <div class="agent-desc">Server-side services, data access, API/handler implementation. Follows initialization protocol, escalation rules, and review lessons.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Design</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-dev"></span><span class="agent-name">Frontend Developer</span></div>
+      <div><span class="cat-dot dot-dev"></span><span class="agent-name">nitro-frontend-developer</span></div>
       <div class="agent-cat cat-dev">Development</div>
       <div class="agent-desc">UI components, client-side logic, state management. Pattern-aware catalog for reactive frameworks, accessibility, and responsive design.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Design</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-dev"></span><span class="agent-name">Systems Developer</span></div>
+      <div><span class="cat-dot dot-dev"></span><span class="agent-name">nitro-systems-developer</span></div>
       <div class="agent-cat cat-dev">Development</div>
       <div class="agent-desc">Core infrastructure: agent definitions, skill files, command files, markdown specifications. Builds the orchestration system itself.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Design</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-dev"></span><span class="agent-name">DevOps Engineer</span></div>
+      <div><span class="cat-dot dot-dev"></span><span class="agent-name">nitro-devops-engineer</span></div>
       <div class="agent-cat cat-dev">Development</div>
       <div class="agent-desc">CI/CD pipelines, build infrastructure, packaging, deployment automation. Handles everything from Dockerfiles to release workflows.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Design</span><span class="cap-tag cap-secondary">Research</span></div>
@@ -529,28 +575,56 @@
 
     <!-- QA -->
     <div class="agent-card">
-      <div><span class="cat-dot dot-qa"></span><span class="agent-name">Senior Tester</span></div>
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-senior-tester</span></div>
       <div class="agent-cat cat-qa">Quality Assurance</div>
       <div class="agent-desc">Comprehensive quality assurance and test mastery. Writes and runs test suites, validates acceptance criteria.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-primary">Review</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-qa"></span><span class="agent-name">Code Logic Reviewer</span></div>
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-unit-tester</span></div>
+      <div class="agent-cat cat-qa">Quality Assurance</div>
+      <div class="agent-desc">Focused unit test writing for individual functions and components. Fast feedback on correctness at the smallest granularity.</div>
+      <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Review</span></div>
+    </div>
+
+    <div class="agent-card">
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-integration-tester</span></div>
+      <div class="agent-cat cat-qa">Quality Assurance</div>
+      <div class="agent-desc">Integration and contract test coverage across service boundaries. Validates that components interact correctly.</div>
+      <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Review</span></div>
+    </div>
+
+    <div class="agent-card">
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-e2e-tester</span></div>
+      <div class="agent-cat cat-qa">Quality Assurance</div>
+      <div class="agent-desc">End-to-end scenario coverage using browser automation. Validates full user flows from interface to data layer.</div>
+      <div class="agent-caps"><span class="cap-tag cap-primary">Code</span><span class="cap-tag cap-secondary">Browser</span></div>
+    </div>
+
+    <div class="agent-card">
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-code-logic-reviewer</span></div>
       <div class="agent-cat cat-qa">Quality Assurance</div>
       <div class="agent-desc">Business logic correctness. Ensures no stubs, placeholders, or incomplete implementations. Validates against acceptance criteria.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Review</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-qa"></span><span class="agent-name">Code Style Reviewer</span></div>
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-code-style-reviewer</span></div>
       <div class="agent-cat cat-qa">Quality Assurance</div>
       <div class="agent-desc">Coding standards, patterns, and best practices enforcement. Checks naming, structure, consistency, and anti-patterns.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Review</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-qa"></span><span class="agent-name">Visual Reviewer</span></div>
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-code-security-reviewer</span></div>
+      <div class="agent-cat cat-qa">Quality Assurance</div>
+      <div class="agent-desc">Security vulnerability detection. Checks input validation, injection vectors, auth boundaries, secret exposure, and dependency risks.</div>
+      <div class="agent-caps"><span class="cap-tag cap-primary">Review</span></div>
+    </div>
+
+    <div class="agent-card">
+      <div><span class="cat-dot dot-qa"></span><span class="agent-name">nitro-visual-reviewer</span></div>
       <div class="agent-cat cat-qa">Quality Assurance</div>
       <div class="agent-desc">UI/UX visual quality, responsive design, browser-based visual testing using Chrome DevTools Protocol.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Review</span><span class="cap-tag cap-secondary">Browser</span></div>
@@ -558,28 +632,28 @@
 
     <!-- Specialized -->
     <div class="agent-card">
-      <div><span class="cat-dot dot-design"></span><span class="agent-name">UI/UX Designer</span></div>
+      <div><span class="cat-dot dot-design"></span><span class="agent-name">nitro-ui-ux-designer</span></div>
       <div class="agent-cat cat-design">Design</div>
       <div class="agent-desc">Visual design workflows: niche discovery, design system building, asset generation, and Stitch MCP integration for rapid UI.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Design</span><span class="cap-tag cap-secondary">Plan</span><span class="cap-tag cap-secondary">Content</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-content"></span><span class="agent-name">Content Writer</span></div>
+      <div><span class="cat-dot dot-content"></span><span class="agent-name">nitro-technical-content-writer</span></div>
       <div class="agent-cat cat-content">Content</div>
       <div class="agent-desc">Technical content for marketing pages, blogs, documentation, and video scripts. Mines the codebase for authentic technical depth.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Content</span><span class="cap-tag cap-secondary">Design</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-research"></span><span class="agent-name">Researcher Expert</span></div>
+      <div><span class="cat-dot dot-research"></span><span class="agent-name">nitro-researcher-expert</span></div>
       <div class="agent-cat cat-research">Research</div>
       <div class="agent-desc">Deep technical analysis and strategic insights. Investigates technologies, evaluates approaches, produces research reports.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Research</span><span class="cap-tag cap-secondary">Content</span></div>
     </div>
 
     <div class="agent-card">
-      <div><span class="cat-dot dot-research"></span><span class="agent-name">Modernization Detector</span></div>
+      <div><span class="cat-dot dot-research"></span><span class="agent-name">nitro-modernization-detector</span></div>
       <div class="agent-cat cat-research">Research</div>
       <div class="agent-desc">Identifies technology modernization opportunities across any codebase using current industry best practices.</div>
       <div class="agent-caps"><span class="cap-tag cap-primary">Research</span><span class="cap-tag cap-secondary">Review</span></div>
@@ -897,9 +971,46 @@
   </div>
 </section>
 
+<!-- ═══════════════ HOW IT STAYS CURRENT ═══════════════ -->
+<section>
+  <div class="section-label">Staying Current</div>
+  <div class="section-title">How It Stays Current</div>
+  <div class="section-desc">Nitro-Fueled uses a manifest-based update model to keep your agents sharp without overwriting project customizations.</div>
+
+  <div class="control-grid">
+    <div class="control-card" style="border-left:3px solid var(--accent);">
+      <div class="control-file">nitro-manifest.json</div>
+      <div class="control-purpose">Version registry</div>
+      <p>Generated at <code>init</code> time. Records the version of every installed agent, skill, and command file. <code>npx nitro-fueled update</code> diffs against the latest manifest to find what has changed upstream.</p>
+      <div class="control-who">Written by: CLI init/update &middot; Read by: CLI update</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--blue);">
+      <div class="control-file">Core agents (nitro-*)</div>
+      <div class="control-purpose">Always replaceable</div>
+      <p>All <code>nitro-*</code> agents ship verbatim from the package. The <code>nitro-</code> prefix reserves this namespace — any file matching <code>.claude/agents/nitro-*.md</code> is safe to overwrite on update.</p>
+      <div class="control-who">Updated by: npx nitro-fueled update</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--green);">
+      <div class="control-file">Project agents</div>
+      <div class="control-purpose">Your customizations, preserved</div>
+      <p>Agents generated at <code>init</code> time for your stack (e.g., <code>frontend-developer.md</code>, <code>backend-developer.md</code>) do not carry the <code>nitro-</code> prefix. They are never overwritten by <code>update</code>.</p>
+      <div class="control-who">Generated by: npx nitro-fueled init &middot; Owned by: your project</div>
+    </div>
+
+    <div class="control-card" style="border-left:3px solid var(--yellow);">
+      <div class="control-file">review-lessons/ &amp; anti-patterns.md</div>
+      <div class="control-purpose">Project-grown knowledge</div>
+      <p>These files start empty (or minimal) and accumulate QA findings specific to your codebase. They are never touched by <code>update</code> — only your review workers write to them.</p>
+      <div class="control-who">Written by: Review Workers &middot; Read by: All developers, reviewers</div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <p>Built with <span style="color:var(--accent)">Nitro-Fueled</span> &mdash; Reusable AI Development Orchestration</p>
-  <p style="margin-top:4px;">16 agents &middot; 4 skills &middot; 15 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
+  <p style="margin-top:4px;">22 agents &middot; 4 skills &middot; 15 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>

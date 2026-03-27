@@ -4,14 +4,16 @@ Reusable AI development orchestration package. Install into any project to get a
 
 ## What This Is
 
-A reusable AI development orchestration package (proven across 55+ tasks completed autonomously). Includes agents, skills, commands, task tracking, and an auto-pilot loop.
+An installable CLI toolkit (`npx nitro-fueled init`) that sets up a fully customized AI orchestration pipeline in any project. It includes agents, skills, commands, task tracking, and an autonomous Supervisor loop proven across 55+ tasks.
+
+**This project IS the library being tested on itself.** The `.claude/` directory here is the scaffold — it is always in sync with what `npx nitro-fueled init` copies into a target project. Changes here ship as the next version of the package.
 
 ## Project Structure
 ```
 docs/                      # Design docs and architecture
 .claude/
-  agents/                  # 16 agent definitions (PM, Architect, Planner, Dev, QA, reviewers, etc.)
-    planner.md             # Strategic planning agent (roadmap, task creation, backlog)
+  agents/                  # 22 nitro-* agent definitions (planner, architect, team-leader, reviewers, testers, etc.)
+    nitro-planner.md       # Strategic planning agent (roadmap, task creation, backlog)
   skills/
     orchestration/         # Build Worker orchestration (PM->Architect->Dev->QA)
     auto-pilot/            # Supervisor skill (spawns/monitors workers)
@@ -36,24 +38,25 @@ packages/                  # (TBD) Nx workspace packages
 - Claude Code CLI
 
 ## Current State
-- .claude/ setup genericized and project-agnostic
+- CLI package built (`packages/cli/`) — `npx nitro-fueled init|run|status|create` operational
+- .claude/ is the scaffold — changes here sync to what `init` installs in target projects
 - Supervisor architecture: Build Workers and Review Workers spawned/monitored by auto-pilot
 - Planner agent: strategic planning layer between Product Owner and Supervisor (/plan command)
 - Task states: CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKED)
-- Core vs project agent separation: core agents ship as-is, project agents generated at init based on tech stack
-- Need to build CLI package
+- All agents renamed to `nitro-*` prefix (Phase 12 — CLI Maturity in progress)
 
 ## Development Priority
 1. ~~Genericize .claude/ files (remove project-specific references, make project-agnostic)~~ DONE
 2. ~~Build task.md template~~ DONE
 3. ~~Build auto-pilot skill/command (Supervisor architecture)~~ DONE
 4. ~~Planner agent and /plan command~~ DONE
-5. Fix workspace agent setup — IN_PROGRESS
-6. Dynamic agent/skill generation at init (tech stack detection)
-7. Build CLI (init, run, status, create)
+5. ~~Fix workspace agent setup~~ DONE
+6. ~~Build CLI (init, run, status, create)~~ DONE
+7. CLI Maturity — nitro-* rename, scaffold sync, docs update — IN_PROGRESS (Phase 12)
 8. Test on a fresh project
 
 ## Conventions
 - Git: conventional commits with scopes
 - Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED | CANCELLED
+- Agent naming: all agents use the `nitro-` prefix (e.g., `nitro-planner`, `nitro-software-architect`). This prefix scopes agents to the nitro-fueled namespace so they do not conflict with project-specific agents in target codebases.
 - Do NOT start git commit/push without explicit user instruction

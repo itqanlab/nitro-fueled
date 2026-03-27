@@ -19,7 +19,7 @@ nitro-fueled/
   scaffold/                    # (TBD) What gets copied into target projects
     .claude/
       agents/
-        core/                  # Ship as-is (PM, Architect, Team-Leader, Planner, reviewers, etc.)
+        core/                  # Ship as-is (all nitro-* prefixed agents — planner, architect, reviewers, etc.)
         project/               # Generated at init based on tech stack (frontend-dev, backend-dev, etc.)
       skills/
         orchestration/         # Build Worker orchestration (PM->Architect->Dev->QA)
@@ -40,11 +40,13 @@ nitro-fueled/
 
 Agents are split into two categories:
 
-- **Core agents** ship as-is with the package. They are project-agnostic and work across any codebase:
-  - project-manager, software-architect, team-leader, planner
-  - code-style-reviewer, code-logic-reviewer, visual-reviewer, senior-tester
-  - researcher-expert, modernization-detector, devops-engineer
-  - systems-developer, ui-ux-designer, technical-content-writer
+- **Core agents** ship as-is with the package. All use the `nitro-` prefix to avoid naming conflicts in target projects. They are project-agnostic and work across any codebase:
+  - nitro-project-manager, nitro-software-architect, nitro-team-leader, nitro-planner
+  - nitro-review-lead, nitro-test-lead
+  - nitro-code-style-reviewer, nitro-code-logic-reviewer, nitro-code-security-reviewer, nitro-visual-reviewer
+  - nitro-senior-tester, nitro-unit-tester, nitro-integration-tester, nitro-e2e-tester
+  - nitro-researcher-expert, nitro-modernization-detector, nitro-devops-engineer
+  - nitro-systems-developer, nitro-ui-ux-designer, nitro-technical-content-writer
 
 - **Project agents** are generated at `init` time based on the detected tech stack:
   - frontend-developer (Angular, React, Vue, etc. — prompt tailored to detected framework)
@@ -217,7 +219,7 @@ To survive compactions in long-running Supervisor sessions:
 The package copies the proven orchestration setup into the target project:
 
 ### Core (copied as-is)
-- Core agent definitions (PM, Architect, Team-Leader, Planner, reviewers, tester, etc.)
+- Core agent definitions (all `nitro-*` prefixed: planner, project-manager, software-architect, team-leader, review-lead, test-lead, reviewers, testers, etc.)
 - All skills (orchestration, auto-pilot/Supervisor, technical-content-writer, ui-ux-designer)
 - All commands (/orchestrate, /plan, /auto-pilot, /review-*, /create-task, /initialize-workspace, /project-status, /orchestrate-help)
 - Anti-patterns checklist (genericized)
