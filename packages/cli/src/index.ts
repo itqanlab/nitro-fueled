@@ -7,6 +7,7 @@ import { registerRunCommand } from './commands/run.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerCreateCommand } from './commands/create.js';
 import { registerDashboardCommand } from './commands/dashboard.js';
+import { registerConfigCommand } from './commands/config.js';
 
 const require = createRequire(import.meta.url);
 const { version, description } = require('../package.json') as { version: string; description: string };
@@ -23,6 +24,7 @@ registerRunCommand(program);
 registerStatusCommand(program);
 registerCreateCommand(program);
 registerDashboardCommand(program);
+registerConfigCommand(program);
 
 program.parseAsync().catch((err) => {
   console.error(err);

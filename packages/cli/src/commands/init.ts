@@ -10,6 +10,7 @@ import { detectStack, proposeAgents } from '../utils/stack-detect.js';
 import type { AgentProposal } from '../utils/stack-detect.js';
 import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
+import { ensureGitignore } from '../utils/provider-config.js';
 
 interface InitOptions {
   mcpPath: string | undefined;
@@ -282,6 +283,9 @@ export function registerInitCommand(program: Command): void {
       // Step 5: Generate CLAUDE.md
       console.log('');
       generateClaudeMd(cwd, opts.overwrite);
+
+      // Step 5b: Ensure .nitro-fueled/ is gitignored
+      ensureGitignore(cwd);
 
       // Step 6: Stack detection and developer agent generation
       await handleStackDetection(cwd, opts);

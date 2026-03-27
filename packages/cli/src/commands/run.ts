@@ -16,6 +16,7 @@ import {
   findEntryScript,
   pollForPortFile,
 } from '../utils/dashboard-helpers.js';
+import { checkProviderConfig } from '../utils/provider-config.js';
 
 interface RunOptions {
   dryRun: boolean;
@@ -330,6 +331,16 @@ export function registerRunCommand(program: Command): void {
 
       if (opts.dryRun) {
         displayDryRun(rows);
+        return;
+      }
+
+      // Provider config pre-flight (fail fast if enabled provider has empty credentials)
+      const providerIssues = checkProviderConfig(cwd);
+      if (providerIssues.length > 0) {
+        for (const issue of providerIssues) {
+          console.error(`Error: Provider ${issue.provider} — ${issue.message}`);
+        }
+        process.exitCode = 1;
         return;
       }
 
