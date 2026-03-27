@@ -53,7 +53,7 @@
 | TASK_2026_049 | CREATED     | FEATURE     | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-27 | default |
 | TASK_2026_050 | CREATED     | FEATURE     | `update` Command — Manifest-Based Safe Updates | 2026-03-27 | default |
 | TASK_2026_051 | CREATED     | REFACTORING | Rename All Agents to `nitro-*` Prefix | 2026-03-27 | default |
-| TASK_2026_052 | IN_PROGRESS | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
+| TASK_2026_052 | IMPLEMENTED | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
 | TASK_2026_053 | CREATED     | DOCUMENTATION | Update Docs and Workspace to Reflect Package Vision | 2026-03-27 | default |
 | TASK_2026_054 | CREATED     | FEATURE       | OpenCode Provider — Subscription/OAuth Auth Support | 2026-03-27 | default |
 | TASK_2026_055 | CREATED     | DEVOPS        | Scaffold Astro Starlight Docs Site | 2026-03-27 | default |
