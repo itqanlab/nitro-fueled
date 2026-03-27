@@ -18,6 +18,7 @@ export default {
         'nitro-green': '#22c55e',
         'nitro-purple': '#a855f7',
         'nitro-cyan': '#06b6d4',
+        'nitro-yellow': '#eab308',
       },
     },
   },

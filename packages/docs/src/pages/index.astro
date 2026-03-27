@@ -9,9 +9,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Reusable AI orchestration for any project. Full PM → Architect → Build → Review pipeline with autonomous Claude sessions." />
     <title>Nitro-Fueled — AI Dev Team Orchestration</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#0a0e17" />
     <style>
       /* Manual reset — Tailwind applyBaseStyles: false */
       *, *::before, *::after {
@@ -39,11 +37,22 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
         --nitro-text-dim:      #94a3b8;
         --nitro-text-bright:   #f8fafc;
         --nitro-orange:        #f97316;
+        --nitro-orange-dim:    #ff9f5f;
+        --nitro-orange-pale:   #ffb078;
         --nitro-orange-glow:   rgba(249,115,22,0.15);
         --nitro-blue:          #3b82f6;
         --nitro-green:         #22c55e;
         --nitro-purple:        #a855f7;
         --nitro-cyan:          #06b6d4;
+        --nitro-yellow:        #eab308;
+        --nitro-stat-label:    #90a8cb;
+        --nitro-hero-badge:    #ffd6bf;
+        --nitro-check-item:    #a8bad8;
+        --nitro-code-text:     #c9d8ef;
+        --nitro-pill-text:     #dce9ff;
+        --nitro-orange-glow-strong: rgba(249,115,22,0.35);
+        --nitro-cyan-border:   rgba(6,182,212,0.3);
+        --nitro-cyan-bg:       rgba(6,182,212,0.06);
       }
 
       /* Keyframes */
@@ -124,7 +133,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
 
       /* Pipeline arrows */
       .pipeline-arrow {
-        color: #ff9f5f;
+        color: var(--nitro-orange-dim);
         font-size: 14px;
         animation: flowPulse 2s ease-in-out infinite;
       }
@@ -136,7 +145,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
       .hero-stat .num {
         font-size: 35px;
         font-weight: 800;
-        color: #ffb078;
+        color: var(--nitro-orange-pale);
         animation: breatheNum 4.1s ease-in-out infinite;
         display: block;
       }
@@ -158,36 +167,29 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
       .fade-in:nth-child(5) { transition-delay: 320ms; }
       .fade-in:nth-child(6) { transition-delay: 400ms; }
 
-      /* Section gradient divider */
-      .section-divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(249,115,22,0.4), transparent);
-        width: 100%;
-      }
-
       /* Code block */
       .code-block {
         background: #080c14;
-        border: 1px solid #1e293b;
+        border: 1px solid var(--nitro-border);
         border-radius: 12px;
         padding: 24px;
         overflow-x: auto;
         font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
         font-size: 13px;
         line-height: 1.65;
-        color: #c9d8ef;
+        color: var(--nitro-code-text);
       }
-      .code-block .ck-heading { color: #ff9f5f; font-weight: 700; }
-      .code-block .ck-heading2 { color: #ffb878; font-weight: 600; }
-      .code-block .ck-key { color: #94a3b8; }
-      .code-block .ck-val-feature { color: #22c55e; }
-      .code-block .ck-val-p1 { color: #f97316; }
-      .code-block .ck-val-medium { color: #06b6d4; }
+      .code-block .ck-heading { color: var(--nitro-orange-dim); font-weight: 700; }
+      .code-block .ck-heading2 { color: var(--nitro-orange-pale); font-weight: 600; }
+      .code-block .ck-key { color: var(--nitro-text-dim); }
+      .code-block .ck-val-feature { color: var(--nitro-green); }
+      .code-block .ck-val-p1 { color: var(--nitro-orange); }
+      .code-block .ck-val-medium { color: var(--nitro-cyan); }
       .code-block .ck-comment { color: #4a5a72; font-style: italic; }
-      .code-block .ck-text { color: #c9d8ef; }
-      .code-block .ck-pipe { color: #334155; }
-      .code-block .ck-check { color: #94a3b8; }
-      .code-block .ck-check-item { color: #a8bad8; }
+      .code-block .ck-text { color: var(--nitro-code-text); }
+      .code-block .ck-pipe { color: var(--nitro-border-accent); }
+      .code-block .ck-check { color: var(--nitro-text-dim); }
+      .code-block .ck-check-item { color: var(--nitro-check-item); }
 
       /* CTA section gradient */
       .cta-section {
@@ -222,7 +224,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
       }
     </style>
   </head>
-  <body class="bg-nitro-bg text-nitro-text overflow-x-hidden" style="font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <body class="bg-nitro-bg text-nitro-text overflow-x-hidden" style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
 
     <!-- Background blobs -->
     <div class="blob-a" aria-hidden="true"></div>
@@ -307,7 +309,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
     </nav>
 
     <!-- ========== SECTION 2: HERO ========== -->
-    <section class="hero-section relative min-h-[90vh] flex items-center pt-32 pb-24" style="overflow:hidden">
+    <section class="hero-section relative min-h-[90vh] flex items-center pt-32 pb-24 overflow-hidden">
       <!-- Hero ambient blobs -->
       <div aria-hidden="true" style="position:absolute;top:-22vh;left:-12vw;width:44vw;height:44vw;max-width:600px;border-radius:50%;filter:blur(66px);opacity:0.26;background:radial-gradient(circle,rgba(249,115,22,0.28),transparent 70%);pointer-events:none;z-index:0"></div>
       <div aria-hidden="true" style="position:absolute;top:-8vh;right:-16vw;width:44vw;height:44vw;max-width:600px;border-radius:50%;filter:blur(66px);opacity:0.2;background:radial-gradient(circle,rgba(22,148,255,0.2),transparent 70%);pointer-events:none;z-index:0"></div>
@@ -316,7 +318,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
         <!-- Badge -->
         <div
           class="inline-block px-[18px] py-2 rounded-full mb-5"
-          style="background:linear-gradient(180deg,rgba(249,115,22,0.22),rgba(249,115,22,0.06));border:1px solid rgba(249,115,22,0.65);box-shadow:inset 0 0 0 1px rgba(255,165,94,0.15),0 0 28px rgba(249,115,22,0.18);color:#ffd6bf;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.6px"
+          style="background:linear-gradient(180deg,var(--nitro-orange-glow),rgba(249,115,22,0.06));border:1px solid rgba(249,115,22,0.65);box-shadow:inset 0 0 0 1px rgba(255,165,94,0.15),0 0 28px var(--nitro-orange-glow);color:var(--nitro-hero-badge);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.6px"
         >
           Open Source · Claude Code · Autonomous Workers
         </div>
@@ -324,7 +326,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
         <!-- H1 -->
         <h1
           class="mt-5"
-          style="font-size:clamp(42px,6.6vw,84px);font-weight:850;letter-spacing:-2.1px;line-height:1.04;color:#f8fafc;text-shadow:0 0 26px rgba(249,115,22,0.16),0 0 74px rgba(67,134,255,0.12)"
+          style="font-size:clamp(42px,6.6vw,84px);font-weight:800;letter-spacing:-2.1px;line-height:1.04;color:var(--nitro-text-bright);text-shadow:0 0 26px var(--nitro-orange-glow),0 0 74px rgba(67,134,255,0.12)"
         >
           Your AI dev team, end-to-end.
         </h1>
@@ -332,7 +334,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
         <!-- Tagline -->
         <p
           class="mt-5 mx-auto max-w-[760px] leading-[1.58]"
-          style="color:#a8bad8;font-size:clamp(16px,1.9vw,18px)"
+          style="color:var(--nitro-check-item);font-size:clamp(16px,1.9vw,18px)"
         >
           Install into any project. Define tasks. Nitro-Fueled runs the full PM → Architect → Build → Review pipeline with autonomous Claude sessions — while you focus on what matters.
         </p>
@@ -342,7 +344,7 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
           <a
             href={`${baseUrl}getting-started/`}
             class="inline-flex items-center gap-2 bg-nitro-orange text-nitro-bg font-semibold px-8 py-3.5 rounded-lg text-[15px] hover:opacity-90 transition-opacity"
-            style="box-shadow:0 0 24px rgba(249,115,22,0.35)"
+            style="box-shadow:0 0 24px var(--nitro-orange-glow-strong)"
           >
             Get Started →
           </a>
@@ -356,13 +358,13 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
 
         <!-- Pipeline Flow Pill -->
         <div class="mt-10 flex items-center justify-center gap-2.5 flex-wrap">
-          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:#dce9ff">Plan</span>
+          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:var(--nitro-pill-text)">Plan</span>
           <span class="pipeline-arrow" aria-hidden="true">→</span>
-          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:#dce9ff">Design</span>
+          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:var(--nitro-pill-text)">Design</span>
           <span class="pipeline-arrow" aria-hidden="true">→</span>
-          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:#dce9ff">Build</span>
+          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:var(--nitro-pill-text)">Build</span>
           <span class="pipeline-arrow" aria-hidden="true">→</span>
-          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:#dce9ff">Review</span>
+          <span class="px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-[0.72px]" style="border-color:rgba(130,166,215,0.24);background:linear-gradient(180deg,rgba(24,37,62,0.55),rgba(15,23,40,0.38));color:var(--nitro-pill-text)">Review</span>
           <span class="pipeline-arrow" aria-hidden="true">→</span>
           <span class="px-3 py-1.5 rounded-full border border-nitro-green text-nitro-green text-xs font-bold uppercase tracking-[0.72px]" style="background:linear-gradient(180deg,rgba(34,197,94,0.12),rgba(34,197,94,0.04))">Complete</span>
         </div>
@@ -371,19 +373,19 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
         <div class="stats-row mt-10 flex justify-center gap-11 flex-wrap">
           <div class="hero-stat text-center">
             <span class="num" id="stat-tasks">55+</span>
-            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:#90a8cb">Tasks Shipped</span>
+            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:var(--nitro-stat-label)">Tasks Shipped</span>
           </div>
           <div class="hero-stat text-center">
             <span class="num" id="stat-agents">16</span>
-            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:#90a8cb">Agents</span>
+            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:var(--nitro-stat-label)">Agents</span>
           </div>
           <div class="hero-stat text-center">
             <span class="num" id="stat-workflows">7</span>
-            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:#90a8cb">Workflow Types</span>
+            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:var(--nitro-stat-label)">Workflow Types</span>
           </div>
           <div class="hero-stat text-center">
             <span class="num" id="stat-workers">3</span>
-            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:#90a8cb">Parallel Workers</span>
+            <span class="text-xs uppercase tracking-[1px] mt-1 block" style="color:var(--nitro-stat-label)">Parallel Workers</span>
           </div>
         </div>
       </div>
@@ -579,28 +581,23 @@ const baseUrl = base.endsWith('/') ? base : base + '/';
               </div>
             </div>
           </div>
-          <!-- Right: Code block -->
+          <!-- Right: Code block (shell session) -->
           <div>
             <div class="code-block">
-              <pre><span class="ck-heading"># Task: Add User Authentication</span>
+              <pre><span class="ck-comment">$ mkdir my-app && cd my-app</span>
+<span class="ck-comment">$ npx nitro-fueled init</span>
 
-<span class="ck-heading2">## Metadata</span>
-<span class="ck-pipe">| </span><span class="ck-key">Field</span><span class="ck-pipe">      | </span><span class="ck-key">Value</span><span class="ck-pipe">    |</span>
-<span class="ck-pipe">|------------|----------|</span>
-<span class="ck-pipe">| </span><span class="ck-key">Type</span><span class="ck-pipe">       | </span><span class="ck-val-feature">FEATURE</span><span class="ck-pipe">  |</span>
-<span class="ck-pipe">| </span><span class="ck-key">Priority</span><span class="ck-pipe">   | </span><span class="ck-val-p1">P1-High</span><span class="ck-pipe">  |</span>
-<span class="ck-pipe">| </span><span class="ck-key">Complexity</span><span class="ck-pipe"> | </span><span class="ck-val-medium">Medium</span><span class="ck-pipe">   |</span>
+<span class="ck-val-medium">  Detected: Node.js + TypeScript</span>
+<span class="ck-key">  Scaffolding agents...</span>  <span class="ck-val-feature">done</span>
+<span class="ck-key">  Writing skills...     </span>  <span class="ck-val-feature">done</span>
+<span class="ck-val-feature">  ✓ Nitro-Fueled initialized!</span>
 
-<span class="ck-heading2">## Description</span>
-<span class="ck-text">Add JWT-based authentication to the REST API.
-Users should be able to register, log in, and
-access protected routes via Bearer token.</span>
+<span class="ck-comment">$ # Create your first task</span>
+<span class="ck-comment">$ npx nitro-fueled create</span>
 
-<span class="ck-heading2">## Acceptance Criteria</span>
-<span class="ck-check">- [ ]</span> <span class="ck-check-item">POST /auth/register creates a user</span>
-<span class="ck-check">- [ ]</span> <span class="ck-check-item">POST /auth/login returns a signed JWT</span>
-<span class="ck-check">- [ ]</span> <span class="ck-check-item">Protected routes return 401 without token</span>
-<span class="ck-check">- [ ]</span> <span class="ck-check-item">Passwords hashed with bcrypt (rounds ≥ 12)</span></pre>
+<span class="ck-comment">$ npx nitro-fueled run</span>
+<span class="ck-val-medium">  Supervisor ready — monitoring 1 task</span>
+<span class="ck-key">  ↳ Spawning Build Worker for TASK_2026_001...</span></pre>
             </div>
           </div>
         </div>
@@ -631,7 +628,7 @@ access protected routes via Bearer token.</span>
           </div>
         </div>
         <!-- Callout -->
-        <div class="mt-8 p-5 rounded-xl border flex items-start gap-3" style="border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.06)">
+        <div class="mt-8 p-5 rounded-xl border flex items-start gap-3" style="border-color:var(--nitro-cyan-border);background:var(--nitro-cyan-bg)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-nitro-cyan shrink-0 mt-0.5" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/>
             <line x1="12" y1="16" x2="12" y2="12"/>
@@ -711,8 +708,8 @@ access protected routes via Bearer token.</span>
           </div>
           <!-- Feature 6 -->
           <div class="fade-in bg-nitro-bg-card border border-nitro-border rounded-xl p-6 flex flex-col gap-3 hover:border-nitro-border-accent hover:bg-nitro-bg-card-hover transition-all duration-200" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 4px 16px rgba(7,10,18,0.4)">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-yellow-400/10">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400" aria-hidden="true">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(234,179,8,0.1)]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-nitro-yellow" aria-hidden="true">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
             </div>
@@ -788,7 +785,7 @@ access protected routes. Sessions persist via httpOnly cookies.</span>
           <a
             href={`${baseUrl}getting-started/`}
             class="inline-flex items-center gap-2 bg-nitro-orange text-nitro-bg font-semibold px-8 py-3.5 rounded-lg text-[15px] hover:opacity-90 transition-opacity"
-            style="box-shadow:0 0 24px rgba(249,115,22,0.35)"
+            style="box-shadow:0 0 24px var(--nitro-orange-glow-strong)"
           >
             Read the Docs →
           </a>
@@ -853,22 +850,24 @@ access protected routes. Sessions persist via httpOnly cookies.</span>
     <script>
       // 1. Nav scroll behavior
       const nav = document.getElementById('main-nav');
-      function updateNav() {
-        if (window.scrollY > 40) {
-          nav?.classList.add('nav-solid');
-        } else {
-          nav?.classList.remove('nav-solid');
+      if (nav) {
+        function updateNav() {
+          if (window.scrollY > 40) {
+            nav.classList.add('nav-solid');
+          } else {
+            nav.classList.remove('nav-solid');
+          }
         }
+        window.addEventListener('scroll', updateNav, { passive: true });
+        updateNav();
       }
-      window.addEventListener('scroll', updateNav, { passive: true });
-      updateNav();
 
       // 2. Mobile hamburger toggle
       const hamburgerBtn = document.getElementById('hamburger-btn');
       const mobileMenu = document.getElementById('mobile-menu');
       hamburgerBtn?.addEventListener('click', () => {
         const isOpen = mobileMenu?.classList.toggle('open');
-        hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
+        hamburgerBtn?.setAttribute('aria-expanded', String(isOpen));
       });
       // Close mobile menu when a link is clicked
       mobileMenu?.querySelectorAll('a').forEach(link => {
@@ -877,84 +876,157 @@ access protected routes. Sessions persist via httpOnly cookies.</span>
           hamburgerBtn?.setAttribute('aria-expanded', 'false');
         });
       });
+      // Reset hamburger state when viewport crosses the md breakpoint (768px)
+      window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+          mobileMenu?.classList.remove('open');
+          hamburgerBtn?.setAttribute('aria-expanded', 'false');
+        }
+      });
 
-      // 3. IntersectionObserver for scroll fade-in
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('visible');
-              observer.unobserve(entry.target);
+      // 3. IntersectionObserver for scroll fade-in + counter animation on viewport entry
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.12 }
+        );
+        document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+
+        // 4. Counter animation — fires when stats row enters the viewport
+        function animateCounter(el: HTMLElement | null, target: number, suffix: string) {
+          if (!el) return;
+          // Skip animation if reduced motion is preferred
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            el.textContent = String(target) + suffix;
+            return;
+          }
+          const duration = 1200;
+          const step = target / (duration / 16);
+          let current = 0;
+          const timer = setInterval(() => {
+            current = Math.min(current + step, target);
+            el.textContent = String(Math.floor(current)) + suffix;
+            if (current >= target) clearInterval(timer);
+          }, 16);
+        }
+        const statsRow = document.querySelector('.stats-row');
+        if (statsRow) {
+          let countersStarted = false;
+          const counterObserver = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting && !countersStarted) {
+                  countersStarted = true;
+                  animateCounter(document.getElementById('stat-tasks'), 55, '+');
+                  animateCounter(document.getElementById('stat-agents'), 16, '');
+                  animateCounter(document.getElementById('stat-workflows'), 7, '');
+                  animateCounter(document.getElementById('stat-workers'), 3, '');
+                  counterObserver.unobserve(statsRow);
+                }
+              });
+            },
+            { threshold: 0.3 }
+          );
+          counterObserver.observe(statsRow);
+        }
+
+        // 6. Active nav link highlighting via IntersectionObserver
+        // Tracks intersecting sections; clears all active links when none are visible.
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll<HTMLAnchorElement>('#main-nav a[href^="#"]');
+        const intersectingSet = new Set<string>();
+
+        function setActiveLink(id: string | null) {
+          navLinks.forEach((link) => {
+            const href = link.getAttribute('href');
+            const isActive = id !== null && href === '#' + id;
+            if (isActive) {
+              link.classList.add('text-nitro-text-bright');
+              link.classList.remove('text-nitro-text-dim');
+              link.setAttribute('aria-current', 'true');
+            } else {
+              link.classList.remove('text-nitro-text-bright');
+              link.classList.add('text-nitro-text-dim');
+              link.removeAttribute('aria-current');
             }
           });
-        },
-        { threshold: 0.12 }
-      );
-      document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
-
-      // 4. Counter animation for stats
-      function animateCounter(el: HTMLElement | null, target: number, suffix: string) {
-        if (!el) return;
-        // Skip animation if reduced motion is preferred
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          el.textContent = target + suffix;
-          return;
         }
-        const duration = 1200;
-        const step = target / (duration / 16);
-        let current = 0;
-        const timer = setInterval(() => {
-          current = Math.min(current + step, target);
-          el.textContent = Math.floor(current) + suffix;
-          if (current >= target) clearInterval(timer);
-        }, 16);
+
+        const sectionObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                intersectingSet.add(entry.target.id);
+              } else {
+                intersectingSet.delete(entry.target.id);
+              }
+            });
+            // Activate the first currently-intersecting nav-linked section,
+            // or clear all links if none are visible.
+            const navLinkedIds = ['why', 'how-it-works', 'get-started'];
+            const activeId = navLinkedIds.find((id) => intersectingSet.has(id)) ?? null;
+            setActiveLink(activeId);
+          },
+          { threshold: 0.4, rootMargin: '-80px 0px 0px 0px' }
+        );
+        sections.forEach((section) => sectionObserver.observe(section));
       }
-      animateCounter(document.getElementById('stat-tasks'), 55, '+');
-      animateCounter(document.getElementById('stat-agents'), 16, '');
-      animateCounter(document.getElementById('stat-workflows'), 7, '');
-      animateCounter(document.getElementById('stat-workers'), 3, '');
 
       // 5. Clipboard copy for install command
       const copyBtn = document.getElementById('copy-install-btn');
       const copyIcon = document.getElementById('copy-icon');
       const checkIcon = document.getElementById('check-icon');
+      let copyTimeout: ReturnType<typeof setTimeout> | undefined;
+
       copyBtn?.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText('npx nitro-fueled init');
+        clearTimeout(copyTimeout);
+        const text = 'npx nitro-fueled init';
+        const showSuccess = () => {
           copyIcon?.classList.add('hidden');
           checkIcon?.classList.remove('hidden');
-          setTimeout(() => {
+          copyTimeout = setTimeout(() => {
             copyIcon?.classList.remove('hidden');
             checkIcon?.classList.add('hidden');
           }, 2000);
+        };
+        const showFailure = () => {
+          if (copyBtn) (copyBtn as HTMLElement).setAttribute('aria-label', 'Copy failed');
+          copyTimeout = setTimeout(() => {
+            if (copyBtn) (copyBtn as HTMLElement).setAttribute('aria-label', 'Copy install command');
+          }, 2000);
+        };
+        try {
+          await navigator.clipboard.writeText(text);
+          showSuccess();
         } catch {
-          // Clipboard API not available — fail silently
+          // Clipboard API unavailable — attempt legacy execCommand fallback
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (ok) {
+              showSuccess();
+            } else {
+              showFailure();
+            }
+          } catch {
+            showFailure();
+          }
         }
       });
-
-      // 6. Active nav link highlighting via IntersectionObserver
-      const sections = document.querySelectorAll('section[id]');
-      const navLinks = document.querySelectorAll('#main-nav a[href^="#"]');
-      const sectionObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              navLinks.forEach((link) => {
-                const href = link.getAttribute('href');
-                if (href === '#' + entry.target.id) {
-                  link.classList.add('text-nitro-text-bright');
-                  link.classList.remove('text-nitro-text-dim');
-                } else {
-                  link.classList.remove('text-nitro-text-bright');
-                  link.classList.add('text-nitro-text-dim');
-                }
-              });
-            }
-          });
-        },
-        { threshold: 0.4, rootMargin: '-80px 0px 0px 0px' }
-      );
-      sections.forEach((section) => sectionObserver.observe(section));
     </script>
   </body>
 </html>
