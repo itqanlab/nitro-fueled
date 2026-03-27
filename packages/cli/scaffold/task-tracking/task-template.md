@@ -21,10 +21,10 @@
 
      Priority: Determines queue ordering in auto-pilot (P0 first, P3 last)
 
-     Complexity: Influences strategy selection weighting
-       Simple  — less than 2 hours
-       Medium  — 2 to 8 hours
-       Complex — more than 8 hours -->
+     Complexity: Determines model selection and worker strategy
+       Simple  — single layer, follow established patterns, ≤3 files
+       Medium  — 1-2 layers, some architectural decisions needed, 4-7 files
+       Complex — cross-cutting concerns, novel architecture, creative problem-solving -->
 
 ## Description
 

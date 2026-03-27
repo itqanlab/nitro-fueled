@@ -324,7 +324,7 @@ Add to any project's `~/.claude/mcp_config.json` or per-project `.mcp.json`:
       "args": ["/path/to/session-orchestrator/dist/index.js"],
       "env": {
         "CLAUDE_HOME": "~/.claude",
-        "DEFAULT_MODEL": "claude-opus-4-6"
+        "DEFAULT_MODEL": "claude-sonnet-4-6"
       }
     }
   }
