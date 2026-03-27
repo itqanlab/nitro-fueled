@@ -29,7 +29,7 @@
 | TASK_2026_025 | COMPLETE    | BUGFIX      | Fix Review Worker Startup Failure (0-msg stuck on first attempt) | 2026-03-24 |
 | TASK_2026_026 | COMPLETE    | BUGFIX      | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 |
 | TASK_2026_027 | COMPLETE   | FEATURE     | Shared Review Context and Task File-Scope Isolation | 2026-03-24
-| TASK_2026_028 | IN_PROGRESS | BUGFIX      | Enforce tasks.md as Required Build Artifact | 2026-03-24 |
+| TASK_2026_028 | COMPLETE    | BUGFIX      | Enforce tasks.md as Required Build Artifact | 2026-03-24 |
 | TASK_2026_029 | CREATED     | FEATURE     | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 |
 | TASK_2026_030 | CREATED     | BUGFIX      | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-24 |
 | TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 |
