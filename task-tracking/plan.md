@@ -175,6 +175,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 #### Task Map
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
+| TASK_2026_063 | Move session-orchestrator into Monorepo | COMPLETE | P1-High |
 | TASK_2026_059 | MCP Server — Persist Worker Registry to Disk | COMPLETE | P1-High |
 | TASK_2026_060 | Supervisor — File-System-First Reconciliation When MCP Returns Empty | COMPLETE | P1-High |
 | TASK_2026_067 | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | COMPLETE | P1-High |
