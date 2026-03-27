@@ -19,6 +19,7 @@ interface InitOptions {
   skipAgents: boolean;
   overwrite: boolean;
   yes: boolean;
+  commit: boolean;
 }
 
 function prompt(question: string): Promise<string> {
@@ -65,11 +66,14 @@ function generateAgent(cwd: string, proposal: AgentProposal): boolean {
   return false;
 }
 
-function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): void {
+function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): string[] {
+  const createdFiles: string[] = [];
+
   // Core agents
   const agentResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/agents', overwrite);
   const agentNames = listFiles(resolve(scaffoldRoot, '.claude', 'agents'));
   console.log(`  Agents: ${agentResult.copied} copied, ${agentResult.skipped} existing (${agentNames.length} core agents)`);
+  createdFiles.push(...agentResult.files);
 
   // Skills (each skill is a subdirectory, discovered dynamically)
   const skillsSrc = resolve(scaffoldRoot, '.claude', 'skills');
@@ -82,12 +86,14 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): v
     const r = scaffoldSubdir(scaffoldRoot, cwd, `.claude/skills/${skill}`, overwrite);
     skillsCopied += r.copied;
     skillsSkipped += r.skipped;
+    createdFiles.push(...r.files);
   }
   console.log(`  Skills: ${skillsCopied} copied, ${skillsSkipped} existing (${skillDirs.length} skills)`);
 
   // Commands
   const cmdResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/commands', overwrite);
   console.log(`  Commands: ${cmdResult.copied} copied, ${cmdResult.skipped} existing`);
+  createdFiles.push(...cmdResult.files);
 
   // Anti-patterns master (tag catalog — always copy so planner can regenerate)
   const apMasterSrc = resolve(scaffoldRoot, '.claude', 'anti-patterns-master.md');
@@ -95,16 +101,21 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): v
   if (existsSync(apMasterSrc) && (overwrite || !existsSync(apMasterDest))) {
     mkdirSync(resolve(cwd, '.claude'), { recursive: true });
     copyFileSync(apMasterSrc, apMasterDest);
+    createdFiles.push(apMasterDest);
   }
   // anti-patterns.md is generated after stack detection (see handleAntiPatterns)
 
   // Review lessons (empty templates)
   const reviewResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/review-lessons', overwrite);
   console.log(`  Review lessons: ${reviewResult.copied} template files`);
+  createdFiles.push(...reviewResult.files);
 
   // Task tracking structure
   const taskResult = scaffoldSubdir(scaffoldRoot, cwd, 'task-tracking', overwrite);
   console.log(`  Task tracking: ${taskResult.copied} files`);
+  createdFiles.push(...taskResult.files);
+
+  return createdFiles;
 }
 
 /**
@@ -216,6 +227,44 @@ async function handleMcpConfig(cwd: string, opts: InitOptions): Promise<void> {
   }
 }
 
+function commitScaffold(cwd: string, files: string[]): void {
+  if (files.length === 0) {
+    console.log('Commit: no new files to commit (all files already existed)');
+    return;
+  }
+
+  if (!existsSync(resolve(cwd, '.git'))) {
+    console.error('Commit: git is not initialized in this directory. Run `git init` first.');
+    return;
+  }
+
+  const addResult = spawnSync('git', ['add', '--', ...files], {
+    cwd,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  if (addResult.status !== 0) {
+    const stderr = addResult.stderr?.toString().trim() ?? '';
+    console.error(`Commit: git add failed${stderr !== '' ? ': ' + stderr : ''}`);
+    return;
+  }
+
+  const commitResult = spawnSync(
+    'git',
+    ['commit', '-m', 'chore: initialize nitro-fueled orchestration'],
+    { cwd, stdio: ['ignore', 'pipe', 'pipe'] }
+  );
+
+  if (commitResult.status !== 0) {
+    const stderr = commitResult.stderr?.toString().trim() ?? '';
+    console.error(`Commit: git commit failed${stderr !== '' ? ': ' + stderr : ''}`);
+    return;
+  }
+
+  console.log('Committed: chore: initialize nitro-fueled orchestration');
+  console.log(`  ${files.length} files staged and committed`);
+}
+
 function printSummary(mcpConfigured: boolean, skipMcp: boolean): void {
   console.log('');
   console.log('=================');
@@ -248,6 +297,7 @@ export function registerInitCommand(program: Command): void {
     .option('--skip-agents', 'Skip AI-assisted developer agent generation', false)
     .option('--overwrite', 'Overwrite existing files instead of merging', false)
     .option('-y, --yes', 'Accept all defaults without prompting', false)
+    .option('--commit', 'Stage and commit all scaffolded files after init', false)
     .action(async (opts: InitOptions) => {
       const cwd = process.cwd();
 
@@ -290,26 +340,43 @@ export function registerInitCommand(program: Command): void {
       // Step 4: Copy all scaffold files
       console.log('');
       console.log('Scaffolding project...');
+      let scaffoldedFiles: string[];
       try {
-        scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
+        scaffoldedFiles = scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`Error: Failed to scaffold project files: ${msg}`);
         process.exitCode = 1;
         return;
       }
+      const allCreatedFiles: string[] = [...scaffoldedFiles];
 
       // Step 5: Generate CLAUDE.md
       console.log('');
+      const claudeMdPath = resolve(cwd, 'CLAUDE.md');
+      const claudeMdExisted = existsSync(claudeMdPath);
       generateClaudeMd(cwd, opts.overwrite);
+      if ((!claudeMdExisted || opts.overwrite) && existsSync(claudeMdPath)) {
+        allCreatedFiles.push(claudeMdPath);
+      }
 
       // Step 5b: Ensure .nitro-fueled/ is gitignored
+      const gitignorePath = resolve(cwd, '.gitignore');
+      const gitignoreExisted = existsSync(gitignorePath);
       ensureGitignore(cwd);
+      if (!gitignoreExisted) {
+        allCreatedFiles.push(gitignorePath);
+      }
 
       // Step 6: Detect stack and generate stack-aware anti-patterns
       console.log('');
       console.log('Detecting project stack...');
+      const apPath = resolve(cwd, '.claude', 'anti-patterns.md');
+      const apExisted = existsSync(apPath);
       const detectedStacks = handleAntiPatterns(cwd, scaffoldRoot, opts.overwrite);
+      if ((!apExisted || opts.overwrite) && existsSync(apPath)) {
+        allCreatedFiles.push(apPath);
+      }
       if (detectedStacks.length > 0) {
         console.log(`  Detected: ${detectedStacks.map((s) => {
           if (s.frameworks.length > 0) return `${s.language} (${s.frameworks.join(', ')})`;
@@ -323,7 +390,13 @@ export function registerInitCommand(program: Command): void {
       // Step 7: MCP configuration
       await handleMcpConfig(cwd, opts);
 
-      // Step 8: Summary
+      // Step 8: Commit scaffolded files if --commit flag is set
+      if (opts.commit) {
+        console.log('');
+        commitScaffold(cwd, allCreatedFiles);
+      }
+
+      // Step 9: Summary
       const mcpAfter = detectMcpConfig(cwd);
       printSummary(mcpAfter.found, opts.skipMcp);
     });

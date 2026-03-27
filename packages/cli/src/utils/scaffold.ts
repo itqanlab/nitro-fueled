@@ -33,6 +33,8 @@ export interface CopyResult {
   copied: number;
   skipped: number;
   dirs: number;
+  /** Absolute destination paths of files actually written (new or overwritten). */
+  files: string[];
 }
 
 /**
@@ -44,7 +46,7 @@ export function copyDirRecursive(
   dest: string,
   overwrite: boolean
 ): CopyResult {
-  const result: CopyResult = { copied: 0, skipped: 0, dirs: 0 };
+  const result: CopyResult = { copied: 0, skipped: 0, dirs: 0, files: [] };
 
   if (!existsSync(src)) {
     return result;
@@ -68,12 +70,14 @@ export function copyDirRecursive(
       result.copied += sub.copied;
       result.skipped += sub.skipped;
       result.dirs += sub.dirs;
+      result.files.push(...sub.files);
     } else if (entry.isFile()) {
       if (!overwrite && existsSync(destPath)) {
         result.skipped++;
       } else {
         copyFileSync(srcPath, destPath);
         result.copied++;
+        result.files.push(destPath);
       }
     }
   }
