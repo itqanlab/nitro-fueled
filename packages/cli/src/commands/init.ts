@@ -7,10 +7,11 @@ import { detectMcpConfig } from '../utils/mcp-config.js';
 import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, proposeAgents } from '../utils/stack-detect.js';
-import type { AgentProposal } from '../utils/stack-detect.js';
+import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
+import { generateAntiPatterns } from '../utils/anti-patterns.js';
 import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
-import { ensureGitignore } from '../utils/provider-config.js';
+import { ensureGitignore } from '../utils/gitignore.js';
 
 interface InitOptions {
   mcpPath: string | undefined;
@@ -88,16 +89,14 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): v
   const cmdResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/commands', overwrite);
   console.log(`  Commands: ${cmdResult.copied} copied, ${cmdResult.skipped} existing`);
 
-  // Anti-patterns (single file in .claude/)
-  const apSrc = resolve(scaffoldRoot, '.claude', 'anti-patterns.md');
-  const apDest = resolve(cwd, '.claude', 'anti-patterns.md');
-  if (existsSync(apSrc) && (overwrite || !existsSync(apDest))) {
+  // Anti-patterns master (tag catalog — always copy so planner can regenerate)
+  const apMasterSrc = resolve(scaffoldRoot, '.claude', 'anti-patterns-master.md');
+  const apMasterDest = resolve(cwd, '.claude', 'anti-patterns-master.md');
+  if (existsSync(apMasterSrc) && (overwrite || !existsSync(apMasterDest))) {
     mkdirSync(resolve(cwd, '.claude'), { recursive: true });
-    copyFileSync(apSrc, apDest);
-    console.log('  Anti-patterns: copied');
-  } else if (existsSync(apDest)) {
-    console.log('  Anti-patterns: already exists (skipped)');
+    copyFileSync(apMasterSrc, apMasterDest);
   }
+  // anti-patterns.md is generated after stack detection (see handleAntiPatterns)
 
   // Review lessons (empty templates)
   const reviewResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/review-lessons', overwrite);
@@ -108,7 +107,44 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): v
   console.log(`  Task tracking: ${taskResult.copied} files`);
 }
 
-async function handleStackDetection(cwd: string, opts: InitOptions): Promise<void> {
+/**
+ * Detects the project stack and generates a stack-aware anti-patterns.md.
+ * Always runs (even if --skip-agents is set) so the anti-patterns file is always accurate.
+ * Returns the detected stacks for downstream use.
+ */
+function handleAntiPatterns(cwd: string, scaffoldRoot: string, overwrite: boolean): DetectedStack[] {
+  const stacks = detectStack(cwd);
+
+  const apDest = resolve(cwd, '.claude', 'anti-patterns.md');
+  if (!overwrite && existsSync(apDest)) {
+    // Already exists — regenerate only when overwrite is set
+    console.log('  Anti-patterns: already exists (skipped — run with --overwrite to regenerate)');
+    return stacks;
+  }
+
+  const generated = generateAntiPatterns(cwd, stacks, scaffoldRoot);
+  if (generated) {
+    const label =
+      stacks.length === 0
+        ? 'universal (no framework detected)'
+        : stacks
+            .map((s) =>
+              s.frameworks.length > 0 ? `${s.language} + ${s.frameworks.join(', ')}` : s.language
+            )
+            .join(', ');
+    console.log(`  Anti-patterns: generated for stack [${label}]`);
+  } else {
+    console.log('  Anti-patterns: master file not found; skipped');
+  }
+
+  return stacks;
+}
+
+async function handleStackDetection(
+  cwd: string,
+  stacks: DetectedStack[],
+  opts: InitOptions
+): Promise<void> {
   if (opts.skipAgents) return;
 
   if (!isClaudeAvailable()) {
@@ -117,20 +153,11 @@ async function handleStackDetection(cwd: string, opts: InitOptions): Promise<voi
     return;
   }
 
-  console.log('');
-  console.log('Detecting project stack...');
-  const stacks = detectStack(cwd);
-
   if (stacks.length === 0) {
     console.log('  No recognized tech stack detected.');
     console.log('  Use /create-agent to manually generate developer agents later.');
     return;
   }
-
-  console.log(`  Detected: ${stacks.map((s) => {
-    if (s.frameworks.length > 0) return `${s.language} (${s.frameworks.join(', ')})`;
-    return s.language;
-  }).join(', ')}`);
 
   const proposals = proposeAgents(stacks);
   if (proposals.length === 0) return;
@@ -287,8 +314,19 @@ export function registerInitCommand(program: Command): void {
       // Step 5b: Ensure .nitro-fueled/ is gitignored
       ensureGitignore(cwd);
 
-      // Step 6: Stack detection and developer agent generation
-      await handleStackDetection(cwd, opts);
+      // Step 6: Detect stack and generate stack-aware anti-patterns
+      console.log('');
+      console.log('Detecting project stack...');
+      const detectedStacks = handleAntiPatterns(cwd, scaffoldRoot, opts.overwrite);
+      if (detectedStacks.length > 0) {
+        console.log(`  Detected: ${detectedStacks.map((s) => {
+          if (s.frameworks.length > 0) return `${s.language} (${s.frameworks.join(', ')})`;
+          return s.language;
+        }).join(', ')}`);
+      }
+
+      // Step 6b: Generate developer agents for detected stack
+      await handleStackDetection(cwd, detectedStacks, opts);
 
       // Step 7: MCP configuration
       await handleMcpConfig(cwd, opts);

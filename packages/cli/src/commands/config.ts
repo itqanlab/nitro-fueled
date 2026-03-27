@@ -1,32 +1,25 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import { createInterface } from 'node:readline';
 import { spawnSync } from 'node:child_process';
 import type { Command } from 'commander';
 import {
   readConfig,
   writeConfig,
-  ensureGitignore,
+  resolveApiKey,
   getConfigPath,
   testGlmConnection,
 } from '../utils/provider-config.js';
-import type { NitroFueledConfig, GlmProviderConfig } from '../utils/provider-config.js';
-import { runDependencyChecks } from '../utils/dep-check.js';
+import type { NitroFueledConfig, GlmProviderConfig, OpenCodeProviderConfig } from '../utils/provider-config.js';
+import { runDependencyChecks, checkOpencodeBinary, DEP_NAMES } from '../utils/dep-check.js';
 import type { DependencyResult } from '../utils/dep-check.js';
+import { ensureGitignore } from '../utils/gitignore.js';
+import { prompt } from '../utils/prompt.js';
+
+const MODEL_FORMAT_RE = /^[\w.-]+\/[\w.-]+$/;
 
 interface ConfigOptions {
   check: boolean;
   providers: boolean;
   reset: boolean;
-}
-
-function prompt(question: string): Promise<string> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((res) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      res(answer.trim());
-    });
-  });
 }
 
 function printDepResult(dep: DependencyResult): void {
@@ -45,9 +38,13 @@ async function configureGlmProvider(existing?: GlmProviderConfig): Promise<GlmPr
   const answer = await prompt('\n  ? Enable GLM provider? (y/N) ');
   if (answer.toLowerCase() !== 'y') return null;
 
-  const defaultKey = existing?.apiKey ?? '$ZAI_API_KEY';
-  const keyAnswer = await prompt(`  ? Z.AI API key [${defaultKey}]: `);
-  const apiKey = keyAnswer !== '' ? keyAnswer : defaultKey;
+  const defaultKeyHint = existing !== undefined
+    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
+    : '$ZAI_API_KEY';
+  const keyAnswer = await prompt(`  ? Z.AI API key [${defaultKeyHint}]: `);
+  const apiKey = keyAnswer !== ''
+    ? keyAnswer
+    : (existing?.apiKey ?? '$ZAI_API_KEY');
   const baseUrl = existing?.baseUrl ?? 'https://api.z.ai/api/anthropic';
 
   process.stdout.write('  ✓ Testing connection...');
@@ -56,7 +53,8 @@ async function configureGlmProvider(existing?: GlmProviderConfig): Promise<GlmPr
   if (testResult.ok) {
     console.log(` OK (${testResult.modelName ?? 'connected'} available)`);
   } else {
-    console.log(' failed (check your API key)');
+    const reason = testResult.error !== undefined ? ` (${testResult.error})` : '';
+    console.log(` failed${reason}`);
     const proceed = await prompt('  ? Save anyway? (y/N) ');
     if (proceed.toLowerCase() !== 'y') return null;
   }
@@ -70,7 +68,10 @@ async function configureGlmProvider(existing?: GlmProviderConfig): Promise<GlmPr
   };
 }
 
-async function configureOpenCodeProvider(opencodeFound: boolean): Promise<{ enabled: boolean; defaultModel: string } | null> {
+async function configureOpenCodeProvider(
+  opencodeFound: boolean,
+  existing?: OpenCodeProviderConfig,
+): Promise<OpenCodeProviderConfig | null> {
   const answer = await prompt('\n  ? Enable OpenCode provider? (y/N) ');
   if (answer.toLowerCase() !== 'y') return null;
 
@@ -90,10 +91,31 @@ async function configureOpenCodeProvider(opencodeFound: boolean): Promise<{ enab
     }
   }
 
-  const modelAnswer = await prompt('  ? Default model [openai/gpt-4.1-mini]: ');
-  const defaultModel = modelAnswer !== '' ? modelAnswer : 'openai/gpt-4.1-mini';
-  console.log(`  ✓ OpenCode configured (${defaultModel})`);
-  return { enabled: true, defaultModel };
+  const defaultKeyHint = existing !== undefined
+    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
+    : '$OPENAI_API_KEY';
+  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
+  const apiKey = keyAnswer !== ''
+    ? keyAnswer
+    : (existing?.apiKey ?? '$OPENAI_API_KEY');
+
+  const defaultModel = existing?.defaultModel ?? 'openai/gpt-4.1-mini';
+  let modelAnswer = await prompt(`  ? Default model [${defaultModel}]: `);
+  if (modelAnswer === '') modelAnswer = defaultModel;
+
+  if (!MODEL_FORMAT_RE.test(modelAnswer)) {
+    console.log(`  Warning: "${modelAnswer}" does not match the expected format (provider/model). Saved anyway.`);
+  }
+
+  // Connection check: verify the API key resolves.
+  const resolvedKey = resolveApiKey(apiKey);
+  if (resolvedKey === '') {
+    console.log(`  ✗ API key is empty or env var unset — verify before running.`);
+  } else {
+    console.log(`  ✓ OpenCode configured (${modelAnswer})`);
+  }
+
+  return { enabled: true, apiKey, defaultModel: modelAnswer };
 }
 
 async function runCheckMode(cwd: string): Promise<void> {
@@ -113,16 +135,24 @@ async function runCheckMode(cwd: string): Promise<void> {
 
     const glm = config.providers.glm;
     if (glm?.enabled === true) {
-      const m = glm.models;
-      console.log(`  ✓ GLM — configured (${m.opus}, ${m.sonnet}, ${m.haiku})`);
+      process.stdout.write('  ✓ GLM — testing...');
+      const live = await testGlmConnection(glm.apiKey, glm.baseUrl);
+      console.log(live.ok
+        ? ` connected (${live.modelName ?? 'OK'} available)`
+        : ` failed${live.error !== undefined ? ` (${live.error})` : ''}`);
     } else {
       console.log('  - GLM — not configured');
     }
 
     const opencode = config.providers.opencode;
-    console.log(opencode?.enabled === true
-      ? `  ✓ OpenCode — configured (${opencode.defaultModel})`
-      : '  - OpenCode — not configured');
+    if (opencode?.enabled === true) {
+      const binaryOk = checkOpencodeBinary().found;
+      const keyOk = resolveApiKey(opencode.apiKey) !== '';
+      const status = binaryOk && keyOk ? 'ready' : (!binaryOk ? 'binary missing' : 'API key unset');
+      console.log(`  ${binaryOk && keyOk ? '✓' : '✗'} OpenCode — ${status} (${opencode.defaultModel})`);
+    } else {
+      console.log('  - OpenCode — not configured');
+    }
   }
 
   const missing = deps.filter((d) => d.required && !d.found);
@@ -130,7 +160,7 @@ async function runCheckMode(cwd: string): Promise<void> {
   if (missing.length > 0) process.exitCode = 1;
 }
 
-async function runProvidersPhase(cwd: string): Promise<void> {
+async function runProvidersPhase(cwd: string, initialOpencodeFound: boolean): Promise<void> {
   const existing = readConfig(cwd);
   const config: NitroFueledConfig = existing ?? { providers: {} };
 
@@ -143,10 +173,8 @@ async function runProvidersPhase(cwd: string): Promise<void> {
   const glmConfig = await configureGlmProvider(config.providers.glm);
   if (glmConfig !== null) config.providers.glm = glmConfig;
 
-  const deps = runDependencyChecks();
-  const opencodeFound = deps.find((d) => d.name === 'opencode CLI')?.found ?? false;
   console.log('\n  OpenCode (GPT and others)');
-  const opencodeConfig = await configureOpenCodeProvider(opencodeFound);
+  const opencodeConfig = await configureOpenCodeProvider(initialOpencodeFound, config.providers.opencode);
   if (opencodeConfig !== null) config.providers.opencode = opencodeConfig;
 
   writeConfig(cwd, config);
@@ -191,13 +219,18 @@ export function registerConfigCommand(program: Command): void {
         return;
       }
 
+      let opencodeFound = false;
       if (!opts.providers) {
         console.log('\nChecking dependencies...');
-        for (const dep of runDependencyChecks()) {
+        const deps = runDependencyChecks();
+        for (const dep of deps) {
           printDepResult(dep);
         }
+        opencodeFound = deps.find((d) => d.name === DEP_NAMES.opencodeCli)?.found ?? false;
+      } else {
+        opencodeFound = checkOpencodeBinary().found;
       }
 
-      await runProvidersPhase(cwd);
+      await runProvidersPhase(cwd, opencodeFound);
     });
 }

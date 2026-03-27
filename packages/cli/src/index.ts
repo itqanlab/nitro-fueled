@@ -10,7 +10,16 @@ import { registerDashboardCommand } from './commands/dashboard.js';
 import { registerConfigCommand } from './commands/config.js';
 
 const require = createRequire(import.meta.url);
-const { version, description } = require('../package.json') as { version: string; description: string };
+
+function readStringField(obj: unknown, field: string, fallback: string): string {
+  if (typeof obj !== 'object' || obj === null || !(field in obj)) return fallback;
+  const value = (obj as Record<string, unknown>)[field];
+  return typeof value === 'string' ? value : fallback;
+}
+
+const pkg: unknown = require('../package.json');
+const version = readStringField(pkg, 'version', '0.0.0');
+const description = readStringField(pkg, 'description', '');
 
 const program = new Command();
 
