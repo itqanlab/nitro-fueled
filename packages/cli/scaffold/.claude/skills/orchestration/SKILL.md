@@ -269,9 +269,11 @@ At the end of every orchestration run — on all exit paths (success, failure, s
 
 ### When to Write
 
-- **Success path**: Write immediately after the Completion Phase bookkeeping commit (include `session-analytics.md` in that commit).
-- **Failure path**: Write before exiting when the orchestration cannot complete (unrecoverable error, agent failure).
-- **Stuck/kill path**: Write before exiting when the Supervisor kills the session.
+- **Success path (full pipeline)**: Write immediately after the Completion Phase bookkeeping commit. Include `session-analytics.md` in that bookkeeping commit. Set `Outcome = COMPLETE`.
+- **Success path (Build Worker)**: Write after the implementation commit, before exiting. Set `Outcome = IMPLEMENTED`. Build Workers stop after dev and do NOT run the Completion Phase.
+- **Failure path**: Write before exiting when the orchestration cannot complete (unrecoverable error, agent failure). Set `Outcome = FAILED`.
+- **Stuck/kill path**: Write before exiting when the Supervisor kills the session. Set `Outcome = STUCK`.
+- **Manual stop**: Write before the session closes if the orchestrator is manually interrupted mid-run. Set `Outcome = FAILED`.
 
 Write is **best-effort**: if the write fails, log a warning to the user and continue. Never let analytics failure interrupt orchestration.
 
@@ -290,8 +292,8 @@ Write is **best-effort**: if the write fails, log a warning to the user and cont
 | Outcome | IMPLEMENTED \| COMPLETE \| FAILED \| STUCK |
 | Start Time | YYYY-MM-DD HH:MM:SS +ZZZZ |
 | End Time | YYYY-MM-DD HH:MM:SS +ZZZZ |
-| Duration | Nm |
-| Phases Completed | PM, Architect, Dev, QA (comma-separated — omit skipped phases) |
+| Duration | {N}m |
+| Phases Completed | PM, Architect, Dev, QA (comma-separated — omit skipped phases; allowed values only) |
 | Files Modified | N |
 ```
 
@@ -304,7 +306,7 @@ Write is **best-effort**: if the write fails, log a warning to the user and cont
 | Start Time | Wall-clock time when this orchestration session started — same timestamp used for Session Logging startup entry. Run `date '+%Y-%m-%d %H:%M:%S %z'` at session start and record it. |
 | End Time | Wall-clock time at exit. Run `date '+%Y-%m-%d %H:%M:%S %z'` |
 | Duration | `End Time - Start Time`, rounded to nearest minute. Format: `Nm` (e.g., `14m`) |
-| Phases Completed | Comma-separated list of phases that actually ran. Use names: `PM`, `Architect`, `Dev`, `QA`. Omit phases that were skipped. |
+| Phases Completed | Comma-separated list of phases that ran to completion. Allowed values: `PM`, `Architect`, `Dev`, `QA`. Omit phases that were skipped or did not complete. Do not include free-form text. |
 | Files Modified | Count of unique files changed in commits that mention this Task ID. Run: `git log --grep="TASK_X" --since="{start_time}" --pretty=format: --name-only \| sort \| uniq \| grep -v '^$' \| wc -l`. If git fails, write `unknown`. |
 
 Token and cost fields are **not included** — they are not derivable from within the session context (only available via MCP `get_worker_stats`).
@@ -434,9 +436,13 @@ Update `task-tracking/plan.md`:
 2. **Check phase completion**: If ALL tasks in the phase are now COMPLETE or CANCELLED, update the phase status to COMPLETE and check all milestone boxes.
 3. **Update Current Focus**: If the active phase just completed, advance "Active Phase" to the next incomplete phase and update "Next Priorities" accordingly.
 
-### 4. Final Commit
+### 4. Write Session Analytics
 
-Commit all bookkeeping changes with message: `docs: add TASK_[ID] completion bookkeeping`
+Write `task-tracking/TASK_[ID]/session-analytics.md` as described in the [Session Analytics](#session-analytics) section above. Set `Outcome = COMPLETE`. This file is included in the bookkeeping commit below.
+
+### 5. Final Commit
+
+Commit all bookkeeping changes (completion-report.md, status file, plan.md, session-analytics.md) with message: `docs: add TASK_[ID] completion bookkeeping`
 
 ---
 
