@@ -1,13 +1,18 @@
-import { existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
 import { spawn, exec } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 
+const PORT_FILE_NAME = '.dashboard-port';
+const DEFAULT_PORT = 0; // 0 = OS auto-assigns a free port
+const STARTUP_TIMEOUT_MS = 8000;
+const POLL_INTERVAL_MS = 100;
+
 interface DashboardOptions {
   port: string;
   service: boolean;
-  noBrowser: boolean;
+  open: boolean; // false when --no-open is passed
 }
 
 function findEntryScript(): string {
@@ -44,14 +49,45 @@ function openBrowser(url: string): void {
   exec(`${command} ${url}`, () => {});
 }
 
+async function pollForPortFile(portFilePath: string, timeoutMs: number): Promise<number | null> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (existsSync(portFilePath)) {
+      const raw = readFileSync(portFilePath, 'utf-8').trim();
+      const port = parseInt(raw, 10);
+      if (!Number.isNaN(port) && port > 0) return port;
+    }
+    await new Promise<void>((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+  return null;
+}
+
+async function checkExistingService(portFilePath: string): Promise<number | null> {
+  if (!existsSync(portFilePath)) return null;
+
+  const raw = readFileSync(portFilePath, 'utf-8').trim();
+  const port = parseInt(raw, 10);
+  if (Number.isNaN(port) || port <= 0) return null;
+
+  try {
+    const resp = await fetch(`http://localhost:${port}/health`, {
+      signal: AbortSignal.timeout(1000),
+    });
+    if (resp.ok) return port;
+  } catch {
+    // stale port file — service not running, will be overwritten on next start
+  }
+  return null;
+}
+
 export function registerDashboardCommand(program: Command): void {
   program
     .command('dashboard')
     .description('Start real-time dashboard with web UI')
-    .option('--port <port>', 'HTTP/WebSocket port', '4200')
+    .option('--port <port>', 'HTTP/WebSocket port (default: auto-assign)', String(DEFAULT_PORT))
     .option('--service', 'Start data service only (headless, no web UI)', false)
-    .option('--no-browser', 'Do not open browser automatically', false)
-    .action((opts: DashboardOptions) => {
+    .option('--no-open', 'Do not open browser automatically')
+    .action(async (opts: DashboardOptions) => {
       const cwd = process.cwd();
       const taskTrackingDir = resolve(cwd, 'task-tracking');
 
@@ -62,10 +98,23 @@ export function registerDashboardCommand(program: Command): void {
         return;
       }
 
-      const port = parseInt(opts.port, 10);
-      if (Number.isNaN(port) || port < 1 || port > 65535) {
-        console.error(`Error: Invalid port "${opts.port}". Must be 1-65535.`);
+      const requestedPort = parseInt(opts.port, 10);
+      if (Number.isNaN(requestedPort) || requestedPort < 0 || requestedPort > 65535) {
+        console.error(`Error: Invalid port "${opts.port}". Must be 0-65535 (0 = auto-assign).`);
         process.exitCode = 1;
+        return;
+      }
+
+      const portFilePath = join(taskTrackingDir, PORT_FILE_NAME);
+
+      // Check if a service is already running
+      const existingPort = await checkExistingService(portFilePath);
+      if (existingPort !== null) {
+        const url = `http://localhost:${existingPort}`;
+        console.log(`Dashboard already running at ${url}`);
+        if (opts.open && !opts.service) {
+          openBrowser(url);
+        }
         return;
       }
 
@@ -84,7 +133,7 @@ export function registerDashboardCommand(program: Command): void {
       const args = [
         entryScript,
         '--task-tracking-dir', taskTrackingDir,
-        '--port', String(port),
+        '--port', String(requestedPort),
       ];
 
       if (existsSync(antiPatternsPath)) {
@@ -97,12 +146,12 @@ export function registerDashboardCommand(program: Command): void {
 
       if (webDistPath) {
         args.push('--web-dist', webDistPath);
-        console.log(`Starting dashboard with web UI on port ${port}...`);
+        console.log('Starting dashboard with web UI...');
       } else if (!opts.service) {
         console.warn('Warning: Web UI dist not found. Starting data service only.');
         console.warn('Run `npm run build` in dashboard-web package first.');
       } else {
-        console.log(`Starting dashboard data service on port ${port}...`);
+        console.log('Starting dashboard data service...');
       }
 
       console.log(`Watching: ${taskTrackingDir}`);
@@ -121,13 +170,17 @@ export function registerDashboardCommand(program: Command): void {
       process.on('SIGINT', () => forwardSignal('SIGINT'));
       process.on('SIGTERM', () => forwardSignal('SIGTERM'));
 
-      // Open browser after a short delay to let the server start
-      if (!opts.noBrowser && webDistPath) {
-        setTimeout(() => {
-          const url = `http://localhost:${port}`;
-          console.log(`Opening dashboard at ${url}`);
-          openBrowser(url);
-        }, 500);
+      // Poll for .dashboard-port to get the actual assigned port, then open browser
+      if (opts.open && !opts.service) {
+        pollForPortFile(portFilePath, STARTUP_TIMEOUT_MS).then((actualPort) => {
+          if (actualPort !== null) {
+            const url = `http://localhost:${actualPort}`;
+            console.log(`Dashboard available at ${url}`);
+            openBrowser(url);
+          } else {
+            console.warn('Warning: Dashboard did not report its port within timeout.');
+          }
+        }).catch(() => {});
       }
 
       child.on('exit', (code) => {

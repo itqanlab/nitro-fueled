@@ -1,0 +1,15 @@
+{
+  "name": "nitro-fueled-workspace",
+  "private": true,
+  "scripts": {
+    "build:dashboard": "npm run build --workspace=packages/dashboard-web && npm run build --workspace=packages/dashboard-service",
+    "build": "npm run build --workspaces",
+    "dashboard": "node packages/cli/dist/index.js dashboard"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

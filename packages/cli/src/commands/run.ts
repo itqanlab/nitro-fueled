@@ -1,8 +1,17 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve, dirname } from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import type { ChildProcess } from 'node:child_process';
 import type { Command } from 'commander';
 import type { RegistryRow } from '../utils/registry.js';
 import { preflightChecks } from '../utils/preflight.js';
 import { testMcpConnectivity } from '../utils/mcp-connectivity.js';
 import { spawnClaude } from '../utils/spawn-claude.js';
+
+const PORT_FILE_NAME = '.dashboard-port';
+const DASHBOARD_STARTUP_TIMEOUT_MS = 8000;
+const POLL_INTERVAL_MS = 100;
 
 interface RunOptions {
   dryRun: boolean;
@@ -137,6 +146,88 @@ function buildAutoPilotArgs(taskId: string | undefined, options: RunOptions): st
   return parts;
 }
 
+function findDashboardEntryScript(): string | null {
+  const thisDir = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    resolve(thisDir, '../../node_modules/@nitro-fueled/dashboard-service/dist/cli-entry.js'),
+    resolve(thisDir, '../../../dashboard-service/dist/cli-entry.js'),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+async function pollForPortFile(portFilePath: string, timeoutMs: number): Promise<number | null> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (existsSync(portFilePath)) {
+      const raw = readFileSync(portFilePath, 'utf-8').trim();
+      const port = parseInt(raw, 10);
+      if (!Number.isNaN(port) && port > 0) return port;
+    }
+    await new Promise<void>((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+  return null;
+}
+
+async function startDashboardService(cwd: string): Promise<ChildProcess | null> {
+  const entryScript = findDashboardEntryScript();
+  if (!entryScript) {
+    console.log('Dashboard service not found (skipping). Build dashboard-service to enable.');
+    return null;
+  }
+
+  const taskTrackingDir = resolve(cwd, 'task-tracking');
+  const portFilePath = join(taskTrackingDir, PORT_FILE_NAME);
+
+  // Check if already running
+  if (existsSync(portFilePath)) {
+    const raw = readFileSync(portFilePath, 'utf-8').trim();
+    const existingPort = parseInt(raw, 10);
+    if (!Number.isNaN(existingPort) && existingPort > 0) {
+      try {
+        const resp = await fetch(`http://localhost:${existingPort}/health`, {
+          signal: AbortSignal.timeout(1000),
+        });
+        if (resp.ok) {
+          console.log(`Dashboard already running at http://localhost:${existingPort}`);
+          return null;
+        }
+      } catch {
+        // stale port file, proceed to start
+      }
+    }
+  }
+
+  const args = [entryScript, '--task-tracking-dir', taskTrackingDir, '--port', '0'];
+
+  const antiPatternsPath = resolve(cwd, '.claude/anti-patterns.md');
+  if (existsSync(antiPatternsPath)) {
+    args.push('--anti-patterns', antiPatternsPath);
+  }
+
+  const reviewLessonsDir = resolve(cwd, '.claude/review-lessons');
+  if (existsSync(reviewLessonsDir)) {
+    args.push('--review-lessons', reviewLessonsDir);
+  }
+
+  const child = spawn(process.execPath, args, {
+    stdio: 'ignore',
+    cwd,
+    detached: false,
+  });
+
+  const actualPort = await pollForPortFile(portFilePath, DASHBOARD_STARTUP_TIMEOUT_MS);
+  if (actualPort !== null) {
+    console.log(`Dashboard available at http://localhost:${actualPort}`);
+  } else {
+    console.warn('Warning: Dashboard service did not start within timeout.');
+  }
+
+  return child;
+}
+
 function spawnSupervisor(cwd: string, taskId: string | undefined, options: RunOptions): void {
   const autoPilotParts = buildAutoPilotArgs(taskId, options);
   const prompt = ['/auto-pilot', ...autoPilotParts].join(' ');
@@ -157,7 +248,7 @@ export function registerRunCommand(program: Command): void {
     .option('--interval <duration>', 'Monitoring interval e.g. 5m (default: 10m)')
     .option('--retries <n>', 'Max retries per task (default: 2)')
     .option('--skip-connectivity', 'Skip MCP connectivity check', false)
-    .action((taskId: string | undefined, opts: RunOptions & { skipConnectivity: boolean }) => {
+    .action(async (taskId: string | undefined, opts: RunOptions & { skipConnectivity: boolean }) => {
       const cwd = process.cwd();
 
       const result = preflightChecks(cwd, taskId);
@@ -194,6 +285,24 @@ export function registerRunCommand(program: Command): void {
         }
         console.log(connectivity.message);
         console.log('');
+      }
+
+      // Start dashboard service in the background so it's available during the run
+      const dashboardProcess = await startDashboardService(cwd);
+
+      if (dashboardProcess !== null) {
+        const shutdownDashboard = (): void => {
+          if (dashboardProcess.pid !== undefined) {
+            try {
+              process.kill(dashboardProcess.pid, 'SIGTERM');
+            } catch {
+              // already exited
+            }
+          }
+        };
+        process.on('exit', shutdownDashboard);
+        process.on('SIGINT', () => { shutdownDashboard(); process.exit(0); });
+        process.on('SIGTERM', () => { shutdownDashboard(); process.exit(0); });
       }
 
       spawnSupervisor(cwd, taskId, opts);

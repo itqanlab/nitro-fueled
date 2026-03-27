@@ -1,5 +1,6 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+import type { AddressInfo } from 'node:net';
 import { createHttpServer } from './server/http.js';
 import { WebSocketBroadcaster } from './server/websocket.js';
 import { ChokidarWatcher } from './watcher/chokidar.watcher.js';
@@ -7,6 +8,8 @@ import { createEventBus } from './events/event-bus.js';
 import { StateStore } from './state/store.js';
 import { FileRouter } from './parsers/file-router.js';
 import type { Server } from 'node:http';
+
+export const PORT_FILE_NAME = '.dashboard-port';
 
 export interface DashboardServiceOptions {
   readonly taskTrackingDir: string;
@@ -44,18 +47,28 @@ export class DashboardService {
       server.listen(this.options.port, () => res());
     });
 
+    const actualPort = (server.address() as AddressInfo).port;
+    const portFilePath = join(this.options.taskTrackingDir, PORT_FILE_NAME);
+    writeFileSync(portFilePath, String(actualPort), 'utf-8');
+
     this.watchTaskTracking();
     this.watchAntiPatterns();
     this.watchReviewLessons();
     this.registerShutdownHandlers();
 
-    console.log(`[dashboard-service] Listening on http://localhost:${this.options.port}`);
-    console.log(`[dashboard-service] WebSocket available on ws://localhost:${this.options.port}`);
+    console.log(`[dashboard-service] Listening on http://localhost:${actualPort}`);
+    console.log(`[dashboard-service] WebSocket available on ws://localhost:${actualPort}`);
     console.log(`[dashboard-service] Watching: ${this.options.taskTrackingDir}`);
   }
 
   public async stop(): Promise<void> {
     console.log('[dashboard-service] Shutting down...');
+    const portFilePath = join(this.options.taskTrackingDir, PORT_FILE_NAME);
+    try {
+      unlinkSync(portFilePath);
+    } catch {
+      // ignore — file may not exist if startup failed before writing
+    }
     await this.watcher.close();
     this.wsBroadcaster.close();
     if (this.httpServer) {
