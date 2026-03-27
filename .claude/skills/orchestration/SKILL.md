@@ -24,9 +24,9 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 
 | Task Type     | Strategy Flow                                                                               |
 | ------------- | ------------------------------------------------------------------------------------------- |
-| FEATURE       | PM -> [Research] -> Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker] |
-| BUGFIX        | [Research] -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker]             |
-| REFACTORING   | Architect -> Team-Leader -> QA                     |
+| FEATURE       | PM -> [Research] -> Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker] |
+| BUGFIX        | [Research] -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker]             |
+| REFACTORING   | Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker] |
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
 | RESEARCH      | Researcher -> [conditional implementation]         |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
@@ -137,6 +137,8 @@ else
 | tasks.md (IMPLEMENTED)  | Team-leader MODE 2 (commit)         |
 | tasks.md (all COMPLETE) | Team-leader MODE 3 OR QA choice     |
 | review-context.md       | Review Lead context generated — spawn sub-workers |
+| review-context.md + review files (registry still IN_REVIEW) | Review/Test phase done — Supervisor spawns Fix or Completion Worker |
+| fix committed, no completion-report.md | Fix phase done — run Completion Phase |
 | future-enhancements.md  | Workflow complete                   |
 
 See [task-tracking.md](references/task-tracking.md) for full phase detection.
@@ -317,9 +319,11 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 > runs this phase as before.
 
 > **Review Lead Note**: In Review Lead mode (spawned by Supervisor using the
-> Review Lead pattern), the completion phase is executed directly by the Review
-> Lead after all sub-worker reviews are collected and fixes applied. The Review
-> Lead reads the sub-worker reports directly from the task folder.
+> Review Lead pattern), the Review Lead runs parallel sub-worker reviews and
+> writes review files. It does NOT apply fixes and does NOT run the Completion
+> Phase. After both the Review Lead and Test Lead complete, the Supervisor
+> spawns a Fix Worker (if findings/failures exist) or Completion Worker (if
+> clean). The Fix Worker or Completion Worker runs the Completion Phase.
 
 After the QA cycle (reviews + fixes + final commit), the orchestrator MUST complete ALL of these bookkeeping steps BEFORE the final commit. The completion report is the #1 most-skipped deliverable — if you skip it, the task is considered INCOMPLETE regardless of code quality.
 
@@ -369,7 +373,7 @@ Write `task-tracking/TASK_[ID]/completion-report.md` with:
 
 Update `task-tracking/registry.md` — set status to COMPLETE.
 
-> In Supervisor mode, the Review Worker sets the status to COMPLETE.
+> In Supervisor mode, the Fix Worker or Completion Worker sets the status to COMPLETE.
 > In interactive mode, the orchestrator sets this status.
 
 ### 3. Update Plan
@@ -429,7 +433,7 @@ work or an un-updated registry.
 **Status**: COMPLETE
 ```
 
-### Review Worker Exit Gate
+### Review Lead Exit Gate
 
 Run these checks after reviews, fixes, and completion phase are done:
 
@@ -437,12 +441,10 @@ Run these checks after reviews, fixes, and completion phase are done:
 |-------|---------|----------|
 | Review files exist | Glob task folder for review-*.md | review-context.md + at least style + logic reviews present |
 | Security review | Glob task folder for review-security.md | Present (or note if sub-worker failed) |
-| Findings fixed | Check review files for all findings | All findings resolved or documented in out-of-scope-findings.md |
-| Fix commit exists | Check git log | Commit with review fixes present |
-| completion-report.md exists | Read task folder | File exists and is non-empty |
-| Registry updated | Grep task ID in registry.md | Status shows COMPLETE |
+| Findings summary | Read review-context.md | Has ## Findings Summary section with counts |
+| Registry at IN_REVIEW | Grep task ID in registry.md | Status shows IN_REVIEW (Review Lead does NOT set COMPLETE) |
 | All committed | Check git status | Clean working tree for task files |
-| Test report exists | Read task folder for test-report.md | Present (or note if Test Lead was skipped/failed — advisory only, does not block COMPLETE) |
+| Test report exists | Read task folder for test-report.md | Present (or note if Test Lead was skipped/failed — advisory only) |
 
 ### Exit Gate Failure
 
