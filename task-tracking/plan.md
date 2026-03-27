@@ -124,11 +124,12 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_024 | Dashboard CLI Command + Service Integration | COMPLETE | P2-Medium |
 
 ### Phase 8: Orchestration Refinements
-**Status**: IN PROGRESS
-**Description**: Quality improvements to the orchestration pipeline — task sizing enforcement, pre-flight validation, and proactive backlog review.
+**Status**: COMPLETE
+**Description**: Quality improvements to the orchestration pipeline — task sizing enforcement, pre-flight validation, proactive backlog review, and unified command interface.
 
 #### Milestones
-- [ ] Task sizing enforced at creation time and during Planner sessions
+- [x] Task sizing enforced at creation time and during Planner sessions
+- [x] Unified /run, /create, /status commands for consistent CLI and slash command interface
 
 #### Task Map
 | Task ID | Title | Status | Priority |
@@ -137,6 +138,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_043 | Task Sizing Validation in /create-task Command | COMPLETE | P1-High |
 | TASK_2026_044 | Pre-Flight Validation with Task Sizing Check | COMPLETE | P1-High |
 | TASK_2026_045 | Planner Retroactive Oversized Task Detection | COMPLETE | P1-High |
+| TASK_2026_047 | Unified /run, /create, /status Commands + CLI Single-Task Run | COMPLETE | P1-High |
 
 ## Current Focus
 
