@@ -243,13 +243,13 @@ Continue polling until all sub-workers reach `finished` or `failed` state.
 
 Apply fixes directly. Do NOT spawn a separate Fix Worker.
 
-**If no blocking or serious issues were found across all reports**: Skip directly to step 5 (no fix commit needed). Note this in the completion report.
+**If no findings of any severity were found across all reports**: Skip directly to step 5 (no fix commit needed). Note this in the completion report.
 
 ### Fix Priority Order
 
 1. Critical / Blocking issues (from any review report) — fix first.
 2. Serious issues (from any review report) — fix second.
-3. Minor issues — fix where practical, skip where too risky.
+3. Minor issues — fix all. Only skip a minor finding if applying it would introduce a regression or the fix is genuinely ambiguous; document any skipped minor findings in `out-of-scope-findings.md` with the reason.
 
 ### Steps
 
@@ -260,7 +260,7 @@ Apply fixes directly. Do NOT spawn a separate Fix Worker.
    b. If in scope: read the file and apply the fix.
    c. If out of scope: add a note to `task-tracking/TASK_{TASK_ID}/out-of-scope-findings.md` — do NOT apply the fix.
 4. If a finding is too complex to fix confidently, document it as "unable to fix — requires manual review" in `out-of-scope-findings.md`.
-5. If the unified finding list is empty (all reviewers returned APPROVE with zero blocking/serious findings): write "No findings — fix commit skipped" in `completion-report.md` and proceed to Phase 5. Do not commit.
+5. If the unified finding list is empty (all reviewers returned APPROVE with zero findings of any severity): write "No findings — fix commit skipped" in `completion-report.md` and proceed to Phase 5. Do not commit.
 6. After all fixes are applied: `git add [changed_files]`.
 7. Commit with message: `fix(TASK_{TASK_ID}): address review findings`
 
@@ -301,7 +301,7 @@ Before exiting, verify each item. If any check fails, attempt to fix it. If the 
 
 - [ ] `task-tracking/TASK_{TASK_ID}/review-context.md` exists
 - [ ] Minimum viable: at least style + logic reports must exist. Security report is optional. If both style and logic are missing, write exit-gate-failure.md and exit.
-- [ ] Fix commit exists in `git log`, OR all reviewers returned APPROVE with zero blocking/serious findings (document this in completion-report.md)
+- [ ] Fix commit exists in `git log`, OR all reviewers returned APPROVE with zero findings of any severity (document this in completion-report.md)
 - [ ] `task-tracking/TASK_{TASK_ID}/completion-report.md` exists
 - [ ] `task-tracking/registry.md` shows COMPLETE for this task
 - [ ] All changes are committed (clean `git status`)

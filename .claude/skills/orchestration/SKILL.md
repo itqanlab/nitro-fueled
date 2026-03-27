@@ -437,7 +437,7 @@ Run these checks after reviews, fixes, and completion phase are done:
 |-------|---------|----------|
 | Review files exist | Glob task folder for review-*.md | review-context.md + at least style + logic reviews present |
 | Security review | Glob task folder for review-security.md | Present (or note if sub-worker failed) |
-| Findings fixed | Check review files for BLOCKING/SERIOUS items | All blocking/serious items resolved |
+| Findings fixed | Check review files for all findings | All findings resolved or documented in out-of-scope-findings.md |
 | Fix commit exists | Check git log | Commit with review fixes present |
 | completion-report.md exists | Read task folder | File exists and is non-empty |
 | Registry updated | Grep task ID in registry.md | Status shows COMPLETE |
