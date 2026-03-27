@@ -442,7 +442,24 @@ Write `task-tracking/TASK_[ID]/session-analytics.md` as described in the [Sessio
 
 ### 5. Final Commit
 
-Commit all bookkeeping changes (completion-report.md, status file, plan.md, session-analytics.md) with message: `docs: add TASK_[ID] completion bookkeeping`
+Before committing, append this task's completion entry to `task-tracking/orchestrator-history.md`:
+
+1. Read `task-tracking/orchestrator-history.md` (create if missing with `# Orchestrator Session History` header).
+2. Find the most recent `### Workers Spawned` table. Append a new row:
+   `| {worker_label_or_unknown} | TASK_[ID] | {worker_type} | COMPLETE | unknown | {duration} |`
+   Use `unknown` for any field that cannot be determined from the current session.
+   If no open session block exists (file empty or no table found), append a minimal entry:
+   ```
+   ---
+
+   ## Task Completion Entry — TASK_[ID]
+   | Worker | Task | Type | Result | Cost | Duration |
+   |--------|------|------|--------|------|----------|
+   | interactive | TASK_[ID] | Review | COMPLETE | unknown | unknown |
+   ```
+3. Stage the file: `git add task-tracking/orchestrator-history.md`
+
+Then commit all bookkeeping changes (completion-report.md, status file, plan.md, session-analytics.md, orchestrator-history.md) with message: `docs: add TASK_[ID] completion bookkeeping`
 
 ---
 

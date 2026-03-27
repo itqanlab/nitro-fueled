@@ -4,6 +4,10 @@ dist/
 # Supervisor ephemeral state
 task-tracking/orchestrator-state.md
 
+# Session runtime state (never committed)
+task-tracking/sessions/*/state.md
+task-tracking/active-sessions.md
+
 # Worker logs from print-mode sessions
 .worker-logs/
 .nitro-fueled/

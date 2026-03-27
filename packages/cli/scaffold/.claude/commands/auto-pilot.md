@@ -45,10 +45,12 @@ Parse $ARGUMENTS for:
 
 ### Step 3: Pre-Flight Checks
 
-**3a.** Verify `task-tracking/registry.md` exists.
+**3a (Stale Archive Check).** Before any other checks, run the Stale Session Archive Check defined in `.claude/skills/auto-pilot/SKILL.md` under `## Stale Session Archive Check`. This commits any session artifacts left uncommitted by a previous crashed session. Best-effort — never blocks startup.
+
+**3b.** Verify `task-tracking/registry.md` exists.
 If missing: ERROR -- "Registry not found. Run /initialize-workspace first."
 
-**3b.** Verify MCP session-orchestrator is available:
+**3c.** Verify MCP session-orchestrator is available:
 Call MCP `list_workers` (status_filter: 'all').
 If MCP call fails or the tool does not exist: **STOP IMMEDIATELY.**
 Display: "FATAL: MCP session-orchestrator is not configured or not running.
@@ -59,7 +61,7 @@ context and break the architecture. Configure the MCP server in
 .claude/settings.json and restart."
 **EXIT. Do not continue to Step 4.**
 
-**3c.** If single-task mode: verify the task ID exists in the registry
+**3d.** If single-task mode: verify the task ID exists in the registry
 and its status is CREATED or IMPLEMENTED. If status is IN_PROGRESS or
 IN_REVIEW, the Supervisor will spawn the appropriate worker type to resume.
 If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
