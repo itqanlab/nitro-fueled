@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { AGENT_MAP } from './agent-map.js';
+import { collectWorkspaceSignals, formatSignalsForPrompt } from './workspace-signals.js';
+import type { WorkspaceSignals } from './workspace-signals.js';
 
 export interface DetectedStack {
   language: string;
@@ -11,6 +14,28 @@ export interface AgentProposal {
   agentName: string;
   agentTitle: string;
   stack: string;
+  reason?: string;
+  confidence?: 'high' | 'medium' | 'low';
+}
+
+/** Structured response from AI workspace analysis */
+export interface AIAnalysisResult {
+  domains: string[];
+  agents: Array<{
+    name: string;
+    title: string;
+    reason: string;
+    confidence: 'high' | 'medium' | 'low';
+  }>;
+  summary: string;
+}
+
+/** Combined result from workspace analysis (AI + heuristic) */
+export interface WorkspaceAnalysisResult {
+  stacks: DetectedStack[];
+  aiAnalysis: AIAnalysisResult | null;
+  proposals: AgentProposal[];
+  method: 'ai' | 'heuristic';
 }
 
 interface PackageJson {
@@ -241,7 +266,7 @@ export function detectStack(cwd: string): DetectedStack[] {
 }
 
 /**
- * Maps detected stacks to agent proposals.
+ * Maps detected stacks to agent proposals using heuristic matching.
  */
 export function proposeAgents(stacks: DetectedStack[]): AgentProposal[] {
   const proposals: AgentProposal[] = [];
@@ -281,4 +306,223 @@ export function proposeAgents(stacks: DetectedStack[]): AgentProposal[] {
   }
 
   return proposals;
+}
+
+/**
+ * Propose agents from presence markers detected by workspace signals.
+ * Handles cross-language domains like design, data science, infrastructure.
+ */
+export function proposeAgentsFromMarkers(markers: string[]): AgentProposal[] {
+  const proposals: AgentProposal[] = [];
+  const seen = new Set<string>();
+
+  const markerToAgent: Array<{ prefix: string; language: string; framework: string | null; stack: string }> = [
+    { prefix: 'design:', language: '_design', framework: null, stack: 'design' },
+    { prefix: 'data-science:', language: '_data-science', framework: null, stack: 'data-science' },
+    { prefix: 'infrastructure:terraform', language: '_infrastructure', framework: 'terraform', stack: 'infrastructure + terraform' },
+    { prefix: 'infrastructure:kubernetes', language: '_infrastructure', framework: 'kubernetes', stack: 'infrastructure + kubernetes' },
+    { prefix: 'infrastructure:docker', language: '_infrastructure', framework: 'docker', stack: 'infrastructure + docker' },
+  ];
+
+  for (const rule of markerToAgent) {
+    if (markers.some((m) => m.startsWith(rule.prefix))) {
+      const match = AGENT_MAP.find(
+        (m) => m.language === rule.language && m.framework === rule.framework
+      );
+      if (match !== undefined && !seen.has(match.agentName)) {
+        seen.add(match.agentName);
+        proposals.push({
+          agentName: match.agentName,
+          agentTitle: match.agentTitle,
+          stack: rule.stack,
+        });
+      }
+    }
+  }
+
+  return proposals;
+}
+
+const AI_ANALYSIS_PROMPT = `You are analyzing a software workspace to determine what development domains are present and what specialized developer agents would be helpful.
+
+Analyze the workspace signals below and return a JSON object with this exact structure:
+{
+  "domains": ["frontend", "backend", "design", "infrastructure", "data-science", ...],
+  "agents": [
+    {
+      "name": "agent-name-kebab-case",
+      "title": "Human Readable Title",
+      "reason": "Brief explanation of why this agent is needed",
+      "confidence": "high" | "medium" | "low"
+    }
+  ],
+  "summary": "One-sentence summary of the workspace"
+}
+
+Rules:
+- Only propose agents you are confident about based on the evidence
+- Use kebab-case for agent names (e.g., "react-developer", "terraform-developer")
+- "high" confidence: clear manifest/config evidence
+- "medium" confidence: file patterns suggest it but no definitive config
+- "low" confidence: possible but uncertain
+- Keep the agent list focused — don't propose agents for every possible tool
+- Return ONLY the JSON object, no markdown fences, no explanation
+
+Here are the workspace signals:
+
+`;
+
+/**
+ * Parse the AI analysis response, validating the expected structure.
+ * Returns null if parsing fails.
+ */
+function parseAIAnalysisResponse(raw: string): AIAnalysisResult | null {
+  // Strip markdown code fences if present
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+
+  if (typeof parsed !== 'object' || parsed === null) return null;
+
+  const obj = parsed as Record<string, unknown>;
+
+  // Validate domains
+  if (!Array.isArray(obj['domains'])) return null;
+  const domains = (obj['domains'] as unknown[]).filter((d): d is string => typeof d === 'string');
+
+  // Validate agents
+  if (!Array.isArray(obj['agents'])) return null;
+  const validConfidences = new Set(['high', 'medium', 'low']);
+  const agents: AIAnalysisResult['agents'] = [];
+  for (const raw of obj['agents'] as unknown[]) {
+    if (typeof raw !== 'object' || raw === null) continue;
+    const a = raw as Record<string, unknown>;
+    if (typeof a['name'] !== 'string' || typeof a['title'] !== 'string') continue;
+    const confidence = typeof a['confidence'] === 'string' && validConfidences.has(a['confidence'])
+      ? a['confidence'] as 'high' | 'medium' | 'low'
+      : 'medium';
+    agents.push({
+      name: a['name'],
+      title: a['title'],
+      reason: typeof a['reason'] === 'string' ? a['reason'] : '',
+      confidence,
+    });
+  }
+
+  // Validate summary
+  const summary = typeof obj['summary'] === 'string' ? obj['summary'] : '';
+
+  return { domains, agents, summary };
+}
+
+/**
+ * Run AI-assisted workspace analysis using Claude CLI.
+ * Returns the structured analysis result, or null if the AI call fails.
+ */
+export function runAIAnalysis(signals: WorkspaceSignals): AIAnalysisResult | null {
+  const promptContent = AI_ANALYSIS_PROMPT + formatSignalsForPrompt(signals);
+
+  const result = spawnSync('claude', ['-p', promptContent, '--output-format', 'text'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 60_000,
+    maxBuffer: 1024 * 1024,
+  });
+
+  if (result.status !== 0) {
+    const stderr = result.stderr?.toString().trim() ?? '';
+    if (stderr !== '') {
+      console.error(`  AI analysis failed: ${stderr.slice(0, 200)}`);
+    }
+    return null;
+  }
+
+  const stdout = result.stdout?.toString().trim() ?? '';
+  if (stdout === '') return null;
+
+  return parseAIAnalysisResponse(stdout);
+}
+
+/**
+ * Convert AI analysis agent proposals into AgentProposal format.
+ * Enriches proposals with AI reasoning and confidence.
+ */
+function aiAgentsToProposals(aiAgents: AIAnalysisResult['agents']): AgentProposal[] {
+  return aiAgents.map((a) => ({
+    agentName: a.name,
+    agentTitle: a.title,
+    stack: 'ai-detected',
+    reason: a.reason,
+    confidence: a.confidence,
+  }));
+}
+
+/**
+ * Merge heuristic and AI proposals, deduplicating by agent name.
+ * AI proposals add reasoning but don't override heuristic matches.
+ */
+function mergeProposals(heuristic: AgentProposal[], ai: AgentProposal[]): AgentProposal[] {
+  const merged = [...heuristic];
+  const seen = new Set(heuristic.map((p) => p.agentName));
+
+  for (const aiProposal of ai) {
+    if (!seen.has(aiProposal.agentName)) {
+      seen.add(aiProposal.agentName);
+      merged.push(aiProposal);
+    } else {
+      // Enrich existing proposal with AI reasoning
+      const existing = merged.find((p) => p.agentName === aiProposal.agentName);
+      if (existing !== undefined && aiProposal.reason !== undefined) {
+        existing.reason = aiProposal.reason;
+        existing.confidence = aiProposal.confidence;
+      }
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Full workspace analysis: collects signals, runs AI analysis (if available),
+ * falls back to heuristic detection.
+ *
+ * @param cwd - workspace root directory
+ * @param claudeAvailable - whether Claude CLI is available
+ * @returns Combined analysis result with method indicator
+ */
+export function analyzeWorkspace(cwd: string, claudeAvailable: boolean): WorkspaceAnalysisResult {
+  // Step 1: Always run heuristic detection (fast)
+  const stacks = detectStack(cwd);
+  const heuristicProposals = proposeAgents(stacks);
+
+  // Step 2: Collect workspace signals for marker-based and AI analysis
+  const signals = collectWorkspaceSignals(cwd);
+  const markerProposals = proposeAgentsFromMarkers(signals.presenceMarkers);
+
+  // Step 3: Try AI analysis if Claude is available
+  let aiAnalysis: AIAnalysisResult | null = null;
+  if (claudeAvailable) {
+    aiAnalysis = runAIAnalysis(signals);
+  }
+
+  if (aiAnalysis !== null) {
+    // Merge: heuristic + marker + AI proposals
+    const aiProposals = aiAgentsToProposals(aiAnalysis.agents);
+    const allProposals = mergeProposals(
+      mergeProposals(heuristicProposals, markerProposals),
+      aiProposals
+    );
+    return { stacks, aiAnalysis, proposals: allProposals, method: 'ai' };
+  }
+
+  // Fallback: heuristic + marker proposals only
+  const fallbackProposals = mergeProposals(heuristicProposals, markerProposals);
+  return { stacks, aiAnalysis: null, proposals: fallbackProposals, method: 'heuristic' };
 }

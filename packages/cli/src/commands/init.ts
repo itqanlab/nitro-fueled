@@ -7,8 +7,8 @@ import type { Command } from 'commander';
 import { detectMcpConfig } from '../utils/mcp-config.js';
 import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
-import { detectStack, proposeAgents } from '../utils/stack-detect.js';
-import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
+import { detectStack, proposeAgents, analyzeWorkspace } from '../utils/stack-detect.js';
+import type { AgentProposal, DetectedStack, WorkspaceAnalysisResult } from '../utils/stack-detect.js';
 import { generateAntiPatterns, buildStackLabel } from '../utils/anti-patterns.js';
 import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
@@ -173,25 +173,43 @@ async function handleStackDetection(
 ): Promise<string[]> {
   if (opts.skipAgents) return [];
 
-  if (!isClaudeAvailable()) {
-    console.log('  Claude CLI not available; skipping developer agent generation.');
+  const claudeAvailable = isClaudeAvailable();
+
+  if (!claudeAvailable) {
+    console.log('  Claude CLI not available — using basic stack detection.');
+    console.log('  Re-run init after installing Claude CLI for full workspace analysis.');
+  }
+
+  // Run full workspace analysis (AI-assisted if Claude available, heuristic fallback otherwise)
+  console.log('');
+  console.log('Analyzing workspace...');
+  const analysis = analyzeWorkspace(cwd, claudeAvailable);
+
+  if (analysis.method === 'ai' && analysis.aiAnalysis !== null) {
+    console.log(`  Analysis method: AI-assisted`);
+    console.log(`  Summary: ${analysis.aiAnalysis.summary}`);
+    if (analysis.aiAnalysis.domains.length > 0) {
+      console.log(`  Domains: ${analysis.aiAnalysis.domains.join(', ')}`);
+    }
+  } else {
+    console.log('  Analysis method: heuristic (basic stack detection)');
+  }
+
+  if (analysis.proposals.length === 0) {
+    console.log('  No agent proposals generated.');
     console.log('  Use /create-agent to manually generate developer agents later.');
     return [];
   }
 
-  if (stacks.length === 0) {
-    console.log('  No recognized tech stack detected.');
-    console.log('  Use /create-agent to manually generate developer agents later.');
-    return [];
-  }
-
-  const proposals = proposeAgents(stacks);
-  if (proposals.length === 0) return [];
-
+  // Display proposals with reasoning when available
   console.log('');
   console.log('Proposed developer agents:');
-  for (const p of proposals) {
-    console.log(`  - ${p.agentTitle} (${p.agentName}) [${p.stack}]`);
+  for (const p of analysis.proposals) {
+    const confidence = p.confidence !== undefined ? ` [${p.confidence}]` : '';
+    console.log(`  - ${p.agentTitle} (${p.agentName}) [${p.stack}]${confidence}`);
+    if (p.reason !== undefined) {
+      console.log(`    Reason: ${p.reason}`);
+    }
   }
 
   let shouldGenerate = opts.yes;
@@ -200,27 +218,33 @@ async function handleStackDetection(
     shouldGenerate = answer.toLowerCase() !== 'n';
   }
 
-  if (shouldGenerate) {
-    console.log('');
-    console.log('Generating developer agents (this may take a moment)...');
-    const createdPaths: string[] = [];
-    let generated = 0;
-    for (const p of proposals) {
-      const agentPath = resolve(cwd, '.claude', 'agents', `${p.agentName}.md`);
-      const preExisted = existsSync(agentPath);
-      if (generateAgent(cwd, p)) {
-        generated++;
-        if (!preExisted && existsSync(agentPath)) {
-          createdPaths.push(agentPath);
-        }
-      }
-    }
-    console.log(`  ${generated}/${proposals.length} developer agents generated`);
-    return createdPaths;
-  } else {
+  if (!shouldGenerate) {
     console.log('Skipping agent generation. Use /create-agent to generate later.');
     return [];
   }
+
+  if (!claudeAvailable) {
+    console.log('  Claude CLI not available; cannot generate agent files.');
+    console.log('  Use /create-agent to manually generate developer agents later.');
+    return [];
+  }
+
+  console.log('');
+  console.log('Generating developer agents (this may take a moment)...');
+  const createdPaths: string[] = [];
+  let generated = 0;
+  for (const p of analysis.proposals) {
+    const agentPath = resolve(cwd, '.claude', 'agents', `${p.agentName}.md`);
+    const preExisted = existsSync(agentPath);
+    if (generateAgent(cwd, p)) {
+      generated++;
+      if (!preExisted && existsSync(agentPath)) {
+        createdPaths.push(agentPath);
+      }
+    }
+  }
+  console.log(`  ${generated}/${analysis.proposals.length} developer agents generated`);
+  return createdPaths;
 }
 
 async function handleMcpConfig(cwd: string, opts: InitOptions): Promise<void> {
