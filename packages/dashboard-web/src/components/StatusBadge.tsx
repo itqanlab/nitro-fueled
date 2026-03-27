@@ -25,7 +25,7 @@ export function StatusBadge({ status }: StatusBadgeProps): React.JSX.Element {
         border: `1px solid ${colors.border}`,
       }}
     >
-      {status.replace('_', ' ')}
+      {status.replaceAll('_', ' ')}
     </span>
   );
 }

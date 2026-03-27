@@ -1,13 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { useDashboardStore } from '../store/index.js';
 import { tokens } from '../theme/tokens.js';
-import { useWebSocket } from '../hooks/index.js';
 
 export function SessionLog(): React.JSX.Element {
   const state = useDashboardStore((s) => s.state);
   const logRef = useRef<HTMLDivElement>(null);
-
-  useWebSocket();
 
   const entries = state?.sessionLog ?? [];
 

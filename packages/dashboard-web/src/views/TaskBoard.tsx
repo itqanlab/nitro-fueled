@@ -9,6 +9,7 @@ const COLUMNS: readonly TaskStatus[] = [
   'IN_PROGRESS',
   'IMPLEMENTED',
   'IN_REVIEW',
+  'FIXING',
   'COMPLETE',
   'BLOCKED',
   'FAILED',
@@ -69,7 +70,7 @@ export function TaskBoard(): React.JSX.Element {
                   alignItems: 'center',
                 }}
               >
-                <span>{status.replace('_', ' ')}</span>
+                <span>{status.replaceAll('_', ' ')}</span>
                 <span
                   style={{
                     padding: '2px 8px',

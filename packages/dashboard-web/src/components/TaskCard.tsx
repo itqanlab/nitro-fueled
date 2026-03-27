@@ -59,7 +59,7 @@ export function TaskCard({ task }: TaskCardProps): React.JSX.Element {
               {task.id}
             </div>
           </div>
-          <StatusBadge status={task.status as any} />
+          <StatusBadge status={task.status} />
         </div>
 
         <div

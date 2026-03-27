@@ -7,8 +7,18 @@ interface WorkerCardProps {
   readonly worker: ActiveWorker;
 }
 
+function safeFormatDistance(ts: string): string {
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return 'unknown';
+    return formatDistanceToNow(d, { addSuffix: true });
+  } catch {
+    return 'unknown';
+  }
+}
+
 export function WorkerCard({ worker }: WorkerCardProps): React.JSX.Element {
-  const elapsed = formatDistanceToNow(new Date(worker.spawnTime), { addSuffix: true });
+  const elapsed = safeFormatDistance(worker.spawnTime);
 
   const isHealthy = worker.stuckCount === 0;
   const statusLabel = isHealthy ? 'Healthy' : `Stuck (${worker.stuckCount})`;
@@ -91,9 +101,7 @@ export function WorkerCard({ worker }: WorkerCardProps): React.JSX.Element {
         <div>
           <span style={{ color: tokens.colors.textDim }}>Last Check: </span>
           <span style={{ color: tokens.colors.text }}>
-            {formatDistanceToNow(new Date(worker.lastHealth), {
-              addSuffix: true,
-            })}
+            {safeFormatDistance(worker.lastHealth)}
           </span>
         </div>
       </div>

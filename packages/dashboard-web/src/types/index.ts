@@ -3,6 +3,7 @@ export type TaskStatus =
   | 'IN_PROGRESS'
   | 'IMPLEMENTED'
   | 'IN_REVIEW'
+  | 'FIXING'
   | 'COMPLETE'
   | 'FAILED'
   | 'BLOCKED'
@@ -31,6 +32,7 @@ export interface TaskRecord {
   readonly type: string;
   readonly description: string;
   readonly created: string;
+  readonly model: string;
 }
 
 export interface TaskDefinition {
@@ -176,11 +178,16 @@ export interface DashboardStats {
   readonly byType: Record<string, number>;
   readonly completionRate: number;
   readonly activeWorkers: number;
+  readonly totalCost?: number;
+  readonly totalTokens?: number;
+  readonly costByModel?: Record<string, number>;
+  readonly tokensByModel?: Record<string, number>;
 }
 
 export type DashboardEventType =
   | 'task:created'
   | 'task:updated'
+  | 'task:deleted'
   | 'task:state_changed'
   | 'worker:spawned'
   | 'worker:progress'
