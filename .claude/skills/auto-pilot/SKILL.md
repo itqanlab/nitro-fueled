@@ -303,7 +303,25 @@ On startup, **after MCP validation passes, before Session Directory creation, be
    - Configuration (concurrency limit, monitoring interval, retry limit)
 2. Validate active workers still exist by calling MCP `list_workers`.
 3. Reconcile state vs MCP:
-   - **Worker in state but NOT in MCP list**: Treat as finished. Trigger the completion handler (Step 7) for that worker's task.
+   - **Worker in state but NOT in MCP list**: Before triggering the completion handler, check the file system for evidence of completion:
+
+     | Worker Type      | Evidence of completion |
+     |-----------------|------------------------|
+     | Build Worker     | Registry shows IMPLEMENTED or COMPLETE, OR `tasks.md` exists with all batches COMPLETE |
+     | ReviewLead       | `review-context.md` exists with `## Findings Summary` section |
+     | TestLead         | `test-report.md` exists in the task folder |
+     | FixWorker        | Registry shows COMPLETE |
+     | CompletionWorker | Registry shows COMPLETE |
+
+     - **If evidence of completion is found:** Trigger the completion handler (Step 7) — the worker finished and MCP just lost state.
+     - **If NO evidence of completion AND `list_workers` returned a completely empty list (zero workers total):** MCP restart is likely — the worker processes may still be running. Do NOT trigger the completion handler. Instead:
+       - Increment `mcp_empty_count` in `{SESSION_DIR}state.md`.
+       - Log: `"MCP RESTART SUSPECTED — {N} active workers in state but MCP returned empty. Waiting for file-system evidence before triggering completion. (empty_count={mcp_empty_count})"`
+       - Leave all active workers in state as-is with status `"unknown"`.
+       - On the next monitoring interval, re-call `list_workers`. If workers reappear (MCP recovered), reset `mcp_empty_count` to 0 and resume normal monitoring.
+       - If `mcp_empty_count` reaches 2 AND still no file-system evidence, treat all unknown-status workers as failed and trigger Worker Recovery Protocol. Reset `mcp_empty_count` to 0.
+     - **If NO evidence AND `list_workers` returned a non-empty list (some workers visible, others missing):** The missing worker genuinely finished or crashed. Trigger completion handler as before. Reset `mcp_empty_count` to 0.
+
    - **Worker in MCP list but NOT in state**: Ignore it -- it is not ours (belongs to a different session or manual invocation).
 4. Reconcile state vs registry (all cases, numbered for clarity):
    - **Case 1 -- COMPLETE (status file)**: Remove from active workers (status file wins). A worker may have finished and written the status file.
@@ -1476,6 +1494,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 | TASK_2026_005 | 2           |
 
 **Compaction Count**: 0
+**MCP Empty Count**: 0
 ```
 
 ### log.md Format
