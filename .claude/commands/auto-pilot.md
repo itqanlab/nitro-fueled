@@ -81,8 +81,8 @@ If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
 4. Read `task-tracking/sizing-rules.md` for sizing limits.
    - If the file does not exist, use the inline fallback limits in Validation D below.
 5. Initialize two collections: `blocking_issues = []`, `warnings = []`.
-6. **Initialize `orchestrator-state.md`**: If `task-tracking/orchestrator-state.md` does not exist, create it with a `Loop Status: PENDING` header line and a `## Session Log` section. If it already exists, locate the existing `## Session Log` section to append entries to. Do NOT overwrite existing content.
-7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `orchestrator-state.md`. Then skip to Step 6 (dry-run handler).
+6. **Initialize session directory**: Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` using current wall-clock time. Create directory `task-tracking/sessions/{SESSION_ID}/`. Create `{SESSION_DIR}state.md` with a `Loop Status: PENDING` header. Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command.
+7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `{SESSION_DIR}`. Then skip to Step 6 (dry-run handler).
 
 **4b. Validation A: Task Completeness (Warning)**
 
@@ -163,24 +163,24 @@ WARNINGS (logged to session log — will proceed):
 
 **If `blocking_issues` is non-empty:**
 
-1. Write to `orchestrator-state.md` session log (the section initialized in 4a):
-   - One entry per blocking issue: `[HH:MM:SS] PRE-FLIGHT BLOCKING — {blocking_issue_message}`
-   - One entry per warning (if any): `[HH:MM:SS] PRE-FLIGHT WARNING — {warning_message}`
-   - Summary line: `[HH:MM:SS] PRE-FLIGHT FAILED — {N} blocking issue(s) found`
-   - Update header: `Loop Status: ABORTED`
+1. Append to `{SESSION_DIR}log.md` (source `auto-pilot`):
+   - One entry per blocking issue: `| {HH:MM:SS} | auto-pilot | PRE-FLIGHT BLOCKING — {blocking_issue_message} |`
+   - One entry per warning (if any): `| {HH:MM:SS} | auto-pilot | PRE-FLIGHT WARNING — {warning_message} |`
+   - Summary line: `| {HH:MM:SS} | auto-pilot | PRE-FLIGHT FAILED — {N} blocking issue(s) found |`
+   - Update `{SESSION_DIR}state.md` header: `Loop Status: ABORTED`
 2. Display: `"ABORT: Pre-flight validation failed. Fix the issues listed above and re-run /auto-pilot."`
 3. **EXIT. Do not continue to Step 5.**
 
 **If warnings only (no blocking issues):**
 
-1. Write to `orchestrator-state.md` session log:
-   - One entry per warning: `[HH:MM:SS] PRE-FLIGHT WARNING — {warning_message}`
-   - Summary line: `[HH:MM:SS] PRE-FLIGHT PASSED — {N} warning(s)`
+1. Append to `{SESSION_DIR}log.md`:
+   - One entry per warning: `| {HH:MM:SS} | auto-pilot | PRE-FLIGHT WARNING — {warning_message} |`
+   - Summary line: `| {HH:MM:SS} | auto-pilot | PRE-FLIGHT PASSED — {N} warning(s) |`
 2. Continue to Step 5.
 
 **If no issues at all:**
 
-1. Write to `orchestrator-state.md` session log: `[HH:MM:SS] PRE-FLIGHT PASSED — no issues found`
+1. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | PRE-FLIGHT PASSED — no issues found |`
 2. Continue to Step 5.
 
 ---
@@ -252,7 +252,7 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 **Modes**: all-tasks (default), single-task, dry-run
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity,
               get_worker_stats, kill_worker
-**State File**: task-tracking/orchestrator-state.md
+**State Dir**: task-tracking/sessions/SESSION_{timestamp}/
 **Skill Path**: .claude/skills/auto-pilot/SKILL.md
 
 ## References
