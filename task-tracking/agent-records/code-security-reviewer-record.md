@@ -8,6 +8,10 @@
 | Definition File | .claude/agents/code-security-reviewer.md |
 | Created | 2026-03-27 |
 
+## Status
+
+ACTIVE
+
 ## Task History
 
 | Task ID | Date | Outcome | Notes |
@@ -19,6 +23,3 @@
 |-----|---------|------|-------------|
 
 ## Evaluation History
-
-| Date | Test Task ID | Result | Changes Made |
-|------|-------------|--------|--------------|
