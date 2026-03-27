@@ -38,7 +38,7 @@
 | TASK_2026_034 | COMPLETE    | REFACTORING | Session-Scoped State Directories with Unified Event Log | 2026-03-24 | default |
 | TASK_2026_035 | COMPLETE    | FEATURE     | Review Lead — Parallel Reviews with Model Routing | 2026-03-25 | default |
 | TASK_2026_036 | COMPLETE    | FEATURE     | Test Lead — Parallel Test Writing and Execution with Model Routing | 2026-03-25 | default |
-| TASK_2026_037 | CREATED     | REFACTORING | Updated Pipeline — Parallel Review + Test with Fix Phase | 2026-03-25 | default |
+| TASK_2026_037 | COMPLETE    | REFACTORING | Updated Pipeline — Parallel Review + Test with Fix Phase | 2026-03-25 | default |
 | TASK_2026_038 | CREATED     | FEATURE     | Dashboard Session Support — Multi-Session View and History | 2026-03-25 | default |
 | TASK_2026_039 | CREATED     | FEATURE     | Dashboard Pipeline and Squad Visualization | 2026-03-25 | default |
 | TASK_2026_040 | CREATED     | FEATURE     | Dashboard Dependency Graph Visualization | 2026-03-25 | default |
