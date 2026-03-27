@@ -45,7 +45,7 @@ Parse $ARGUMENTS for:
 
 ### Step 3: Pre-Flight Checks
 
-**3a (Stale Archive Check).** Before any other checks, run the Stale Session Archive Check defined in `.claude/skills/auto-pilot/SKILL.md` under `## Stale Session Archive Check`. This commits any session artifacts left uncommitted by a previous crashed session. Best-effort — never blocks startup.
+**3a. Stale Archive Check** (see ## Stale Session Archive Check in `.claude/skills/auto-pilot/SKILL.md`) — Before any other checks, commit any session artifacts left uncommitted by a previous crashed session. Best-effort — never blocks startup.
 
 **3b.** Verify `task-tracking/registry.md` exists.
 If missing: ERROR -- "Registry not found. Run /initialize-workspace first."

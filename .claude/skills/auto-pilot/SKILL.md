@@ -144,7 +144,7 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Analytics written | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS — {N} tasks completed, total ${X.XX} \|` |
 | Analytics failed | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS FAILED — {reason} \|` |
 | Session archive committed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE — committed {SESSION_ID} \|` |
-| Session archive failed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE WARNING — commit failed: {reason} \|` |
+| Session archive failed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE WARNING — commit failed: {reason[:200]} \|` |
 
 The log lives at `{SESSION_DIR}log.md` and is **append-only** — never trim or overwrite it. The `state.md` file (in the same directory) is still fully overwritten on each update and holds the structured worker/queue tables. After compaction, restore context from `state.md`; the full event history lives in `log.md`.
 
@@ -202,7 +202,7 @@ The supervisor startup follows this exact order:
 1. **MCP validation** (see ## MCP Requirement) — HARD FAIL if MCP unavailable
 2. **Concurrent Session Guard** (see ## Concurrent Session Guard) — warns/aborts if another supervisor is running
 3. **Session Directory creation** — create dir, create log.md, register in active-sessions.md
-4. Log stale archive check results to session log
+4. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
 5. **Step 1: Read State** — check for existing state.md in session dir (compaction recovery)
 6. **Enter Core Loop**
 
@@ -242,7 +242,7 @@ The supervisor startup follows this exact order:
 2. Append final log entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
 3. Remove this session's row from `task-tracking/active-sessions.md`.
-4. Proceed to Step 8b (append to `orchestrator-history.md`) as before.
+4. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (commit all session artifacts).
 
 ---
 
@@ -290,12 +290,18 @@ Runs at supervisor startup **before MCP validation** (Step 0 of Startup Sequence
 ### Algorithm
 
 1. Run: `git status --short task-tracking/sessions/ task-tracking/orchestrator-history.md`
-2. Collect uncommitted files (lines starting with `??` or `M ` or ` M`).
-3. Filter out `state.md` and `active-sessions.md` entries — these are runtime files and must never be committed.
+2. Parse output lines:
+   - Lines starting with `?? task-tracking/sessions/{SESSION_ID}/` (untracked directory): record SESSION_ID from the path.
+   - Lines starting with `M `, ` M`, or `??` for a specific file path: record the file and its parent SESSION_ID (if under sessions/).
+   - Lines for `task-tracking/orchestrator-history.md`: record for separate handling in step 7.
+3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}` — discard any that do not match.
 4. Read `task-tracking/active-sessions.md` (if missing, treat as empty — all sessions are ended).
 5. For each uncommitted file under `task-tracking/sessions/{SESSION_ID}/`:
-   - If `{SESSION_ID}` appears as a row in `active-sessions.md` → it is a live session. **Skip it.**
-   - If `{SESSION_ID}` is NOT in `active-sessions.md` → it is an ended session. Stage and commit its artifacts.
+   - Check active-sessions.md for the session row.
+   - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'all')` and check if any worker belongs to this session). If MCP confirms workers exist for this session → skip (live session). If MCP shows no workers but the row exists → it is a crashed supervisor; treat as ended (commit its artifacts).
+   - If the row has **Source `orchestrate`** (Build/Review Worker): these rows are always stale (workers can be killed at any time per the design). Commit their artifacts.
+   - If the session has **no row** in active-sessions.md → treat as ended. Commit its artifacts.
+   > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT commit `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still commit `orchestrate`-source sessions (always safe).
 6. **For each ended session with uncommitted artifacts**:
    ```
    git add task-tracking/sessions/{SESSION_ID}/log.md
@@ -322,7 +328,7 @@ After the Session Directory is created (Step 3 of Startup Sequence), append one 
 | Archived stale session | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — archived {SESSION_ID} \|` |
 | Committed stale history | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — committed stale orchestrator-history.md \|` |
 | No stale artifacts | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — no stale session artifacts found \|` |
-| Git error (non-fatal) | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE WARNING — git error: {reason} \|` |
+| Git error (non-fatal) | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE WARNING — git error: {reason[:200]} \|` |
 
 ---
 
@@ -1010,18 +1016,6 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 
 4. This file is **append-only** — never overwrite previous sessions.
 5. Keep the file under control: if it exceeds 500 lines, trim the oldest sessions (keep the most recent 10).
-6. **Commit session artifacts** (best-effort — this step MUST NOT prevent session stop):
-   Run:
-   ```
-   git add "task-tracking/sessions/{SESSION_ID}/log.md"
-   git add "task-tracking/sessions/{SESSION_ID}/analytics.md"
-   git add "task-tracking/sessions/{SESSION_ID}/worker-logs/" (only if directory exists)
-   git add "task-tracking/orchestrator-history.md"
-   git commit -m "chore(session): archive {SESSION_ID} — {tasks_completed} tasks, ${total_cost}"
-   ```
-   > Note: `analytics.md` is written in Step 8c. Step 8b writes orchestrator-history.md first. The commit at this step captures log.md and orchestrator-history.md; run this commit AFTER Step 8c completes so analytics.md is included. Treat this as "Step 8d" in practice — run it last in the session stop sequence.
-
-   If the commit fails (nothing to commit, git error, lock file): log `| {HH:MM:SS} | auto-pilot | SESSION ARCHIVE WARNING — commit failed: {reason} |` and continue. Never retry.
 
 ---
 
@@ -1126,6 +1120,23 @@ After Step 8b completes (on every session stop — normal, compaction limit, MCP
 9. **Log** the session event: `| {HH:MM:SS} | auto-pilot | ANALYTICS — {N} tasks completed, total ${X.XX} |`
 
 10. **If analytics generation fails at any step**: log `| {HH:MM:SS} | auto-pilot | ANALYTICS FAILED — {reason} |` and continue. Analytics failure must NEVER block session stop.
+
+---
+
+### Step 8d: Commit Session Artifacts
+
+Runs after Step 8c (analytics.md is now written). On EVERY session stop (normal completion, compaction limit, MCP unreachable, manual):
+
+1. Validate `{SESSION_ID}` matches pattern `SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}` before using it in any commit message. If validation fails, log a warning and skip commit.
+2. Run (best-effort — MUST NOT prevent session stop):
+   ```
+   git add "task-tracking/sessions/{SESSION_ID}/log.md"
+   git add "task-tracking/sessions/{SESSION_ID}/analytics.md"
+   git add "task-tracking/sessions/{SESSION_ID}/worker-logs/"  (only if directory exists)
+   git add "task-tracking/orchestrator-history.md"
+   git commit -m "chore(session): archive {SESSION_ID} — {tasks_completed} tasks, ${total_cost}"
+   ```
+3. If the commit fails (nothing to commit, git error, lock file): log `| {HH:MM:SS} | auto-pilot | SESSION ARCHIVE WARNING — commit failed: {reason[:200]} |` and continue. Never retry.
 
 ---
 

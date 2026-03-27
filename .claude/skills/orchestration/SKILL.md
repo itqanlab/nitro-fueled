@@ -455,8 +455,9 @@ Before committing, append this task's completion entry to `task-tracking/orchest
    ## Task Completion Entry — TASK_[ID]
    | Worker | Task | Type | Result | Cost | Duration |
    |--------|------|------|--------|------|----------|
-   | interactive | TASK_[ID] | Review | COMPLETE | unknown | unknown |
+   | {interactive|Build|Review} | TASK_[ID] | {worker_type} | COMPLETE | unknown | unknown |
    ```
+   `{worker_type}` = `interactive` for orchestration sessions started by a user directly; `Review` for Review Workers; `Build` is not expected here (Build Workers do not run the Completion Phase).
 3. Stage the file: `git add task-tracking/orchestrator-history.md`
 
 Then commit all bookkeeping changes (completion-report.md, status file, plan.md, session-analytics.md, orchestrator-history.md) with message: `docs: add TASK_[ID] completion bookkeeping`
