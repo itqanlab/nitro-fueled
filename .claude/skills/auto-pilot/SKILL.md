@@ -560,8 +560,9 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
 Immediately after recording the worker, call MCP `subscribe_worker` to register file-system watch conditions:
 
 - `worker_id`: the worker_id returned by `spawn_worker`
-- `working_directory`: the project root absolute path (same value used in `spawn_worker`)
 - `conditions`: use the table below, substituting `TASK_X` with the actual task ID
+
+> **Note**: Do NOT pass `working_directory` — the MCP server uses the worker's registered working_directory from the registry, preventing path injection.
 
 **Watch conditions per worker type:**
 
@@ -1634,8 +1635,9 @@ Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on se
 spawn_worker(prompt: string, working_directory: string, label: string, model?: string, allowed_tools?: string[])
   -> { worker_id: string, pid: number, session_id: string, iterm_tab: string }
 
-subscribe_worker(worker_id: string, working_directory: string, conditions: WatchCondition[])
+subscribe_worker(worker_id: string, conditions: WatchCondition[])
   -> { subscribed: boolean, watched_paths: string[] }
+  // working_directory is taken from the worker's registry entry — not a parameter
 
 get_pending_events()
   -> { events: Array<{ worker_id, event_label, triggered_at, condition }> }

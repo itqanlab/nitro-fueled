@@ -306,27 +306,27 @@ On startup, **after MCP validation passes, before Session Directory creation, be
    - Configuration (concurrency limit, monitoring interval, retry limit)
 2. Validate active workers still exist by calling MCP `list_workers`.
 3. Reconcile state vs MCP:
-   - **Worker in state but NOT in MCP list**: Before triggering the completion handler, check the file system for evidence of completion:
+   - **Worker in state but NOT in MCP list**: Before triggering the completion handler, validate the task ID matches `TASK_\d{4}_\d{3}` (skip if malformed — log a warning). Then check the file system for evidence of completion:
 
      | Worker Type      | Evidence of completion |
-     |-----------------|------------------------|
-     | Build Worker     | Registry shows IMPLEMENTED or COMPLETE, OR `tasks.md` exists with all batches COMPLETE |
-     | ReviewLead       | `review-context.md` exists with `## Findings Summary` section |
+     |------------------|------------------------|
+     | Build            | Registry shows IMPLEMENTED or COMPLETE, OR `tasks.md` exists with all batches COMPLETE |
+     | ReviewLead       | `review-context.md` exists AND contains non-empty content below a `## Findings Summary` section |
      | TestLead         | `test-report.md` exists in the task folder |
      | FixWorker        | Registry shows COMPLETE |
      | CompletionWorker | Registry shows COMPLETE |
 
-     - **If evidence of completion is found:** Trigger the completion handler (Step 7) — the worker finished and MCP just lost state.
+     - **If evidence of completion is found:** Reset `mcp_empty_count` to 0. Trigger the completion handler (Step 7) — the worker finished and MCP just lost state. Mark this worker as "handled" so Step 4 does not re-process it.
      - **If NO evidence of completion AND `list_workers` returned a completely empty list (zero workers total):** MCP restart is likely — the worker processes may still be running. Do NOT trigger the completion handler. Instead:
-       - Increment `mcp_empty_count` in `{SESSION_DIR}state.md`.
-       - Log: `"MCP RESTART SUSPECTED — {N} active workers in state but MCP returned empty. Waiting for file-system evidence before triggering completion. (empty_count={mcp_empty_count})"`
-       - Leave all active workers in state as-is with status `"unknown"`.
-       - On the next monitoring interval, re-call `list_workers`. If workers reappear (MCP recovered), reset `mcp_empty_count` to 0 and resume normal monitoring.
-       - If `mcp_empty_count` reaches 2 AND still no file-system evidence, treat all unknown-status workers as failed and trigger Worker Recovery Protocol. Reset `mcp_empty_count` to 0.
-     - **If NO evidence AND `list_workers` returned a non-empty list (some workers visible, others missing):** The missing worker genuinely finished or crashed. Trigger completion handler as before. Reset `mcp_empty_count` to 0.
+       - Increment `mcp_empty_count` in `{SESSION_DIR}state.md`. Preserve all `stuck_count` values — do NOT reset them.
+       - Log: `"MCP RESTART SUSPECTED — {N} active workers in state but MCP returned empty. Waiting for file-system evidence before triggering completion. (empty_count={mcp_empty_count})"` (log the already-incremented value).
+       - Leave all active workers in state as-is with status `"unknown"`. Workers in `"unknown"` status are skipped by Step 3 classification and do NOT generate new Build or Review spawns.
+       - On each subsequent monitoring interval, Step 6 re-calls `list_workers` when `mcp_empty_count > 0` (see Step 6). If workers reappear (MCP recovered), reset `mcp_empty_count` to 0 and restore their status to `"running"`.
+       - If `mcp_empty_count` reaches the configured `MCP Empty Threshold` (default 2) AND still no file-system evidence, treat all `"unknown"`-status workers as failed: increment `retry_count` for each, then trigger Worker Recovery Protocol. Reset `mcp_empty_count` to 0.
+     - **If NO evidence AND `list_workers` returned a non-empty list (some workers visible, others missing):** The missing worker genuinely finished or crashed. Reset `mcp_empty_count` to 0. Trigger the completion handler for that specific missing worker only. Workers that reappeared in the non-empty list keep their `stuck_count` values.
 
    - **Worker in MCP list but NOT in state**: Ignore it -- it is not ours (belongs to a different session or manual invocation).
-4. Reconcile state vs registry (all cases, numbered for clarity):
+4. Reconcile state vs registry (all cases, numbered for clarity). Skip any worker already marked as "handled" by step 3 above:
    - **Case 1 -- COMPLETE (status file)**: Remove from active workers (status file wins). A worker may have finished and written the status file.
    - **Case 2 -- CREATED (status file), worker still in MCP**: The previous session may have crashed before writing IN_PROGRESS. Re-mark as IN_PROGRESS by writing to `task-tracking/TASK_YYYY_NNN/status` if the worker is still running in MCP.
    - **Case 3 -- CREATED (status file), worker NOT in MCP**: Treat as failed Build Worker.
@@ -340,6 +340,7 @@ To recover:
 2. Find the row matching source `auto-pilot` and the startup timestamp that matches when this session began
 3. Extract the `Path` column — this is `SESSION_DIR`
 4. Read `{SESSION_DIR}state.md` to restore full supervisor state
+5. Reset `mcp_empty_count` to 0 (a fresh `list_workers` call will determine current MCP state — do not carry over a stale count from before the compaction). If `mcp_empty_count` is missing from the restored state, treat it as 0.
 
 If `active-sessions.md` is missing or the row is not found, scan `task-tracking/sessions/` for directories matching `SESSION_{YYYY-MM-DD}_{HH-MM-SS}` and select the most recently created one.
 
@@ -559,8 +560,9 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
 Immediately after recording the worker, call MCP `subscribe_worker` to register file-system watch conditions:
 
 - `worker_id`: the worker_id returned by `spawn_worker`
-- `working_directory`: the project root absolute path (same value used in `spawn_worker`)
 - `conditions`: use the table below, substituting `TASK_X` with the actual task ID
+
+> **Note**: Do NOT pass `working_directory` — the MCP server uses the worker's registered working_directory from the registry, preventing path injection.
 
 **Watch conditions per worker type:**
 
@@ -592,6 +594,19 @@ On success: log `"SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s
 ### Step 6: Monitor Active Workers
 
 The supervisor uses **event-driven mode** when `subscribe_worker` is available (`event_driven_mode = true`), or falls back to **polling mode** (`event_driven_mode = false`).
+
+---
+
+#### Step 6 — MCP Empty Grace Period Re-Check (both modes)
+
+**If `mcp_empty_count > 0` in `{SESSION_DIR}state.md`:**
+
+Before the normal monitoring steps, call MCP `list_workers` again:
+- **Workers reappear (non-empty list):** Reset `mcp_empty_count` to 0. Restore all `"unknown"`-status workers to `"running"`. Resume normal monitoring. Log: `"MCP RECOVERED — {N} workers visible again, resuming normal monitoring."`.
+- **Still empty AND file-system evidence found for a worker:** Reset `mcp_empty_count` to 0. Trigger completion handler for that worker (mark as handled). Log: `"MCP EMPTY but evidence found for TASK_X — treating as finished."`.
+- **Still empty AND no evidence:** Increment `mcp_empty_count`. If `mcp_empty_count` now reaches the configured `MCP Empty Threshold` (default 2): increment `retry_count` for each `"unknown"`-status worker, trigger Worker Recovery Protocol for each, reset `mcp_empty_count` to 0. Otherwise log the new count and continue.
+
+After this re-check (in either outcome), continue to the normal mode steps below.
 
 ---
 
@@ -1521,6 +1536,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 | Concurrency Limit   | 3          |
 | Monitoring Interval | 5 minutes  |
 | Retry Limit         | 2          |
+| MCP Empty Threshold | 2          |
 
 ## Active Workers
 
@@ -1566,8 +1582,12 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 |---------------|-------------|
 | TASK_2026_005 | 2           |
 
-**Compaction Count**: 0
-**MCP Empty Count**: 0
+## Runtime Counters
+
+| Counter          | Value |
+|------------------|-------|
+| Compaction Count | 0     |
+| MCP Empty Count  | 0     |
 ```
 
 ### log.md Format
@@ -1615,8 +1635,9 @@ Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on se
 spawn_worker(prompt: string, working_directory: string, label: string, model?: string, allowed_tools?: string[])
   -> { worker_id: string, pid: number, session_id: string, iterm_tab: string }
 
-subscribe_worker(worker_id: string, working_directory: string, conditions: WatchCondition[])
+subscribe_worker(worker_id: string, conditions: WatchCondition[])
   -> { subscribed: boolean, watched_paths: string[] }
+  // working_directory is taken from the worker's registry entry — not a parameter
 
 get_pending_events()
   -> { events: Array<{ worker_id, event_label, triggered_at, condition }> }
