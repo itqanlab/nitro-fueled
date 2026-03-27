@@ -1,18 +1,19 @@
 import React from 'react';
 import { useDashboardStore } from '../store/index.js';
+import { useSessionData } from '../hooks/index.js';
 import { tokens } from '../theme/tokens.js';
 import { WorkerCard } from '../components/WorkerCard.js';
 import type { ActiveWorker } from '../types/index.js';
 
 export function Workers(): React.JSX.Element {
-  const state = useDashboardStore((s) => s.state);
+  const sessionData = useSessionData();
   const isLoading = useDashboardStore((s) => s.isLoading);
 
   if (isLoading) {
     return <div style={{ color: tokens.colors.textDim }}>Loading...</div>;
   }
 
-  const workers = state?.activeWorkers ?? [];
+  const workers = sessionData?.state?.activeWorkers ?? [];
   const hasWorkers = workers.length > 0;
 
   return (
@@ -28,7 +29,7 @@ export function Workers(): React.JSX.Element {
         Live Workers
       </h1>
 
-      {state?.configuration && (
+      {sessionData?.state?.configuration && (
         <div
           style={{
             display: 'grid',
@@ -54,12 +55,12 @@ export function Workers(): React.JSX.Element {
                 fontSize: '16px',
                 fontWeight: 700,
                 color:
-                  state.loopStatus === 'running'
+                  sessionData?.state?.loopStatus === 'running'
                     ? tokens.colors.green
                     : tokens.colors.yellow,
               }}
             >
-              {state.loopStatus}
+              {sessionData?.state?.loopStatus}
             </div>
           </div>
 
@@ -82,7 +83,7 @@ export function Workers(): React.JSX.Element {
                 color: tokens.colors.textBright,
               }}
             >
-              {state.configuration.concurrencyLimit}
+              {sessionData?.state?.configuration?.concurrencyLimit}
             </div>
           </div>
 
@@ -105,7 +106,7 @@ export function Workers(): React.JSX.Element {
                 color: tokens.colors.textBright,
               }}
             >
-              {state.configuration.monitoringInterval}
+              {sessionData?.state?.configuration?.monitoringInterval}
             </div>
           </div>
 
@@ -128,7 +129,7 @@ export function Workers(): React.JSX.Element {
                 color: tokens.colors.textBright,
               }}
             >
-              {state.configuration.retryLimit}
+              {sessionData?.state?.configuration?.retryLimit}
             </div>
           </div>
 
@@ -151,7 +152,7 @@ export function Workers(): React.JSX.Element {
                 color: tokens.colors.textBright,
               }}
             >
-              {state.compactionCount}
+              {sessionData?.state?.compactionCount}
             </div>
           </div>
         </div>

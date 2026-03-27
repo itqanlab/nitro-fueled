@@ -82,3 +82,10 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 ## Store Error Handling
 
 - **Store methods that call IPC must show errors on failure** — `loadCosts()` / `loadQueue()` checking `res.success` but having no `else` branch with `msg.error()` means users see stale data with no indication of failure. Always add error feedback. (T86)
+
+## Session / Multi-Context Data Paths
+
+- **WebSocket events must write to the same path the view reads** — if a view reads `sessionData.get(id).log`, an incremental `log:entry` event handler must patch that path, not a different field like `state.sessionLog`. Mismatched read/write paths silently discard live updates. (T38)
+- **Session cache guards need TTL or documented intent** — `!sessionData.has(id)` as a fetch guard creates a permanent one-shot cache. Active sessions can change while cached. Either add a staleness check or comment the intentional caching so maintainers do not silently break it. (T38)
+- **Inline SVG data URIs bypass the token system** — `backgroundImage` SVGs with `fill='%23hexcolor'` cannot reference JS token variables. Use a positioned inline SVG element instead so the fill color stays in the token system and changes with the theme. (T38)
+- **Picker components must not own async API calls** — components that are purely presentational selectors should not contain `api.getX().then(...)` logic. Lift fetch-on-select into the hook layer alongside related WebSocket handlers so the component stays pure. (T38)

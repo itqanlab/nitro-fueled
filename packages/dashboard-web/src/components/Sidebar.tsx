@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { tokens } from '../theme/tokens.js';
+import { SessionPicker } from './SessionPicker.js';
 
 interface NavItem {
   readonly path: string;
@@ -14,6 +15,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { path: '/workers', label: 'Workers', icon: '⚙️' },
   { path: '/queue', label: 'Queue', icon: '📥' },
   { path: '/log', label: 'Session Log', icon: '📜' },
+  { path: '/sessions', label: 'Sessions', icon: '🖥️' },
   { path: '/reviews', label: 'Reviews', icon: '🔍' },
   { path: '/cost', label: 'Cost', icon: '💰' },
   { path: '/patterns', label: 'Anti-Patterns', icon: '⚠️' },
@@ -88,6 +90,7 @@ export function Sidebar(): React.JSX.Element {
           })}
         </ul>
       </nav>
+      <SessionPicker />
     </aside>
   );
 }

@@ -1,12 +1,18 @@
 import React, { useEffect, useRef } from 'react';
-import { useDashboardStore } from '../store/index.js';
+import { useSessionData } from '../hooks/index.js';
 import { tokens } from '../theme/tokens.js';
 
+function formatTimestamp(raw: string): string {
+  const date = new Date(raw);
+  if (isNaN(date.getTime())) return raw;
+  return date.toLocaleTimeString();
+}
+
 export function SessionLog(): React.JSX.Element {
-  const state = useDashboardStore((s) => s.state);
+  const sessionData = useSessionData();
   const logRef = useRef<HTMLDivElement>(null);
 
-  const entries = state?.sessionLog ?? [];
+  const entries = sessionData?.log ?? [];
 
   useEffect(() => {
     if (logRef.current) {
@@ -51,45 +57,49 @@ export function SessionLog(): React.JSX.Element {
             No log entries yet
           </div>
         ) : (
-          entries.map((entry, idx) => {
-            const timestamp = new Date(entry.timestamp);
-            const isRecent = Date.now() - timestamp.getTime() < 60000;
-
-            return (
+          entries.map((entry, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: 'flex',
+                gap: '12px',
+                padding: '6px 0',
+                borderBottom:
+                  idx < entries.length - 1
+                    ? `1px solid ${tokens.colors.border}`
+                    : undefined,
+              }}
+            >
               <div
-                key={idx}
                 style={{
-                  display: 'flex',
-                  gap: '12px',
-                  padding: '6px 0',
-                  borderBottom:
-                    idx < entries.length - 1
-                      ? `1px solid ${tokens.colors.border}`
-                      : undefined,
-                  opacity: isRecent ? 1 : 0.7,
+                  color: tokens.colors.textDim,
+                  fontSize: '11px',
+                  minWidth: '80px',
+                  flexShrink: 0,
                 }}
               >
-                <div
-                  style={{
-                    color: tokens.colors.textDim,
-                    fontSize: '11px',
-                    minWidth: '80px',
-                    flexShrink: 0,
-                  }}
-                >
-                  {timestamp.toLocaleTimeString()}
-                </div>
-                <div
-                  style={{
-                    color: tokens.colors.text,
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {entry.event}
-                </div>
+                {formatTimestamp(entry.timestamp)}
               </div>
-            );
-          })
+              <div
+                style={{
+                  color: tokens.colors.textDim,
+                  fontSize: '11px',
+                  minWidth: '100px',
+                  flexShrink: 0,
+                }}
+              >
+                {entry.source}
+              </div>
+              <div
+                style={{
+                  color: tokens.colors.text,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {entry.event}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
