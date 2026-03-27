@@ -54,3 +54,7 @@
 | 11:21:55 | auto-pilot | FIX DONE — TASK_2026_058: COMPLETE |
 | 11:27:00 | auto-pilot | HEALTH CHECK — TASK_2026_038: compacting |
 | 11:32:00 | auto-pilot | HEALTH CHECK — TASK_2026_038: compacting |
+| 11:37:00 | auto-pilot | KILLING — TASK_2026_038: user requested session stop |
+| 11:36:06 | auto-pilot | CLEANUP — TASK_2026_038: spawning Cleanup Worker to salvage uncommitted work |
+| 11:38:00 | auto-pilot | CLEANUP DONE — TASK_2026_038: committed work, left IN_PROGRESS |
+| 11:38:00 | auto-pilot | SUPERVISOR STOPPED — 3 completed, 0 failed, 0 blocked |
