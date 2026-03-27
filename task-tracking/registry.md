@@ -51,7 +51,7 @@
 | TASK_2026_046 | COMPLETE    | BUGFIX      | Dashboard Data Service Completion and Validation | 2026-03-27 | — |
 | TASK_2026_047 | COMPLETE    | REFACTORING | Unified /run, /create, /status Commands + CLI Single-Task Run | 2026-03-27 |
 | TASK_2026_048 | COMPLETE    | FEATURE     | /retrospective Command — Post-Session Analysis and Learning Loop | 2026-03-27 |
-| TASK_2026_049 | CREATED     | FEATURE     | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-27 | default |
+| TASK_2026_049 | IMPLEMENTED | FEATURE     | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-27 | default |
 | TASK_2026_050 | CREATED     | FEATURE     | `update` Command — Manifest-Based Safe Updates | 2026-03-27 | default |
 | TASK_2026_051 | CREATED     | REFACTORING | Rename All Agents to `nitro-*` Prefix | 2026-03-27 | default |
 | TASK_2026_052 | COMPLETE    | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
@@ -66,3 +66,4 @@
 | TASK_2026_061 | CREATED     | FEATURE       | Agent Record Schema and Failure Taxonomy | 2026-03-27 | default |
 | TASK_2026_062 | CREATED     | FEATURE       | /evaluate-agent Command | 2026-03-27 | default |
 | TASK_2026_063 | CREATED     | REFACTORING   | Move session-orchestrator into Monorepo | 2026-03-27 | default |
+| TASK_2026_064 | CREATED     | REFACTORING   | Registry-Driven Supervisor — Priority and Dependencies in Registry | 2026-03-27 | default |
