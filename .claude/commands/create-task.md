@@ -72,15 +72,11 @@ This analysis is **mandatory** — every task must have a Parallelism section.
 3. Strip HTML guidance comments from the output (they're for template reference, not individual tasks)
 4. Write to: `task-tracking/TASK_YYYY_NNN/task.md`
 
-### Step 5: Update Registry
+### Step 5: Write Status File
 
-Add a new row to `task-tracking/registry.md`:
+Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no trailing newline, no extra whitespace).
 
-```
-| TASK_YYYY_NNN | CREATED | [Type] | [Title or brief description] | YYYY-MM-DD | [Model or default] |
-```
-
-Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created** | **Model**
+> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
 
 ### Step 6: Post-Creation Validation
 
@@ -145,7 +141,7 @@ Task created successfully.
 
 1. **ALWAYS read `task-template.md` first** — never hardcode template structure
 2. **ALWAYS read `registry.md` to determine the next ID** — never guess or assume
-3. **Registry row format MUST match**: Task ID | Status | Type | Description | Created | Model
+3. **Write status file immediately after creating the task folder**: `task-tracking/TASK_YYYY_NNN/status` containing `CREATED` (no trailing newline)
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
 5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
 6. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs

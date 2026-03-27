@@ -1,6 +1,6 @@
 # Development Tasks - TASK_2026_058
 
-**Total Tasks**: 17 | **Batches**: 5 | **Status**: 0/5 complete
+**Total Tasks**: 17 | **Batches**: 5 | **Status**: 5/5 complete (Batches 1-4 committed, Batch 5 IMPLEMENTED)
 
 ---
 
@@ -100,16 +100,16 @@ This signals the file is now a derived artifact. Content below the header is unc
 
 ---
 
-## Batch 2: CLI Registry Regeneration - PENDING
+## Batch 2: CLI Registry Regeneration - COMPLETE
 
 **Developer**: backend-developer
 **Tasks**: 2 | **Dependencies**: Batch 1 must be COMPLETE
 
-### Task 2.1: Add generateRegistry() to packages/cli/src/utils/registry.ts PENDING
+### Task 2.1: Add generateRegistry() to packages/cli/src/utils/registry.ts COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/cli/src/utils/registry.ts`
 **Spec Reference**: implementation-plan.md Phase 2, Step 2.1
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 Add a new exported function `generateRegistry(cwd: string): void` that:
@@ -128,11 +128,11 @@ Add a new exported function `generateRegistry(cwd: string): void` that:
 
 ---
 
-### Task 2.2: Modify registerStatusCommand to call generateRegistry first PENDING
+### Task 2.2: Modify registerStatusCommand to call generateRegistry first COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/cli/src/commands/status.ts`
 **Spec Reference**: implementation-plan.md Phase 2, Step 2.2
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 In the `registerStatusCommand` function, add a `generateRegistry(cwd)` call immediately before the existing `parseRegistry(cwd)` call. The chain becomes:
@@ -157,16 +157,16 @@ Import `generateRegistry` from `../utils/registry` (same import path as `parseRe
 
 ---
 
-## Batch 3: Commands — project-status and create-task - PENDING
+## Batch 3: Commands — project-status and create-task - COMPLETE
 
 **Developer**: systems-developer
 **Tasks**: 2 | **Dependencies**: Batch 1 must be COMPLETE
 
-### Task 3.1: Add registry regeneration step to /project-status command PENDING
+### Task 3.1: Add registry regeneration step to /project-status command COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/commands/project-status.md`
 **Spec Reference**: implementation-plan.md Phase 3, Step 3.1
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 In the Phase 1 data gathering section of the command, add a new Step 0 (before reading registry.md) that instructs the agent to regenerate `registry.md`:
@@ -178,11 +178,11 @@ Read the file first to understand the exact structure and insert the step in the
 
 ---
 
-### Task 3.2: Replace Step 5 in /create-task command with status file write PENDING
+### Task 3.2: Replace Step 5 in /create-task command with status file write COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/commands/create-task.md`
 **Spec Reference**: implementation-plan.md Phase 4, Steps 4.1 and 4.2
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 
@@ -207,16 +207,16 @@ Read the file first to locate the exact text.
 
 ---
 
-## Batch 4: Auto-Pilot and Orchestration Skills - PENDING
+## Batch 4: Auto-Pilot and Orchestration Skills - COMPLETE
 
 **Developer**: systems-developer
 **Tasks**: 5 | **Dependencies**: Batch 1 must be COMPLETE
 
-### Task 4.1: Update orchestration SKILL.md — Completion Phase and Exit Gates PENDING
+### Task 4.1: Update orchestration SKILL.md — Completion Phase and Exit Gates COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/orchestration/SKILL.md`
 **Spec Reference**: implementation-plan.md Phase 5, Steps 5.1, 5.2, 5.3
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 
@@ -234,11 +234,11 @@ Read the full file first to locate exact line numbers and text.
 
 ---
 
-### Task 4.2: Update auto-pilot SKILL.md — Step 2 state reads PENDING
+### Task 4.2: Update auto-pilot SKILL.md — Step 2 state reads COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/auto-pilot/SKILL.md`
 **Spec Reference**: implementation-plan.md Phase 6, Steps 6.1, 6.3, 6.7
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 
@@ -255,11 +255,11 @@ Read the full file first to locate exact sections.
 
 ---
 
-### Task 4.3: Update auto-pilot SKILL.md — BLOCKED writes PENDING
+### Task 4.3: Update auto-pilot SKILL.md — BLOCKED writes COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/auto-pilot/SKILL.md`
 **Spec Reference**: implementation-plan.md Phase 6, Step 6.2
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 
@@ -270,11 +270,11 @@ Read the file first to identify all occurrences.
 
 ---
 
-### Task 4.4: Update auto-pilot SKILL.md — Build Worker prompt templates PENDING
+### Task 4.4: Update auto-pilot SKILL.md — Build Worker prompt templates COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/auto-pilot/SKILL.md`
 **Spec Reference**: implementation-plan.md Phase 6, Steps 6.4, 6.5, 6.6
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 
@@ -296,11 +296,11 @@ Read the full file (it is large) before editing to locate exact text.
 
 ---
 
-### Task 4.5: Update planner.md — state reads and registry writes PENDING
+### Task 4.5: Update planner.md — state reads and registry writes COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/agents/planner.md`
 **Spec Reference**: implementation-plan.md Phase 7, Steps 7.1–7.7
-**Status**: PENDING
+**Status**: COMPLETE
 
 **What to do**:
 
@@ -336,16 +336,16 @@ Read the full file first to locate exact section text.
 
 ---
 
-## Batch 5: Scaffold File Mirrors - PENDING
+## Batch 5: Scaffold File Mirrors - COMPLETE
 
 **Developer**: systems-developer
 **Tasks**: 2 | **Dependencies**: Batch 4 must be COMPLETE
 
-### Task 5.1: Update scaffold orchestration SKILL.md PENDING
+### Task 5.1: Update scaffold orchestration SKILL.md COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/cli/scaffold/.claude/skills/orchestration/SKILL.md`
 **Spec Reference**: implementation-plan.md Phase 8, Step 8.1
-**Status**: PENDING
+**Status**: COMPLETE
 
 **Validation Note**: RISK — scaffold file may be a trimmed copy. Read both the source and scaffold files, compare line counts. If the scaffold is trimmed (different structure), flag it and apply equivalent changes to the scaffold structure. Do NOT blindly copy-paste from source if the scaffold has a different format.
 
@@ -355,11 +355,11 @@ Read the full file first to locate exact section text.
 
 ---
 
-### Task 5.2: Update scaffold auto-pilot SKILL.md PENDING
+### Task 5.2: Update scaffold auto-pilot SKILL.md COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/cli/scaffold/.claude/skills/auto-pilot/SKILL.md`
 **Spec Reference**: implementation-plan.md Phase 8, Step 8.2
-**Status**: PENDING
+**Status**: COMPLETE
 
 **Validation Note**: Same risk as Task 5.1 — confirm scaffold is a full copy before applying changes.
 

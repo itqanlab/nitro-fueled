@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Command } from 'commander';
-import { parseRegistry } from '../utils/registry.js';
+import { parseRegistry, generateRegistry } from '../utils/registry.js';
 import type { RegistryRow, TaskStatus } from '../utils/registry.js';
 
 interface StatusOptions {
@@ -291,6 +291,7 @@ export function registerStatusCommand(program: Command): void {
     .option('--brief', 'Show one-line summary', false)
     .action((opts: StatusOptions) => {
       const cwd = process.cwd();
+      generateRegistry(cwd);
       const rows = parseRegistry(cwd);
       const workers = parseActiveWorkers(cwd);
 
