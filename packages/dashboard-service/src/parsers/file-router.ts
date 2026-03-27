@@ -3,6 +3,8 @@ import { basename } from 'node:path';
 import type { DashboardEventBus } from '../events/event-bus.js';
 import type { DashboardEvent } from '../events/event-types.js';
 import { StateStore } from '../state/store.js';
+import { SessionStore } from '../state/session-store.js';
+import { extractSessionId } from '../state/session-id.js';
 import { diffRegistry, diffState } from '../state/differ.js';
 import { RegistryParser } from './registry.parser.js';
 import { PlanParser } from './plan.parser.js';
@@ -12,6 +14,9 @@ import { ReviewParser } from './review.parser.js';
 import { ReportParser } from './report.parser.js';
 import { PatternsParser } from './patterns.parser.js';
 import { LessonsParser } from './lessons.parser.js';
+import { SessionStateParser } from './session-state.parser.js';
+import { SessionLogParser } from './session-log.parser.js';
+import { ActiveSessionsParser } from './active-sessions.parser.js';
 
 export class FileRouter {
   private readonly registryParser = new RegistryParser();
@@ -22,12 +27,16 @@ export class FileRouter {
   private readonly reportParser = new ReportParser();
   private readonly patternsParser = new PatternsParser();
   private readonly lessonsParser = new LessonsParser();
+  private readonly sessionStateParser = new SessionStateParser();
+  private readonly sessionLogParser = new SessionLogParser();
+  private readonly activeSessionsParser = new ActiveSessionsParser();
 
   // Per-file debounce timers (100ms) to absorb burst writes during active orchestration.
   private readonly debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   public constructor(
     private readonly store: StateStore,
+    private readonly sessionStore: SessionStore,
     private readonly eventBus: DashboardEventBus,
   ) {}
 
@@ -63,6 +72,14 @@ export class FileRouter {
 
     if (taskIdMatch && filePath.endsWith('completion-report.md')) {
       this.store.removeCompletionReport(taskIdMatch[0]);
+      return;
+    }
+
+    if (this.sessionStateParser.canParse(filePath)) {
+      const sessionId = extractSessionId(filePath);
+      if (sessionId) {
+        this.sessionStore.removeSession(sessionId);
+      }
       return;
     }
 
@@ -115,6 +132,34 @@ export class FileRouter {
         timestamp: new Date().toISOString(),
         payload: { phase: plan.currentFocus.activePhase, change: 'updated' },
       }]);
+      return;
+    }
+
+    if (this.activeSessionsParser.canParse(filePath)) {
+      const records = this.activeSessionsParser.parse(content, filePath);
+      const ids = records.map((r) => r.sessionId);
+      this.sessionStore.setActiveSessionIds(ids);
+      this.emitEvents([{ type: 'sessions:changed', timestamp: new Date().toISOString(), payload: { activeCount: ids.length } }]);
+      return;
+    }
+
+    if (this.sessionStateParser.canParse(filePath)) {
+      const sessionId = extractSessionId(filePath);
+      if (sessionId) {
+        const state = this.sessionStateParser.parse(content, filePath);
+        this.sessionStore.setSessionState(sessionId, state);
+        this.emitEvents([{ type: 'session:updated', timestamp: new Date().toISOString(), payload: { sessionId } }]);
+      }
+      return;
+    }
+
+    if (this.sessionLogParser.canParse(filePath)) {
+      const sessionId = extractSessionId(filePath);
+      if (sessionId) {
+        const log = this.sessionLogParser.parse(content, filePath);
+        this.sessionStore.setSessionLog(sessionId, log);
+        this.emitEvents([{ type: 'session:updated', timestamp: new Date().toISOString(), payload: { sessionId } }]);
+      }
       return;
     }
 

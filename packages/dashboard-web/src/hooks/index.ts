@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { api } from '../api/client.js';
 import { ws } from '../api/socket.js';
 import { useDashboardStore } from '../store/index.js';
-import type { DashboardEvent, DashboardStats, TaskStatus } from '../types/index.js';
+import type { DashboardEvent, DashboardStats, TaskStatus, SessionData } from '../types/index.js';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
@@ -11,6 +11,9 @@ export function useInitialData(): void {
   const setPlan = useDashboardStore((s) => s.setPlan);
   const setState = useDashboardStore((s) => s.setState);
   const setLoading = useDashboardStore((s) => s.setLoading);
+  const setSessions = useDashboardStore((s) => s.setSessions);
+  const setSelectedSession = useDashboardStore((s) => s.setSelectedSession);
+  const setSessionData = useDashboardStore((s) => s.setSessionData);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -27,6 +30,22 @@ export function useInitialData(): void {
         setRegistry(registry);
         setPlan(plan);
         setState(state);
+
+        const sessions = await api.getSessions();
+        setSessions(sessions);
+
+        // Auto-select most recent active session, or most recent overall.
+        const activeOnes = sessions.filter((s) => s.isActive);
+        const defaultSession = activeOnes[0] ?? sessions[0] ?? null;
+        if (defaultSession) {
+          setSelectedSession(defaultSession.sessionId);
+          try {
+            const data = await api.getSession(defaultSession.sessionId);
+            setSessionData(defaultSession.sessionId, data);
+          } catch (err) {
+            console.error('Failed to load default session data:', err);
+          }
+        }
       } catch (error) {
         console.error('Failed to load initial data:', error);
       } finally {
@@ -42,7 +61,7 @@ export function useInitialData(): void {
     });
 
     return unsubscribeReconnect;
-  }, [setRegistry, setPlan, setState, setLoading]);
+  }, [setRegistry, setPlan, setState, setLoading, setSessions, setSelectedSession, setSessionData]);
 }
 
 export function useWebSocket(): void {
@@ -55,6 +74,8 @@ export function useWebSocket(): void {
   const removeTaskFromRegistry = useDashboardStore((s) => s.removeTaskFromRegistry);
   const removeActiveWorker = useDashboardStore((s) => s.removeActiveWorker);
   const appendLogEntry = useDashboardStore((s) => s.appendLogEntry);
+  const setSessions = useDashboardStore((s) => s.setSessions);
+  const setSessionData = useDashboardStore((s) => s.setSessionData);
 
   useEffect(() => {
     ws.connect();
@@ -105,6 +126,18 @@ export function useWebSocket(): void {
           }
           break;
         }
+        case 'sessions:changed':
+          void api.getSessions().then(setSessions).catch(console.error);
+          break;
+        case 'session:updated': {
+          const sessionId = event.payload.sessionId as string;
+          // Read selectedSessionId fresh at event time to avoid stale closures.
+          const currentSelectedId = useDashboardStore.getState().selectedSessionId;
+          if (sessionId === currentSelectedId) {
+            void api.getSession(sessionId).then((d: SessionData) => setSessionData(sessionId, d)).catch(console.error);
+          }
+          break;
+        }
         default:
           break;
       }
@@ -132,4 +165,11 @@ export function useStats(): DashboardStats | null {
   }, []);
 
   return stats;
+}
+
+export function useSessionData(): SessionData | null {
+  return useDashboardStore((s) => {
+    const id = s.selectedSessionId;
+    return id ? (s.sessionData.get(id) ?? null) : null;
+  });
 }

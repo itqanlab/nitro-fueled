@@ -6,3 +6,4 @@ task-tracking/orchestrator-state.md
 
 # Worker logs from print-mode sessions
 .worker-logs/
+.nitro-fueled/

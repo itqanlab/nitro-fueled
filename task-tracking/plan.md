@@ -159,17 +159,49 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 |---------|-------|--------|----------|
 | TASK_2026_048 | /retrospective Command — Post-Session Analysis and Learning Loop | COMPLETE | P1-High |
 
+### Phase 11: Supervisor Reliability & Performance
+**Status**: NOT STARTED
+**Description**: Make the Supervisor production-grade — persistent MCP state, event-driven completion detection, and file-system-first reconciliation so it survives MCP restarts and never waits unnecessarily.
+
+#### Milestones
+- [ ] MCP worker registry persisted to disk (survives server restart)
+- [ ] Supervisor reconciles via status files when MCP returns empty
+- [ ] Event-driven completion: workers fire events instead of supervisor polling every 5 min
+- [ ] 30-second event drain loop replaces 5-minute polling as primary completion detection
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_059 | MCP Server — Persist Worker Registry to Disk | CREATED | P1-High |
+| TASK_2026_060 | Supervisor — File-System-First Reconciliation When MCP Returns Empty | CREATED | P1-High |
+| TASK_2026_067 | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | CREATED | P1-High |
+
+### Phase 10: Agent Calibration
+**Status**: NOT STARTED
+**Description**: Build a calibration system for agents — per-agent records tracking task history and failures, a failure taxonomy, and a `/evaluate-agent` command that tests any agent against a quality bar and auto-fixes its definition until it passes.
+
+#### Milestones
+- [ ] Agent record schema and failure taxonomy defined
+- [ ] `/evaluate-agent` command operational with full calibration loop
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_061 | Agent Record Schema and Failure Taxonomy | CREATED | P1-High |
+| TASK_2026_062 | /evaluate-agent Command | CREATED | P1-High |
+
 ## Current Focus
 
-**Active Phase**: Phase 4 -- Validation
-**Active Milestone**: End-to-end test on a fresh project
+**Active Phase**: Multiple active phases
+**Active Milestone**: Various
 **Next Priorities**:
-1. TASK_2026_014 — End-to-End Test Fresh Project (P0-Critical, unblocked)
-2. TASK_2026_019 — Fix Print Mode Token/Cost Tracking (P1-High, unblocked)
-3. TASK_2026_022 — Dashboard Data Service (P1-High, unblocked)
+1. TASK_2026_059 — MCP Server Persist Worker Registry (P1-High, unblocked)
+2. TASK_2026_060 — Supervisor FS Reconciliation (P1-High, unblocked, parallel with 059)
+3. TASK_2026_067 — Event-Driven Worker Completion (P1-High, after 059)
+4. TASK_2026_061 — Agent Record Schema and Failure Taxonomy (P1-High, unblocked, can run in parallel)
 
 **Supervisor Guidance**: PROCEED
-**Guidance Note**: Phases 1-3 and 5 are complete. Phase 4 (validation) is the critical next step. Phases 6 and 7 can start in parallel once validation passes.
+**Guidance Note**: Phase 11 (Supervisor Reliability) added with 059, 060, 067. Run 059+060 first (parallel), then 067. Phase 10 (Agent Calibration) continues in parallel. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
 
 ## Decisions Log
 

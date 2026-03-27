@@ -6,6 +6,8 @@ import type {
   OrchestratorState,
   FullTaskData,
   ReviewData,
+  SessionSummary,
+  SessionData,
 } from '../types/index.js';
 
 interface DashboardState {
@@ -25,6 +27,14 @@ interface DashboardState {
   setTaskReviews: (taskId: string, reviews: readonly ReviewData[]) => void;
   setLoading: (loading: boolean) => void;
 
+  // Sessions slice
+  sessions: readonly SessionSummary[];
+  selectedSessionId: string | null;
+  sessionData: Map<string, SessionData>;
+  setSessions: (sessions: readonly SessionSummary[]) => void;
+  setSelectedSession: (id: string | null) => void;
+  setSessionData: (id: string, data: SessionData) => void;
+
   // Incremental patches (WebSocket events)
   patchTaskStatus: (taskId: string, status: TaskStatus) => void;
   removeTaskFromRegistry: (taskId: string) => void;
@@ -40,6 +50,9 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   reviews: new Map(),
   isLoading: true,
   lastUpdated: Date.now(),
+  sessions: [],
+  selectedSessionId: null,
+  sessionData: new Map(),
 
   setRegistry: (registry) => set({ registry, lastUpdated: Date.now() }),
   setPlan: (plan) => set({ plan, lastUpdated: Date.now() }),
@@ -57,6 +70,15 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       return { reviews: map };
     }),
   setLoading: (isLoading) => set({ isLoading }),
+
+  setSessions: (sessions) => set({ sessions, lastUpdated: Date.now() }),
+  setSelectedSession: (id) => set({ selectedSessionId: id }),
+  setSessionData: (id, data) =>
+    set((prev) => {
+      const sessionData = new Map(prev.sessionData);
+      sessionData.set(id, data);
+      return { sessionData };
+    }),
 
   patchTaskStatus: (taskId, status) =>
     set((prev) => ({

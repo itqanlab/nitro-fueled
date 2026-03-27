@@ -7,6 +7,7 @@ import { ChokidarWatcher } from './watcher/chokidar.watcher.js';
 import type { FileWatcher } from './watcher/watcher.interface.js';
 import { createEventBus } from './events/event-bus.js';
 import { StateStore } from './state/store.js';
+import { SessionStore } from './state/session-store.js';
 import { FileRouter } from './parsers/file-router.js';
 import type { Server } from 'node:http';
 
@@ -22,6 +23,7 @@ export interface DashboardServiceOptions {
 
 export class DashboardService {
   private readonly store: StateStore;
+  private readonly sessionStore: SessionStore;
   private readonly eventBus: ReturnType<typeof createEventBus>;
   private readonly watcher: FileWatcher;
   private readonly wsBroadcaster: WebSocketBroadcaster;
@@ -32,14 +34,15 @@ export class DashboardService {
   public constructor(options: DashboardServiceOptions) {
     this.options = options;
     this.store = new StateStore();
+    this.sessionStore = new SessionStore();
     this.eventBus = createEventBus();
     this.watcher = new ChokidarWatcher();
     this.wsBroadcaster = new WebSocketBroadcaster();
-    this.fileRouter = new FileRouter(this.store, this.eventBus);
+    this.fileRouter = new FileRouter(this.store, this.sessionStore, this.eventBus);
   }
 
   public async start(): Promise<void> {
-    const server = createHttpServer(this.store, this.options.webDistPath);
+    const server = createHttpServer(this.store, this.sessionStore, this.options.webDistPath);
     this.httpServer = server;
 
     this.wsBroadcaster.attach(server, this.eventBus);
@@ -82,6 +85,10 @@ export class DashboardService {
 
   public getStore(): StateStore {
     return this.store;
+  }
+
+  public getSessionStore(): SessionStore {
+    return this.sessionStore;
   }
 
   private watchTaskTracking(): void {
@@ -161,6 +168,7 @@ export function discoverTaskTrackingDir(cwd: string): string | null {
 }
 
 export { StateStore } from './state/store.js';
+export { SessionStore } from './state/session-store.js';
 export type {
   TaskRecord,
   PlanData,
@@ -174,4 +182,7 @@ export type {
   DashboardStats,
   DashboardEvent,
   DashboardEventType,
+  ActiveSessionRecord,
+  SessionSummary,
+  SessionData,
 } from './events/event-types.js';

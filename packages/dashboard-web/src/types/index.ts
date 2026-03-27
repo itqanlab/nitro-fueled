@@ -184,6 +184,31 @@ export interface DashboardStats {
   readonly tokensByModel?: Record<string, number>;
 }
 
+export interface ActiveSessionRecord {
+  readonly sessionId: string;
+  readonly source: string;
+  readonly started: string;
+  readonly tasks: string;
+  readonly path: string;
+}
+
+export interface SessionSummary {
+  readonly sessionId: string;
+  readonly isActive: boolean;
+  readonly source: string;
+  readonly started: string;
+  readonly path: string;
+  readonly taskCount: number;
+  readonly loopStatus: string;
+  readonly lastUpdated: string;
+}
+
+export interface SessionData {
+  readonly summary: SessionSummary;
+  readonly state: OrchestratorState | null;
+  readonly log: ReadonlyArray<{ readonly timestamp: string; readonly source: string; readonly event: string }>;
+}
+
 export type DashboardEventType =
   | 'task:created'
   | 'task:updated'
@@ -196,7 +221,9 @@ export type DashboardEventType =
   | 'review:written'
   | 'plan:updated'
   | 'log:entry'
-  | 'state:refreshed';
+  | 'state:refreshed'
+  | 'session:updated'
+  | 'sessions:changed';
 
 export interface DashboardEvent {
   readonly type: DashboardEventType;

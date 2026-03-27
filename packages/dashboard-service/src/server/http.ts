@@ -2,6 +2,7 @@ import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http
 import { readFile } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 import type { StateStore } from '../state/store.js';
+import type { SessionStore } from '../state/session-store.js';
 
 const MIME_TYPES: Readonly<Record<string, string>> = {
   '.html': 'text/html',
@@ -38,7 +39,7 @@ function getCorsHeaders(origin: string | undefined): Record<string, string> {
   };
 }
 
-export function createHttpServer(store: StateStore, webDistPath?: string): Server {
+export function createHttpServer(store: StateStore, sessionStore: SessionStore, webDistPath?: string): Server {
   const routes: Route[] = [];
 
   function addRoute(method: string, path: string, handler: RouteHandler): void {
@@ -104,6 +105,25 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
 
   addRoute('GET', '/api/stats', (req, res) => {
     sendJson(res, req, store.getStats());
+  });
+
+  // CRITICAL ORDER: register /api/sessions/active before /api/sessions/:id to prevent
+  // "active" from being captured as the :id parameter.
+  addRoute('GET', '/api/sessions/active', (req, res) => {
+    sendJson(res, req, sessionStore.getActiveSessions());
+  });
+
+  addRoute('GET', '/api/sessions/:id', (req, res, params) => {
+    const data = sessionStore.getSession(params.id);
+    if (!data) {
+      sendJson(res, req, { error: `Session ${params.id} not found` }, 404);
+      return;
+    }
+    sendJson(res, req, data);
+  });
+
+  addRoute('GET', '/api/sessions', (req, res) => {
+    sendJson(res, req, sessionStore.getSessions());
   });
 
   const server = createServer((req, res) => {

@@ -7,6 +7,8 @@ import type {
   AntiPatternRule,
   LessonEntry,
   DashboardStats,
+  SessionSummary,
+  SessionData,
 } from '../types/index.js';
 
 const API_BASE = (import.meta as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE ?? '/api';
@@ -67,6 +69,18 @@ class ApiClient {
 
   public async getHealth(): Promise<{ status: string; timestamp: string }> {
     return this.fetchJson<{ status: string; timestamp: string }>('/health');
+  }
+
+  public async getSessions(): Promise<readonly SessionSummary[]> {
+    return this.fetchJson<readonly SessionSummary[]>('/sessions');
+  }
+
+  public async getActiveSessions(): Promise<readonly SessionSummary[]> {
+    return this.fetchJson<readonly SessionSummary[]>('/sessions/active');
+  }
+
+  public async getSession(id: string): Promise<SessionData> {
+    return this.fetchJson<SessionData>(`/sessions/${encodeURIComponent(id)}`);
   }
 }
 
