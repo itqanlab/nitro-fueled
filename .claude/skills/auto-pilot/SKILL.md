@@ -454,12 +454,18 @@ If the task's Provider field is `default` or absent, use the **Provider Routing 
 
 | Condition | Provider | Model | Reason |
 |-----------|----------|-------|--------|
-| Review Worker (any type) | `claude` | `claude-opus-4-6` | Deep reasoning needed for code review |
+| Review Worker + Type=logic (code-logic-reviewer) | `claude` | `claude-opus-4-6` | Deep reasoning needed for logic review |
+| Review Worker + Type=style (code-style-reviewer) | `glm` | `glm-4.7` | Full tool access, saves Claude quota |
+| Review Worker + Type=simple (checklist, unit test) | `opencode` | `openai/gpt-4.1-mini` | Single-shot, cheapest for simple checks |
 | Build Worker + Complexity=Complex | `claude` | `claude-opus-4-6` | Top quality for critical/novel decisions |
 | Build Worker + Complexity=Medium | `glm` | `glm-5` | Full orchestration, saves Claude quota |
 | Build Worker + Complexity=Simple | `glm` | `glm-4.7` | Good enough, full tool access |
+| Build Worker + Type=DOCUMENTATION or RESEARCH | `opencode` | `openai/gpt-4.1-mini` | Single-shot focused tasks |
+| *(unrecognized combination)* | `claude` | `claude-opus-4-6` | Safe fallback |
 
 If an explicit Provider is set in task.md, always honor it — no routing table override.
+
+> **Review Lead model**: For Review Lead workers, always pass `model: claude-sonnet-4-6` regardless of the task's Model field. The task's Model field applies to Build Workers only.
 
 **5d. Call MCP `spawn_worker`:**
 
@@ -473,7 +479,8 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
 
 - Do NOT update the registry (workers update their own registry states)
 - Record in `{SESSION_DIR}state.md` active workers table:
-  - worker_id, task_id, worker_type=`"Build"|"Review"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — never record the sentinel `"default"`), provider (the **resolved** provider — never record `"default"`)
+  - worker_id, task_id, worker_type=`"Build"|"Review"|"ReviewLead"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — never record the sentinel `"default"`), provider (the **resolved** provider — never record `"default"`)
+  - (`"ReviewLead"` = Review Lead workers; distinct from the old monolithic `"Review"` type)
 
 **5f. On spawn failure (MCP error):**
 
@@ -933,125 +940,98 @@ Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
 
-### First-Run Review Worker Prompt
+### First-Run Review Lead Prompt
 
 ```
-Run /orchestrate TASK_YYYY_NNN
+REVIEW LEAD — TASK_YYYY_NNN
 
-REVIEW WORKER — AUTONOMOUS MODE
+AUTONOMOUS MODE — no human at this terminal. Do NOT pause.
 
-You are a Review Worker. This task is already IMPLEMENTED.
-Your job is to review, fix findings, and complete the task.
+You are the Review Lead for TASK_YYYY_NNN. Your job is to orchestrate
+parallel review sub-workers via MCP, then fix findings and complete the task.
+
+Read your full instructions from: .claude/agents/review-lead.md
+
 Follow these rules strictly:
 
-1. Do NOT pause for any user validation checkpoints. Auto-approve
-   ALL checkpoints and continue immediately. No human at this terminal.
+1. FIRST: Update task-tracking/registry.md — set status to IN_REVIEW.
+   This signals the Supervisor that review has begun.
 
-2. The task is already implemented. Do NOT re-run PM, Architect,
-   or development phases. Start from the QA/review phase.
+2. Verify MCP is available: call mcp__session-orchestrator__list_workers.
+   If MCP is unavailable, STOP and write exit-gate-failure.md explaining
+   that MCP is required for parallel review spawning.
 
-3. **FIRST: Read shared review context**:
-   - Read `task-tracking/review-context.md` if it exists
-   - Apply project conventions and style decisions to your review
-   - If review-context.md does not exist, proceed without it
+3. Check for existing review artifacts (continuation support):
+   - review-context.md exists? -> skip context generation
+   - review-code-style.md exists with Verdict? -> skip Style Reviewer spawn
+   - review-code-logic.md exists with Verdict? -> skip Logic Reviewer spawn
+   - review-security.md exists with Verdict? -> skip Security Reviewer spawn
 
-4. **ALSO: Read and respect file scope**:
-   - Read the task's File Scope section from task.md
-   - Review and fix ONLY issues within your task's file scope
-   - If you find an issue outside the task's scope, document it in the review but do NOT fix it
-   - Use `git blame` if needed to verify code ownership for ambiguous changes
+4. Generate review-context.md (if not already done).
 
-5. Run ALL available reviewers: style, logic, and security.
-   Do not ask which reviewers to run -- run all of them.
+5. Spawn review sub-workers in parallel via MCP (for any not yet done):
+   - Style Reviewer: model claude-sonnet-4-6
+   - Logic Reviewer: model claude-opus-4-5
+   - Security Reviewer: model claude-sonnet-4-6
+   Full sub-worker prompts are in .claude/agents/review-lead.md.
 
-4. After reviews complete, fix ALL review findings. Do not skip any
-   blocking or serious issues. Fix minor issues where practical.
+6. Monitor sub-workers via mcp__session-orchestrator__get_worker_activity
+   every 2 minutes until all reach finished or failed state.
 
-5. After fixing review findings, create a git commit with the fixes.
+7. Apply fixes directly (do NOT spawn a Fix Worker). Fix in priority order:
+   critical/blocking first, then serious, then minor.
+   Only fix files in the task's File Scope.
 
-6. Reviewers MUST append new lessons to the appropriate
-   .claude/review-lessons/ file (review-general.md, backend.md,
-   frontend.md).
+8. Commit fixes: git commit with message "fix(TASK_YYYY_NNN): address review findings"
 
-7. Update registry.md: set task status to IN_REVIEW BEFORE starting
-   reviews (so Supervisor knows you started).
-
-8. Complete the orchestration Completion Phase:
+9. Execute the Completion Phase (per .claude/skills/orchestration/SKILL.md):
    - Write completion-report.md
-   - Update registry.md: set task status to COMPLETE
-   - Commit: `docs: add TASK_YYYY_NNN completion bookkeeping`
-   Write your registry update as the FINAL action before exit.
-   If another worker has modified registry.md since you read it,
-   re-read the file and apply only your row change.
+   - Update registry.md to COMPLETE (FINAL action before exit)
+   - Update plan.md if it exists
+   - Commit: "docs: add TASK_YYYY_NNN completion bookkeeping"
 
-9. EXIT GATE — Before exiting, verify:
-   - [ ] All review files exist (code-style-review.md, code-logic-review.md)
-   - [ ] Review findings are fixed and committed
-   - [ ] completion-report.md exists
-   - [ ] Registry shows COMPLETE for this task
-   - [ ] All changes are committed
-   If any check fails, fix it before exiting.
-   If you cannot pass the Exit Gate, write exit-gate-failure.md
-   documenting the failure, then exit.
-
-10. If you encounter errors or blockers, document them in the task
-    folder and exit cleanly. The Supervisor will detect the state
-    and decide whether to retry.
+10. EXIT GATE — Before exiting, verify:
+    - [ ] review-context.md exists
+    - [ ] At least style + logic review files exist
+    - [ ] Fix commit exists in git log
+    - [ ] completion-report.md exists
+    - [ ] Registry shows COMPLETE for this task
+    - [ ] All changes are committed
+    If any check fails, fix it. If you cannot pass, write exit-gate-failure.md.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
 
-### Retry Review Worker Prompt
+### Retry Review Lead Prompt
 
 ```
-Run /orchestrate TASK_YYYY_NNN
+REVIEW LEAD — CONTINUATION MODE
+TASK_YYYY_NNN — retry attempt {N}
 
-REVIEW WORKER — CONTINUATION MODE
-This task was previously attempted {N} time(s) in the review phase.
-The previous Review Worker {reason: stuck / crashed / stopped}.
+The previous Review Lead {reason: stuck / crashed / stopped}.
 
 AUTONOMOUS MODE — follow these rules strictly:
 
-1. Do NOT pause for any user validation checkpoints. Auto-approve
-   ALL checkpoints and continue immediately. No human at this terminal.
+1. FIRST: Ensure registry.md shows IN_REVIEW for this task.
+   If it shows IMPLEMENTED, set it to IN_REVIEW.
 
-2. FIRST: Check the task folder for existing review deliverables:
-   - code-style-review.md exists? -> Verify it contains a complete
-     Review Summary table and Verdict. If truncated/incomplete,
-     re-run that review.
-   - code-logic-review.md exists? -> Verify it contains a complete
-     Review Summary table and Verdict. If truncated/incomplete,
-     re-run that review.
-   - Review findings fixed? -> Check git log for fix commits
-   - completion-report.md exists? -> Completion phase already done
-   Resume from wherever the previous worker left off.
+2. Check existing review artifacts to determine where to resume:
+   - review-context.md exists? -> context generation done
+   - review-code-style.md with Verdict? -> style review done
+   - review-code-logic.md with Verdict? -> logic review done
+   - review-security.md with Verdict? -> security review done
+   - Fix commit in git log? -> fix phase done
+   - completion-report.md? -> completion phase done
+   Resume from the first incomplete step.
 
-3. Do NOT re-run reviews that have complete output files.
-   Do NOT re-run development phases.
+3. For any review type not yet complete, spawn a sub-worker via MCP.
+   Full spawn instructions in .claude/agents/review-lead.md.
 
-4. Fix any remaining review findings. Commit fixes.
+4. Continue from where the previous Review Lead stopped.
+   Do NOT restart completed phases.
 
-5. Append new lessons to .claude/review-lessons/ if not already done.
-
-6. If registry does not yet show IN_REVIEW, set it to IN_REVIEW.
-
-7. Complete the Completion Phase if not already done:
-   - Write completion-report.md
-   - Update registry.md to COMPLETE
-   - Commit bookkeeping
-   Write your registry update as the FINAL action before exit.
-   If another worker has modified registry.md since you read it,
-   re-read the file and apply only your row change.
-
-8. EXIT GATE — Before exiting, verify:
-   - [ ] All review files exist
-   - [ ] Review findings are fixed and committed
-   - [ ] completion-report.md exists
-   - [ ] Registry shows COMPLETE
-   - [ ] All changes are committed
-   If you cannot pass the Exit Gate, write exit-gate-failure.md
-   documenting the failure, then exit.
+5. Complete all remaining phases: fixes, completion, exit gate.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
