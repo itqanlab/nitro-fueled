@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CURRENT_FILE = fileURLToPath(import.meta.url);
@@ -96,6 +96,34 @@ export function listFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true })
     .filter((e) => e.isFile())
     .map((e) => e.name);
+}
+
+/**
+ * Recursively walks a scaffold directory and returns a map of relPath -> absPath.
+ * relPath is relative to scaffoldRoot, using forward slashes.
+ * Symlinks are skipped.
+ */
+export function walkScaffoldFiles(scaffoldRoot: string): Map<string, string> {
+  const result = new Map<string, string>();
+
+  function walk(dir: string): void {
+    if (!existsSync(dir)) return;
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const absPath = join(dir, entry.name);
+      if (entry.isSymbolicLink()) {
+        continue;
+      } else if (entry.isDirectory()) {
+        walk(absPath);
+      } else if (entry.isFile()) {
+        const relPath = relative(scaffoldRoot, absPath).replace(/\\/g, '/');
+        result.set(relPath, absPath);
+      }
+    }
+  }
+
+  walk(scaffoldRoot);
+  return result;
 }
 
 /**

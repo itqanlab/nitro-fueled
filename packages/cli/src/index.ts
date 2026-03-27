@@ -8,6 +8,7 @@ import { registerStatusCommand } from './commands/status.js';
 import { registerCreateCommand } from './commands/create.js';
 import { registerDashboardCommand } from './commands/dashboard.js';
 import { registerConfigCommand } from './commands/config.js';
+import { registerUpdateCommand } from './commands/update.js';
 
 const require = createRequire(import.meta.url);
 
@@ -34,6 +35,7 @@ registerStatusCommand(program);
 registerCreateCommand(program);
 registerDashboardCommand(program);
 registerConfigCommand(program);
+registerUpdateCommand(program);
 
 program.parseAsync().catch((err) => {
   console.error(err);

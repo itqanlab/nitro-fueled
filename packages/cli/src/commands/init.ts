@@ -1,5 +1,4 @@
 import { existsSync, copyFileSync, mkdirSync, readdirSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { resolve, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
@@ -16,25 +15,7 @@ import { ensureGitignore } from '../utils/gitignore.js';
 import { isInsideGitRepo, commitFiles } from '../utils/git.js';
 import { readManifest, writeManifest, buildCoreFileEntry } from '../utils/manifest.js';
 import type { Manifest, GeneratedFileEntry } from '../utils/manifest.js';
-
-const initRequire = createRequire(import.meta.url);
-
-function hasVersion(obj: object): obj is { version: unknown } {
-  return 'version' in obj;
-}
-
-function getPackageVersion(): string {
-  try {
-    const pkg: unknown = initRequire('../../package.json');
-    if (typeof pkg === 'object' && pkg !== null && hasVersion(pkg)) {
-      const v = pkg.version;
-      if (typeof v === 'string') return v;
-    }
-  } catch (err: unknown) {
-    console.error(`Warning: could not read package.json version: ${err instanceof Error ? err.message : String(err)}`);
-  }
-  return '0.0.0';
-}
+import { getPackageVersion } from '../utils/package-version.js';
 
 interface InitOptions {
   mcpPath: string | undefined;
