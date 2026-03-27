@@ -23,9 +23,9 @@ docs/                      # Design docs and architecture
   anti-patterns.md         # Starter checklist
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure
-packages/                  # (TBD) Nx workspace packages
-  cli/                     # npx nitro-fueled init|run|status
-  scaffold/                # Template files copied during init
+packages/                  # Nx workspace packages
+  cli/                     # npx nitro-fueled init|run|status|create
+  cli/scaffold/            # Template files copied into target projects at init
 ```
 
 ## Key Docs

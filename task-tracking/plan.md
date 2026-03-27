@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-claude-nitro-fueled is a reusable AI development orchestration package. Install into any project to get a full PM -> Architect -> Dev -> QA pipeline with autonomous worker sessions. Includes a Planner for strategic planning, a Supervisor for task execution, and dynamic agent generation for any tech stack.
+nitro-fueled is a reusable AI development orchestration package. Install into any project to get a full PM -> Architect -> Dev -> QA pipeline with autonomous worker sessions. Includes a Planner for strategic planning, a Supervisor for task execution, and dynamic agent generation for any tech stack.
 
 ## Phases
 
@@ -162,6 +162,20 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 |---------|-------|--------|----------|
 | TASK_2026_048 | /retrospective Command — Post-Session Analysis and Learning Loop | COMPLETE | P1-High |
 
+### Phase 10: Agent Calibration
+**Status**: COMPLETE
+**Description**: Build a calibration system for agents — per-agent records tracking task history and failures, a failure taxonomy, and a `/evaluate-agent` command that tests any agent against a quality bar and auto-fixes its definition until it passes.
+
+#### Milestones
+- [x] Agent record schema and failure taxonomy defined
+- [x] `/evaluate-agent` command operational with full calibration loop
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_061 | Agent Record Schema and Failure Taxonomy | COMPLETE | P1-High |
+| TASK_2026_062 | /evaluate-agent Command | COMPLETE | P1-High |
+
 ### Phase 11: Supervisor Reliability & Performance
 **Status**: COMPLETE
 **Description**: Make the Supervisor production-grade — persistent MCP state, event-driven completion detection, file-system-first reconciliation, provider fallback, and a usable provider config UX.
@@ -185,20 +199,6 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | COMPLETE | P1-High |
 | TASK_2026_065 | Orchestration Analytics — Per-Run Token and Cost Logging | COMPLETE | P2-Medium |
 | TASK_2026_070 | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | COMPLETE | P1-High |
-
-### Phase 10: Agent Calibration
-**Status**: NOT STARTED
-**Description**: Build a calibration system for agents — per-agent records tracking task history and failures, a failure taxonomy, and a `/evaluate-agent` command that tests any agent against a quality bar and auto-fixes its definition until it passes.
-
-#### Milestones
-- [ ] Agent record schema and failure taxonomy defined
-- [ ] `/evaluate-agent` command operational with full calibration loop
-
-#### Task Map
-| Task ID | Title | Status | Priority |
-|---------|-------|--------|----------|
-| TASK_2026_061 | Agent Record Schema and Failure Taxonomy | COMPLETE | P1-High |
-| TASK_2026_062 | /evaluate-agent Command | COMPLETE | P1-High |
 
 ### Phase 12: CLI Maturity
 **Status**: IN_PROGRESS

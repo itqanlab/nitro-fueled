@@ -14,9 +14,7 @@ Single Nx workspace containing everything:
 nitro-fueled/
   packages/
     cli/                       # npx nitro-fueled init|run|status|create
-    scaffold/                  # Template files copied during init
-
-  scaffold/                    # (TBD) What gets copied into target projects
+    cli/scaffold/              # Template files copied during init (lives inside cli package)
     .claude/
       agents/
         core/                  # Ship as-is (all nitro-* prefixed agents — planner, architect, reviewers, etc.)
@@ -48,11 +46,9 @@ Agents are split into two categories:
   - nitro-researcher-expert, nitro-modernization-detector, nitro-devops-engineer
   - nitro-systems-developer, nitro-ui-ux-designer, nitro-technical-content-writer
 
-- **Project agents** are generated at `init` time based on the detected tech stack:
-  - frontend-developer (Angular, React, Vue, etc. — prompt tailored to detected framework)
-  - backend-developer (Node.js, Python, Go, etc. — prompt tailored to detected runtime/framework)
+- **Project agents** are generated at `init` time based on the detected tech stack. They do NOT carry the `nitro-` prefix so they are owned by the target project and never overwritten by `update`. A generated agent is seeded from the developer template and tailored to the detected framework — for example a React frontend agent or a Node.js backend agent. Their filenames (e.g., `frontend-developer.md`, `backend-developer.md`) are chosen by the project and live outside the `nitro-*` namespace.
 
-This ensures developer agents have deep knowledge of the project's actual stack rather than generic instructions.
+Note: `nitro-frontend-developer` and `nitro-backend-developer` are **core** agents that ship with the package — they carry the `nitro-` prefix and are always overwritable by `update`. They provide generic developer patterns; the project-generated agents override them with stack-specific depth at `init` time.
 
 ### MCP Server
 

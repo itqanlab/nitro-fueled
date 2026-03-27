@@ -41,7 +41,7 @@
     <div class="hero-stats">
       <div class="hero-stat"><div class="num">22</div><div class="label">Agents</div></div>
       <div class="hero-stat"><div class="num">4</div><div class="label">Skills</div></div>
-      <div class="hero-stat"><div class="num">15</div><div class="label">Commands</div></div>
+      <div class="hero-stat"><div class="num">17</div><div class="label">Commands</div></div>
       <div class="hero-stat"><div class="num">7</div><div class="label">Workflows</div></div>
       <div class="hero-stat"><div class="num">MCP</div><div class="label">Worker Orchestration</div></div>
     </div>
@@ -777,6 +777,14 @@
       <div class="cmd-name">/orchestrate-help</div>
       <div class="cmd-desc">Quick reference for orchestration system</div>
     </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/retrospective</div>
+      <div class="cmd-desc">Post-session analysis and learning loop</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/evaluate-agent</div>
+      <div class="cmd-desc">Agent calibration loop — test and auto-fix agent definitions</div>
+    </div>
   </div>
 
   <h4 class="tracking-heading" style="margin-top:40px;">Unified Entry Points</h4>
@@ -979,7 +987,7 @@
 
   <div class="control-grid">
     <div class="control-card" style="border-left:3px solid var(--accent);">
-      <div class="control-file">nitro-manifest.json</div>
+      <div class="control-file">.nitro-fueled/manifest.json</div>
       <div class="control-purpose">Version registry</div>
       <p>Generated at <code>init</code> time. Records the version of every installed agent, skill, and command file. <code>npx nitro-fueled update</code> diffs against the latest manifest to find what has changed upstream.</p>
       <div class="control-who">Written by: CLI init/update &middot; Read by: CLI update</div>
@@ -1010,7 +1018,7 @@
 
 <footer>
   <p>Built with <span style="color:var(--accent)">Nitro-Fueled</span> &mdash; Reusable AI Development Orchestration</p>
-  <p style="margin-top:4px;">22 agents &middot; 4 skills &middot; 15 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
+  <p style="margin-top:4px;">22 agents &middot; 4 skills &middot; 17 commands &middot; 7 workflow strategies &middot; MCP-powered autonomous worker loop</p>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
