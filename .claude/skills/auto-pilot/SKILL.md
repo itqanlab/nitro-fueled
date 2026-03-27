@@ -97,6 +97,9 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Pre-flight aborted | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT FAILED — {N} blocking issue(s) found \|` |
 | Loop started | `\| {HH:MM:SS} \| auto-pilot \| SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} \|` |
 | Worker spawned | `\| {HH:MM:SS} \| auto-pilot \| SPAWNED {worker_id} for TASK_X ({WorkerType}: {TaskType}) \|` |
+| Worker subscribed | `\| {HH:MM:SS} \| auto-pilot \| SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s) \|` |
+| Subscribe fallback | `\| {HH:MM:SS} \| auto-pilot \| WARN — subscribe_worker unavailable, falling back to 5-minute polling \|` |
+| Completion event received | `\| {HH:MM:SS} \| auto-pilot \| EVENT — TASK_X: {event_label} received, triggering completion handler \|` |
 | Worker healthy | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: healthy \|` |
 | Worker high context | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: high_context ({context_percent}%) \|` |
 | Worker compacting | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: compacting \|` |
@@ -551,6 +554,33 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
   - (`"FixWorker"` = Fix Worker; `expected_end_state="COMPLETE"` — detected by registry transitioning to COMPLETE)
   - (`"CompletionWorker"` = Completion Worker; `expected_end_state="COMPLETE"` — detected by registry transitioning to COMPLETE)
 
+**5e-ii. Subscribe worker to completion events (event-driven detection):**
+
+Immediately after recording the worker, call MCP `subscribe_worker` to register file-system watch conditions:
+
+- `worker_id`: the worker_id returned by `spawn_worker`
+- `working_directory`: the project root absolute path (same value used in `spawn_worker`)
+- `conditions`: use the table below, substituting `TASK_X` with the actual task ID
+
+**Watch conditions per worker type:**
+
+| Worker Type       | type            | path                                          | value / contains      | event_label       |
+|-------------------|-----------------|-----------------------------------------------|-----------------------|-------------------|
+| Build Worker      | `file_value`    | `task-tracking/TASK_X/status`                 | `IMPLEMENTED`         | `BUILD_COMPLETE`  |
+| Review Lead       | `file_contains` | `task-tracking/TASK_X/review-context.md`      | `## Findings Summary` | `REVIEW_DONE`     |
+| Test Lead         | `file_exists`   | `task-tracking/TASK_X/test-report.md`         | —                     | `TEST_DONE`       |
+| Fix Worker        | `file_value`    | `task-tracking/TASK_X/status`                 | `COMPLETE`            | `FIX_DONE`        |
+| Completion Worker | `file_value`    | `task-tracking/TASK_X/status`                 | `COMPLETE`            | `COMPLETION_DONE` |
+| Cleanup Worker    | `file_value`    | `task-tracking/TASK_X/status`                 | `IN_PROGRESS`         | `CLEANUP_DONE`    |
+|                   | `file_value`    | `task-tracking/TASK_X/status`                 | `IMPLEMENTED`         | `CLEANUP_DONE`    |
+|                   | `file_value`    | `task-tracking/TASK_X/status`                 | `COMPLETE`            | `CLEANUP_DONE`    |
+
+> **Cleanup Worker** passes all three conditions in a single `subscribe_worker` call — the first one satisfied triggers the event.
+
+**Fallback (backward compatibility):** If `subscribe_worker` is not found in the MCP tool list, log `"WARN — subscribe_worker unavailable, falling back to 5-minute polling"` and set a session flag `event_driven_mode = false`. This flag persists for the session — do not re-check per spawn.
+
+On success: log `"SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s)"` and set `event_driven_mode = true` if not already set.
+
 **5f. On spawn failure (MCP error):**
 
 - Log: `"Failed to spawn worker for TASK_X: {error}"`
@@ -561,7 +591,46 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
 
 ### Step 6: Monitor Active Workers
 
-1. **Wait** for the configured monitoring interval.
+The supervisor uses **event-driven mode** when `subscribe_worker` is available (`event_driven_mode = true`), or falls back to **polling mode** (`event_driven_mode = false`).
+
+---
+
+#### Step 6 — Event-Driven Mode (`event_driven_mode = true`)
+
+1. **Wait 30 seconds** (fast event poll interval).
+
+2. **Drain the event queue:** Call MCP `get_pending_events()`.
+   - For each event returned: trigger the completion handler (Step 7) for that worker immediately.
+   - Log: `"EVENT — TASK_X: {event_label} received, triggering completion handler"`
+   - Events are consumed by this call — a second call in the same pass returns an empty list.
+
+3. **Stuck detection for remaining active workers** (workers that have NOT yet fired a completion event):
+   - For each active worker, check `last_stuck_check_at` in `{SESSION_DIR}state.md`.
+   - **If** `Date.now() - last_stuck_check_at >= 5 minutes`:
+     - Call MCP `get_worker_activity`(worker_id).
+     - Apply **two-strike stuck detection** (same rules as polling mode, see below).
+     - Update `last_stuck_check_at = Date.now()` in state for this worker.
+   - **Otherwise**: skip (will be checked on the next 5-minute boundary).
+
+4. **Write `{SESSION_DIR}state.md`** after processing events and completing stuck checks.
+
+> **Health states during stuck detection** (event-driven mode):
+>
+> | Health State     | Action |
+> |------------------|--------|
+> | `healthy`        | Log activity summary. No action needed. |
+> | `high_context`   | Log: `"TASK_X worker at high context usage -- still progressing"`. No action. |
+> | `compacting`     | Log: `"TASK_X worker is compacting context"`. No action. |
+> | `stuck`          | Apply two-strike detection (see below). |
+> | `finished`       | Trigger completion handler (Step 7). |
+>
+> When `get_worker_activity` returns `finished`, trigger Step 7 even in event-driven mode — this handles the race where the process exits before the file watcher fires.
+
+---
+
+#### Step 6 — Polling Mode (`event_driven_mode = false`)
+
+1. **Wait** for the configured monitoring interval (default: 5 minutes).
 
 2. For each active worker in `{SESSION_DIR}state.md`:
 
@@ -585,27 +654,31 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
    | `stuck`          | Apply two-strike detection (see below). |
    | `finished`       | Trigger completion handler (Step 7). |
 
-   **Two-strike stuck detection**:
+3. **Write `{SESSION_DIR}state.md`** after monitoring pass. Also append the health events from this pass to `{SESSION_DIR}log.md`.
 
-   - Check `{SESSION_DIR}state.md` for this worker's `stuck_count`.
-   - **IF** `stuck_count == 0` (first detection):
-     - Set `stuck_count = 1` in state.
-     - Log: `"WARNING: TASK_X worker appears stuck (strike 1/2)"`
-     - Wait one more monitoring interval.
-   - **IF** `stuck_count >= 1` (second consecutive detection):
-     - Log: `"TASK_X worker stuck for 2 consecutive checks -- killing"`
-     - Call MCP `kill_worker`(worker_id, reason=`"stuck for 2 checks"`)
-     - **Check return**: If `success: false`, log warning `"Failed to kill TASK_X worker -- will retry next interval"` and skip remaining cleanup (do not change registry or remove from state).
-     - If kill succeeded: trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
-     - Increment `retry_count` in state for this task.
-     - **IF** `retry_count > retry_limit`:
-       - Write `BLOCKED` to `task-tracking/TASK_YYYY_NNN/status`
-       - Log: `"TASK_X exceeded retry limit -- marked BLOCKED"`
-     - Remove worker from active workers in state.
+---
 
-   **6d.** Reset `stuck_count` to 0 for any worker **NOT** in `stuck` state.
+#### Two-Strike Stuck Detection (shared by both modes)
 
-   **6e.** Write `{SESSION_DIR}state.md` after monitoring pass. Also append the health events from this pass to `{SESSION_DIR}log.md`.
+- Check `{SESSION_DIR}state.md` for this worker's `stuck_count`.
+- **IF** `stuck_count == 0` (first detection):
+  - Set `stuck_count = 1` in state.
+  - Log: `"WARNING: TASK_X worker appears stuck (strike 1/2)"`
+  - (In event-driven mode, the next stuck check fires at the next 5-minute boundary, not 30s.)
+- **IF** `stuck_count >= 1` (second consecutive detection):
+  - Log: `"TASK_X worker stuck for 2 consecutive checks -- killing"`
+  - Call MCP `kill_worker`(worker_id, reason=`"stuck for 2 checks"`)
+  - **Check return**: If `success: false`, log warning `"Failed to kill TASK_X worker -- will retry next interval"` and skip remaining cleanup (do not change registry or remove from state).
+  - If kill succeeded: trigger **Worker Recovery Protocol** (spawn Cleanup Worker to salvage uncommitted work, then re-read registry).
+  - Increment `retry_count` in state for this task.
+  - **IF** `retry_count > retry_limit`:
+    - Write `BLOCKED` to `task-tracking/TASK_YYYY_NNN/status`
+    - Log: `"TASK_X exceeded retry limit -- marked BLOCKED"`
+  - Remove worker from active workers in state.
+
+Reset `stuck_count` to 0 for any worker **NOT** in `stuck` state.
+
+**6e.** (Polling mode only) Write `{SESSION_DIR}state.md` after monitoring pass. Also append the health events from this pass to `{SESSION_DIR}log.md`.
 
 ### Step 7: Handle Completions
 
@@ -1526,19 +1599,27 @@ Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on se
 
 ## MCP Tool Usage Reference
 
-| Tool                  | Used In      | Purpose                                               |
-|-----------------------|--------------|-------------------------------------------------------|
-| `spawn_worker`        | Step 5       | Launch a new worker session for a task                |
-| `list_workers`        | Step 1       | Reconcile state after compaction/recovery              |
-| `get_worker_activity` | Step 6       | Routine monitoring (compact, context-efficient)        |
-| `get_worker_stats`    | Step 6       | Detailed check when stuck/finished suspected           |
-| `kill_worker`         | Step 6, 7    | Terminate stuck or post-completion workers             |
+| Tool                  | Used In       | Purpose                                               |
+|-----------------------|---------------|-------------------------------------------------------|
+| `spawn_worker`        | Step 5        | Launch a new worker session for a task                |
+| `subscribe_worker`    | Step 5e-ii    | Register file-system completion conditions (event-driven) |
+| `get_pending_events`  | Step 6        | Drain completion events queue (30s poll, event-driven) |
+| `list_workers`        | Step 1        | Reconcile state after compaction/recovery              |
+| `get_worker_activity` | Step 6        | Routine monitoring (compact, context-efficient)        |
+| `get_worker_stats`    | Step 6        | Detailed check when stuck/finished suspected           |
+| `kill_worker`         | Step 6, 7     | Terminate stuck or post-completion workers             |
 
 ### MCP Tool Signatures
 
 ```
 spawn_worker(prompt: string, working_directory: string, label: string, model?: string, allowed_tools?: string[])
   -> { worker_id: string, pid: number, session_id: string, iterm_tab: string }
+
+subscribe_worker(worker_id: string, working_directory: string, conditions: WatchCondition[])
+  -> { subscribed: boolean, watched_paths: string[] }
+
+get_pending_events()
+  -> { events: Array<{ worker_id, event_label, triggered_at, condition }> }
 
 list_workers(status_filter?: 'active' | 'completed' | 'failed' | 'all')
   -> { workers: [{ worker_id, label, status, pid, started_at, duration_minutes, total_tokens, context_percent, cost_estimate_usd }] }
