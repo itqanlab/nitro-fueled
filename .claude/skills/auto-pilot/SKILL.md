@@ -701,7 +701,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
 > |------------------|--------|
 > | `healthy`        | Log activity summary. No action needed. |
 > | `high_context`   | Log: `"TASK_X worker at high context usage -- still progressing"`. No action. |
-> | `compacting`     | Increment `compaction_count` for this worker in state.md. If count == 3: log `COMPACTION WARNING — TASK_X: compacted 3 times, task may be oversized`. If count >= 6: log `COMPACTION LIMIT — TASK_X: compacted 6 times, killing`, call `kill_worker`, trigger Worker Recovery Protocol, increment `retry_count`. |
+> | `compacting`     | Increment `compaction_count` for this worker in state.md. If count == 3: log `COMPACTION WARNING — TASK_X: compacted {N} times, task may be oversized`. If count >= 6: log `COMPACTION LIMIT — TASK_X: compacted {N} times, killing`, call `kill_worker` (if kill returns `success: false`, log warning and skip cleanup), trigger Worker Recovery Protocol, increment `retry_count`. |
 > | `stuck`          | Apply two-strike detection (see below). |
 > | `finished`       | Trigger completion handler (Step 7). |
 >
@@ -731,7 +731,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
    |------------------|--------|
    | `healthy`        | Log activity summary. No action needed. |
    | `high_context`   | Log: `"TASK_X worker at high context usage -- still progressing"`. No action. Worker will compact automatically. |
-   | `compacting`     | Increment `compaction_count` for this worker in state.md. If count == 3: log `COMPACTION WARNING — TASK_X: compacted 3 times, task may be oversized`. If count >= 6: log `COMPACTION LIMIT — TASK_X: compacted 6 times, killing`, call `kill_worker`, trigger Worker Recovery Protocol, increment `retry_count`. |
+   | `compacting`     | Increment `compaction_count` for this worker in state.md. If count == 3: log `COMPACTION WARNING — TASK_X: compacted {N} times, task may be oversized`. If count >= 6: log `COMPACTION LIMIT — TASK_X: compacted {N} times, killing`, call `kill_worker` (if kill returns `success: false`, log warning and skip cleanup), trigger Worker Recovery Protocol, increment `retry_count`. |
    | `stuck`          | Apply two-strike detection (see below). |
    | `finished`       | Trigger completion handler (Step 7). |
 
@@ -1683,7 +1683,6 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 
 | Counter          | Value |
 |------------------|-------|
-| Compaction Count | 0     |
 | MCP Empty Count  | 0     |
 ```
 
