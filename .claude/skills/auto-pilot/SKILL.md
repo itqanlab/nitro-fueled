@@ -123,6 +123,9 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Plan no action | `\| {HH:MM:SS} \| auto-pilot \| PLAN — no action needed \|` |
 | Plan not found | `\| {HH:MM:SS} \| auto-pilot \| PLAN — no plan.md found, using default ordering \|` |
 | Loop stopped | `\| {HH:MM:SS} \| auto-pilot \| SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked \|` |
+| Worker log written | `\| {HH:MM:SS} \| auto-pilot \| WORKER LOG — TASK_X ({Build\|Review}): {duration}m, ${X.XX}, {N} files changed \|` |
+| Worker log failed | `\| {HH:MM:SS} \| auto-pilot \| WORKER LOG FAILED — TASK_X: {reason} \|` |
+| Analytics written | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS — {N} tasks completed, total ${X.XX} \|` |
 
 The log lives at `{SESSION_DIR}log.md` and is **append-only** — never trim or overwrite it. The `state.md` file (in the same directory) is still fully overwritten on each update and holds the structured worker/queue tables. After compaction, restore context from `state.md`; the full event history lives in `log.md`.
 
@@ -185,8 +188,8 @@ The supervisor startup follows this exact order:
 |------|-----------|---------|
 | `state.md` | auto-pilot | Live supervisor state (workers, queues, config). Full overwrite on every update. |
 | `log.md` | auto-pilot + orchestration skill | Unified event log. Append-only. All orchestration paths write here. |
-| `analytics.md` | TASK_032 (future) | Post-session analytics. Not created by this task. |
-| `worker-logs/` | (future) | Per-worker log files. Not created by this task. |
+| `analytics.md` | auto-pilot | Post-session analytics generated at supervisor stop (Step 8c). |
+| `worker-logs/` | auto-pilot | Per-worker log files written at each worker completion (Step 7h). |
 
 ### Session Lifecycle
 
@@ -582,6 +585,84 @@ If `get_worker_stats` shows worker is still running but the registry state has a
 - Wait one monitoring interval.
 - If still running after next check, kill it: call `kill_worker`(worker_id, reason=`"stuck post-completion"`).
 
+**7h. Write worker log file (best-effort — never block on failure):**
+
+After any worker completion (successful or failed state transition confirmed in 7d or 7e), write `{SESSION_DIR}worker-logs/{label}.md`.
+
+0. **Create directory**: Run `mkdir -p {SESSION_DIR}worker-logs/` before writing the first worker log file. This is a no-op on subsequent calls.
+
+1. **Fetch exit stats**: Call `get_worker_stats(worker_id)` to get final tokens and cost. Extract: `tokens.total`, `tokens.input`, `tokens.output`, `tokens.cache_read`, `tokens.cache_write`, `cost.total_usd`. If the call fails or worker_id is unavailable, set all values to `"unknown"`. Note: for workers killed in Step 6, use `final_stats` from `kill_worker` response instead.
+
+2. **Compute duration**: `duration_minutes = round((current_time - spawn_time) / 60)` where spawn_time is from the Active Workers row in `{SESSION_DIR}state.md`.
+
+3. **Get files modified**: Run:
+   ```
+   git log --grep="TASK_X" --pretty=format: --name-only | sort | uniq | grep -v '^$'
+   ```
+   Replace `TASK_X` with the actual task ID (e.g., `TASK_2026_003`). This finds all commits mentioning the task in their message and extracts unique changed file paths. If git fails or returns no output, set files_modified to an empty list and note `"No committed files detected."`.
+
+4. **Get phase timestamps** (Build Workers only): Read `{SESSION_DIR}log.md` and collect all rows whose Event column contains the task ID string (e.g., `TASK_2026_003`). These are the phase transition entries written by the orchestration skill for this worker's task.
+
+5. **Get review verdicts** (Review Workers only): For each of these files in `task-tracking/TASK_X/`:
+   - `code-style-review.md` — search for a line matching `**Verdict**:` and extract its value
+   - `code-logic-review.md` — same
+   - `code-security-review.md` — same (if file exists)
+   If a file doesn't exist, omit it from the verdicts table.
+
+6. **Write** `{SESSION_DIR}worker-logs/{label}.md` using this exact format:
+
+```markdown
+# Worker Log — {label}
+
+## Metadata
+
+| Field | Value |
+|-------|-------|
+| Task | TASK_X |
+| Worker Type | Build \| Review \| Cleanup |
+| Label | {label} |
+| Model | {model} |
+| Spawn Time | {spawn_time} |
+| Completion Time | {current_time} |
+| Duration | {duration_minutes}m |
+| Outcome | IMPLEMENTED \| COMPLETE \| FAILED \| STUCK |
+
+## Exit Stats
+
+| Metric | Value |
+|--------|-------|
+| Total Tokens | {total_tokens} |
+| Input Tokens | {input_tokens} |
+| Output Tokens | {output_tokens} |
+| Cache Read Tokens | {cache_read_tokens} |
+| Cache Write Tokens | {cache_write_tokens} |
+| Cost | ${cost_usd} |
+
+## Files Modified
+
+{List each file on its own line as: - path/to/file}
+{If none detected: "No committed files detected."}
+
+## Phase Timeline (Build Workers)
+
+| Timestamp | Event |
+|-----------|-------|
+{Copy rows from {SESSION_DIR}log.md that contain TASK_X. If no phase entries: omit this table and write "No phase transitions recorded."}
+
+## Review Verdicts (Review Workers)
+
+| Review | Verdict |
+|--------|---------|
+| Code Style | {verdict} |
+| Code Logic | {verdict} |
+| Security | {verdict} |
+{Omit rows for review files that do not exist. For Build/Cleanup Workers: omit this entire section.}
+```
+
+7. **Log** the session event: `| {HH:MM:SS} | auto-pilot | WORKER LOG — TASK_X ({Build|Review}): {duration}m, ${cost_usd}, {N} files changed |`
+
+8. **If any sub-step fails** (MCP call, git, file read, or write fails): log `| {HH:MM:SS} | auto-pilot | WORKER LOG FAILED — TASK_X: {reason} |` and continue. Worker log failures must NEVER block the supervisor loop.
+
 ### Worker Recovery Protocol
 
 When a worker stops, crashes, or gets killed for ANY reason without the registry state transitioning to the expected end state, the supervisor MUST:
@@ -639,6 +720,106 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 
 3. This file is **append-only** — never overwrite previous sessions.
 4. Keep the file under control: if it exceeds 500 lines, trim the oldest sessions (keep the most recent 10).
+
+---
+
+### Step 8c: Generate Session Analytics
+
+After Step 8b completes (on every session stop — normal, compaction limit, MCP unreachable, or manual):
+
+1. **Collect worker log data**: List all files in `{SESSION_DIR}worker-logs/`. For each file, parse: Task, Worker Type, Duration, Cost (from Exit Stats), Total Tokens, files modified count (count lines starting with `- ` in Files Modified section), and Review Verdicts (for Review Workers).
+
+2. **Compute session totals**:
+   - Total duration: session stop time minus Session Started timestamp from `{SESSION_DIR}state.md`
+   - Total cost: sum of all worker Cost values (skip `"unknown"` entries; if ALL are unknown, write `"unknown"`)
+   - Total tokens: sum of all worker Total Tokens values (skip `"unknown"` entries)
+   - Tasks completed: count of unique Task IDs from worker logs with Outcome = `COMPLETE`
+   - Tasks failed: count of rows in Failed Tasks table from `{SESSION_DIR}state.md`
+   - Tasks blocked: count of tasks whose final registry state is `BLOCKED`
+   - Total workers spawned: count of all worker log files
+   - Total files changed: sum of files modified counts across all worker logs
+
+3. **Build per-task breakdown**: For each unique task_id found across all worker logs:
+   - Find its Build Worker log (if any): extract Build Cost, Build Duration
+   - Find its Review Worker log (if any): extract Review Cost, Review Duration
+   - Total Cost = Build Cost + Review Cost (if both known)
+   - Outcome = final registry status for that task_id
+
+4. **Compute retry stats**: Read `## Retry Tracker` table from `{SESSION_DIR}state.md`:
+   - Tasks Requiring Retries = count of rows with Retry Count > 0
+   - Total Extra Retries = sum of all Retry Count values
+   - Max Retries for Any Task = max Retry Count value
+
+5. **Compute review quality**: From all Review Worker logs, aggregate verdict counts:
+   - For each review type (Code Style, Code Logic, Security), count: PASS, PASS WITH NOTES, FAIL
+
+6. **Count new lessons**: Run:
+   ```
+   git log --since="{session_start_datetime}" --pretty=format: --name-only -- .claude/review-lessons/ | grep -v '^$' | sort | uniq | wc -l
+   ```
+   Use the Session Started timestamp from `{SESSION_DIR}state.md`. If git fails, write `"unknown"`.
+
+7. **Compute efficiency metrics**:
+   - Avg Cost per Task: total_cost / tasks_completed (format as `$X.XX`; write `"n/a"` if tasks_completed = 0 or cost unknown)
+   - Avg Duration per Task: total_duration / tasks_completed (format as `Xm`; write `"n/a"` if 0)
+
+8. **Write** `{SESSION_DIR}analytics.md` (overwrite if it exists):
+
+```markdown
+# Session Analytics — {SESSION_ID}
+
+**Generated**: {current_datetime}
+**Session**: {session_start_time} — {session_stop_time}
+**Stop Reason**: {all complete | all blocked | compaction limit | MCP unreachable | manual}
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Duration | {total_duration}m |
+| Total Cost | ${total_cost} |
+| Total Tokens | {total_tokens} |
+| Tasks Completed | {tasks_completed} |
+| Tasks Failed | {tasks_failed} |
+| Tasks Blocked | {tasks_blocked} |
+| Total Workers Spawned | {total_workers} |
+| Total Files Changed | {total_files_changed} |
+| Avg Cost per Task | ${avg_cost_per_task} |
+| Avg Duration per Task | {avg_duration_per_task}m |
+
+## Per-Task Breakdown
+
+| Task | Type | Build Cost | Build Duration | Review Cost | Review Duration | Total Cost | Outcome |
+|------|------|-----------|----------------|-------------|-----------------|------------|---------|
+| TASK_X | FEATURE | $X.XX | Xm | $X.XX | Xm | $X.XX | COMPLETE |
+{One row per task. Use "—" for missing worker type (Build or Review not yet run). Use "unknown" for missing cost values.}
+
+## Retry Stats
+
+| Metric | Value |
+|--------|-------|
+| Tasks Requiring Retries | {N} |
+| Total Extra Retries | {N} |
+| Max Retries for Any Task | {N} |
+
+## Review Quality
+
+| Review Type | PASS | PASS WITH NOTES | FAIL |
+|-------------|------|-----------------|------|
+| Code Style | {N} | {N} | {N} |
+| Code Logic | {N} | {N} | {N} |
+| Security | {N} | {N} | {N} |
+
+## Lessons Generated
+
+| Metric | Value |
+|--------|-------|
+| Review Lesson Files Updated This Session | {N} |
+```
+
+9. **Log** the session event: `| {HH:MM:SS} | auto-pilot | ANALYTICS — {N} tasks completed, total ${X.XX} |`
+
+10. **If analytics generation fails at any step**: log `| {HH:MM:SS} | auto-pilot | ANALYTICS FAILED — {reason} |` and continue. Analytics failure must NEVER block session stop.
 
 ---
 
