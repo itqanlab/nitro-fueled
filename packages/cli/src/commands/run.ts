@@ -1,17 +1,20 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import type { ChildProcess } from 'node:child_process';
 import type { Command } from 'commander';
 import type { RegistryRow } from '../utils/registry.js';
 import { preflightChecks } from '../utils/preflight.js';
 import { testMcpConnectivity } from '../utils/mcp-connectivity.js';
 import { spawnClaude } from '../utils/spawn-claude.js';
-
-const PORT_FILE_NAME = '.dashboard-port';
-const DASHBOARD_STARTUP_TIMEOUT_MS = 8000;
-const POLL_INTERVAL_MS = 100;
+import {
+  DEFAULT_PORT,
+  STARTUP_TIMEOUT_MS,
+  checkExistingService,
+  dashboardFilePaths,
+  findEntryScript,
+  pollForPortFile,
+} from '../utils/dashboard-helpers.js';
 
 interface RunOptions {
   dryRun: boolean;
@@ -146,61 +149,24 @@ function buildAutoPilotArgs(taskId: string | undefined, options: RunOptions): st
   return parts;
 }
 
-function findDashboardEntryScript(): string | null {
-  const thisDir = dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    resolve(thisDir, '../../node_modules/@nitro-fueled/dashboard-service/dist/cli-entry.js'),
-    resolve(thisDir, '../../../dashboard-service/dist/cli-entry.js'),
-  ];
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return null;
-}
-
-async function pollForPortFile(portFilePath: string, timeoutMs: number): Promise<number | null> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (existsSync(portFilePath)) {
-      const raw = readFileSync(portFilePath, 'utf-8').trim();
-      const port = parseInt(raw, 10);
-      if (!Number.isNaN(port) && port > 0) return port;
-    }
-    await new Promise<void>((r) => setTimeout(r, POLL_INTERVAL_MS));
-  }
-  return null;
-}
-
 async function startDashboardService(cwd: string): Promise<ChildProcess | null> {
-  const entryScript = findDashboardEntryScript();
-  if (!entryScript) {
+  const entryScript = findEntryScript();
+  if (entryScript === null) {
     console.log('Dashboard service not found (skipping). Build dashboard-service to enable.');
     return null;
   }
 
   const taskTrackingDir = resolve(cwd, 'task-tracking');
-  const portFilePath = join(taskTrackingDir, PORT_FILE_NAME);
+  const { portFilePath } = dashboardFilePaths(taskTrackingDir);
 
   // Check if already running
-  if (existsSync(portFilePath)) {
-    const raw = readFileSync(portFilePath, 'utf-8').trim();
-    const existingPort = parseInt(raw, 10);
-    if (!Number.isNaN(existingPort) && existingPort > 0) {
-      try {
-        const resp = await fetch(`http://localhost:${existingPort}/health`, {
-          signal: AbortSignal.timeout(1000),
-        });
-        if (resp.ok) {
-          console.log(`Dashboard already running at http://localhost:${existingPort}`);
-          return null;
-        }
-      } catch {
-        // stale port file, proceed to start
-      }
-    }
+  const existingPort = await checkExistingService(portFilePath);
+  if (existingPort !== null) {
+    console.log(`Dashboard already running at http://localhost:${existingPort}`);
+    return null;
   }
 
-  const args = [entryScript, '--task-tracking-dir', taskTrackingDir, '--port', '0'];
+  const args = [entryScript, '--task-tracking-dir', taskTrackingDir, '--port', String(DEFAULT_PORT)];
 
   const antiPatternsPath = resolve(cwd, '.claude/anti-patterns.md');
   if (existsSync(antiPatternsPath)) {
@@ -218,7 +184,7 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
     detached: false,
   });
 
-  const actualPort = await pollForPortFile(portFilePath, DASHBOARD_STARTUP_TIMEOUT_MS);
+  const actualPort = await pollForPortFile(portFilePath, STARTUP_TIMEOUT_MS);
   if (actualPort !== null) {
     console.log(`Dashboard available at http://localhost:${actualPort}`);
   } else {
@@ -287,22 +253,24 @@ export function registerRunCommand(program: Command): void {
         console.log('');
       }
 
-      // Start dashboard service in the background so it's available during the run
-      const dashboardProcess = await startDashboardService(cwd);
+      // Start dashboard service in the background so it's available during the run.
+      // Failures are non-fatal — the Supervisor must start regardless.
+      let dashboardProcess: ChildProcess | null = null;
+      try {
+        dashboardProcess = await startDashboardService(cwd);
+      } catch (err: unknown) {
+        console.warn(`Warning: Dashboard service failed to start: ${String(err)}`);
+      }
 
       if (dashboardProcess !== null) {
-        const shutdownDashboard = (): void => {
-          if (dashboardProcess.pid !== undefined) {
-            try {
-              process.kill(dashboardProcess.pid, 'SIGTERM');
-            } catch {
-              // already exited
-            }
+        // Use process.on('exit') only — spawnClaude already registers SIGINT/SIGTERM
+        // handlers that forward to the Claude child. When Claude exits, Node drains
+        // naturally, triggering 'exit', which sends SIGTERM to the dashboard child.
+        process.on('exit', () => {
+          if (dashboardProcess!.pid !== undefined) {
+            try { process.kill(dashboardProcess!.pid, 'SIGTERM'); } catch { /* already exited */ }
           }
-        };
-        process.on('exit', shutdownDashboard);
-        process.on('SIGINT', () => { shutdownDashboard(); process.exit(0); });
-        process.on('SIGTERM', () => { shutdownDashboard(); process.exit(0); });
+        });
       }
 
       spawnSupervisor(cwd, taskId, opts);

@@ -10,6 +10,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "copy-web-assets": "cp -r ../dashboard-web/dist ./dashboard-assets",
     "prepare-scaffold": "bash scripts/prepare-scaffold.sh",
     "prepublishOnly": "npm run prepare-scaffold && npm run build"
   },
@@ -22,7 +23,8 @@
   ],
   "files": [
     "dist",
-    "scaffold"
+    "scaffold",
+    "dashboard-assets"
   ],
   "license": "MIT",
   "engines": {

@@ -118,13 +118,10 @@ export class DashboardService {
   }
 
   private registerShutdownHandlers(): void {
-    const shutdown = async (): Promise<void> => {
-      await this.stop();
-      process.exit(0);
-    };
+    const shutdown = (): void => { void this.stop().then(() => process.exit(0)); };
 
-    process.on('SIGINT', () => { void shutdown(); });
-    process.on('SIGTERM', () => { void shutdown(); });
+    process.once('SIGINT', shutdown);
+    process.once('SIGTERM', shutdown);
   }
 }
 

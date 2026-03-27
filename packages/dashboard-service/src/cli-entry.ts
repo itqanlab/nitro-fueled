@@ -8,7 +8,7 @@ function parseArgs(args: ReadonlyArray<string>): {
   webDistPath?: string;
 } {
   let taskTrackingDir = '';
-  let port = 4200;
+  let port = 0; // 0 = OS auto-assigns a free port
   let antiPatternsPath: string | undefined;
   let reviewLessonsDir: string | undefined;
   let webDistPath: string | undefined;
@@ -19,7 +19,7 @@ function parseArgs(args: ReadonlyArray<string>): {
         taskTrackingDir = args[++i] ?? '';
         break;
       case '--port':
-        port = parseInt(args[++i] ?? '4200', 10);
+        port = parseInt(args[++i] ?? '0', 10);
         break;
       case '--anti-patterns':
         antiPatternsPath = args[++i];

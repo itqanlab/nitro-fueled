@@ -51,7 +51,7 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
   }
 
   addRoute('GET', '/health', (_req, res) => {
-    sendJson(res, { status: 'ok', timestamp: new Date().toISOString() });
+    sendJson(res, { status: 'ok', service: 'nitro-fueled-dashboard', timestamp: new Date().toISOString() });
   });
 
   addRoute('GET', '/api/registry', (_req, res) => {
