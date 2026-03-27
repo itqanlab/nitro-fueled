@@ -1,5 +1,6 @@
 import { existsSync, copyFileSync, mkdirSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { createRequire } from 'node:module';
+import { resolve, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import type { Command } from 'commander';
@@ -13,6 +14,23 @@ import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
 import { ensureGitignore } from '../utils/gitignore.js';
 import { isInsideGitRepo, commitFiles } from '../utils/git.js';
+import { readManifest, writeManifest, buildCoreFileEntry } from '../utils/manifest.js';
+import type { Manifest, GeneratedFileEntry } from '../utils/manifest.js';
+
+const initRequire = createRequire(import.meta.url);
+
+function getPackageVersion(): string {
+  try {
+    const pkg: unknown = initRequire('../../package.json');
+    if (typeof pkg === 'object' && pkg !== null && 'version' in pkg) {
+      const v = (pkg as Record<string, unknown>)['version'];
+      if (typeof v === 'string') return v;
+    }
+  } catch {
+    // Fall through
+  }
+  return '0.0.0';
+}
 
 interface InitOptions {
   mcpPath: string | undefined;
@@ -257,6 +275,54 @@ function commitScaffold(cwd: string, files: string[]): boolean {
   return success;
 }
 
+interface GeneratedFileInfo {
+  path: string;
+  stack: string;
+  generator: 'ai' | 'template';
+}
+
+function buildAndWriteManifest(
+  cwd: string,
+  coreFilePaths: string[],
+  generatedFileInfos: GeneratedFileInfo[],
+): void {
+  const version = getPackageVersion();
+  const now = new Date().toISOString();
+
+  // Read existing manifest to preserve entries on re-runs
+  const existing = readManifest(cwd);
+
+  const manifest: Manifest = {
+    version,
+    installedAt: existing?.installedAt ?? now,
+    updatedAt: now,
+    coreFiles: { ...(existing?.coreFiles ?? {}) },
+    generatedFiles: { ...(existing?.generatedFiles ?? {}) },
+  };
+
+  // Add/update core file entries
+  for (const absPath of coreFilePaths) {
+    if (!existsSync(absPath)) continue;
+    const relPath = relative(cwd, absPath);
+    manifest.coreFiles[relPath] = buildCoreFileEntry(absPath, version);
+  }
+
+  // Add/update generated file entries
+  for (const info of generatedFileInfos) {
+    if (!existsSync(info.path)) continue;
+    const relPath = relative(cwd, info.path);
+    const entry: GeneratedFileEntry = {
+      generatedAt: now,
+      stack: info.stack,
+      generator: info.generator,
+    };
+    manifest.generatedFiles[relPath] = entry;
+  }
+
+  writeManifest(cwd, manifest);
+  console.log('  Manifest: written (.nitro-fueled/manifest.json)');
+}
+
 function printSummary(mcpConfigured: boolean, skipMcp: boolean): void {
   console.log('');
   console.log('=================');
@@ -378,10 +444,32 @@ export function registerInitCommand(program: Command): void {
       const agentPaths = await handleStackDetection(cwd, detectedStacks, opts);
       allCreatedFiles.push(...agentPaths);
 
-      // Step 9: MCP configuration
+      // Step 9: Write manifest
+      console.log('');
+      const stackLabel = buildStackLabel(detectedStacks);
+      const generatedFileInfos: GeneratedFileInfo[] = [];
+
+      // CLAUDE.md is a template-generated file
+      if (existsSync(claudeMdPath)) {
+        generatedFileInfos.push({ path: claudeMdPath, stack: stackLabel, generator: 'template' });
+      }
+
+      // Anti-patterns is a template-generated file
+      if (existsSync(apPath)) {
+        generatedFileInfos.push({ path: apPath, stack: stackLabel, generator: 'template' });
+      }
+
+      // AI-generated developer agents
+      for (const agentPath of agentPaths) {
+        generatedFileInfos.push({ path: agentPath, stack: stackLabel, generator: 'ai' });
+      }
+
+      buildAndWriteManifest(cwd, scaffoldedFiles, generatedFileInfos);
+
+      // Step 10: MCP configuration
       await handleMcpConfig(cwd, opts);
 
-      // Step 10: Commit scaffolded files if --commit flag is set
+      // Step 11: Commit scaffolded files if --commit flag is set
       if (opts.commit) {
         console.log('');
         const committed = commitScaffold(cwd, allCreatedFiles);
@@ -390,7 +478,7 @@ export function registerInitCommand(program: Command): void {
         }
       }
 
-      // Step 11: Summary
+      // Step 12: Summary
       const mcpAfter = detectMcpConfig(cwd);
       printSummary(mcpAfter.found, opts.skipMcp);
     });

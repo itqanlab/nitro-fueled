@@ -84,6 +84,5 @@ Run this task first (Wave 1), then TASK_2026_049 (Wave 2).
 
 ## File Scope
 
-- `packages/cli/src/utils/manifest.ts` (new)
-- `packages/cli/src/commands/init.ts`
-- `packages/cli/src/utils/gitignore.ts`
+- `packages/cli/src/utils/manifest.ts` (new) — Manifest types and utility functions
+- `packages/cli/src/commands/init.ts` — Wired manifest building and writing after scaffolding
