@@ -336,6 +336,7 @@ Run these checks after implementation is committed and registry is updated:
 
 | Check | Command | Expected |
 |-------|---------|----------|
+| tasks.md exists | Glob task-tracking/TASK_[ID]/ for tasks.md | File exists with at least one subtask row |
 | All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
 | Implementation committed | Check git status | No unstaged implementation files |
 | Registry updated | Grep task ID in registry.md | Status shows IMPLEMENTED |
@@ -343,6 +344,8 @@ Run these checks after implementation is committed and registry is updated:
 
 If any check fails, fix it before exiting. Do not exit with uncommitted
 work or an un-updated registry.
+
+**If tasks.md is missing**: Create it by listing all implementation steps you completed as COMPLETE rows. See the tasks.md format in `.claude/skills/orchestration/references/team-leader-modes.md` (MODE 1 — Expected Output section).
 
 ### Review Worker Exit Gate
 
