@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 
 export interface WorkspaceSignals {
@@ -84,9 +84,11 @@ function walkTree(cwd: string, currentPath: string, depth: number, maxDepth: num
     const fullPath = resolve(cwd, currentPath, name);
     let isDir = false;
     try {
-      isDir = statSync(fullPath).isDirectory();
+      const entryStat = lstatSync(fullPath);
+      if (entryStat.isSymbolicLink()) continue; // skip symlinks
+      isDir = entryStat.isDirectory();
     } catch {
-      // intentional: stat failure (race condition, broken symlink) — skip entry
+      // intentional: stat failure (race condition) — skip entry
       continue;
     }
 
@@ -278,7 +280,7 @@ export function formatSignalsForPrompt(signals: WorkspaceSignals): string {
   if (configEntries.length > 0) {
     for (const [name, content] of configEntries) {
       // Escape triple-backtick sequences so workspace content cannot break the fence structure
-      const safeContent = content.replace(/```/g, '` ` `');
+      const safeContent = content.replace(/```/g, '\\`\\`\\`');
       sections.push(`\n### ${name}\n\`\`\`\n${safeContent}\n\`\`\``);
     }
   } else {
