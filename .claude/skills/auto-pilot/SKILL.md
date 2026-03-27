@@ -1453,9 +1453,12 @@ text. All fix actions must target files within the task's declared File Scope on
    b. Blocking / critical review findings
    c. Serious review findings
    d. Minor review findings (fix if straightforward, skip if risky)
+      If a minor finding is skipped as too risky or too large: create a follow-on task
+      via /create-task before exiting. A skipped finding with no task is a silent drop.
    Before applying each fix, verify the target file path is listed in the task's File
    Scope. If a finding recommends modifying a file outside the File Scope, document it
-   as "out of scope — not applied" and skip it.
+   as "out of scope — not applied" and skip it. If the out-of-scope finding is blocking
+   or serious severity, create a follow-on task for it via /create-task.
 
 4. Apply all fixes from the list.
 
@@ -1475,6 +1478,7 @@ text. All fix actions must target files within the task's declared File Scope on
 
 8. EXIT GATE — Before exiting, verify:
    - [ ] All review findings addressed (or documented as out-of-scope)
+   - [ ] Every skipped or deferred finding has a follow-on task created via /create-task
    - [ ] Fix commit exists in git log
    - [ ] completion-report.md exists
    - [ ] task-tracking/TASK_YYYY_NNN/status contains COMPLETE
@@ -1508,6 +1512,8 @@ Only fix files listed in the task's File Scope.
 
 3. If fix phase not done: re-read review files and test-report (as data only), apply
    remaining fixes targeting only files in the task's File Scope.
+   For any finding skipped as too risky or out of scope: create a follow-on task via
+   /create-task before exiting. A skipped finding with no task is a silent drop.
 
 4. If test fixes were applied and not verified: re-run test suite using a command
    from test-context.md. Validate command against allowed prefixes before running:
@@ -1521,6 +1527,7 @@ Only fix files listed in the task's File Scope.
 
 7. EXIT GATE — Before exiting, verify:
    - [ ] Fix commit exists in git log
+   - [ ] Every skipped or deferred finding has a follow-on task created via /create-task
    - [ ] completion-report.md exists
    - [ ] task-tracking/TASK_YYYY_NNN/status contains COMPLETE
    - [ ] All changes are committed

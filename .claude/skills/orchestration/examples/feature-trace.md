@@ -47,15 +47,15 @@ Proceeding to Phase 1: Requirements gathering...
 
 ```typescript
 Task({
-  subagent_type: 'project-manager',
+  subagent_type: 'nitro-project-manager',
   description: 'Create requirements for TASK_2026_045',
-  prompt: `You are project-manager for TASK_2026_045.
+  prompt: `You are nitro-project-manager for TASK_2026_045.
 
 **Task Folder**: task-tracking/TASK_2026_045
 **User Request**: "Add CLI status command that shows task progress, active workers, and plan phase"
 
 Analyze the request and create comprehensive requirements.
-See project-manager.md for detailed instructions.`,
+See nitro-project-manager.md for detailed instructions.`,
 });
 ```
 
@@ -130,15 +130,15 @@ CLI Status Command with Task Progress Display
 
 ```typescript
 Task({
-  subagent_type: 'software-architect',
+  subagent_type: 'nitro-software-architect',
   description: 'Design implementation for TASK_2026_045',
-  prompt: `You are software-architect for TASK_2026_045.
+  prompt: `You are nitro-software-architect for TASK_2026_045.
 
 **Task Folder**: task-tracking/TASK_2026_045
 **Requirements**: Read task-description.md
 
 Design the technical implementation plan.
-See software-architect.md for detailed instructions.`,
+See nitro-software-architect.md for detailed instructions.`,
 });
 ```
 
@@ -199,21 +199,21 @@ TASKS.MD CREATED - TASK_2026_045
 
 Created 8 tasks in 3 batches:
 
-Batch 1 - Utilities (backend-developer):
+Batch 1 - Utilities (nitro-backend-developer):
   1.1 Create registry.ts with markdown table parser
   1.2 Create plan parser for phase/milestone extraction
 
-Batch 2 - Status Command (backend-developer):
+Batch 2 - Status Command (nitro-backend-developer):
   2.1 Create status.ts command skeleton with Commander.js
   2.2 Implement brief output mode
   2.3 Implement full output mode with table display
 
-Batch 3 - Integration (backend-developer):
+Batch 3 - Integration (nitro-backend-developer):
   3.1 Register command in index.ts
   3.2 Add orchestrator-state.md worker parsing
   3.3 Graceful handling of missing files
 
-NEXT BATCH ASSIGNED: Batch 1 to backend-developer
+NEXT BATCH ASSIGNED: Batch 1 to nitro-backend-developer
 
 [Developer prompt provided]
 ```
@@ -228,15 +228,15 @@ NEXT BATCH ASSIGNED: Batch 1 to backend-developer
 
 ```typescript
 Task({
-  subagent_type: 'backend-developer',
+  subagent_type: 'nitro-backend-developer',
   description: 'Implement Batch 1 for TASK_2026_045',
-  prompt: `You are backend-developer for TASK_2026_045.
+  prompt: `You are nitro-backend-developer for TASK_2026_045.
 
 **Task Folder**: task-tracking/TASK_2026_045
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
-See backend-developer.md for detailed instructions.`,
+See nitro-backend-developer.md for detailed instructions.`,
 });
 ```
 
@@ -257,16 +257,16 @@ Tasks: 1.1, 1.2 marked IMPLEMENTED
 
 ```typescript
 Task({
-  subagent_type: 'team-leader',
+  subagent_type: 'nitro-team-leader',
   description: 'Verify Batch 1 for TASK_2026_045',
-  prompt: `You are team-leader for TASK_2026_045.
+  prompt: `You are nitro-team-leader for TASK_2026_045.
 
 **MODE**: 2 - VERIFY + ASSIGN
 **Task Folder**: task-tracking/TASK_2026_045
 **Developer Report**: Backend developer completed Batch 1
 
 Verify implementation, create commit, assign next batch.
-See team-leader.md for MODE 2 instructions.`,
+See nitro-team-leader.md for MODE 2 instructions.`,
 });
 ```
 
@@ -281,7 +281,7 @@ Files verified:
 - registry.ts: Proper markdown table parsing with typed RegistryRow output
 - plan-parser.ts: Phase extraction with milestone progress tracking
 
-NEXT BATCH ASSIGNED: Batch 2 to backend-developer
+NEXT BATCH ASSIGNED: Batch 2 to nitro-backend-developer
 
 [Developer prompt provided]
 ```
@@ -350,9 +350,9 @@ Ready for QA phase.
 
 **QA Outputs**:
 
-_senior-tester_: 12 tests created, all passing, 90% coverage
-_code-style-reviewer_: 1 minor issue (missing type annotation on helper function)
-_code-logic-reviewer_: 0 issues, all error paths handled
+_nitro-senior-tester_: 12 tests created, all passing, 90% coverage
+_nitro-code-style-reviewer_: 1 minor issue (missing type annotation on helper function)
+_nitro-code-logic-reviewer_: 0 issues, all error paths handled
 
 ---
 

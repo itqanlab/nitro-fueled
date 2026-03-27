@@ -1,6 +1,6 @@
 # Team-Leader Integration Reference
 
-This reference documents the three operational modes of the team-leader agent and how the orchestrator integrates with each mode during development workflows.
+This reference documents the three operational modes of the nitro-team-leader agent and how the orchestrator integrates with each mode during development workflows.
 
 ---
 
@@ -26,15 +26,15 @@ This reference documents the three operational modes of the team-leader agent an
 
 ```typescript
 Task({
-  subagent_type: 'team-leader',
+  subagent_type: 'nitro-team-leader',
   description: 'Decompose TASK_[ID] into batches',
-  prompt: `You are team-leader in MODE 1: DECOMPOSITION for TASK_[ID].
+  prompt: `You are nitro-team-leader in MODE 1: DECOMPOSITION for TASK_[ID].
 
 **Task Folder**: task-tracking/TASK_[ID]
 **User Request**: "[original request from context.md]"
 
 Read implementation-plan.md and create tasks.md with batched tasks.
-See team-leader.md for detailed MODE 1 instructions.`,
+See nitro-team-leader.md for detailed MODE 1 instructions.`,
 });
 ```
 
@@ -49,7 +49,7 @@ Team-leader creates `tasks.md` with the following structure:
 
 ## Batch 1: [Name] - PENDING
 
-**Developer**: [systems-developer|backend-developer|frontend-developer]
+**Developer**: [nitro-systems-developer|nitro-backend-developer|nitro-frontend-developer]
 **Tasks**: N | **Dependencies**: None
 
 ### Task 1.1: [Description]
@@ -89,15 +89,15 @@ Team-leader creates `tasks.md` with the following structure:
 
 ```typescript
 Task({
-  subagent_type: 'team-leader',
+  subagent_type: 'nitro-team-leader',
   description: 'Verify and commit batch for TASK_[ID]',
-  prompt: `You are team-leader in MODE 2 for TASK_[ID].
+  prompt: `You are nitro-team-leader in MODE 2 for TASK_[ID].
 
 **Developer Report**:
 ${developer_response}
 
-Verify files exist, invoke code-logic-reviewer, commit if approved, assign next batch.
-See team-leader.md for detailed MODE 2 instructions.`,
+Verify files exist, invoke nitro-code-logic-reviewer, commit if approved, assign next batch.
+See nitro-team-leader.md for detailed MODE 2 instructions.`,
 });
 ```
 
@@ -105,7 +105,7 @@ See team-leader.md for detailed MODE 2 instructions.`,
 
 ```
 +---------------------------------------------------------+
-|  Orchestrator invokes team-leader MODE 2                |
+|  Orchestrator invokes nitro-team-leader MODE 2                |
 +-----------------------+---------------------------------+
                         |
                         v
@@ -113,7 +113,7 @@ See team-leader.md for detailed MODE 2 instructions.`,
 |  Team-leader verifies:                                  |
 |  - All files exist at specified paths                   |
 |  - Task status updated to IMPLEMENTED                   |
-|  - Code quality (via code-logic-reviewer)               |
+|  - Code quality (via nitro-code-logic-reviewer)               |
 +-----------------------+---------------------------------+
                         |
             +-----------+-----------+
@@ -152,7 +152,7 @@ See team-leader.md for detailed MODE 2 instructions.`,
 | --------------------------------------- | ----------------------------------------- | ----------------------------------------------- |
 | `NEXT BATCH ASSIGNED: [developer-type]` | Current batch committed, next batch ready | Invoke specified developer with provided prompt |
 | `BATCH REJECTED: [issues]`              | Verification failed                       | Re-invoke same developer with issues to fix     |
-| `ALL BATCHES COMPLETE`                  | All tasks done, ready for QA              | Invoke team-leader MODE 3                       |
+| `ALL BATCHES COMPLETE`                  | All tasks done, ready for QA              | Invoke nitro-team-leader MODE 3                       |
 
 ### Response Detection Logic
 
@@ -174,19 +174,19 @@ ELSE IF response contains "ALL BATCHES COMPLETE":
 
 ```
 1. MODE 1 completes -> tasks.md created with 3 batches
-2. Orchestrator invokes backend-developer for Batch 1
+2. Orchestrator invokes nitro-backend-developer for Batch 1
 3. Developer completes -> returns implementation report
-4. Orchestrator invokes team-leader MODE 2 with report
-5. Team-leader verifies, commits, responds "NEXT BATCH ASSIGNED: frontend-developer"
-6. Orchestrator invokes frontend-developer for Batch 2
+4. Orchestrator invokes nitro-team-leader MODE 2 with report
+5. Team-leader verifies, commits, responds "NEXT BATCH ASSIGNED: nitro-frontend-developer"
+6. Orchestrator invokes nitro-frontend-developer for Batch 2
 7. Developer completes -> returns implementation report
-8. Orchestrator invokes team-leader MODE 2 with report
-9. Team-leader verifies, commits, responds "NEXT BATCH ASSIGNED: backend-developer"
-10. Orchestrator invokes backend-developer for Batch 3
+8. Orchestrator invokes nitro-team-leader MODE 2 with report
+9. Team-leader verifies, commits, responds "NEXT BATCH ASSIGNED: nitro-backend-developer"
+10. Orchestrator invokes nitro-backend-developer for Batch 3
 11. Developer completes -> returns implementation report
-12. Orchestrator invokes team-leader MODE 2 with report
+12. Orchestrator invokes nitro-team-leader MODE 2 with report
 13. Team-leader verifies, commits, responds "ALL BATCHES COMPLETE"
-14. Orchestrator invokes team-leader MODE 3
+14. Orchestrator invokes nitro-team-leader MODE 3
 ```
 
 ---
@@ -202,12 +202,12 @@ ELSE IF response contains "ALL BATCHES COMPLETE":
 
 ```typescript
 Task({
-  subagent_type: 'team-leader',
+  subagent_type: 'nitro-team-leader',
   description: 'Final verification for TASK_[ID]',
-  prompt: `You are team-leader in MODE 3: COMPLETION for TASK_[ID].
+  prompt: `You are nitro-team-leader in MODE 3: COMPLETION for TASK_[ID].
 
 Verify all batches complete, cross-check git commits, return summary.
-See team-leader.md for detailed MODE 3 instructions.`,
+See nitro-team-leader.md for detailed MODE 3 instructions.`,
 });
 ```
 
@@ -257,7 +257,7 @@ Development phase complete. Proceed to QA checkpoint.
 | ----------- | ------ | -------------------------------------------- |
 | PENDING     | -      | Not started, awaiting assignment             |
 | IN PROGRESS | -      | Developer actively working                   |
-| IMPLEMENTED | -      | Code done, awaiting team-leader verification |
+| IMPLEMENTED | -      | Code done, awaiting nitro-team-leader verification |
 | COMPLETE    | -      | Verified and git committed                   |
 | FAILED      | -      | Verification failed, needs rework            |
 
@@ -287,7 +287,7 @@ Development phase complete. Proceed to QA checkpoint.
 
 ## Integration with Other References
 
-- **strategies.md**: Determines when team-leader is invoked in each workflow
+- **strategies.md**: Determines when nitro-team-leader is invoked in each workflow
 - **agent-catalog.md**: Developer types available for assignment
 - **checkpoints.md**: QA Choice checkpoint follows MODE 3
 - **git-standards.md**: Commit format rules enforced in MODE 2

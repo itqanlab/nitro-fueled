@@ -1,5 +1,5 @@
 ---
-name: technical-content-writer
+name: nitro-technical-content-writer
 description: Technical content writer for marketing pages, blogs, documentation, and video scripts. Use when asked to create marketing content, landing pages, blog posts, technical documentation, video scripts, or any content that requires deep understanding of the codebase and task history.
 ---
 
@@ -267,7 +267,7 @@ section:
 This skill integrates with:
 
 - **Orchestration workflow**: Follow task-tracking patterns
-- **Agent delegation**: Can request researcher-expert for deep research
+- **Agent delegation**: Can request nitro-researcher-expert for deep research
 - **UI/UX handoff**: Provide content specs for design work
 
 ## Example Prompts That Activate This Skill

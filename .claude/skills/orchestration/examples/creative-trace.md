@@ -34,7 +34,7 @@ Strategy: CREATIVE (Design-First)
 Complexity: Medium
 Estimated Phases: 5
 
-Flow: [Design System Check] -> ui-ux-designer -> technical-content-writer -> frontend-developer
+Flow: [Design System Check] -> nitro-ui-ux-designer -> nitro-technical-content-writer -> nitro-frontend-developer
 
 Checking for existing design system...
 ```
@@ -47,19 +47,19 @@ Checking for existing design system...
 
 ```typescript
 // Check if design system exists
-const designSystemPath = '.claude/skills/technical-content-writer/DESIGN-SYSTEM.md';
+const designSystemPath = '.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md';
 const exists = await fileExists(designSystemPath);
 // Result: false
 
-// Decision: Must invoke ui-ux-designer first
+// Decision: Must invoke nitro-ui-ux-designer first
 ```
 
 **Orchestrator Output**:
 
 ```
-Design system not found at: .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
+Design system not found at: .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
 
-Invoking ui-ux-designer to create brand identity and design system...
+Invoking nitro-ui-ux-designer to create brand identity and design system...
 ```
 
 ---
@@ -70,15 +70,15 @@ Invoking ui-ux-designer to create brand identity and design system...
 
 ```typescript
 Task({
-  subagent_type: 'ui-ux-designer',
+  subagent_type: 'nitro-ui-ux-designer',
   description: 'Create design system for TASK_2026_047',
-  prompt: `You are ui-ux-designer for TASK_2026_047.
+  prompt: `You are nitro-ui-ux-designer for TASK_2026_047.
 
 **Task Folder**: task-tracking/TASK_2026_047
 **Goal**: Create a complete design system for the Nitro-Fueled package landing page
 
 Guide through niche discovery, then create design system.
-See ui-ux-designer.md for detailed instructions.`,
+See nitro-ui-ux-designer.md for detailed instructions.`,
 });
 ```
 
@@ -193,16 +193,16 @@ evoking intelligence, innovation, and developer-first design.
 
 ```typescript
 Task({
-  subagent_type: 'technical-content-writer',
+  subagent_type: 'nitro-technical-content-writer',
   description: 'Create landing page content for TASK_2026_047',
-  prompt: `You are technical-content-writer for TASK_2026_047.
+  prompt: `You are nitro-technical-content-writer for TASK_2026_047.
 
 **Task Folder**: task-tracking/TASK_2026_047
-**Design System**: Read .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
+**Design System**: Read .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
 **Visual Spec**: Read task-tracking/TASK_2026_047/visual-design-specification.md
 
 Create landing page content that integrates with the design system.
-See technical-content-writer.md for detailed instructions.`,
+See nitro-technical-content-writer.md for detailed instructions.`,
 });
 ```
 
@@ -272,16 +272,16 @@ for instant project onboarding.
 
 ```typescript
 Task({
-  subagent_type: 'frontend-developer',
+  subagent_type: 'nitro-frontend-developer',
   description: 'Implement landing page for TASK_2026_047',
-  prompt: `You are frontend-developer for TASK_2026_047.
+  prompt: `You are nitro-frontend-developer for TASK_2026_047.
 
 **Task Folder**: task-tracking/TASK_2026_047
-**Design System**: Read .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
+**Design System**: Read .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
 **Content Spec**: Read task-tracking/TASK_2026_047/content-specification.md
 
 Implement the landing page with design system integration.
-See frontend-developer.md for detailed instructions.`,
+See nitro-frontend-developer.md for detailed instructions.`,
 });
 ```
 
@@ -364,7 +364,7 @@ Summary:
 - Implementation: Landing page with interactive hero
 
 Deliverables:
-1. Brand Design System (.claude/skills/technical-content-writer/DESIGN-SYSTEM.md)
+1. Brand Design System (.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md)
 2. Visual Specification (task-tracking/TASK_2026_047/visual-design-specification.md)
 3. Content Specification (task-tracking/TASK_2026_047/content-specification.md)
 4. Landing Page (docs/index.html, docs/nitro-fueled-overview.css)

@@ -40,7 +40,7 @@ export const AGENT_MAP: readonly AgentMapping[] = [
   { language: 'dart', framework: null, agentName: 'dart-developer', agentTitle: 'Dart Developer' },
   { language: 'swift', framework: null, agentName: 'ios-developer', agentTitle: 'iOS Developer' },
   // Cross-language domain agents (matched by presence markers, not language)
-  { language: '_design', framework: null, agentName: 'ui-ux-designer', agentTitle: 'UI/UX Designer' },
+  { language: '_design', framework: null, agentName: 'nitro-ui-ux-designer', agentTitle: 'UI/UX Designer' },
   { language: '_data-science', framework: null, agentName: 'data-science-developer', agentTitle: 'Data Science Developer' },
   { language: '_infrastructure', framework: 'terraform', agentName: 'terraform-developer', agentTitle: 'Terraform Developer' },
   { language: '_infrastructure', framework: 'kubernetes', agentName: 'kubernetes-developer', agentTitle: 'Kubernetes Developer' },

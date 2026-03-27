@@ -146,16 +146,16 @@ Created during Phase 0 initialization:
 | Document               | Created By             | Contains                          |
 | ---------------------- | ---------------------- | --------------------------------- |
 | context.md             | Orchestrator (Phase 0) | User intent, task metadata        |
-| task-description.md    | project-manager        | Requirements, acceptance criteria |
-| implementation-plan.md | software-architect     | Architecture, file specifications |
-| tasks.md               | team-leader (MODE 1)   | Batched atomic tasks              |
-| test-report.md         | senior-tester          | Test results, coverage            |
-| code-style-review.md   | code-style-reviewer    | Pattern compliance findings       |
-| code-logic-review.md   | code-logic-reviewer    | Business logic findings           |
-| visual-review.md       | visual-reviewer        | UI/UX visual testing results      |
+| task-description.md    | nitro-project-manager        | Requirements, acceptance criteria |
+| implementation-plan.md | nitro-software-architect     | Architecture, file specifications |
+| tasks.md               | nitro-team-leader (MODE 1)   | Batched atomic tasks              |
+| test-report.md         | nitro-senior-tester          | Test results, coverage            |
+| code-style-review.md   | nitro-code-style-reviewer    | Pattern compliance findings       |
+| code-logic-review.md   | nitro-code-logic-reviewer    | Business logic findings           |
+| visual-review.md       | nitro-visual-reviewer        | UI/UX visual testing results      |
 | completion-report.md   | Review Worker / Orchestrator | Completion summary, review scores |
 | exit-gate-failure.md   | Build/Review Worker          | Exit gate failure details (when applicable) |
-| future-enhancements.md | modernization-detector | Future improvement opportunities  |
+| future-enhancements.md | nitro-modernization-detector | Future improvement opportunities  |
 
 ---
 
@@ -185,14 +185,14 @@ Glob(task-tracking/TASK_[ID]/*.md)
 | Documents Present                | Phase Status           | Next Action                           |
 | -------------------------------- | ---------------------- | ------------------------------------- |
 | No context.md                    | **Invalid**            | ERROR: Task doesn't exist             |
-| context.md only                  | Initialized            | Invoke project-manager                |
+| context.md only                  | Initialized            | Invoke nitro-project-manager                |
 | + task-description.md            | PM done                | User validate OR next agent           |
-| + visual-design-specification.md | Designer done          | Invoke software-architect             |
-| + implementation-plan.md         | Architect done         | User validate OR team-leader MODE 1   |
-| + tasks.md (all PENDING)         | Decomposition done     | team-leader MODE 2 (first assignment) |
-| + tasks.md (has IN PROGRESS)     | Dev in progress        | team-leader MODE 2 (verify + next)    |
-| + tasks.md (has IMPLEMENTED)     | Dev done, await verify | team-leader MODE 2 (verify + commit)  |
-| + tasks.md (all COMPLETE)        | Dev complete           | team-leader MODE 3 OR QA choice       |
+| + visual-design-specification.md | Designer done          | Invoke nitro-software-architect             |
+| + implementation-plan.md         | Architect done         | User validate OR nitro-team-leader MODE 1   |
+| + tasks.md (all PENDING)         | Decomposition done     | nitro-team-leader MODE 2 (first assignment) |
+| + tasks.md (has IN PROGRESS)     | Dev in progress        | nitro-team-leader MODE 2 (verify + next)    |
+| + tasks.md (has IMPLEMENTED)     | Dev done, await verify | nitro-team-leader MODE 2 (verify + commit)  |
+| + tasks.md (all COMPLETE)        | Dev complete           | nitro-team-leader MODE 3 OR QA choice       |
 | + test-report.md                 | Tester complete        | Continue QA or complete               |
 | + code-style-review.md           | Style reviewed         | Continue QA or complete               |
 | + code-logic-review.md           | Logic reviewed         | Continue QA or complete               |
@@ -220,7 +220,7 @@ Orchestrator:
 3. Found: context.md, task-description.md, implementation-plan.md, tasks.md
 4. Check tasks.md -> has IN PROGRESS tasks
 5. Detected phase: "Dev in progress"
-6. Action: Invoke team-leader MODE 2 (verify + next)
+6. Action: Invoke nitro-team-leader MODE 2 (verify + next)
 ```
 
 ---

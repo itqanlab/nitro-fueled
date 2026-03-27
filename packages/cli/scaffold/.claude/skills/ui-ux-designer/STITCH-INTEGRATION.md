@@ -848,7 +848,7 @@ If Stitch is unavailable or not producing good results:
 
 ## Summary
 
-Stitch MCP integration enables **AI-powered UI screen generation** within the ui-ux-designer skill workflow:
+Stitch MCP integration enables **AI-powered UI screen generation** within the nitro-ui-ux-designer skill workflow:
 
 - **Rapid prototyping** - Generate screens in seconds
 - **Design system integration** - Apply brand tokens in prompts

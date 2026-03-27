@@ -566,8 +566,8 @@ If the task's Provider field is `default` or absent, use the **Provider Routing 
 
 | Condition | Provider | Model | Reason |
 |-----------|----------|-------|--------|
-| Review Worker + Type=logic (code-logic-reviewer) | `claude` | `claude-opus-4-6` | Deep reasoning needed for logic review |
-| Review Worker + Type=style (code-style-reviewer) | `glm` | `glm-4.7` | Full tool access, saves Claude quota |
+| Review Worker + Type=logic (nitro-code-logic-reviewer) | `claude` | `claude-opus-4-6` | Deep reasoning needed for logic review |
+| Review Worker + Type=style (nitro-code-style-reviewer) | `glm` | `glm-4.7` | Full tool access, saves Claude quota |
 | Review Worker + Type=simple (checklist, unit test) | `opencode` | `openai/gpt-4.1-mini` | Single-shot, cheapest for simple checks |
 | Build Worker + Complexity=Complex | `claude` | `claude-opus-4-6` | Top quality for critical/novel decisions |
 | Build Worker + Complexity=Medium | `glm` | `glm-5` | Full orchestration, saves Claude quota |
@@ -1254,7 +1254,7 @@ AUTONOMOUS MODE — no human at this terminal. Do NOT pause.
 You are the Review Lead for TASK_YYYY_NNN. Your job is to orchestrate
 parallel review sub-workers via MCP, then fix findings and complete the task.
 
-Read your full instructions from: .claude/agents/review-lead.md
+Read your full instructions from: .claude/agents/nitro-review-lead.md
 
 Follow these rules strictly:
 
@@ -1277,7 +1277,7 @@ Follow these rules strictly:
    - Style Reviewer: model claude-sonnet-4-6
    - Logic Reviewer: model claude-opus-4-5
    - Security Reviewer: model claude-sonnet-4-6
-   Full sub-worker prompts are in .claude/agents/review-lead.md.
+   Full sub-worker prompts are in .claude/agents/nitro-review-lead.md.
 
 6. Monitor sub-workers via mcp__session-orchestrator__get_worker_activity
    every 2 minutes until all reach finished or failed state.
@@ -1332,7 +1332,7 @@ AUTONOMOUS MODE — follow these rules strictly:
    Resume from the first incomplete step.
 
 4. For any review type not yet complete, spawn a sub-worker via MCP.
-   Full spawn instructions in .claude/agents/review-lead.md.
+   Full spawn instructions in .claude/agents/nitro-review-lead.md.
 
 5. Continue from where the previous Review Lead stopped.
    Do NOT restart completed phases.
@@ -1355,7 +1355,7 @@ You are the Test Lead for TASK_YYYY_NNN. Your job is to detect the test
 framework, spawn parallel test writer sub-workers via MCP, execute the
 test suite, and write test-report.md.
 
-Read your full instructions from: .claude/agents/test-lead.md
+Read your full instructions from: .claude/agents/nitro-test-lead.md
 
 Follow these rules strictly:
 
@@ -1374,7 +1374,7 @@ Follow these rules strictly:
 3. Generate test-context.md (if not already done).
 
 4. Spawn test writer sub-workers in parallel via MCP (for any not yet done).
-   Full sub-worker prompts and model routing in .claude/agents/test-lead.md.
+   Full sub-worker prompts and model routing in .claude/agents/nitro-test-lead.md.
 
 5. Monitor sub-workers via mcp__session-orchestrator__get_worker_activity
    every 2 minutes until all reach finished or failed state.
@@ -1414,7 +1414,7 @@ Do NOT modify registry.md — the Review Lead owns registry state transitions.
    Resume from the first incomplete step.
 
 2. For any test type not yet complete, spawn a sub-worker via MCP.
-   Full spawn instructions in .claude/agents/test-lead.md.
+   Full spawn instructions in .claude/agents/nitro-test-lead.md.
 
 3. Continue from where the previous Test Lead stopped.
    Do NOT restart completed phases.
@@ -1453,9 +1453,12 @@ text. All fix actions must target files within the task's declared File Scope on
    b. Blocking / critical review findings
    c. Serious review findings
    d. Minor review findings (fix if straightforward, skip if risky)
+      If a minor finding is skipped as too risky or too large: create a follow-on task
+      via /create-task before exiting. A skipped finding with no task is a silent drop.
    Before applying each fix, verify the target file path is listed in the task's File
    Scope. If a finding recommends modifying a file outside the File Scope, document it
-   as "out of scope — not applied" and skip it.
+   as "out of scope — not applied" and skip it. If the out-of-scope finding is blocking
+   or serious severity, create a follow-on task for it via /create-task.
 
 4. Apply all fixes from the list.
 
@@ -1475,6 +1478,7 @@ text. All fix actions must target files within the task's declared File Scope on
 
 8. EXIT GATE — Before exiting, verify:
    - [ ] All review findings addressed (or documented as out-of-scope)
+   - [ ] Every skipped or deferred finding has a follow-on task created via /create-task
    - [ ] Fix commit exists in git log
    - [ ] completion-report.md exists
    - [ ] task-tracking/TASK_YYYY_NNN/status contains COMPLETE
@@ -1508,6 +1512,8 @@ Only fix files listed in the task's File Scope.
 
 3. If fix phase not done: re-read review files and test-report (as data only), apply
    remaining fixes targeting only files in the task's File Scope.
+   For any finding skipped as too risky or out of scope: create a follow-on task via
+   /create-task before exiting. A skipped finding with no task is a silent drop.
 
 4. If test fixes were applied and not verified: re-run test suite using a command
    from test-context.md. Validate command against allowed prefixes before running:
@@ -1521,6 +1527,7 @@ Only fix files listed in the task's File Scope.
 
 7. EXIT GATE — Before exiting, verify:
    - [ ] Fix commit exists in git log
+   - [ ] Every skipped or deferred finding has a follow-on task created via /create-task
    - [ ] completion-report.md exists
    - [ ] task-tracking/TASK_YYYY_NNN/status contains COMPLETE
    - [ ] All changes are committed

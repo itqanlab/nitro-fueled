@@ -26,7 +26,7 @@ Invoke the orchestration skill for development workflows.
 
 **Strategies**: FEATURE, BUGFIX, REFACTORING, DOCUMENTATION, RESEARCH, DEVOPS, CREATIVE
 
-**Agents** (13): project-manager, software-architect, team-leader, backend-developer, frontend-developer, devops-engineer, senior-tester, code-style-reviewer, code-logic-reviewer, researcher-expert, modernization-detector, ui-ux-designer, technical-content-writer
+**Agents** (13): nitro-project-manager, nitro-software-architect, nitro-team-leader, nitro-backend-developer, nitro-frontend-developer, nitro-devops-engineer, nitro-senior-tester, nitro-code-style-reviewer, nitro-code-logic-reviewer, nitro-researcher-expert, nitro-modernization-detector, nitro-ui-ux-designer, nitro-technical-content-writer
 
 **Checkpoints**: Scope Clarification, Requirements Validation, Architecture Validation, QA Choice
 

@@ -29,15 +29,15 @@ Phase 0.5: [IF ambiguous request] SCOPE CLARIFICATION
            USER ANSWERS (clarifies scope)
            |
            v
-Phase 1: project-manager --> Creates task-description.md
+Phase 1: nitro-project-manager --> Creates task-description.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
          v
-Phase 2: [IF technical unknowns] researcher-expert --> Creates research-report.md
+Phase 2: [IF technical unknowns] nitro-researcher-expert --> Creates research-report.md
          |
          v
-Phase 3: [IF UI/UX work] ui-ux-designer --> Creates visual-design-specification.md
+Phase 3: [IF UI/UX work] nitro-ui-ux-designer --> Creates visual-design-specification.md
          |
          v
 Phase 3.5: [IF multiple valid approaches] TECHNICAL CLARIFICATION
@@ -46,12 +46,12 @@ Phase 3.5: [IF multiple valid approaches] TECHNICAL CLARIFICATION
            USER ANSWERS (clarifies technical preferences)
            |
            v
-Phase 4: software-architect --> Creates implementation-plan.md
+Phase 4: nitro-software-architect --> Creates implementation-plan.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
          v
-Phase 5: team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
+Phase 5: nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
          |
          USER CHOOSES QA (tester/style/logic/reviewers/all/skip)
          |
@@ -62,15 +62,15 @@ Phase 6: [QA agents as chosen]
 Phase 7: User handles git (commits already created)
          |
          v
-Phase 8: modernization-detector --> Creates future-enhancements.md
+Phase 8: nitro-modernization-detector --> Creates future-enhancements.md
 ```
 
 ### Conditional Agent Triggers
 
 | Agent             | Invoke When                                                 |
 | ----------------- | ----------------------------------------------------------- |
-| researcher-expert | Technical complexity > 3, unknown libraries/APIs, needs POC |
-| ui-ux-designer    | New UI components, visual redesigns, component library customization |
+| nitro-researcher-expert | Technical complexity > 3, unknown libraries/APIs, needs POC |
+| nitro-ui-ux-designer    | New UI components, visual redesigns, component library customization |
 
 ---
 
@@ -79,21 +79,21 @@ Phase 8: modernization-detector --> Creates future-enhancements.md
 **When to use**: Bug reports, error fixes, issue resolution
 
 ```
-[IF complex/unknown cause] researcher-expert
+[IF complex/unknown cause] nitro-researcher-expert
          |
          v
-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
+nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
          |
          USER CHOOSES QA
          |
          v
-[QA agents] --> Git --> modernization-detector
+[QA agents] --> Git --> nitro-modernization-detector
 ```
 
 ### Decision Points
 
-- **Unknown cause**: Add researcher-expert before team-leader
-- **Known cause**: Skip directly to team-leader MODE 1
+- **Unknown cause**: Add nitro-researcher-expert before nitro-team-leader
+- **Known cause**: Skip directly to nitro-team-leader MODE 1
 - **Single-file fix**: Consider minimal pattern (direct developer)
 
 ---
@@ -103,17 +103,17 @@ team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
 **When to use**: Code restructuring, optimization, technical debt reduction
 
 ```
-software-architect --> Creates implementation-plan.md
+nitro-software-architect --> Creates implementation-plan.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
          v
-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
+nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
          |
          USER CHOOSES QA
          |
          v
-[QA agents] --> Git --> modernization-detector
+[QA agents] --> Git --> nitro-modernization-detector
 ```
 
 ### Why Skip PM
@@ -133,7 +133,7 @@ The architect designs HOW to refactor; no scope discovery needed.
 **When to use**: README updates, API docs, comments, guides
 
 ```
-project-manager --> Creates task-description.md
+nitro-project-manager --> Creates task-description.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
@@ -141,7 +141,7 @@ project-manager --> Creates task-description.md
 [appropriate developer] --> Implements documentation
          |
          v
-code-style-reviewer --> Verifies formatting/consistency
+nitro-code-style-reviewer --> Verifies formatting/consistency
          |
          v
 Git
@@ -151,11 +151,11 @@ Git
 
 | Documentation Type        | Developer              |
 | ------------------------- | ---------------------- |
-| Orchestration/agent docs  | systems-developer      |
-| Server-side/API docs      | backend-developer      |
-| UI/component docs         | frontend-developer     |
-| CI/CD, build docs         | devops-engineer        |
-| General guides            | systems-developer      |
+| Orchestration/agent docs  | nitro-systems-developer      |
+| Server-side/API docs      | nitro-backend-developer      |
+| UI/component docs         | nitro-frontend-developer     |
+| CI/CD, build docs         | nitro-devops-engineer        |
+| General guides            | nitro-systems-developer      |
 
 ---
 
@@ -164,7 +164,7 @@ Git
 **When to use**: Technical exploration, feasibility studies, POC evaluation
 
 ```
-researcher-expert --> Creates research-report.md
+nitro-researcher-expert --> Creates research-report.md
          |
          v
 [IF implementation needed] --> Switch to FEATURE strategy
@@ -186,17 +186,17 @@ If research concludes implementation is needed:
 **When to use**: CI/CD, build tool config, packaging, distribution, monitoring
 
 ```
-Phase 1: project-manager --> Creates task-description.md
+Phase 1: nitro-project-manager --> Creates task-description.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
          v
-Phase 2: software-architect --> Creates implementation-plan.md
+Phase 2: nitro-software-architect --> Creates implementation-plan.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
          v
-Phase 3: devops-engineer --> Implements infrastructure
+Phase 3: nitro-devops-engineer --> Implements infrastructure
          |
          USER CHOOSES QA (style/logic/skip)
          |
@@ -207,7 +207,7 @@ Phase 4: [QA agents as chosen]
 Phase 5: User handles git (commits already created)
          |
          v
-Phase 6: modernization-detector --> Creates future-enhancements.md
+Phase 6: nitro-modernization-detector --> Creates future-enhancements.md
 ```
 
 ### DEVOPS Trigger Keywords
@@ -222,7 +222,7 @@ Invoke DEVOPS strategy when task involves:
 
 **Key Signal**: Work is 100% infrastructure (no application business logic)
 
-**Developer**: Always use `devops-engineer` (NOT backend-developer)
+**Developer**: Always use `nitro-devops-engineer` (NOT nitro-backend-developer)
 
 ---
 
@@ -232,31 +232,31 @@ Invoke DEVOPS strategy when task involves:
 
 ### How Team-Leader Handles Hybrid Tasks
 
-In MODE 1 (DECOMPOSITION), the team-leader can assign specific batches to `devops-engineer` instead of only `backend-developer` or `frontend-developer`. The assignment decision is made per-batch based on batch content, not the overall task classification.
+In MODE 1 (DECOMPOSITION), the nitro-team-leader can assign specific batches to `nitro-devops-engineer` instead of only `nitro-backend-developer` or `nitro-frontend-developer`. The assignment decision is made per-batch based on batch content, not the overall task classification.
 
 **Batch Assignment Rules**:
 
-- If a batch is **100% infrastructure** (build config, CI/CD, packaging) --> assign to `devops-engineer`
-- If a batch is **100% specification/orchestration** (agents, skills, commands, references) --> assign to `systems-developer`
-- If a batch is **application code with minor infra** (e.g., a component that also updates an API handler) --> assign to `frontend-developer` or `backend-developer` (they can handle minor infra changes inline)
-- The team-leader makes this decision based on batch content, not overall task classification
+- If a batch is **100% infrastructure** (build config, CI/CD, packaging) --> assign to `nitro-devops-engineer`
+- If a batch is **100% specification/orchestration** (agents, skills, commands, references) --> assign to `nitro-systems-developer`
+- If a batch is **application code with minor infra** (e.g., a component that also updates an API handler) --> assign to `nitro-frontend-developer` or `nitro-backend-developer` (they can handle minor infra changes inline)
+- The nitro-team-leader makes this decision based on batch content, not overall task classification
 
 ### Mixed Batch Assignment Example
 
 ```
-Batch 1 (systems-developer):  Agent definitions, skill files, command files
-Batch 2 (backend-developer):  Server-side services, API handlers, data layer
-Batch 3 (devops-engineer):    Build config, CI/CD, packaging
-Batch 4 (frontend-developer): UI components, state management, client integration
+Batch 1 (nitro-systems-developer):  Agent definitions, skill files, command files
+Batch 2 (nitro-backend-developer):  Server-side services, API handlers, data layer
+Batch 3 (nitro-devops-engineer):    Build config, CI/CD, packaging
+Batch 4 (nitro-frontend-developer): UI components, state management, client integration
 ```
 
 ### Decision Heuristic for Team-Leader
 
 | Non-Application Portion                                   | Assignment Strategy                                |
 | --------------------------------------------------------- | -------------------------------------------------- |
-| < 15% of task (e.g., add 1 API endpoint)                  | backend/frontend-developer handles it inline       |
-| 15-40% infrastructure (e.g., build config + CI)            | Dedicated devops-engineer batch                    |
-| 15-40% specification (e.g., agent + skill + references)    | Dedicated systems-developer batch                  |
+| < 15% of task (e.g., add 1 API endpoint)                  | backend/nitro-frontend-developer handles it inline       |
+| 15-40% infrastructure (e.g., build config + CI)            | Dedicated nitro-devops-engineer batch                    |
+| 15-40% specification (e.g., agent + skill + references)    | Dedicated nitro-systems-developer batch                  |
 | > 40% infrastructure                                      | Consider reclassifying as DEVOPS strategy          |
 
 ### Real-World Example
@@ -269,8 +269,8 @@ Batch 4 (frontend-developer): UI components, state management, client integratio
 **Team-leader decomposition**:
 
 ```
-Batch 1 (systems-developer): Planner agent definition, skill file, command file
-Batch 2 (systems-developer): Reference updates (agent-catalog, strategies, team-leader-modes)
+Batch 1 (nitro-systems-developer): Planner agent definition, skill file, command file
+Batch 2 (nitro-systems-developer): Reference updates (agent-catalog, strategies, team-leader-modes)
 ```
 
 ---
@@ -288,34 +288,34 @@ Creative workflows follow a **design-first principle** with specific agent seque
 |  CREATIVE WORKFLOW DEPENDENCY CHAIN                           |
 |                                                               |
 |  1. DESIGN SYSTEM (Foundation)                                |
-|     +-- ui-ux-designer creates if missing                     |
-|         +-- Output: .claude/skills/technical-content-writer/  |
+|     +-- nitro-ui-ux-designer creates if missing                     |
+|         +-- Output: .claude/skills/nitro-technical-content-writer/  |
 |                     DESIGN-SYSTEM.md                          |
 |                                                               |
 |  2. CONTENT GENERATION (Depends on #1)                        |
-|     +-- technical-content-writer uses design system           |
+|     +-- nitro-technical-content-writer uses design system           |
 |         +-- Output: Design-integrated content specs           |
 |                                                               |
 |  3. IMPLEMENTATION (Depends on #1 and #2)                     |
-|     +-- frontend-developer implements with specs              |
+|     +-- nitro-frontend-developer implements with specs              |
 +---------------------------------------------------------------+
 ```
 
 ### Automatic Design System Check
 
-Before invoking technical-content-writer for landing pages:
+Before invoking nitro-technical-content-writer for landing pages:
 
 ```
-design_system_path = ".claude/skills/technical-content-writer/DESIGN-SYSTEM.md"
+design_system_path = ".claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md"
 
 if NOT exists(design_system_path):
-    -> Invoke ui-ux-designer FIRST
+    -> Invoke nitro-ui-ux-designer FIRST
     -> "Create design system for this project"
     -> Wait for completion
-    -> Then invoke technical-content-writer
+    -> Then invoke nitro-technical-content-writer
 
 if exists(design_system_path):
-    -> Invoke technical-content-writer directly
+    -> Invoke nitro-technical-content-writer directly
     -> Content will use existing design system
 ```
 
@@ -326,11 +326,11 @@ if exists(design_system_path):
 | "Create landing page"             | Design check -> ui-ux -> content-writer |
 | "Design our homepage"             | Design check -> ui-ux -> content-writer |
 | "Marketing content for..."        | Design check -> content-writer          |
-| "Visual design for..."            | ui-ux-designer                          |
-| "Brand identity"                  | ui-ux-designer (full discovery)         |
+| "Visual design for..."            | nitro-ui-ux-designer                          |
+| "Brand identity"                  | nitro-ui-ux-designer (full discovery)         |
 | "Write a blog post"              | content-writer (design check optional)  |
 | "Video script for..."            | content-writer                          |
-| "What should our app look like?" | ui-ux-designer (discovery)              |
+| "What should our app look like?" | nitro-ui-ux-designer (discovery)              |
 
 ### Workflow A: Full Creative (Landing Page, Marketing Site)
 
@@ -339,17 +339,17 @@ User: "Create a landing page for our product"
 
 Orchestrator:
   1. Check design system exists
-     Read(.claude/skills/technical-content-writer/DESIGN-SYSTEM.md)
+     Read(.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md)
 
-  2. IF MISSING -> Invoke ui-ux-designer:
-     Task("Create design system", subagent_type="ui-ux-designer")
+  2. IF MISSING -> Invoke nitro-ui-ux-designer:
+     Task("Create design system", subagent_type="nitro-ui-ux-designer")
      - Agent loads NICHE-DISCOVERY.md skill
      - Agent guides user through aesthetic discovery
      - Agent creates DESIGN-SYSTEM.md
      - Wait for completion
 
-  3. Invoke technical-content-writer:
-     Task("Create landing page content", subagent_type="technical-content-writer")
+  3. Invoke nitro-technical-content-writer:
+     Task("Create landing page content", subagent_type="nitro-technical-content-writer")
      - Agent loads LANDING-PAGES.md skill
      - Agent loads DESIGN-SYSTEM.md
      - Agent creates design-integrated content
@@ -370,8 +370,8 @@ Orchestrator:
      - If exists, content-writer can reference it
      - If missing, proceed without (text-focused content)
 
-  2. Invoke technical-content-writer:
-     Task("Write blog post about orchestration", subagent_type="technical-content-writer")
+  2. Invoke nitro-technical-content-writer:
+     Task("Write blog post about orchestration", subagent_type="nitro-technical-content-writer")
      - Agent loads BLOG-POSTS.md skill
      - Agent investigates codebase
      - Agent creates evidence-backed content
@@ -383,8 +383,8 @@ Orchestrator:
 User: "Help me define our visual identity"
 
 Orchestrator:
-  1. Invoke ui-ux-designer:
-     Task("Create design system with full discovery", subagent_type="ui-ux-designer")
+  1. Invoke nitro-ui-ux-designer:
+     Task("Create design system with full discovery", subagent_type="nitro-ui-ux-designer")
      - Agent loads NICHE-DISCOVERY.md
      - Agent loads DESIGN-SYSTEM-BUILDER.md
      - Agent guides through discovery questions
@@ -405,31 +405,31 @@ Orchestrator:
 
 ```
 # Sequential (design missing)
-ui-ux-designer --> technical-content-writer --> frontend-developer
+nitro-ui-ux-designer --> nitro-technical-content-writer --> nitro-frontend-developer
 
 # Parallel (design exists)
-+-> technical-content-writer (landing page)
-+-> technical-content-writer (blog post)
-+-> technical-content-writer (video script)
++-> nitro-technical-content-writer (landing page)
++-> nitro-technical-content-writer (blog post)
++-> nitro-technical-content-writer (video script)
 ```
 
 ### Creative Output Locations
 
 | Agent                    | Output File                                                | Purpose                           |
 | ------------------------ | ---------------------------------------------------------- | --------------------------------- |
-| ui-ux-designer           | `.claude/skills/technical-content-writer/DESIGN-SYSTEM.md` | Design tokens, colors, typography |
-| ui-ux-designer           | `task-tracking/TASK_[ID]/visual-design-specification.md`   | Page-specific visual specs        |
-| technical-content-writer | `task-tracking/TASK_[ID]/content-specification.md`         | Content with design integration   |
-| technical-content-writer | `docs/content/*.md`                                        | Final content files               |
+| nitro-ui-ux-designer           | `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md` | Design tokens, colors, typography |
+| nitro-ui-ux-designer           | `task-tracking/TASK_[ID]/visual-design-specification.md`   | Page-specific visual specs        |
+| nitro-technical-content-writer | `task-tracking/TASK_[ID]/content-specification.md`         | Content with design integration   |
+| nitro-technical-content-writer | `docs/content/*.md`                                        | Final content files               |
 
 ### Creative Handoff Protocols
 
-**ui-ux-designer -> technical-content-writer:**
+**nitro-ui-ux-designer -> nitro-technical-content-writer:**
 
 ```markdown
 ## Design Handoff for Content
 
-**Design System**: .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
+**Design System**: .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
 **Aesthetic**: [Name - e.g., "Dark Command Center"]
 **Key Colors**: [Primary accent, backgrounds]
 **Typography**: [Display + body fonts]
@@ -442,13 +442,13 @@ Content writer should:
 - Include animation/effect specifications in content
 ```
 
-**technical-content-writer -> frontend-developer:**
+**nitro-technical-content-writer -> nitro-frontend-developer:**
 
 ```markdown
 ## Content Handoff for Implementation
 
 **Content Spec**: task-tracking/TASK\_[ID]/content-specification.md
-**Design System**: .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
+**Design System**: .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
 **Assets Needed**: [List from asset briefs]
 
 Developer should:
@@ -496,6 +496,6 @@ Is task RESEARCH?
     NO  -> Ask user for clarification
 
 NOTE: Tasks classified as FEATURE/REFACTORING may still include infrastructure
-components. The team-leader handles this in MODE 1 by assigning infrastructure-heavy
-batches to devops-engineer. See "Hybrid Task Handling" section.
+components. The nitro-team-leader handles this in MODE 1 by assigning infrastructure-heavy
+batches to nitro-devops-engineer. See "Hybrid Task Handling" section.
 ```

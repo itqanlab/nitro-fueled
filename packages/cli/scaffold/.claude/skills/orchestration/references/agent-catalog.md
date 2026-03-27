@@ -2,7 +2,7 @@
 
 Comprehensive catalog of all 16 specialist agents with capabilities, triggers, and invocation patterns.
 
-> **Note**: The `planner` agent is included in the count but has its own dedicated section below. It operates outside the team-leader assignment flow and is invoked via the `/plan` command, not through orchestration batch assignment.
+> **Note**: The `nitro-planner` agent is included in the count but has its own dedicated section below. It operates outside the nitro-team-leader assignment flow and is invoked via the `/plan` command, not through orchestration batch assignment.
 
 ---
 
@@ -10,22 +10,22 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 
 | Agent                    | Write Code | Design | Review | Plan  | Research | Content | Browser |
 | ------------------------ | :--------: | :----: | :----: | :---: | :------: | :-----: | :-----: |
-| project-manager          |     -      |   -    |   -    | **P** |    S     |    -    |    -    |
-| software-architect       |     -      | **P**  |   S    | **P** |    S     |    -    |    -    |
-| team-leader              |     -      |   -    |   S    | **P** |    -     |    -    |    -    |
-| systems-developer        |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
-| backend-developer        |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
-| frontend-developer       |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
-| devops-engineer          |   **P**    |   S    |   -    |   -   |    S     |    -    |    -    |
-| senior-tester            |   **P**    |   -    | **P**  |   -   |    -     |    -    |    -    |
-| code-style-reviewer      |     -      |   -    | **P**  |   -   |    -     |    -    |    -    |
-| code-logic-reviewer      |     -      |   -    | **P**  |   -   |    -     |    -    |    -    |
-| visual-reviewer          |     -      |   -    | **P**  |   -   |    -     |    -    |  **P**  |
-| researcher-expert        |     -      |   -    |   -    |   -   |  **P**   |    S    |    -    |
-| modernization-detector   |     -      |   -    |   S    |   -   |  **P**   |    -    |    -    |
-| ui-ux-designer           |     -      | **P**  |   -    |   S   |    -     |    S    |    -    |
-| technical-content-writer |     -      |   S    |   -    |   -   |    -     |  **P**  |    -    |
-| planner                  |     -      |   -    |   -    | **P** |    S     |    -    |    -    |
+| nitro-project-manager          |     -      |   -    |   -    | **P** |    S     |    -    |    -    |
+| nitro-software-architect       |     -      | **P**  |   S    | **P** |    S     |    -    |    -    |
+| nitro-team-leader              |     -      |   -    |   S    | **P** |    -     |    -    |    -    |
+| nitro-systems-developer        |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
+| nitro-backend-developer        |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
+| nitro-frontend-developer       |   **P**    |   S    |   -    |   -   |    -     |    -    |    -    |
+| nitro-devops-engineer          |   **P**    |   S    |   -    |   -   |    S     |    -    |    -    |
+| nitro-senior-tester            |   **P**    |   -    | **P**  |   -   |    -     |    -    |    -    |
+| nitro-code-style-reviewer      |     -      |   -    | **P**  |   -   |    -     |    -    |    -    |
+| nitro-code-logic-reviewer      |     -      |   -    | **P**  |   -   |    -     |    -    |    -    |
+| nitro-visual-reviewer          |     -      |   -    | **P**  |   -   |    -     |    -    |  **P**  |
+| nitro-researcher-expert        |     -      |   -    |   -    |   -   |  **P**   |    S    |    -    |
+| nitro-modernization-detector   |     -      |   -    |   S    |   -   |  **P**   |    -    |    -    |
+| nitro-ui-ux-designer           |     -      | **P**  |   -    |   S   |    -     |    S    |    -    |
+| nitro-technical-content-writer |     -      |   S    |   -    |   -   |    -     |  **P**  |    -    |
+| nitro-planner                  |     -      |   -    |   -    | **P** |    S     |    -    |    -    |
 
 **Legend**: **P** = Primary capability, S = Secondary capability, - = Not applicable
 
@@ -35,20 +35,20 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 
 | Request Type     | Agent Path                                         | Trigger                     |
 | ---------------- | -------------------------------------------------- | --------------------------- |
-| Implement X      | project-manager -> architect -> team-leader -> dev | New features                |
-| Fix bug          | team-leader -> dev -> test -> review               | Bug reports                 |
-| Orchestration    | architect -> team-leader -> systems-developer      | Agents, skills, commands    |
-| Research X       | researcher-expert -> architect                     | Technical questions         |
-| Review style     | code-style-reviewer                                | Pattern checks              |
-| Review logic     | code-logic-reviewer                                | Completeness checks         |
-| Review visual    | visual-reviewer                                    | UI/UX visual testing        |
-| Test X           | senior-tester                                      | Testing                     |
-| Architecture     | software-architect                                 | Design                      |
-| Landing page     | ui-ux-designer -> technical-content-writer         | Marketing pages             |
-| Brand/visual     | ui-ux-designer                                     | Design system               |
-| Content          | technical-content-writer                           | Blogs, docs, video          |
-| Infrastructure   | devops-engineer                                    | CI/CD, packaging            |
-| Planning         | planner                                            | Roadmap, backlog, task creation |
+| Implement X      | nitro-project-manager -> architect -> nitro-team-leader -> dev | New features                |
+| Fix bug          | nitro-team-leader -> dev -> test -> review               | Bug reports                 |
+| Orchestration    | architect -> nitro-team-leader -> nitro-systems-developer      | Agents, skills, commands    |
+| Research X       | nitro-researcher-expert -> architect                     | Technical questions         |
+| Review style     | nitro-code-style-reviewer                                | Pattern checks              |
+| Review logic     | nitro-code-logic-reviewer                                | Completeness checks         |
+| Review visual    | nitro-visual-reviewer                                    | UI/UX visual testing        |
+| Test X           | nitro-senior-tester                                      | Testing                     |
+| Architecture     | nitro-software-architect                                 | Design                      |
+| Landing page     | nitro-ui-ux-designer -> nitro-technical-content-writer         | Marketing pages             |
+| Brand/visual     | nitro-ui-ux-designer                                     | Design system               |
+| Content          | nitro-technical-content-writer                           | Blogs, docs, video          |
+| Infrastructure   | nitro-devops-engineer                                    | CI/CD, packaging            |
+| Planning         | nitro-planner                                            | Roadmap, backlog, task creation |
 
 **Default**: When uncertain, use `/orchestrate` for full workflow analysis.
 
@@ -56,7 +56,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 
 ## Planning Agents
 
-### project-manager
+### nitro-project-manager
 
 **Role**: Requirements gathering, scope definition, stakeholder alignment
 
@@ -85,21 +85,21 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 
 ```typescript
 Task({
-  subagent_type: 'project-manager',
+  subagent_type: 'nitro-project-manager',
   description: 'Create requirements for TASK_2026_042',
-  prompt: `You are project-manager for TASK_2026_042.
+  prompt: `You are nitro-project-manager for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **User Request**: "Add project settings panel with theme selection"
 
 Analyze the request and create comprehensive requirements.
-See project-manager.md for detailed instructions.`,
+See nitro-project-manager.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### software-architect
+### nitro-software-architect
 
 **Role**: Technical design, architecture decisions, implementation planning
 
@@ -120,7 +120,7 @@ See project-manager.md for detailed instructions.`,
 
 - `task-tracking/TASK_[ID]/implementation-plan.md`
 
-**Dependencies**: project-manager (for FEATURE), researcher-expert (optional)
+**Dependencies**: nitro-project-manager (for FEATURE), nitro-researcher-expert (optional)
 
 **Parallel With**: None (sequential only)
 
@@ -128,21 +128,21 @@ See project-manager.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'software-architect',
+  subagent_type: 'nitro-software-architect',
   description: 'Design implementation for TASK_2026_042',
-  prompt: `You are software-architect for TASK_2026_042.
+  prompt: `You are nitro-software-architect for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Requirements**: Read task-description.md in task folder
 
 Design the technical implementation plan.
-See software-architect.md for detailed instructions.`,
+See nitro-software-architect.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### team-leader
+### nitro-team-leader
 
 **Role**: Task decomposition, developer assignment, work coordination
 
@@ -152,7 +152,7 @@ See software-architect.md for detailed instructions.`,
 - After developer returns (MODE 2: VERIFY + ASSIGN)
 - When all batches complete (MODE 3: COMPLETION)
 
-**Note**: In MODE 1, team-leader can assign batches to `devops-engineer` for infrastructure-heavy work within any workflow strategy (FEATURE, REFACTORING, BUGFIX). See the "Hybrid Task Handling" section in `strategies.md` for decision heuristics.
+**Note**: In MODE 1, nitro-team-leader can assign batches to `nitro-devops-engineer` for infrastructure-heavy work within any workflow strategy (FEATURE, REFACTORING, BUGFIX). See the "Hybrid Task Handling" section in `strategies.md` for decision heuristics.
 
 **Inputs**:
 
@@ -166,7 +166,7 @@ See software-architect.md for detailed instructions.`,
 - Git commits (after verification)
 - Developer assignment prompts
 
-**Dependencies**: software-architect (for MODE 1)
+**Dependencies**: nitro-software-architect (for MODE 1)
 
 **Parallel With**: None (sequential only)
 
@@ -175,22 +175,22 @@ See software-architect.md for detailed instructions.`,
 ```typescript
 // MODE 1: DECOMPOSITION
 Task({
-  subagent_type: 'team-leader',
+  subagent_type: 'nitro-team-leader',
   description: 'Decompose tasks for TASK_2026_042',
-  prompt: `You are team-leader for TASK_2026_042.
+  prompt: `You are nitro-team-leader for TASK_2026_042.
 
 **MODE**: 1 - DECOMPOSITION
 **Task Folder**: task-tracking/TASK_2026_042
 **Implementation Plan**: Read implementation-plan.md in task folder
 
 Break down the implementation into atomic, batchable tasks.
-See team-leader.md for MODE 1 instructions.`,
+See nitro-team-leader.md for MODE 1 instructions.`,
 });
 ```
 
 ---
 
-### planner
+### nitro-planner
 
 **Role**: Strategic planning, roadmap management, task creation, backlog prioritization, Supervisor consultation
 
@@ -219,20 +219,20 @@ See team-leader.md for MODE 1 instructions.`,
 
 **Parallel With**: None (sequential, interactive)
 
-**Note**: Planner is invoked via `/plan` command, NOT through team-leader batch assignment. It operates at the product level (roadmap, phases) while project-manager operates at the task level (detailed requirements).
+**Note**: Planner is invoked via `/plan` command, NOT through nitro-team-leader batch assignment. It operates at the product level (roadmap, phases) while nitro-project-manager operates at the task level (detailed requirements).
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'planner',
+  subagent_type: 'nitro-planner',
   description: 'Plan next development phase',
-  prompt: `You are planner.
+  prompt: `You are nitro-planner.
 
 **Goal**: Plan the next development phase for the project
 **Registry**: Read task-tracking/registry.md for current state
 
-See planner.md for detailed instructions.`,
+See nitro-planner.md for detailed instructions.`,
 });
 ```
 
@@ -240,13 +240,13 @@ See planner.md for detailed instructions.`,
 
 ## Development Agents
 
-### systems-developer
+### nitro-systems-developer
 
 **Role**: Orchestration infrastructure, agent definitions, skill files, command files, markdown specifications
 
 **Triggers**:
 
-- Specification/orchestration tasks assigned by team-leader
+- Specification/orchestration tasks assigned by nitro-team-leader
 - Agent definition creation or modification
 - Skill file creation or modification
 - Command file creation or modification
@@ -265,36 +265,36 @@ See planner.md for detailed instructions.`,
 - Reference files in `.claude/skills/orchestration/references/`
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
-**Dependencies**: team-leader (batch assignment)
+**Dependencies**: nitro-team-leader (batch assignment)
 
-**Parallel With**: backend-developer, frontend-developer (different batches)
+**Parallel With**: nitro-backend-developer, nitro-frontend-developer (different batches)
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'systems-developer',
+  subagent_type: 'nitro-systems-developer',
   description: 'Implement Batch 1 for TASK_2026_042',
-  prompt: `You are systems-developer for TASK_2026_042.
+  prompt: `You are nitro-systems-developer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
 **Plan**: Read implementation-plan.md for context
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
-See systems-developer.md for detailed instructions.`,
+See nitro-systems-developer.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### backend-developer
+### nitro-backend-developer
 
 **Role**: Backend implementation, server-side services, API handlers, data layer
 
 **Triggers**:
 
-- Backend-focused tasks assigned by team-leader
+- Backend-focused tasks assigned by nitro-team-leader
 - Server-side service work, API handlers
 - Database operations
 - Node.js/TypeScript backend work
@@ -310,36 +310,36 @@ See systems-developer.md for detailed instructions.`,
 - Server-side source files
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
-**Dependencies**: team-leader (batch assignment)
+**Dependencies**: nitro-team-leader (batch assignment)
 
-**Parallel With**: frontend-developer (different batches)
+**Parallel With**: nitro-frontend-developer (different batches)
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'backend-developer',
+  subagent_type: 'nitro-backend-developer',
   description: 'Implement Batch 1 for TASK_2026_042',
-  prompt: `You are backend-developer for TASK_2026_042.
+  prompt: `You are nitro-backend-developer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
 **Plan**: Read implementation-plan.md for context
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
-See backend-developer.md for detailed instructions.`,
+See nitro-backend-developer.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### frontend-developer
+### nitro-frontend-developer
 
 **Role**: Frontend implementation, UI components, client-side logic
 
 **Triggers**:
 
-- Frontend-focused tasks assigned by team-leader
+- Frontend-focused tasks assigned by nitro-team-leader
 - UI component development
 - Client-side state management
 - Visual/interactive features
@@ -355,30 +355,30 @@ See backend-developer.md for detailed instructions.`,
 - Frontend source files
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
-**Dependencies**: team-leader (batch assignment)
+**Dependencies**: nitro-team-leader (batch assignment)
 
-**Parallel With**: backend-developer (different batches)
+**Parallel With**: nitro-backend-developer (different batches)
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'frontend-developer',
+  subagent_type: 'nitro-frontend-developer',
   description: 'Implement Batch 2 for TASK_2026_042',
-  prompt: `You are frontend-developer for TASK_2026_042.
+  prompt: `You are nitro-frontend-developer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 2 (IN PROGRESS)
 **Plan**: Read implementation-plan.md for context
 
 Implement all tasks in Batch 2. Update status to IMPLEMENTED when done.
-See frontend-developer.md for detailed instructions.`,
+See nitro-frontend-developer.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### devops-engineer
+### nitro-devops-engineer
 
 **Role**: Infrastructure, CI/CD, build configuration, deployment
 
@@ -388,7 +388,7 @@ See frontend-developer.md for detailed instructions.`,
 - Build system configuration and optimization
 - Packaging and distribution setup
 - Deployment pipeline creation
-- Infrastructure-focused batches within FEATURE/REFACTORING workflows (assigned by team-leader)
+- Infrastructure-focused batches within FEATURE/REFACTORING workflows (assigned by nitro-team-leader)
 
 **Inputs**:
 
@@ -402,7 +402,7 @@ See frontend-developer.md for detailed instructions.`,
 - Build, packaging, and deployment scripts
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
-**Dependencies**: software-architect (for DEVOPS strategy)
+**Dependencies**: nitro-software-architect (for DEVOPS strategy)
 
 **Parallel With**: None (typically sequential)
 
@@ -410,15 +410,15 @@ See frontend-developer.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'devops-engineer',
+  subagent_type: 'nitro-devops-engineer',
   description: 'Implement infrastructure for TASK_2026_042',
-  prompt: `You are devops-engineer for TASK_2026_042.
+  prompt: `You are nitro-devops-engineer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Plan**: Read implementation-plan.md for infrastructure design
 
 Implement the infrastructure changes.
-See devops-engineer.md for detailed instructions.`,
+See nitro-devops-engineer.md for detailed instructions.`,
 });
 ```
 
@@ -426,7 +426,7 @@ See devops-engineer.md for detailed instructions.`,
 
 ## Quality Assurance Agents
 
-### senior-tester
+### nitro-senior-tester
 
 **Role**: Test planning, test implementation, quality verification
 
@@ -450,28 +450,28 @@ See devops-engineer.md for detailed instructions.`,
 
 **Dependencies**: Implementation complete (all batches)
 
-**Parallel With**: code-style-reviewer, code-logic-reviewer
+**Parallel With**: nitro-code-style-reviewer, nitro-code-logic-reviewer
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'senior-tester',
+  subagent_type: 'nitro-senior-tester',
   description: 'Test implementation for TASK_2026_042',
-  prompt: `You are senior-tester for TASK_2026_042.
+  prompt: `You are nitro-senior-tester for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for implemented changes
 **Plan**: Read implementation-plan.md for expected behavior
 
 Create and run tests, document results in test-report.md.
-See senior-tester.md for detailed instructions.`,
+See nitro-senior-tester.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### code-style-reviewer
+### nitro-code-style-reviewer
 
 **Role**: Code pattern review, style consistency, best practices
 
@@ -493,27 +493,27 @@ See senior-tester.md for detailed instructions.`,
 
 **Dependencies**: Implementation complete (all batches)
 
-**Parallel With**: senior-tester, code-logic-reviewer
+**Parallel With**: nitro-senior-tester, nitro-code-logic-reviewer
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'code-style-reviewer',
+  subagent_type: 'nitro-code-style-reviewer',
   description: 'Review code style for TASK_2026_042',
-  prompt: `You are code-style-reviewer for TASK_2026_042.
+  prompt: `You are nitro-code-style-reviewer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for modified files
 
 Review code for style, patterns, and consistency.
-See code-style-reviewer.md for detailed instructions.`,
+See nitro-code-style-reviewer.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### code-logic-reviewer
+### nitro-code-logic-reviewer
 
 **Role**: Logic completeness review, edge cases, correctness
 
@@ -536,28 +536,28 @@ See code-style-reviewer.md for detailed instructions.`,
 
 **Dependencies**: Implementation complete (all batches)
 
-**Parallel With**: senior-tester, code-style-reviewer
+**Parallel With**: nitro-senior-tester, nitro-code-style-reviewer
 
 **Invocation Example**:
 
 ```typescript
 Task({
-  subagent_type: 'code-logic-reviewer',
+  subagent_type: 'nitro-code-logic-reviewer',
   description: 'Review code logic for TASK_2026_042',
-  prompt: `You are code-logic-reviewer for TASK_2026_042.
+  prompt: `You are nitro-code-logic-reviewer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for modified files
 **Plan**: Read implementation-plan.md for expected behavior
 
 Review code for logic completeness and correctness.
-See code-logic-reviewer.md for detailed instructions.`,
+See nitro-code-logic-reviewer.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### visual-reviewer
+### nitro-visual-reviewer
 
 **Role**: Visual UI/UX review, responsive design testing, browser-based visual QA
 
@@ -585,7 +585,7 @@ See code-logic-reviewer.md for detailed instructions.`,
 - Implementation complete (all batches)
 - Application running in dev mode
 
-**Parallel With**: senior-tester, code-style-reviewer, code-logic-reviewer
+**Parallel With**: nitro-senior-tester, nitro-code-style-reviewer, nitro-code-logic-reviewer
 
 **Special Capabilities**:
 
@@ -600,9 +600,9 @@ See code-logic-reviewer.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'visual-reviewer',
+  subagent_type: 'nitro-visual-reviewer',
   description: 'Visual review for TASK_2026_042',
-  prompt: `You are visual-reviewer for TASK_2026_042.
+  prompt: `You are nitro-visual-reviewer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for modified frontend files
@@ -616,7 +616,7 @@ Perform comprehensive visual review including:
 5. Verify touch target sizes
 6. Test responsive behavior
 
-See visual-reviewer.md for detailed instructions.`,
+See nitro-visual-reviewer.md for detailed instructions.`,
 });
 ```
 
@@ -624,7 +624,7 @@ See visual-reviewer.md for detailed instructions.`,
 
 ## Specialist Agents
 
-### researcher-expert
+### nitro-researcher-expert
 
 **Role**: Technical research, feasibility analysis, POC development
 
@@ -646,7 +646,7 @@ See visual-reviewer.md for detailed instructions.`,
 
 - `task-tracking/TASK_[ID]/research-report.md`
 
-**Dependencies**: project-manager (optional context)
+**Dependencies**: nitro-project-manager (optional context)
 
 **Parallel With**: None (typically sequential)
 
@@ -654,21 +654,21 @@ See visual-reviewer.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'researcher-expert',
+  subagent_type: 'nitro-researcher-expert',
   description: 'Research vector storage options for TASK_2026_042',
-  prompt: `You are researcher-expert for TASK_2026_042.
+  prompt: `You are nitro-researcher-expert for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Research Question**: "Best approach for vector storage integration in the application"
 
 Investigate options, create comparison matrix, recommend approach.
-See researcher-expert.md for detailed instructions.`,
+See nitro-researcher-expert.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### modernization-detector
+### nitro-modernization-detector
 
 **Role**: Future improvement analysis, tech debt identification
 
@@ -697,15 +697,15 @@ See researcher-expert.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'modernization-detector',
+  subagent_type: 'nitro-modernization-detector',
   description: 'Analyze future improvements for TASK_2026_042',
-  prompt: `You are modernization-detector for TASK_2026_042.
+  prompt: `You are nitro-modernization-detector for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for what was implemented
 
 Identify opportunities for future improvements and tech debt.
-See modernization-detector.md for detailed instructions.`,
+See nitro-modernization-detector.md for detailed instructions.`,
 });
 ```
 
@@ -713,7 +713,7 @@ See modernization-detector.md for detailed instructions.`,
 
 ## Creative Agents
 
-### ui-ux-designer
+### nitro-ui-ux-designer
 
 **Role**: Visual design, design systems, brand identity, UI specifications
 
@@ -733,10 +733,10 @@ See modernization-detector.md for detailed instructions.`,
 
 **Outputs**:
 
-- `.claude/skills/technical-content-writer/DESIGN-SYSTEM.md`
+- `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md`
 - `task-tracking/TASK_[ID]/visual-design-specification.md`
 
-**Dependencies**: project-manager (optional context)
+**Dependencies**: nitro-project-manager (optional context)
 
 **Parallel With**: None (design before content)
 
@@ -744,21 +744,21 @@ See modernization-detector.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'ui-ux-designer',
+  subagent_type: 'nitro-ui-ux-designer',
   description: 'Create design system for TASK_2026_042',
-  prompt: `You are ui-ux-designer for TASK_2026_042.
+  prompt: `You are nitro-ui-ux-designer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Goal**: Create brand design system for the project
 
 Guide through niche discovery, create design system.
-See ui-ux-designer.md for detailed instructions.`,
+See nitro-ui-ux-designer.md for detailed instructions.`,
 });
 ```
 
 ---
 
-### technical-content-writer
+### nitro-technical-content-writer
 
 **Role**: Marketing content, documentation, blog posts, video scripts
 
@@ -772,7 +772,7 @@ See ui-ux-designer.md for detailed instructions.`,
 
 **Inputs**:
 
-- `.claude/skills/technical-content-writer/DESIGN-SYSTEM.md`
+- `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md`
 - Content brief/requirements
 - Codebase features for technical accuracy
 
@@ -781,7 +781,7 @@ See ui-ux-designer.md for detailed instructions.`,
 - `task-tracking/TASK_[ID]/content-specification.md`
 - `docs/content/*.md` (final content)
 
-**Dependencies**: ui-ux-designer (for CREATIVE workflow)
+**Dependencies**: nitro-ui-ux-designer (for CREATIVE workflow)
 
 **Parallel With**: Multiple content-writer instances (different content types)
 
@@ -789,16 +789,16 @@ See ui-ux-designer.md for detailed instructions.`,
 
 ```typescript
 Task({
-  subagent_type: 'technical-content-writer',
+  subagent_type: 'nitro-technical-content-writer',
   description: 'Create landing page content for TASK_2026_042',
-  prompt: `You are technical-content-writer for TASK_2026_042.
+  prompt: `You are nitro-technical-content-writer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
-**Design System**: Read .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
+**Design System**: Read .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
 **Goal**: Create landing page content for the product
 
 Create design-integrated content specification.
-See technical-content-writer.md for detailed instructions.`,
+See nitro-technical-content-writer.md for detailed instructions.`,
 });
 ```
 
@@ -808,11 +808,11 @@ See technical-content-writer.md for detailed instructions.`,
 
 | Category    | Agents                                                                   | Purpose                    |
 | ----------- | ------------------------------------------------------------------------ | -------------------------- |
-| Planning    | project-manager, software-architect, team-leader, planner                | Requirements & design      |
-| Development | systems-developer, backend-developer, frontend-developer, devops-engineer | Implementation            |
-| QA          | senior-tester, code-style-reviewer, code-logic-reviewer, visual-reviewer | Quality assurance          |
-| Specialist  | researcher-expert, modernization-detector                                | Research & analysis        |
-| Creative    | ui-ux-designer, technical-content-writer                                 | Design & content           |
+| Planning    | nitro-project-manager, nitro-software-architect, nitro-team-leader, nitro-planner                | Requirements & design      |
+| Development | nitro-systems-developer, nitro-backend-developer, nitro-frontend-developer, nitro-devops-engineer | Implementation            |
+| QA          | nitro-senior-tester, nitro-code-style-reviewer, nitro-code-logic-reviewer, nitro-visual-reviewer | Quality assurance          |
+| Specialist  | nitro-researcher-expert, nitro-modernization-detector                                | Research & analysis        |
+| Creative    | nitro-ui-ux-designer, nitro-technical-content-writer                                 | Design & content           |
 
 ---
 
@@ -825,10 +825,10 @@ Some agents can run in parallel during QA phase:
 ```typescript
 // Run in parallel (all 4 QA agents)
 Promise.all([
-  Task({ subagent_type: 'senior-tester', ... }),
-  Task({ subagent_type: 'code-style-reviewer', ... }),
-  Task({ subagent_type: 'code-logic-reviewer', ... }),
-  Task({ subagent_type: 'visual-reviewer', ... })  // Frontend tasks only
+  Task({ subagent_type: 'nitro-senior-tester', ... }),
+  Task({ subagent_type: 'nitro-code-style-reviewer', ... }),
+  Task({ subagent_type: 'nitro-code-logic-reviewer', ... }),
+  Task({ subagent_type: 'nitro-visual-reviewer', ... })  // Frontend tasks only
 ]);
 ```
 
@@ -837,9 +837,9 @@ Promise.all([
 ```typescript
 // Run in parallel (3 reviewers)
 Promise.all([
-  Task({ subagent_type: 'code-style-reviewer', ... }),
-  Task({ subagent_type: 'code-logic-reviewer', ... }),
-  Task({ subagent_type: 'visual-reviewer', ... })  // Frontend tasks only
+  Task({ subagent_type: 'nitro-code-style-reviewer', ... }),
+  Task({ subagent_type: 'nitro-code-logic-reviewer', ... }),
+  Task({ subagent_type: 'nitro-visual-reviewer', ... })  // Frontend tasks only
 ]);
 ```
 
@@ -848,8 +848,8 @@ Promise.all([
 ```typescript
 // Run in parallel
 Promise.all([
-  Task({ subagent_type: 'technical-content-writer', prompt: 'landing page...' }),
-  Task({ subagent_type: 'technical-content-writer', prompt: 'blog post...' }),
+  Task({ subagent_type: 'nitro-technical-content-writer', prompt: 'landing page...' }),
+  Task({ subagent_type: 'nitro-technical-content-writer', prompt: 'blog post...' }),
 ]);
 ```
 
@@ -858,7 +858,7 @@ Promise.all([
 ```typescript
 // Run in parallel when batches are independent
 Promise.all([
-  Task({ subagent_type: 'backend-developer', prompt: 'Batch 1...' }),
-  Task({ subagent_type: 'frontend-developer', prompt: 'Batch 2...' }),
+  Task({ subagent_type: 'nitro-backend-developer', prompt: 'Batch 1...' }),
+  Task({ subagent_type: 'nitro-frontend-developer', prompt: 'Batch 2...' }),
 ]);
 ```

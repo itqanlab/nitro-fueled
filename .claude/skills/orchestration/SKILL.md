@@ -30,7 +30,7 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
 | RESEARCH      | Researcher -> [conditional implementation]         |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
-| CREATIVE      | [ui-ux-designer] -> content-writer -> frontend     |
+| CREATIVE      | [nitro-ui-ux-designer] -> content-writer -> frontend     |
 
 See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
@@ -51,13 +51,13 @@ See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
 | Task Type      | Agent(s)                                                  |
 | -------------- | --------------------------------------------------------- |
-| Writing code   | backend-developer, frontend-developer                     |
-| Testing        | senior-tester                                             |
-| Code review    | code-style-reviewer, code-logic-reviewer, visual-reviewer |
-| Research       | researcher-expert                                         |
-| Architecture   | software-architect                                        |
-| Planning       | project-manager                                           |
-| Infrastructure | devops-engineer                                           |
+| Writing code   | nitro-backend-developer, nitro-frontend-developer                     |
+| Testing        | nitro-senior-tester                                             |
+| Code review    | nitro-code-style-reviewer, nitro-code-logic-reviewer, nitro-visual-reviewer |
+| Research       | nitro-researcher-expert                                         |
+| Architecture   | nitro-software-architect                                        |
+| Planning       | nitro-project-manager                                           |
+| Infrastructure | nitro-devops-engineer                                           |
 
 **Default**: When in doubt, delegate. See [agent-catalog.md](references/agent-catalog.md) for all 16 agents.
 
@@ -130,9 +130,9 @@ else
 
 | Documents Present       | Next Action                         |
 | ----------------------- | ----------------------------------- |
-| context.md only         | Invoke project-manager              |
+| context.md only         | Invoke nitro-project-manager              |
 | task-description.md     | User validate OR invoke architect   |
-| implementation-plan.md  | User validate OR team-leader MODE 1 |
+| implementation-plan.md  | User validate OR nitro-team-leader MODE 1 |
 | tasks.md (PENDING)      | Team-leader MODE 2 (assign batch)   |
 | tasks.md (IN PROGRESS)  | Team-leader MODE 2 (verify)         |
 | tasks.md (IMPLEMENTED)  | Team-leader MODE 2 (commit)         |
@@ -178,7 +178,7 @@ See [checkpoints.md](references/checkpoints.md) for all checkpoint templates.
 
 ## Team-Leader Integration
 
-The team-leader operates in 3 modes:
+The nitro-team-leader operates in 3 modes:
 
 | Mode   | When                    | Purpose                            |
 | ------ | ----------------------- | ---------------------------------- |
@@ -339,7 +339,7 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 | ------------------------------------------------------- | ---------------------------- | ------------------------------------ |
 | [strategies.md](references/strategies.md)               | Selecting/executing strategy | 6 strategy flows, creative workflows |
 | [agent-catalog.md](references/agent-catalog.md)         | Determining agent            | 14 agent profiles, capability matrix |
-| [team-leader-modes.md](references/team-leader-modes.md) | Invoking team-leader         | MODE 1/2/3 patterns                  |
+| [team-leader-modes.md](references/team-leader-modes.md) | Invoking nitro-team-leader         | MODE 1/2/3 patterns                  |
 | [task-tracking.md](references/task-tracking.md)         | Managing state               | Folder structure, registry           |
 | [checkpoints.md](references/checkpoints.md)             | Presenting checkpoints       | Templates, error handling            |
 | [git-standards.md](references/git-standards.md)         | Creating commits             | Commitlint, hook protocol            |
@@ -499,7 +499,7 @@ work or an un-written status file.
 
 ## Batch 1: [Description] - COMPLETE
 
-**Developer**: systems-developer
+**Developer**: nitro-systems-developer
 
 ### Task 1.1: [What you implemented]
 

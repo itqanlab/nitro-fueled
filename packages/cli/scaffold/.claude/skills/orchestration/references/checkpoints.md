@@ -91,7 +91,7 @@ Before I create the requirements, I have a few clarifying questions:
 
 ### When to Present
 
-After project-manager completes and creates `task-description.md`
+After nitro-project-manager completes and creates `task-description.md`
 
 ### Template
 
@@ -107,7 +107,7 @@ After project-manager completes and creates `task-description.md`
 - [Key requirement #3]
 
 ### Options
-1. **Proceed** - Continue to architecture phase (software-architect)
+1. **Proceed** - Continue to architecture phase (nitro-software-architect)
 2. **Adjust** - Modify requirements or scope
 3. **Abort** - Cancel task (state preserved in task-tracking)
 
@@ -119,7 +119,7 @@ After project-manager completes and creates `task-description.md`
 | Response          | Action                                                         |
 | ----------------- | -------------------------------------------------------------- |
 | "APPROVED"        | Proceed to Checkpoint 1.5 or Architect                         |
-| Feedback provided | Re-invoke project-manager with feedback, re-present checkpoint |
+| Feedback provided | Re-invoke nitro-project-manager with feedback, re-present checkpoint |
 | Questions asked   | Answer questions, re-present checkpoint                        |
 
 ---
@@ -178,7 +178,7 @@ Before I create the architecture, I have a few technical questions:
 
 ### When to Present
 
-After software-architect completes and creates `implementation-plan.md`
+After nitro-software-architect completes and creates `implementation-plan.md`
 
 ### Template
 
@@ -194,7 +194,7 @@ After software-architect completes and creates `implementation-plan.md`
 - [N files to create/modify, B batches expected]
 
 ### Options
-1. **Proceed** - Continue to development phase (team-leader)
+1. **Proceed** - Continue to development phase (nitro-team-leader)
 2. **Adjust** - Modify architecture or technical approach
 3. **Abort** - Cancel task (state preserved in task-tracking)
 
@@ -205,7 +205,7 @@ After software-architect completes and creates `implementation-plan.md`
 
 | Response          | Action                                                   |
 | ----------------- | -------------------------------------------------------- |
-| "APPROVED"        | Invoke team-leader MODE 1                                |
+| "APPROVED"        | Invoke nitro-team-leader MODE 1                                |
 | Feedback provided | Re-invoke architect with feedback, re-present checkpoint |
 | Questions asked   | Answer questions, re-present checkpoint                  |
 | Request changes   | Update requirements if needed, re-invoke architect       |
@@ -216,7 +216,7 @@ After software-architect completes and creates `implementation-plan.md`
 
 ### When to Present
 
-After team-leader MODE 3 confirms all development complete
+After nitro-team-leader MODE 3 confirms all development complete
 
 ### Template
 
@@ -249,22 +249,22 @@ After team-leader MODE 3 confirms all development complete
 
 ```typescript
 // Option: "tester" - single agent
-Task({ subagent_type: 'senior-tester', prompt: `Test TASK_[ID]...` });
+Task({ subagent_type: 'nitro-senior-tester', prompt: `Test TASK_[ID]...` });
 
 // Option: "style" - single agent
-Task({ subagent_type: 'code-style-reviewer', prompt: `Review TASK_[ID] for patterns...` });
+Task({ subagent_type: 'nitro-code-style-reviewer', prompt: `Review TASK_[ID] for patterns...` });
 
 // Option: "logic" - single agent
-Task({ subagent_type: 'code-logic-reviewer', prompt: `Review TASK_[ID] for completeness...` });
+Task({ subagent_type: 'nitro-code-logic-reviewer', prompt: `Review TASK_[ID] for completeness...` });
 
 // Option: "reviewers" - parallel (BOTH in single message)
-Task({ subagent_type: 'code-style-reviewer', prompt: `...` });
-Task({ subagent_type: 'code-logic-reviewer', prompt: `...` });
+Task({ subagent_type: 'nitro-code-style-reviewer', prompt: `...` });
+Task({ subagent_type: 'nitro-code-logic-reviewer', prompt: `...` });
 
 // Option: "all" - parallel (THREE in single message)
-Task({ subagent_type: 'senior-tester', prompt: `...` });
-Task({ subagent_type: 'code-style-reviewer', prompt: `...` });
-Task({ subagent_type: 'code-logic-reviewer', prompt: `...` });
+Task({ subagent_type: 'nitro-senior-tester', prompt: `...` });
+Task({ subagent_type: 'nitro-code-style-reviewer', prompt: `...` });
+Task({ subagent_type: 'nitro-code-logic-reviewer', prompt: `...` });
 
 // Option: "skip" - no QA agents invoked
 // Proceed directly to workflow completion
@@ -274,9 +274,9 @@ Task({ subagent_type: 'code-logic-reviewer', prompt: `...` });
 
 | Response    | Action                                      |
 | ----------- | ------------------------------------------- |
-| "tester"    | Invoke senior-tester only                   |
-| "style"     | Invoke code-style-reviewer only             |
-| "logic"     | Invoke code-logic-reviewer only             |
+| "tester"    | Invoke nitro-senior-tester only                   |
+| "style"     | Invoke nitro-code-style-reviewer only             |
+| "logic"     | Invoke nitro-code-logic-reviewer only             |
 | "reviewers" | Invoke BOTH reviewers in parallel           |
 | "all"       | Invoke ALL THREE QA agents in parallel      |
 | "skip"      | Skip QA, proceed to git operations guidance |
@@ -305,7 +305,7 @@ When any agent reports an impediment that prevents continued progress
 ### Options
 1. **Resolve** - [Specific resolution option, e.g., "Downgrade dependency to compatible version"]
 2. **Alternative** - [Alternative approach, e.g., "Use alternative library with better compatibility"]
-3. **Research** - Invoke researcher-expert to investigate further
+3. **Research** - Invoke nitro-researcher-expert to investigate further
 4. **Abort** - Cancel task (state preserved in task-tracking)
 
 > Waiting for your decision...
@@ -421,16 +421,16 @@ When user provides feedback instead of "APPROVED":
 
 ### Verification Failure Handling
 
-When team-leader MODE 2 rejects a batch:
+When nitro-team-leader MODE 2 rejects a batch:
 
 ```
-1. Extract rejection reasons from team-leader response
+1. Extract rejection reasons from nitro-team-leader response
 2. Re-invoke developer with:
    - Original task assignment
    - List of issues found
    - Clear fix instructions
 3. Developer produces fixes
-4. Re-invoke team-leader MODE 2 for re-verification
+4. Re-invoke nitro-team-leader MODE 2 for re-verification
 5. Repeat until batch passes verification
 ```
 

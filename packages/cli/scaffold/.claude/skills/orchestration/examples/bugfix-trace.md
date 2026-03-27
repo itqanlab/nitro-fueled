@@ -47,16 +47,16 @@ Note: Unknown cause detected - invoking researcher first...
 
 ```
 Bug cause: Unknown (crash symptoms described, root cause unclear)
-Action: Invoke researcher-expert for investigation
+Action: Invoke nitro-researcher-expert for investigation
 ```
 
 **Orchestrator Invocation**:
 
 ```typescript
 Task({
-  subagent_type: 'researcher-expert',
+  subagent_type: 'nitro-researcher-expert',
   description: 'Investigate registry crash for TASK_2026_046',
-  prompt: `You are researcher-expert for TASK_2026_046.
+  prompt: `You are nitro-researcher-expert for TASK_2026_046.
 
 **Task Folder**: task-tracking/TASK_2026_046
 **Bug Report**: "Registry parsing crash when task status field contains pipe characters"
@@ -66,7 +66,7 @@ Investigate the crash:
 2. Determine root cause
 3. Propose fix approach
 
-See researcher-expert.md for detailed instructions.`,
+See nitro-researcher-expert.md for detailed instructions.`,
 });
 ```
 
@@ -123,16 +123,16 @@ status.trim(); // crash
 
 ```typescript
 Task({
-  subagent_type: 'team-leader',
+  subagent_type: 'nitro-team-leader',
   description: 'Decompose bugfix for TASK_2026_046',
-  prompt: `You are team-leader for TASK_2026_046.
+  prompt: `You are nitro-team-leader for TASK_2026_046.
 
 **MODE**: 1 - DECOMPOSITION
 **Task Folder**: task-tracking/TASK_2026_046
 **Research Report**: Read research-report.md for root cause analysis
 
 Create tasks for the bugfix.
-See team-leader.md for MODE 1 instructions.`,
+See nitro-team-leader.md for MODE 1 instructions.`,
 });
 ```
 
@@ -143,13 +143,13 @@ TASKS.MD CREATED - TASK_2026_046
 
 Created 4 tasks in 1 batch:
 
-Batch 1 - Registry Parser Fix (backend-developer):
+Batch 1 - Registry Parser Fix (nitro-backend-developer):
   1.1 Fix markdown table parser to handle pipes in cell content
   1.2 Add column count validation per row
   1.3 Add null-safety to status field access in status.ts
   1.4 Add test cases for edge-case registry content
 
-NEXT BATCH ASSIGNED: Batch 1 to backend-developer
+NEXT BATCH ASSIGNED: Batch 1 to nitro-backend-developer
 
 [Developer prompt provided]
 ```
@@ -164,16 +164,16 @@ NEXT BATCH ASSIGNED: Batch 1 to backend-developer
 
 ```typescript
 Task({
-  subagent_type: 'backend-developer',
+  subagent_type: 'nitro-backend-developer',
   description: 'Fix registry parser for TASK_2026_046',
-  prompt: `You are backend-developer for TASK_2026_046.
+  prompt: `You are nitro-backend-developer for TASK_2026_046.
 
 **Task Folder**: task-tracking/TASK_2026_046
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
 **Research**: Read research-report.md for root cause details
 
 Fix all registry parsing issues. Update status to IMPLEMENTED when done.
-See backend-developer.md for detailed instructions.`,
+See nitro-backend-developer.md for detailed instructions.`,
 });
 ```
 

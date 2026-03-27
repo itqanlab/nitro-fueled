@@ -88,7 +88,7 @@ Git conventions for orchestrated task execution.
 
 Each developer agent uses specific type+scope combinations based on their domain.
 
-### backend-developer
+### nitro-backend-developer
 
 ```
 feat(shared): add project settings interface and types
@@ -98,7 +98,7 @@ fix(api): handle null config values on first request
 refactor(shared): extract common validation utilities
 ```
 
-### frontend-developer
+### nitro-frontend-developer
 
 ```
 feat(ui): add settings panel component with form controls
@@ -110,7 +110,7 @@ refactor(ui): migrate settings service to reactive state
 style(ui): apply consistent spacing to form sections
 ```
 
-### devops-engineer
+### nitro-devops-engineer
 
 ```
 ci(project): add macOS code signing to build pipeline
@@ -300,7 +300,7 @@ Please choose how to proceed:
 ```
 feat(shared): add task template interfaces and types
 feat(orchestration): create task-tracking folder structure
-feat(cli): implement create command with planner integration
+feat(cli): implement create command with nitro-planner integration
 feat(orchestration): add supervisor skill with worker spawning
 feat(cli): add status command with plan.md parsing
 feat(orchestration): add exit gate verification checks
