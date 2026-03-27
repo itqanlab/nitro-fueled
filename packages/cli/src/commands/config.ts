@@ -10,7 +10,6 @@ import { runDependencyChecks, checkOpencodeBinary, DEP_NAMES } from '../utils/de
 import type { DependencyResult } from '../utils/dep-check.js';
 import { ensureGitignore } from '../utils/gitignore.js';
 import { getProviderStatus, printProviderStatusTable } from '../utils/provider-status.js';
-import type { ProviderStatusResult } from '../utils/provider-status.js';
 import {
   runGlmMenu,
   runGlmFirstTimeMenu,
@@ -87,7 +86,14 @@ function runUnloadMode(cwd: string, providerArg: string): void {
   }
 
   delete config.providers[provider];
-  writeConfig(cwd, config);
+  try {
+    writeConfig(cwd, config);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`  ✗ Failed to save config: ${msg}`);
+    process.exitCode = 1;
+    return;
+  }
   console.log(`  ✓ ${providerArg} unloaded from config.`);
 }
 
@@ -110,7 +116,7 @@ async function runProvidersPhase(cwd: string, opencodeFound: boolean): Promise<v
   const glmStatus = statuses.find((s) => s.name === 'GLM');
   const glmCurrent = config.providers.glm;
 
-  if (glmCurrent !== undefined && glmStatus?.status !== 'not configured') {
+  if (glmCurrent !== undefined) {
     const result = await runGlmMenu(glmCurrent, glmStatus?.status ?? 'not configured');
     if (result.action === 'unload') {
       delete config.providers.glm;
@@ -129,7 +135,7 @@ async function runProvidersPhase(cwd: string, opencodeFound: boolean): Promise<v
   const openCodeStatus = statuses.find((s) => s.name === 'OpenCode');
   const opencodeCurrent = config.providers.opencode;
 
-  if (opencodeCurrent !== undefined && openCodeStatus?.status !== 'not configured') {
+  if (opencodeCurrent !== undefined) {
     const result = await runOpenCodeMenu(opencodeCurrent, openCodeStatus?.status ?? 'not configured', opencodeFound);
     if (result.action === 'unload') {
       delete config.providers.opencode;
@@ -143,7 +149,14 @@ async function runProvidersPhase(cwd: string, opencodeFound: boolean): Promise<v
     }
   }
 
-  writeConfig(cwd, config);
+  try {
+    writeConfig(cwd, config);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`\n  ✗ Failed to save config: ${msg}`);
+    process.exitCode = 1;
+    return;
+  }
   ensureGitignore(cwd);
 
   const active = [

@@ -16,6 +16,7 @@ import type { ProviderStatus } from './provider-status.js';
 
 export type GlmMenuResult =
   | { action: 'keep' }
+  | { action: 'skip' }
   | { action: 'unload' }
   | { action: 'reconfigure'; config: GlmProviderConfig };
 
@@ -53,7 +54,7 @@ export async function runGlmMenu(
       const reason = result.error !== undefined ? ` (${result.error})` : '';
       console.log(` failed${reason}`);
     }
-    // Test does not change config; loop back treated as keep
+    // Test does not change config — treat as keep
     return { action: 'keep' };
   }
 
@@ -79,12 +80,12 @@ export async function runGlmFirstTimeMenu(): Promise<GlmMenuResult> {
 
   if (choice === 'c') {
     const newConfig = await reconfigureGlm(undefined);
-    if (newConfig === null) return { action: 'keep' };
+    if (newConfig === null) return { action: 'skip' };
     return { action: 'reconfigure', config: newConfig };
   }
 
   console.log('  ↳ (skipped)');
-  return { action: 'keep' };
+  return { action: 'skip' };
 }
 
 /**
@@ -171,22 +172,29 @@ async function reconfigureGlm(existing?: GlmProviderConfig): Promise<GlmProvider
   };
 }
 
+/** Returns true if opencode was successfully installed, false if user declined or install failed. */
+async function installOpenCode(): Promise<boolean> {
+  console.log('  ✗ opencode CLI not found');
+  const install = await prompt('  ? Install opencode globally? (Y/n) ');
+  if (install.toLowerCase() === 'n') return false;
+
+  console.log('  → Running: npm i -g opencode');
+  const result = spawnSync('npm', ['i', '-g', 'opencode'], { stdio: 'inherit' });
+  if (result.status !== 0) {
+    console.log('  Installation failed. Skipping OpenCode configuration.');
+    return false;
+  }
+  console.log('  ✓ opencode installed');
+  return true;
+}
+
 async function reconfigureOpenCode(
   opencodeFound: boolean,
   existing?: OpenCodeProviderConfig,
 ): Promise<OpenCodeProviderConfig | null> {
   if (!opencodeFound) {
-    console.log('  ✗ opencode CLI not found');
-    const install = await prompt('  ? Install opencode globally? (Y/n) ');
-    if (install.toLowerCase() === 'n') return null;
-
-    console.log('  → Running: npm i -g opencode');
-    const result = spawnSync('npm', ['i', '-g', 'opencode'], { stdio: 'inherit' });
-    if (result.status !== 0) {
-      console.log('  Installation failed. Skipping OpenCode configuration.');
-      return null;
-    }
-    console.log('  ✓ opencode installed');
+    const installed = await installOpenCode();
+    if (!installed) return null;
   }
 
   const defaultKeyHint = existing !== undefined

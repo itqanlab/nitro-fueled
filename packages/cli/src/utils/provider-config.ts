@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, renameSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 
 export interface ClaudeProviderConfig {
@@ -74,19 +74,20 @@ export function writeConfig(cwd: string, config: NitroFueledConfig): void {
   const configPath = getConfigPath(cwd);
   const dir = dirname(configPath);
 
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
 
-  // mode: 0o600 sets permissions atomically at creation time, closing the write-then-chmod race.
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
+  // Write to a temp file first, then rename atomically to avoid partial writes on SIGKILL.
+  const tmpPath = configPath + '.tmp';
+  writeFileSync(tmpPath, JSON.stringify(config, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
 
   // chmod also corrects permissions for pre-existing files (non-fatal if unsupported).
   try {
-    chmodSync(configPath, 0o600);
+    chmodSync(tmpPath, 0o600);
   } catch {
     // non-fatal — some platforms may not support chmod
   }
+
+  renameSync(tmpPath, configPath);
 }
 
 /**
@@ -178,7 +179,8 @@ export async function testGlmConnection(apiKey: string, baseUrl: string): Promis
       : 'connected';
     return { ok: true, modelName };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const raw = err instanceof Error ? err.message : String(err);
+    const msg = raw.length > 200 ? raw.slice(0, 200) + '…' : raw;
     return { ok: false, error: msg };
   }
 }
