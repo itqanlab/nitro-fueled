@@ -49,4 +49,9 @@
 | TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-27 | — |
 | TASK_2026_046 | COMPLETE    | BUGFIX      | Dashboard Data Service Completion and Validation | 2026-03-27 | — |
 | TASK_2026_047 | COMPLETE    | REFACTORING | Unified /run, /create, /status Commands + CLI Single-Task Run | 2026-03-27 |
-| TASK_2026_048 | CREATED     | FEATURE     | /retrospective Command — Post-Session Analysis and Learning Loop | 2026-03-27 |
+| TASK_2026_048 | IN_PROGRESS | FEATURE     | /retrospective Command — Post-Session Analysis and Learning Loop | 2026-03-27 |
+| TASK_2026_049 | CREATED     | FEATURE     | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-27 | default |
+| TASK_2026_050 | CREATED     | FEATURE     | `update` Command — Manifest-Based Safe Updates | 2026-03-27 | default |
+| TASK_2026_051 | CREATED     | REFACTORING | Rename All Agents to `nitro-*` Prefix | 2026-03-27 | default |
+| TASK_2026_052 | CREATED     | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
+| TASK_2026_053 | CREATED     | DOCUMENTATION | Update Docs and Workspace to Reflect Package Vision | 2026-03-27 | default |

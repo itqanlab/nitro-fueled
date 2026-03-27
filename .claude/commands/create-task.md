@@ -33,6 +33,7 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
   - **Priority**: Show valid values from the template's Metadata table
   - **Complexity**: Show valid values from the template's Metadata table
   - **Dependencies**: Task IDs this depends on, or "None"
+  - **Parallelism**: Can this run in parallel with other tasks, or must it run alone? Analyze file scope overlap with any other CREATED tasks in the registry to determine this. If the task touches files that are also in scope for other CREATED tasks, mark it as "no parallel" and list which tasks conflict. Always include a `## Parallelism` section in the task.md.
   - **Model**: Which Claude model to use (optional — default: `default`). Show valid values from the template.
   - **Acceptance Criteria**: What "done" looks like (list items)
 
@@ -46,6 +47,23 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
 - Model: default
 
 **Important**: Extract valid values for Type, Priority, and Complexity from the template file read in Step 1. Do not hardcode these values — the template is the single source of truth.
+
+### Step 3b: Dependency and Parallelism Analysis
+
+Before writing the task file, analyze how this task relates to other CREATED tasks in the registry:
+
+1. **Read the File Scope** of the new task (files it will modify)
+2. **Read File Scope sections** of all other CREATED tasks in `registry.md`
+3. **Identify conflicts**: any file appearing in both this task's scope and another task's scope = a conflict
+4. **Determine safe execution wave**: which tasks must complete before this one can start?
+
+Output a `## Parallelism` section in the task.md with:
+- `✅ Can run in parallel` — if no file scope conflicts exist
+- `⚠️ MUST RUN ALONE` — if the blast radius is large enough that any concurrent task risks conflicts (e.g., mass renames, schema changes, cross-cutting refactors)
+- `🚫 Do NOT run in parallel with TASK_X` — list specific conflicting tasks
+- Suggested execution wave (e.g., "Wave 2, after TASK_052 completes")
+
+This analysis is **mandatory** — every task must have a Parallelism section.
 
 ### Step 4: Create Task Folder and File
 

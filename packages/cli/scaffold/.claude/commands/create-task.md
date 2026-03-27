@@ -33,6 +33,8 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
   - **Priority**: Show valid values from the template's Metadata table
   - **Complexity**: Show valid values from the template's Metadata table
   - **Dependencies**: Task IDs this depends on, or "None"
+  - **Parallelism**: Can this run in parallel with other tasks, or must it run alone? Analyze file scope overlap with any other CREATED tasks in the registry to determine this. If the task touches files that are also in scope for other CREATED tasks, mark it as "no parallel" and list which tasks conflict. Always include a `## Parallelism` section in the task.md.
+  - **Model**: Which Claude model to use (optional — default: `default`). Show valid values from the template.
   - **Acceptance Criteria**: What "done" looks like (list items)
 
 **If no argument provided:**
@@ -42,8 +44,26 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
 - Priority: P2-Medium
 - Complexity: Medium
 - Dependencies: None
+- Model: default
 
 **Important**: Extract valid values for Type, Priority, and Complexity from the template file read in Step 1. Do not hardcode these values — the template is the single source of truth.
+
+### Step 3b: Dependency and Parallelism Analysis
+
+Before writing the task file, analyze how this task relates to other CREATED tasks in the registry:
+
+1. **Read the File Scope** of the new task (files it will modify)
+2. **Read File Scope sections** of all other CREATED tasks in `registry.md`
+3. **Identify conflicts**: any file appearing in both this task's scope and another task's scope = a conflict
+4. **Determine safe execution wave**: which tasks must complete before this one can start?
+
+Output a `## Parallelism` section in the task.md with:
+- `✅ Can run in parallel` — if no file scope conflicts exist
+- `⚠️ MUST RUN ALONE` — if the blast radius is large enough that any concurrent task risks conflicts (e.g., mass renames, schema changes, cross-cutting refactors)
+- `🚫 Do NOT run in parallel with TASK_X` — list specific conflicting tasks
+- Suggested execution wave (e.g., "Wave 2, after TASK_052 completes")
+
+This analysis is **mandatory** — every task must have a Parallelism section.
 
 ### Step 4: Create Task Folder and File
 
@@ -57,10 +77,10 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
 Add a new row to `task-tracking/registry.md`:
 
 ```
-| TASK_YYYY_NNN | CREATED | [Type] | [Title or brief description] | YYYY-MM-DD |
+| TASK_YYYY_NNN | CREATED | [Type] | [Title or brief description] | YYYY-MM-DD | [Model or default] |
 ```
 
-Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created**
+Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created** | **Model**
 
 ### Step 6: Post-Creation Validation
 
@@ -125,7 +145,7 @@ Task created successfully.
 
 1. **ALWAYS read `task-template.md` first** — never hardcode template structure
 2. **ALWAYS read `registry.md` to determine the next ID** — never guess or assume
-3. **Registry row format MUST match**: Task ID | Status | Type | Description | Created
+3. **Registry row format MUST match**: Task ID | Status | Type | Description | Created | Model
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
 5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
 6. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs
