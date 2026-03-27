@@ -81,46 +81,50 @@ The task registry (`task-tracking/registry.md`) is a shared file. With concurren
 
 ## Session Log
 
-The supervisor MUST maintain a session log in `orchestrator-state.md` under a `## Session Log` section. Every significant event gets a timestamped entry. This is how you (and the user) know what happened during the session.
+The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. This file uses a three-column format shared with the orchestration skill. Every significant event gets a timestamped row.
 
-**Events to log** (append one line per event):
+**Append one row per event** (do NOT use the `[HH:MM:SS]` bracket format — use the pipe-table row):
 
-| Event | Log Format |
-|-------|-----------|
-| Loop started | `[HH:MM:SS] SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N}` |
-| Worker spawned | `[HH:MM:SS] SPAWNED {worker_id} for TASK_X ({WorkerType}: {TaskType})` |
-| Worker healthy | `[HH:MM:SS] HEALTH CHECK — TASK_X: healthy` |
-| Worker high context | `[HH:MM:SS] HEALTH CHECK — TASK_X: high_context ({context_percent}%)` |
-| Worker compacting | `[HH:MM:SS] HEALTH CHECK — TASK_X: compacting` |
-| Worker stuck (strike 1) | `[HH:MM:SS] WARNING — TASK_X: stuck (strike 1/2)` |
-| Worker stuck (strike 2, killing) | `[HH:MM:SS] KILLING — TASK_X: stuck for 2 consecutive checks` |
-| Kill failed | `[HH:MM:SS] KILL FAILED — TASK_X: {error}` |
-| State transitioned (success) | `[HH:MM:SS] STATE TRANSITIONED — TASK_X: {old_state} -> {new_state}` |
-| No transition (failure) | `[HH:MM:SS] NO TRANSITION — TASK_X: expected {expected_state}, still {current_state} (retry {N}/{limit})` |
-| Build done | `[HH:MM:SS] BUILD DONE — TASK_X: IMPLEMENTED, spawning Review Worker` |
-| Review done | `[HH:MM:SS] REVIEW DONE — TASK_X: COMPLETE` |
-| Retry scheduled | `[HH:MM:SS] RETRY — TASK_X: attempt {N}/{retry_limit}` |
-| Task blocked (max retries) | `[HH:MM:SS] BLOCKED — TASK_X: exceeded {retry_limit} retries` |
-| Task blocked (cycle) | `[HH:MM:SS] BLOCKED — TASK_X: dependency cycle with TASK_Y` |
-| Task blocked (cancelled dep) | `[HH:MM:SS] BLOCKED — TASK_X: dependency TASK_Y is CANCELLED` |
-| Task blocked (missing dep) | `[HH:MM:SS] BLOCKED — TASK_X: dependency TASK_Y not in registry` |
-| MCP retry | `[HH:MM:SS] MCP RETRY — {tool_name}: attempt {N}/3` |
-| MCP failure (per-worker) | `[HH:MM:SS] MCP SKIP — TASK_X: {tool_name} failed, will retry next interval` |
-| MCP failure (global) | `[HH:MM:SS] MCP UNREACHABLE — pausing supervisor, state saved` |
-| Spawn failure | `[HH:MM:SS] SPAWN FAILED — TASK_X: {error}` |
-| State recovered | `[HH:MM:SS] STATE RECOVERED — {N} active workers, {N} completed` |
-| Reconciliation | `[HH:MM:SS] RECONCILE — worker {id} missing from MCP, treating as finished` |
-| Cleanup spawned | `[HH:MM:SS] CLEANUP — TASK_X: spawning Cleanup Worker to salvage uncommitted work` |
-| Cleanup done | `[HH:MM:SS] CLEANUP DONE — TASK_X: {committed N files | no uncommitted changes}` |
-| Worker replaced | `[HH:MM:SS] REPLACING — TASK_X: spawning new worker (previous {reason})` |
-| Compaction detected | `[HH:MM:SS] COMPACTION — reading orchestrator-state.md to restore context` |
-| Plan consultation | `[HH:MM:SS] PLAN CONSULT — guidance: {PROCEED|REPRIORITIZE|ESCALATE|NO_ACTION}` |
-| Plan escalation | `[HH:MM:SS] PLAN ESCALATION — {guidance_note}` |
-| Plan no action | `[HH:MM:SS] PLAN — no action needed` |
-| Plan not found | `[HH:MM:SS] PLAN — no plan.md found, using default ordering` |
-| Loop stopped | `[HH:MM:SS] SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked` |
+| Event | Log Row |
+|-------|---------|
+| Pre-flight passed | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT PASSED — {no issues found \| N warning(s)} \|` |
+| Pre-flight warning | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT WARNING — {warning_message} \|` |
+| Pre-flight blocking issue | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT BLOCKING — {blocking_issue_message} \|` |
+| Pre-flight aborted | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT FAILED — {N} blocking issue(s) found \|` |
+| Loop started | `\| {HH:MM:SS} \| auto-pilot \| SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} \|` |
+| Worker spawned | `\| {HH:MM:SS} \| auto-pilot \| SPAWNED {worker_id} for TASK_X ({WorkerType}: {TaskType}) \|` |
+| Worker healthy | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: healthy \|` |
+| Worker high context | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: high_context ({context_percent}%) \|` |
+| Worker compacting | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: compacting \|` |
+| Worker stuck (strike 1) | `\| {HH:MM:SS} \| auto-pilot \| WARNING — TASK_X: stuck (strike 1/2) \|` |
+| Worker stuck (strike 2, killing) | `\| {HH:MM:SS} \| auto-pilot \| KILLING — TASK_X: stuck for 2 consecutive checks \|` |
+| Kill failed | `\| {HH:MM:SS} \| auto-pilot \| KILL FAILED — TASK_X: {error} \|` |
+| State transitioned (success) | `\| {HH:MM:SS} \| auto-pilot \| STATE TRANSITIONED — TASK_X: {old_state} -> {new_state} \|` |
+| No transition (failure) | `\| {HH:MM:SS} \| auto-pilot \| NO TRANSITION — TASK_X: expected {expected_state}, still {current_state} (retry {N}/{limit}) \|` |
+| Build done | `\| {HH:MM:SS} \| auto-pilot \| BUILD DONE — TASK_X: IMPLEMENTED, spawning Review Worker \|` |
+| Review done | `\| {HH:MM:SS} \| auto-pilot \| REVIEW DONE — TASK_X: COMPLETE \|` |
+| Retry scheduled | `\| {HH:MM:SS} \| auto-pilot \| RETRY — TASK_X: attempt {N}/{retry_limit} \|` |
+| Task blocked (max retries) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: exceeded {retry_limit} retries \|` |
+| Task blocked (cycle) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency cycle with TASK_Y \|` |
+| Task blocked (cancelled dep) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency TASK_Y is CANCELLED \|` |
+| Task blocked (missing dep) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency TASK_Y not in registry \|` |
+| MCP retry | `\| {HH:MM:SS} \| auto-pilot \| MCP RETRY — {tool_name}: attempt {N}/3 \|` |
+| MCP failure (per-worker) | `\| {HH:MM:SS} \| auto-pilot \| MCP SKIP — TASK_X: {tool_name} failed, will retry next interval \|` |
+| MCP failure (global) | `\| {HH:MM:SS} \| auto-pilot \| MCP UNREACHABLE — pausing supervisor, state saved \|` |
+| Spawn failure | `\| {HH:MM:SS} \| auto-pilot \| SPAWN FAILED — TASK_X: {error} \|` |
+| State recovered | `\| {HH:MM:SS} \| auto-pilot \| STATE RECOVERED — {N} active workers, {N} completed \|` |
+| Reconciliation | `\| {HH:MM:SS} \| auto-pilot \| RECONCILE — worker {id} missing from MCP, treating as finished \|` |
+| Cleanup spawned | `\| {HH:MM:SS} \| auto-pilot \| CLEANUP — TASK_X: spawning Cleanup Worker to salvage uncommitted work \|` |
+| Cleanup done | `\| {HH:MM:SS} \| auto-pilot \| CLEANUP DONE — TASK_X: {committed N files \| no uncommitted changes} \|` |
+| Worker replaced | `\| {HH:MM:SS} \| auto-pilot \| REPLACING — TASK_X: spawning new worker (previous {reason}) \|` |
+| Compaction detected | `\| {HH:MM:SS} \| auto-pilot \| COMPACTION — reading {SESSION_DIR}state.md to restore context \|` |
+| Plan consultation | `\| {HH:MM:SS} \| auto-pilot \| PLAN CONSULT — guidance: {PROCEED\|REPRIORITIZE\|ESCALATE\|NO_ACTION} \|` |
+| Plan escalation | `\| {HH:MM:SS} \| auto-pilot \| PLAN ESCALATION — {guidance_note} \|` |
+| Plan no action | `\| {HH:MM:SS} \| auto-pilot \| PLAN — no action needed \|` |
+| Plan not found | `\| {HH:MM:SS} \| auto-pilot \| PLAN — no plan.md found, using default ordering \|` |
+| Loop stopped | `\| {HH:MM:SS} \| auto-pilot \| SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked \|` |
 
-The log is part of `orchestrator-state.md` and survives compactions. Keep the last 100 entries max (trim older entries on write). After compaction, the log tells you exactly what happened before context was lost.
+The log lives at `{SESSION_DIR}log.md` and is **append-only** — never trim or overwrite it. The `state.md` file (in the same directory) is still fully overwritten on each update and holds the structured worker/queue tables. After compaction, restore context from `state.md`; the full event history lives in `log.md`.
 
 > **Compaction limit**: The supervisor session should compact at most 2 times. If the session has already compacted twice and context is still growing, gracefully stop the loop, save state, and instruct the user to re-run `/auto-pilot` to continue from saved state. This prevents degraded performance from excessive compaction.
 
@@ -156,17 +160,65 @@ The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions 
 
 ---
 
+## Session Directory
+
+On startup, the supervisor creates a session-scoped directory for all state and log output.
+
+**Directory path**: `task-tracking/sessions/SESSION_{YYYY-MM-DD}_{HH-MM}/`
+
+Timestamp is the wall-clock start time (local time, zero-padded). Example:
+`task-tracking/sessions/SESSION_2026-03-24_22-00/`
+
+### Files inside the session directory
+
+| File | Written by | Purpose |
+|------|-----------|---------|
+| `state.md` | auto-pilot | Live supervisor state (workers, queues, config). Full overwrite on every update. |
+| `log.md` | auto-pilot + orchestration skill | Unified event log. Append-only. All orchestration paths write here. |
+| `analytics.md` | TASK_032 (future) | Post-session analytics. Not created by this task. |
+| `worker-logs/` | (future) | Per-worker log files. Not created by this task. |
+
+### Session Lifecycle
+
+**On startup**:
+
+1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM}` using current timestamp.
+2. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
+3. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
+   ```markdown
+   # Session Log — {SESSION_ID}
+
+   | Timestamp | Source | Event |
+   |-----------|--------|-------|
+   ```
+4. Append first log entry to `log.md`:
+   `| {HH:MM:SS} | auto-pilot | SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} |`
+5. Register in `task-tracking/active-sessions.md` (append row — see Active Sessions File section).
+6. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
+   subsequent state and log writes. Every reference to `orchestrator-state.md` in this skill
+   means `{SESSION_DIR}state.md`.
+
+**On stop** (normal completion, compaction limit, MCP unreachable, manual):
+
+1. Write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED`.
+2. Append final log entry to `{SESSION_DIR}log.md`:
+   `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
+3. Remove this session's row from `task-tracking/active-sessions.md`.
+4. Proceed to Step 8b (append to `orchestrator-history.md`) as before.
+
+---
+
 ## Concurrent Session Guard
 
 On startup, **after MCP validation passes, before entering the loop**:
 
-1. If `orchestrator-state.md` exists and `Loop Status` is `RUNNING`:
-   - Log: `"WARNING: A previous supervisor session may still be running (state shows RUNNING)."`
+1. Read `task-tracking/active-sessions.md` (if it exists).
+2. If any row with Source `auto-pilot` is present:
+   - Log: `"WARNING: Another supervisor session may still be running: {SESSION_ID}"`
    - Ask the user to confirm with `--force` flag, or abort.
-   - If `--force` provided, continue (overwrite the previous session's state).
-2. Write `Loop Status: RUNNING` to `orchestrator-state.md` immediately.
-
-This prevents accidental duplicate supervisor sessions from competing for the same workers and tasks.
+   - If `--force` provided, continue (the existing session row will remain until it cleans
+     up; this session will run concurrently at its own `SESSION_DIR`).
+3. Proceed to Session Directory startup (create dir, register in active-sessions.md).
 
 ---
 
@@ -174,7 +226,7 @@ This prevents accidental duplicate supervisor sessions from competing for the sa
 
 ### Step 1: Read State (Recovery Check)
 
-**IF** `task-tracking/orchestrator-state.md` exists:
+**IF** `{SESSION_DIR}state.md` exists:
 
 1. Read it and restore loop state:
    - Active workers (worker IDs, task IDs, worker types, labels, statuses, spawn times, stuck counts, expected end states)
@@ -193,6 +245,8 @@ This prevents accidental duplicate supervisor sessions from competing for the sa
    - **Case 4 -- IMPLEMENTED in registry, worker NOT in MCP**: Build Worker succeeded, queue Review Worker.
    - **Case 5 -- IN_REVIEW in registry, worker NOT in MCP**: Treat as failed Review Worker.
 
+**Compaction recovery note**: After a compaction, `SESSION_DIR` must be re-derived from the session timestamp stored in `state.md` (`Session Started` field). The supervisor re-reads `{SESSION_DIR}state.md` and restores `SESSION_DIR` from the stored path before continuing.
+
 **ELSE** (no state file):
 
 1. Initialize fresh state with default or overridden configuration.
@@ -204,7 +258,7 @@ This prevents accidental duplicate supervisor sessions from competing for the sa
 2. Parse every row: extract **Task ID**, **Status**, **Type**, **Description**.
 3. For each task with status **CREATED**, **IN_PROGRESS**, **IMPLEMENTED**, or **IN_REVIEW**:
    - Read `task-tracking/TASK_YYYY_NNN/task.md`
-   - Extract: **Type**, **Priority**, **Complexity**, **Dependencies** list, **File Scope** list
+   - Extract: **Type**, **Priority**, **Complexity**, **Model** (treat as `default` if the field is absent or not present in the task), **Dependencies** list, **File Scope** list
 4. If a `task.md` is missing or malformed:
    - Log warning: `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`
    - Continue with remaining tasks.
@@ -228,6 +282,8 @@ For each CREATED task, verify its `task.md` has sufficient content for the orche
 **If validation passes**, the task proceeds to the dependency graph.
 
 > This validation ensures the supervisor never spawns a worker for a vague task that will waste a session asking clarifying questions with no human to answer.
+
+> **Pre-flight note**: The Pre-Flight Task Validation step in the `/auto-pilot` command entry point already ran task completeness and sizing checks before entering this context. This step is a belt-and-suspenders check inside the supervisor — tasks that passed pre-flight should pass here too, but new tasks added mid-session would not have been pre-flighted.
 
 ### Step 3: Build Dependency Graph
 
@@ -340,12 +396,13 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 - `prompt`: the generated prompt from 5b
 - `working_directory`: project root absolute path
 - `label`: `"TASK_YYYY_NNN-TYPE-BUILD"` or `"TASK_YYYY_NNN-TYPE-REVIEW"` (e.g., `"TASK_2026_003-FEATURE-BUILD"`)
+- `model`: the Model field from task.md (omit this parameter entirely if the field is absent, set to `default`, or the task was created before model selection was added — this causes spawn_worker to use the system default)
 
 **5d. On successful spawn:**
 
 - Do NOT update the registry (workers update their own registry states)
 - Record in `orchestrator-state.md` active workers table:
-  - worker_id, task_id, worker_type=`"Build"|"Review"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`
+  - worker_id, task_id, worker_type=`"Build"|"Review"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — if the task's Model field was `default` or absent, record the actual system default model ID that spawn_worker will use, e.g. `claude-opus-4-6`; never record the sentinel `"default"`)
 
 **5e. On spawn failure (MCP error):**
 
@@ -353,7 +410,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 - Leave task status as-is (will retry next loop iteration)
 - Continue with remaining tasks
 
-**5f. Write `orchestrator-state.md`** after **each** successful spawn (not after all spawns). This prevents orphaned workers if the session compacts mid-spawn sequence.
+**5f. Write `{SESSION_DIR}state.md`** after **each** successful spawn (not after all spawns). This prevents orphaned workers if the session compacts mid-spawn sequence.
 
 ### Step 6: Monitor Active Workers
 
@@ -401,7 +458,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 
    **6d.** Reset `stuck_count` to 0 for any worker **NOT** in `stuck` state.
 
-   **6e.** Write `orchestrator-state.md` after monitoring pass.
+   **6e.** Write `{SESSION_DIR}state.md` after monitoring pass. Also append the health events from this pass to `{SESSION_DIR}log.md`.
 
 ### Step 7: Handle Completions
 
@@ -474,7 +531,7 @@ This means any worker can be replaced at any time — the supervisor never depen
 
 | Condition | Action |
 |-----------|--------|
-| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `orchestrator-state.md` with `loop_status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
+| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `{SESSION_DIR}state.md` with `loop_status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
 | No actionable tasks **BUT** active workers exist | Log: `"No actionable tasks. Waiting for {N} active workers..."` Go to **Step 6** (monitor, wait for completions that may unblock). |
 | Actionable tasks exist | Go to **Step 4** (select and spawn). |
 
@@ -508,7 +565,7 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 
 | Time | Event |
 |------|-------|
-{copy full Session Log from orchestrator-state.md}
+{copy full event table from {SESSION_DIR}log.md}
 ```
 
 3. This file is **append-only** — never overwrite previous sessions.
@@ -800,7 +857,7 @@ Task folder: task-tracking/TASK_YYYY_NNN/
 
 ## orchestrator-state.md Format
 
-Written to `task-tracking/orchestrator-state.md`. Must be parseable after compaction -- uses clear section headers and markdown tables.
+Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24_22-00/state.md`). Must be parseable after compaction -- uses clear section headers and markdown tables.
 
 ```markdown
 # Orchestrator State
@@ -808,6 +865,7 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 **Loop Status**: RUNNING | STOPPED
 **Last Updated**: YYYY-MM-DD HH:MM:SS
 **Session Started**: YYYY-MM-DD HH:MM:SS
+**Session Directory**: task-tracking/sessions/SESSION_2026-03-24_22-00/
 
 ## Configuration
 
@@ -858,24 +916,24 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 |---------------|-------------|
 | TASK_2026_005 | 2           |
 
-## Session Log
-
-| Timestamp | Event |
-|-----------|-------|
-| 10:00:00 | SUPERVISOR STARTED — 6 tasks, 3 unblocked, concurrency 3 |
-| 10:00:05 | SPAWNED abc-123 for TASK_2026_003 (Build: FEATURE) |
-| 10:00:08 | SPAWNED def-456 for TASK_2026_004 (Review: BUGFIX) |
-| 10:10:00 | HEALTH CHECK — TASK_2026_003: healthy |
-| 10:10:02 | HEALTH CHECK — TASK_2026_004: high_context (82%) |
-| 10:20:00 | STATE TRANSITIONED — TASK_2026_004: IN_REVIEW -> COMPLETE |
-| 10:20:01 | REVIEW DONE — TASK_2026_004: COMPLETE |
-| 10:20:05 | SPAWNED ghi-789 for TASK_2026_006 (Build: FEATURE) |
-| 10:30:00 | WARNING — TASK_2026_003: stuck (strike 1/2) |
-| 10:40:00 | KILLING — TASK_2026_003: stuck for 2 consecutive checks |
-| 10:40:01 | RETRY — TASK_2026_003: attempt 1/2 |
-| 10:40:02 | REPLACING — TASK_2026_003: spawning new worker (previous stuck) |
-
 **Compaction Count**: 0
+```
+
+### log.md Format
+
+Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on session startup with the header row, then one row appended per event.
+
+```markdown
+# Session Log — SESSION_2026-03-24_22-00
+
+| Timestamp | Source | Event |
+|-----------|--------|-------|
+| 10:00:00 | auto-pilot | SUPERVISOR STARTED — 6 tasks, 3 unblocked, concurrency 3 |
+| 10:00:05 | auto-pilot | SPAWNED abc-123 for TASK_2026_003 (Build: FEATURE) |
+| 10:05:00 | orchestrate | PM phase complete for TASK_2026_010 |
+| 10:10:00 | auto-pilot | HEALTH CHECK — TASK_2026_003: healthy |
+| 10:15:00 | orchestrate | Architect phase complete for TASK_2026_010 |
+| 10:20:00 | auto-pilot | STATE TRANSITIONED — TASK_2026_003: IN_PROGRESS -> IMPLEMENTED |
 ```
 
 **Key design properties**:
@@ -884,6 +942,7 @@ Written to `task-tracking/orchestrator-state.md`. Must be parseable after compac
 - **Standard markdown**: All tables use standard markdown syntax, parseable by any agent after compaction.
 - **Retry persistence**: Retry Tracker persists across loop iterations and compactions -- not just for active workers.
 - **Task Queue is informational**: Recalculated each loop iteration, but useful for context recovery after compaction.
+- **Split state/log**: `state.md` is fully overwritten on each update (structured tables). `log.md` is append-only (human-readable event stream). Keep them separate.
 
 ---
 

@@ -9,6 +9,7 @@
 | Type       | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
 | Priority   | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity | [Simple | Medium | Complex]                                                   |
+| Model      | [claude-opus-4-6 | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | default]    |
 
 <!-- Type: Determines agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
@@ -21,10 +22,16 @@
 
      Priority: Determines queue ordering in auto-pilot (P0 first, P3 last)
 
-     Complexity: Influences strategy selection weighting
-       Simple  — less than 2 hours
-       Medium  — 2 to 8 hours
-       Complex — more than 8 hours -->
+     Complexity: Determines model selection and worker strategy
+       Simple  — single layer, follow established patterns, ≤3 files
+       Medium  — 1-2 layers, some architectural decisions needed, 4-7 files
+       Complex — cross-cutting concerns, novel architecture, creative problem-solving
+
+     Model: Optional. Controls which Claude model the Supervisor uses when spawning a worker for this task.
+       claude-opus-4-6            — Most capable, highest cost. Use for complex/high-risk tasks.
+       claude-sonnet-4-6          — Balanced capability and cost. Use for most tasks.
+       claude-haiku-4-5-20251001  — Fastest and cheapest. Use for simple/mechanical tasks.
+       default                    — Uses the system default model (set by DEFAULT_MODEL env var in session-orchestrator). Omit this field or set to "default" to use the system default. -->
 
 ## Description
 

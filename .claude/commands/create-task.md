@@ -33,6 +33,7 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
   - **Priority**: Show valid values from the template's Metadata table
   - **Complexity**: Show valid values from the template's Metadata table
   - **Dependencies**: Task IDs this depends on, or "None"
+  - **Model**: Which Claude model to use (optional — default: `default`). Show valid values from the template.
   - **Acceptance Criteria**: What "done" looks like (list items)
 
 **If no argument provided:**
@@ -42,6 +43,7 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
 - Priority: P2-Medium
 - Complexity: Medium
 - Dependencies: None
+- Model: default
 
 **Important**: Extract valid values for Type, Priority, and Complexity from the template file read in Step 1. Do not hardcode these values — the template is the single source of truth.
 
@@ -57,10 +59,10 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
 Add a new row to `task-tracking/registry.md`:
 
 ```
-| TASK_YYYY_NNN | CREATED | [Type] | [Title or brief description] | YYYY-MM-DD |
+| TASK_YYYY_NNN | CREATED | [Type] | [Title or brief description] | YYYY-MM-DD | [Model or default] |
 ```
 
-Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created**
+Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created** | **Model**
 
 ### Step 6: Post-Creation Validation
 
@@ -125,7 +127,7 @@ Task created successfully.
 
 1. **ALWAYS read `task-template.md` first** — never hardcode template structure
 2. **ALWAYS read `registry.md` to determine the next ID** — never guess or assume
-3. **Registry row format MUST match**: Task ID | Status | Type | Description | Created
+3. **Registry row format MUST match**: Task ID | Status | Type | Description | Created | Model
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
 5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
 6. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs
