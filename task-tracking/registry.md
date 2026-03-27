@@ -22,7 +22,7 @@
 | TASK_2026_018 | COMPLETE    | CREATIVE    | Nitro-Fueled Landing Hero Visual Redesign | 2026-03-24 | — |
 | TASK_2026_019 | COMPLETE    | BUGFIX      | Fix Print Mode Token/Cost Tracking        | 2026-03-24 | — |
 | TASK_2026_020 | COMPLETE    | FEATURE     | Per-Task Model Selection                  | 2026-03-24 | default |
-| TASK_2026_021 | IMPLEMENTED | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 | default |
+| TASK_2026_021 | COMPLETE    | FEATURE     | Smart Provider & Model Routing            | 2026-03-24 | default |
 | TASK_2026_022 | IMPLEMENTED | FEATURE     | Dashboard Data Service                    | 2026-03-24 | — |
 | TASK_2026_023 | IMPLEMENTED | FEATURE     | Dashboard Web Client                      | 2026-03-24 | — |
 | TASK_2026_024 | COMPLETE    | FEATURE     | Dashboard CLI Command + Service Integration | 2026-03-24 | default |
@@ -49,3 +49,4 @@
 | TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-27 | — |
 | TASK_2026_046 | COMPLETE    | BUGFIX      | Dashboard Data Service Completion and Validation | 2026-03-27 | — |
 | TASK_2026_047 | COMPLETE    | REFACTORING | Unified /run, /create, /status Commands + CLI Single-Task Run | 2026-03-27 |
+| TASK_2026_048 | CREATED     | FEATURE     | /retrospective Command — Post-Session Analysis and Learning Loop | 2026-03-27 |
