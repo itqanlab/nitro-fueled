@@ -185,4 +185,11 @@ export type {
   ActiveSessionRecord,
   SessionSummary,
   SessionData,
+  PipelineData,
+  PipelinePhase,
+  PipelinePhaseStatus,
+  WorkerTree,
+  WorkerTreeNode,
+  WorkerHealth,
+  SessionAnalytics,
 } from './events/event-types.js';

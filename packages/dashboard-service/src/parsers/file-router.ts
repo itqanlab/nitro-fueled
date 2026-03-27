@@ -17,6 +17,7 @@ import { LessonsParser } from './lessons.parser.js';
 import { SessionStateParser } from './session-state.parser.js';
 import { SessionLogParser } from './session-log.parser.js';
 import { ActiveSessionsParser } from './active-sessions.parser.js';
+import { SessionAnalyticsParser } from './session-analytics.parser.js';
 
 export class FileRouter {
   private readonly registryParser = new RegistryParser();
@@ -30,6 +31,7 @@ export class FileRouter {
   private readonly sessionStateParser = new SessionStateParser();
   private readonly sessionLogParser = new SessionLogParser();
   private readonly activeSessionsParser = new ActiveSessionsParser();
+  private readonly sessionAnalyticsParser = new SessionAnalyticsParser();
 
   // Per-file debounce timers (100ms) to absorb burst writes during active orchestration.
   private readonly debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
@@ -72,6 +74,11 @@ export class FileRouter {
 
     if (taskIdMatch && filePath.endsWith('completion-report.md')) {
       this.store.removeCompletionReport(taskIdMatch[0]);
+      return;
+    }
+
+    if (taskIdMatch && this.sessionAnalyticsParser.canParse(filePath)) {
+      this.store.removeSessionAnalytics(taskIdMatch[0]);
       return;
     }
 
@@ -206,6 +213,13 @@ export class FileRouter {
         return;
       }
       this.store.setCompletionReport(report.taskId, report);
+      return;
+    }
+
+    if (this.sessionAnalyticsParser.canParse(filePath)) {
+      const analytics = this.sessionAnalyticsParser.parse(content, filePath);
+      if (!analytics.taskId) return;
+      this.store.setSessionAnalytics(analytics.taskId, analytics);
       return;
     }
 

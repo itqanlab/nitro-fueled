@@ -9,6 +9,9 @@ import type {
   DashboardStats,
   SessionSummary,
   SessionData,
+  GraphData,
+  PipelineData,
+  WorkerTree,
 } from '../types/index.js';
 
 const API_BASE = (import.meta as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE ?? '/api';
@@ -65,6 +68,19 @@ class ApiClient {
 
   public async getStats(): Promise<DashboardStats> {
     return this.fetchJson<DashboardStats>('/stats');
+  }
+
+  public async getGraph(): Promise<GraphData> {
+    return this.fetchJson<GraphData>('/graph');
+  }
+
+  public async getTaskPipeline(taskId: string): Promise<PipelineData> {
+    if (!TASK_ID_RE.test(taskId)) throw new Error(`Invalid taskId: ${taskId}`);
+    return this.fetchJson<PipelineData>(`/tasks/${taskId}/pipeline`);
+  }
+
+  public async getWorkerTree(): Promise<readonly WorkerTree[]> {
+    return this.fetchJson<readonly WorkerTree[]>('/workers/tree');
   }
 
   public async getHealth(): Promise<{ status: string; timestamp: string }> {

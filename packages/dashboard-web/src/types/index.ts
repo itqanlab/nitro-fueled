@@ -209,6 +209,25 @@ export interface SessionData {
   readonly log: ReadonlyArray<{ readonly timestamp: string; readonly source: string; readonly event: string }>;
 }
 
+export interface GraphNode {
+  readonly id: string;
+  readonly title: string;
+  readonly status: TaskStatus;
+  readonly type: string;
+  readonly priority: string;
+  readonly isUnblocked: boolean;
+}
+
+export interface GraphEdge {
+  readonly from: string;
+  readonly to: string;
+}
+
+export interface GraphData {
+  readonly nodes: ReadonlyArray<GraphNode>;
+  readonly edges: ReadonlyArray<GraphEdge>;
+}
+
 export type DashboardEventType =
   | 'task:created'
   | 'task:updated'
@@ -229,4 +248,43 @@ export interface DashboardEvent {
   readonly type: DashboardEventType;
   readonly timestamp: string;
   readonly payload: Record<string, unknown>;
+}
+
+export type PipelinePhaseStatus = 'pending' | 'active' | 'complete' | 'failed';
+
+export interface PipelinePhase {
+  readonly name: string;
+  readonly status: PipelinePhaseStatus;
+  readonly duration: string | null;
+  readonly isParallel: boolean;
+  readonly parallelParts: ReadonlyArray<string>;
+}
+
+export interface PipelineData {
+  readonly taskId: string;
+  readonly taskStatus: string;
+  readonly phases: ReadonlyArray<PipelinePhase>;
+  readonly totalDuration: string | null;
+  readonly outcome: string | null;
+}
+
+export type WorkerHealth = 'healthy' | 'warning' | 'stuck';
+
+export interface WorkerTreeNode {
+  readonly workerId: string;
+  readonly taskId: string;
+  readonly label: string;
+  readonly role: string;
+  readonly workerType: string;
+  readonly status: string;
+  readonly health: WorkerHealth;
+  readonly elapsedMs: number;
+  readonly spawnTime: string;
+  readonly stuckCount: number;
+  readonly children: ReadonlyArray<WorkerTreeNode>;
+}
+
+export interface WorkerTree {
+  readonly taskId: string;
+  readonly roots: ReadonlyArray<WorkerTreeNode>;
 }

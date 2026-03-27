@@ -12,10 +12,13 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { path: '/', label: 'Task Board', icon: '📋' },
   { path: '/roadmap', label: 'Roadmap', icon: '🗺️' },
+  { path: '/pipeline', label: 'Pipeline', icon: '📊' },
+  { path: '/squad', label: 'Squad', icon: '👥' },
   { path: '/workers', label: 'Workers', icon: '⚙️' },
   { path: '/queue', label: 'Queue', icon: '📥' },
   { path: '/log', label: 'Session Log', icon: '📜' },
   { path: '/sessions', label: 'Sessions', icon: '🖥️' },
+  { path: '/graph', label: 'Dep. Graph', icon: '🕸️' },
   { path: '/reviews', label: 'Reviews', icon: '🔍' },
   { path: '/cost', label: 'Cost', icon: '💰' },
   { path: '/patterns', label: 'Anti-Patterns', icon: '⚠️' },

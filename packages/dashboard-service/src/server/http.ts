@@ -107,6 +107,23 @@ export function createHttpServer(store: StateStore, sessionStore: SessionStore, 
     sendJson(res, req, store.getStats());
   });
 
+  addRoute('GET', '/api/graph', (req, res) => {
+    sendJson(res, req, store.getGraph());
+  });
+
+  addRoute('GET', '/api/tasks/:id/pipeline', (req, res, params) => {
+    const record = store.getRegistry().find((r) => r.id === params.id);
+    if (!record) {
+      sendJson(res, req, { error: `Task ${params.id} not found` }, 404);
+      return;
+    }
+    sendJson(res, req, store.getTaskPipeline(params.id));
+  });
+
+  addRoute('GET', '/api/workers/tree', (req, res) => {
+    sendJson(res, req, store.getWorkerTree());
+  });
+
   // CRITICAL ORDER: register /api/sessions/active before /api/sessions/:id to prevent
   // "active" from being captured as the :id parameter.
   addRoute('GET', '/api/sessions/active', (req, res) => {

@@ -12,6 +12,9 @@ import { AntiPatterns } from './views/AntiPatterns.js';
 import { ReviewLessons } from './views/ReviewLessons.js';
 import { TaskDetail } from './views/TaskDetail.js';
 import { Sessions } from './views/Sessions.js';
+import { DependencyGraph } from './views/DependencyGraph.js';
+import { Pipeline } from './views/Pipeline.js';
+import { Squad } from './views/Squad.js';
 import { useInitialData, useWebSocket } from './hooks/index.js';
 import { tokens } from './theme/tokens.js';
 
@@ -93,6 +96,9 @@ function AppContent(): React.JSX.Element {
       <Route path="/lessons" element={wrap('Review Lessons', <ReviewLessons />)} />
       <Route path="/task/:id" element={wrap('Task Detail', <TaskDetail />)} />
       <Route path="/sessions" element={wrap('Sessions', <Sessions />)} />
+      <Route path="/graph" element={wrap('Dependency Graph', <DependencyGraph />)} />
+      <Route path="/pipeline" element={wrap('Pipeline', <Pipeline />)} />
+      <Route path="/squad" element={wrap('Squad', <Squad />)} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
