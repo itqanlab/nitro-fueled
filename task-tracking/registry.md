@@ -56,3 +56,7 @@
 | TASK_2026_052 | CREATED     | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
 | TASK_2026_053 | CREATED     | DOCUMENTATION | Update Docs and Workspace to Reflect Package Vision | 2026-03-27 | default |
 | TASK_2026_054 | CREATED     | FEATURE       | OpenCode Provider — Subscription/OAuth Auth Support | 2026-03-27 | default |
+| TASK_2026_055 | CREATED     | DEVOPS        | Scaffold Astro Starlight Docs Site | 2026-03-27 | default |
+| TASK_2026_056 | CREATED     | CREATIVE      | Build Nitro-Fueled Marketing Landing Page | 2026-03-27 | default |
+| TASK_2026_057 | CREATED     | DOCUMENTATION | Write Full Documentation Content | 2026-03-27 | default |
+| TASK_2026_058 | CREATED     | REFACTORING   | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-27 | default |
