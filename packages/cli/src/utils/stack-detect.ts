@@ -43,6 +43,15 @@ interface PackageJson {
   devDependencies?: Record<string, string>;
 }
 
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
+
+function isPackageJson(val: unknown): val is PackageJson {
+  // PackageJson has only optional fields; any non-null object satisfies its structure
+  return typeof val === 'object' && val !== null;
+}
+
 function readFileSafe(filePath: string): string {
   try {
     return readFileSync(filePath, 'utf-8');
@@ -102,12 +111,14 @@ function detectNodeFrameworks(cwd: string): string[] {
   const content = readFileSafe(pkgPath);
   if (content === '') return [];
 
-  let pkg: PackageJson;
+  let pkg: PackageJson | undefined;
   try {
-    pkg = JSON.parse(content) as PackageJson;
+    const parsedPkg: unknown = JSON.parse(content);
+    if (isPackageJson(parsedPkg)) pkg = parsedPkg;
   } catch {
     return [];
   }
+  if (pkg === undefined) return [];
 
   const allDeps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
   const frameworks: string[] = [];
@@ -322,6 +333,7 @@ export function proposeAgentsFromMarkers(markers: string[]): AgentProposal[] {
     { prefix: 'infrastructure:terraform', language: '_infrastructure', framework: 'terraform', stack: 'infrastructure + terraform' },
     { prefix: 'infrastructure:kubernetes', language: '_infrastructure', framework: 'kubernetes', stack: 'infrastructure + kubernetes' },
     { prefix: 'infrastructure:docker', language: '_infrastructure', framework: 'docker', stack: 'infrastructure + docker' },
+    { prefix: 'infrastructure:github-actions', language: '_infrastructure', framework: null, stack: 'infrastructure + github-actions' },
   ];
 
   for (const rule of markerToAgent) {
@@ -376,9 +388,15 @@ Here are the workspace signals:
  * Parse the AI analysis response, validating the expected structure.
  * Returns null if parsing fails.
  */
-function parseAIAnalysisResponse(raw: string): AIAnalysisResult | null {
+/** Allowlist for AI-returned agent names: prevents path traversal and shell injection */
+const AGENT_NAME_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const MAX_TITLE_LEN = 100;
+const MAX_REASON_LEN = 500;
+const MAX_SUMMARY_LEN = 300;
+
+function parseAIAnalysisResponse(responseText: string): AIAnalysisResult | null {
   // Strip markdown code fences if present
-  let cleaned = raw.trim();
+  let cleaned = responseText.trim();
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
   }
@@ -390,35 +408,36 @@ function parseAIAnalysisResponse(raw: string): AIAnalysisResult | null {
     return null;
   }
 
-  if (typeof parsed !== 'object' || parsed === null) return null;
-
-  const obj = parsed as Record<string, unknown>;
+  if (!isRecord(parsed)) return null;
 
   // Validate domains
-  if (!Array.isArray(obj['domains'])) return null;
-  const domains = (obj['domains'] as unknown[]).filter((d): d is string => typeof d === 'string');
+  const rawDomains = parsed['domains'];
+  if (!Array.isArray(rawDomains)) return null;
+  const domains = rawDomains.filter((d): d is string => typeof d === 'string');
 
   // Validate agents
-  if (!Array.isArray(obj['agents'])) return null;
-  const validConfidences = new Set(['high', 'medium', 'low']);
+  const rawAgents = parsed['agents'];
+  if (!Array.isArray(rawAgents)) return null;
   const agents: AIAnalysisResult['agents'] = [];
-  for (const raw of obj['agents'] as unknown[]) {
-    if (typeof raw !== 'object' || raw === null) continue;
-    const a = raw as Record<string, unknown>;
-    if (typeof a['name'] !== 'string' || typeof a['title'] !== 'string') continue;
-    const confidence = typeof a['confidence'] === 'string' && validConfidences.has(a['confidence'])
-      ? a['confidence'] as 'high' | 'medium' | 'low'
-      : 'medium';
-    agents.push({
-      name: a['name'],
-      title: a['title'],
-      reason: typeof a['reason'] === 'string' ? a['reason'] : '',
-      confidence,
-    });
+  for (const agentEntry of rawAgents) {
+    if (!isRecord(agentEntry)) continue;
+    if (typeof agentEntry['name'] !== 'string' || typeof agentEntry['title'] !== 'string') continue;
+    // Validate name against allowlist — prevents path traversal via AI-returned agent name (HIGH-1)
+    if (!AGENT_NAME_RE.test(agentEntry['name'])) continue;
+    const name = agentEntry['name'];
+    const title = agentEntry['title'].slice(0, MAX_TITLE_LEN);
+    // Narrow confidence via equality checks — avoids `as` assertion
+    const rawConf = agentEntry['confidence'];
+    const confidence: 'high' | 'medium' | 'low' =
+      rawConf === 'high' || rawConf === 'medium' || rawConf === 'low' ? rawConf : 'medium';
+    const rawReason = agentEntry['reason'];
+    const reason = typeof rawReason === 'string' ? rawReason.slice(0, MAX_REASON_LEN) : '';
+    agents.push({ name, title, reason, confidence });
   }
 
   // Validate summary
-  const summary = typeof obj['summary'] === 'string' ? obj['summary'] : '';
+  const rawSummary = parsed['summary'];
+  const summary = typeof rawSummary === 'string' ? rawSummary.slice(0, MAX_SUMMARY_LEN) : '';
 
   return { domains, agents, summary };
 }
@@ -436,7 +455,7 @@ export function runAIAnalysis(signals: WorkspaceSignals): AIAnalysisResult | nul
     maxBuffer: 1024 * 1024,
   });
 
-  if (result.status !== 0) {
+  if (result.status !== 0 || result.signal !== null) {
     const stderr = result.stderr?.toString().trim() ?? '';
     if (stderr !== '') {
       console.error(`  AI analysis failed: ${stderr.slice(0, 200)}`);
@@ -479,7 +498,7 @@ function mergeProposals(heuristic: AgentProposal[], ai: AgentProposal[]): AgentP
     } else {
       // Enrich existing proposal with AI reasoning
       const existing = merged.find((p) => p.agentName === aiProposal.agentName);
-      if (existing !== undefined && aiProposal.reason !== undefined) {
+      if (existing !== undefined && aiProposal.reason !== undefined && aiProposal.reason !== '') {
         existing.reason = aiProposal.reason;
         existing.confidence = aiProposal.confidence;
       }

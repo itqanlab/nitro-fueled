@@ -7,8 +7,8 @@ import type { Command } from 'commander';
 import { detectMcpConfig } from '../utils/mcp-config.js';
 import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
-import { detectStack, proposeAgents, analyzeWorkspace } from '../utils/stack-detect.js';
-import type { AgentProposal, DetectedStack, WorkspaceAnalysisResult } from '../utils/stack-detect.js';
+import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
+import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
 import { generateAntiPatterns, buildStackLabel } from '../utils/anti-patterns.js';
 import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
@@ -168,7 +168,6 @@ function handleAntiPatterns(cwd: string, scaffoldRoot: string, overwrite: boolea
 
 async function handleStackDetection(
   cwd: string,
-  stacks: DetectedStack[],
   opts: InitOptions
 ): Promise<string[]> {
   if (opts.skipAgents) return [];
@@ -469,7 +468,7 @@ export function registerInitCommand(program: Command): void {
       }
 
       // Step 8: Generate developer agents for detected stack
-      const agentPaths = await handleStackDetection(cwd, detectedStacks, opts);
+      const agentPaths = await handleStackDetection(cwd, opts);
       allCreatedFiles.push(...agentPaths);
 
       // Step 9: Write manifest

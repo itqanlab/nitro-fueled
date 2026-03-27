@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 
 export interface WorkspaceSignals {
@@ -15,7 +15,7 @@ export interface WorkspaceSignals {
 const IGNORED_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', '.next', '.nuxt',
   '__pycache__', '.venv', 'venv', '.tox', '.mypy_cache',
-  'target', '.gradle', '.idea', '.vscode', '.DS_Store',
+  'target', '.gradle', '.idea', '.vscode',
   'vendor', '.terraform', '.serverless', 'coverage',
   '.nitro-fueled', '.claude',
 ]);
@@ -57,6 +57,7 @@ function readFileSafe(filePath: string, maxBytes: number = MAX_CONFIG_BYTES): st
     const content = readFileSync(filePath, 'utf-8');
     return content.length > maxBytes ? content.slice(0, maxBytes) + '\n... (truncated)' : content;
   } catch {
+    // intentional: callers expect '' on I/O failure (file gone, locked, etc.)
     return '';
   }
 }
@@ -73,6 +74,7 @@ function walkTree(cwd: string, currentPath: string, depth: number, maxDepth: num
   try {
     names = readdirSync(resolve(cwd, currentPath));
   } catch {
+    // intentional: unreadable directory (permissions, race condition) — skip it
     return [];
   }
 
@@ -84,6 +86,7 @@ function walkTree(cwd: string, currentPath: string, depth: number, maxDepth: num
     try {
       isDir = statSync(fullPath).isDirectory();
     } catch {
+      // intentional: stat failure (race condition, broken symlink) — skip entry
       continue;
     }
 
@@ -188,18 +191,16 @@ function collectConfigFiles(cwd: string): Record<string, string> {
 
   for (const fileName of CONFIG_FILES) {
     const filePath = resolve(cwd, fileName);
-    if (existsSync(filePath)) {
-      try {
-        const stat = statSync(filePath);
-        if (stat.isFile()) {
-          const content = readFileSafe(filePath);
-          if (content !== '') {
-            configs[fileName] = content;
-          }
-        }
-      } catch {
-        // skip unreadable files
+    if (!existsSync(filePath)) continue;
+    try {
+      const stat = lstatSync(filePath);
+      if (stat.isSymbolicLink() || !stat.isFile()) continue; // skip symlinks — prevent reading outside workspace
+      const content = readFileSafe(filePath);
+      if (content !== '') {
+        configs[fileName] = content;
       }
+    } catch {
+      // intentional: skip unreadable files (permissions, race condition)
     }
   }
 
@@ -210,20 +211,20 @@ function collectConfigFiles(cwd: string): Record<string, string> {
       if (name.endsWith('.tf')) {
         const tfPath = resolve(cwd, name);
         try {
-          if (statSync(tfPath).isFile()) {
-            const content = readFileSafe(tfPath);
-            if (content !== '') {
-              configs[name] = content;
-              break; // only first .tf file
-            }
+          const tfStat = lstatSync(tfPath);
+          if (tfStat.isSymbolicLink() || !tfStat.isFile()) continue; // skip symlinks
+          const content = readFileSafe(tfPath);
+          if (content !== '') {
+            configs[name] = content;
+            break; // only first .tf file
           }
         } catch {
-          // skip unreadable
+          // intentional: skip unreadable .tf files
         }
       }
     }
   } catch {
-    // ignore
+    // intentional: root readdirSync failure (permissions) — skip .tf scan
   }
 
   return configs;
@@ -276,7 +277,9 @@ export function formatSignalsForPrompt(signals: WorkspaceSignals): string {
   const configEntries = Object.entries(signals.configFiles);
   if (configEntries.length > 0) {
     for (const [name, content] of configEntries) {
-      sections.push(`\n### ${name}\n\`\`\`\n${content}\n\`\`\``);
+      // Escape triple-backtick sequences so workspace content cannot break the fence structure
+      const safeContent = content.replace(/```/g, '` ` `');
+      sections.push(`\n### ${name}\n\`\`\`\n${safeContent}\n\`\`\``);
     }
   } else {
     sections.push('  (no config files found)');
