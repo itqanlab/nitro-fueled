@@ -83,7 +83,7 @@ server.tool(
   },
   async ({ worker_id }) => {
     const w = registry.get(worker_id);
-    if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }] };
+    if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }], isError: true };
 
     const health = getHealth(w.pid, w.tokens.context_percent, w.tokens.compaction_count, w.progress.last_action_at, w.progress.message_count, w.started_at);
     const elapsed = Math.round((Date.now() - w.started_at) / 60000);
@@ -117,7 +117,7 @@ server.tool(
   },
   async ({ worker_id }) => {
     const w = registry.get(worker_id);
-    if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }] };
+    if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }], isError: true };
 
     const elapsed = Math.round((Date.now() - w.started_at) / 60000);
     const health = getHealth(w.pid, w.tokens.context_percent, w.tokens.compaction_count, w.progress.last_action_at, w.progress.message_count, w.started_at);
@@ -168,7 +168,7 @@ server.tool(
   },
   async ({ worker_id, reason }) => {
     const w = registry.get(worker_id);
-    if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }] };
+    if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }], isError: true };
 
     let killed: boolean;
     let paneClosed = false;

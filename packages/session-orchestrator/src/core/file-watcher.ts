@@ -111,7 +111,7 @@ export class FileWatcher {
    * Close all watchers (called on MCP server shutdown).
    */
   closeAll(): void {
-    for (const [id] of [...this.subscriptions.keys()]) {
+    for (const id of this.subscriptions.keys()) {
       this.cleanup(id);
     }
   }

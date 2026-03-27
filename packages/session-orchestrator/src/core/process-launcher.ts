@@ -22,7 +22,7 @@ const childProcesses = new Map<number, ChildProcess>();
 
 export function spawnTrackedProcess(opts: SpawnTrackedOptions): SpawnTrackedResult {
   const logDir = join(opts.workingDirectory, '.worker-logs');
-  mkdirSync(logDir, { recursive: true });
+  mkdirSync(logDir, { recursive: true, mode: 0o700 });
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const safeLabel = opts.label.replace(/[^a-zA-Z0-9_-]/g, '_');

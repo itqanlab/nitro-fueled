@@ -20,7 +20,7 @@ export function handleGetPendingEvents(
   return {
     content: [{
       type: 'text' as const,
-      text: JSON.stringify({ events }, null, 2),
+      text: JSON.stringify({ events }),
     }],
   };
 }

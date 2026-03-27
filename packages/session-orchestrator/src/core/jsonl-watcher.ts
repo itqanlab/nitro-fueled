@@ -322,8 +322,9 @@ export class JsonlWatcher {
 export function resolveSessionId(pid: number): string | null {
   const sessionFile = join(homedir(), '.claude', 'sessions', `${pid}.json`);
   if (!existsSync(sessionFile)) return null;
-  const meta: SessionMeta = JSON.parse(readFileSync(sessionFile, 'utf-8'));
-  return meta.sessionId;
+  const parsed: unknown = JSON.parse(readFileSync(sessionFile, 'utf-8'));
+  if (typeof parsed !== 'object' || parsed === null || typeof (parsed as Record<string, unknown>).sessionId !== 'string') return null;
+  return (parsed as SessionMeta).sessionId;
 }
 
 // Resolve JSONL path from session ID and working directory

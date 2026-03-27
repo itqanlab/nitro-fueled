@@ -7,18 +7,18 @@ const watchConditionSchema = z.discriminatedUnion('type', [
     type: z.literal('file_value'),
     path: z.string().min(1).max(500).describe('Path relative to worker working_directory'),
     value: z.string().max(500).describe('File content (trimmed) must equal this value'),
-    event_label: z.string().min(1).max(100).describe('Label included in the emitted event'),
+    event_label: z.string().regex(/^[A-Z0-9_]{1,64}$/).describe('Label included in the emitted event — uppercase alphanumeric and underscores only'),
   }),
   z.object({
     type: z.literal('file_contains'),
     path: z.string().min(1).max(500).describe('Path relative to worker working_directory'),
     contains: z.string().min(1).max(500).describe('File content must contain this substring'),
-    event_label: z.string().min(1).max(100).describe('Label included in the emitted event'),
+    event_label: z.string().regex(/^[A-Z0-9_]{1,64}$/).describe('Label included in the emitted event — uppercase alphanumeric and underscores only'),
   }),
   z.object({
     type: z.literal('file_exists'),
     path: z.string().min(1).max(500).describe('Path relative to worker working_directory — fires when file is created or modified'),
-    event_label: z.string().min(1).max(100).describe('Label included in the emitted event'),
+    event_label: z.string().regex(/^[A-Z0-9_]{1,64}$/).describe('Label included in the emitted event — uppercase alphanumeric and underscores only'),
   }),
 ]);
 

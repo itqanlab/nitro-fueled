@@ -21,8 +21,9 @@ export async function launchInIterm(opts: LaunchOptions): Promise<LaunchResult> 
     .replace(/"/g, '\\"')
     .replace(/'/g, "'\\''");
 
+  const escapedWorkingDirectory = opts.workingDirectory.replace(/'/g, "'\\''");
   const command = [
-    `cd '${opts.workingDirectory}'`,
+    `cd '${escapedWorkingDirectory}'`,
     '&&',
     'claude',
     '--dangerously-skip-permissions',
@@ -110,8 +111,11 @@ export async function killProcess(pid: number): Promise<boolean> {
   }
 }
 
+const ITERM_SESSION_ID_RE = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i;
+
 export async function closeItermSession(itermSessionId: string): Promise<boolean> {
   if (!itermSessionId) return false;
+  if (!ITERM_SESSION_ID_RE.test(itermSessionId)) return false;
 
   const script = `
 tell application "iTerm"

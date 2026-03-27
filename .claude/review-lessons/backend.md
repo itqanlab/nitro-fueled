@@ -123,6 +123,8 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 
 ## File Watchers / Data Services
 
+- **`Map.prototype.keys()` must not be destructured in a for-of loop** — `for (const [id] of map.keys())` destructures each string key character-by-character because `keys()` returns `MapIterator<string>`, not `MapIterator<[string, V]>`. The variable receives the first character of the key, not the key itself. `cleanup(id)` then silently does nothing — the watcher is never closed. Use `for (const id of map.keys())` (no destructuring) or `for (const [id] of map)` (iterate the Map's entries directly). (TASK_2026_063)
+
 - **Never use `readFileSync` in a file-watcher callback** — chokidar events fire on the Node.js event loop. Calling `readFileSync` inside the callback blocks all HTTP requests, WebSocket sends, and further watcher events for the duration of the read. Use `readFile` from `node:fs/promises` and make the callback handler async. (TASK_2026_022)
 - **Array-index-based diff logic breaks when the source array is compacted** — comparing `newLog.length > oldLog.length` and using `slice(oldLength)` to find new entries assumes the array is append-only. If the source document is periodically compacted (truncated), this emits zero events after compaction and silently skips entries once the log grows past the pre-compaction length. Track a compaction counter or diff by content identity, not array position. (TASK_2026_022)
 - **`as SomeType` casts on externally-parsed strings must be replaced with runtime validation** — `cells[1] as TaskRecord['status']` in a markdown parser silently passes typos and future enum additions through to the store and event bus. Validate against the known union values at parse time and emit a warning for unrecognized values; never use a cast on data that originates from a user-editable file. (TASK_2026_022)
@@ -149,6 +151,10 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **On failed `git commit`, always unstage with `git reset HEAD --`** — if `git add` succeeds but `git commit` fails (e.g., pre-commit hook rejection, missing git identity), the files remain staged. The CLI must run `git reset HEAD -- <files>` before returning, or the user's working tree is left in an unexpected staged state with no guidance. (TASK_2026_031)
 - **CLI commands that invoke git must propagate failure via process.exitCode** — if `commitScaffold()` logs an error and returns, but the caller does not set `process.exitCode = 1`, CI pipelines will exit 0 on commit failure. Every failure path in a CLI command must set `process.exitCode` to a non-zero value. (TASK_2026_031)
 - **Files created by async sub-operations must be returned to the caller for downstream use** — `handleStackDetection` generates agent files but returns `void`. When the caller needs those paths (e.g., to stage them in a `--commit` flow), the function must return the list of written paths. A void async helper that creates files is a tracking black hole. (TASK_2026_031)
+
+## Map / Iterator Iteration Patterns
+
+- **`Map.keys()` returns strings — never destructure as a tuple in a `for...of` loop** — `for (const [id] of map.keys())` destructures each string key as a char array, so `id` is the first character of the key, not the key itself. Use `for (const id of map.keys())` or `for (const [id, value] of map.entries())`. This bug is silent: the body runs with a truncated ID, `Map.get(oneChar)` returns `undefined`, and cleanup is never performed. (TASK_2026_063)
 
 ## Supervisor Orchestration Specs (SKILL.md)
 

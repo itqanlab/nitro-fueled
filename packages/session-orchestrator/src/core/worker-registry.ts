@@ -31,7 +31,7 @@ export class WorkerRegistry {
         return;
       }
       for (const [id, worker] of parsed.entries) {
-        this.workers.set(id, worker);
+        this.workers.set(id, { tokens: emptyTokens(), cost: emptyCost(), progress: emptyProgress(), ...(worker as Partial<Worker>) } as Worker);
       }
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
