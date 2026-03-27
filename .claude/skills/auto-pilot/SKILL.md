@@ -103,6 +103,8 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Worker healthy | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: healthy \|` |
 | Worker high context | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: high_context ({context_percent}%) \|` |
 | Worker compacting | `\| {HH:MM:SS} \| auto-pilot \| HEALTH CHECK — TASK_X: compacting \|` |
+| Compaction warning | `\| {HH:MM:SS} \| auto-pilot \| COMPACTION WARNING — TASK_X: compacted {N} times \|` |
+| Compaction limit | `\| {HH:MM:SS} \| auto-pilot \| COMPACTION LIMIT — TASK_X: compacted {N} times, killing \|` |
 | Worker stuck (strike 1) | `\| {HH:MM:SS} \| auto-pilot \| WARNING — TASK_X: stuck (strike 1/2) \|` |
 | Worker stuck (strike 2, killing) | `\| {HH:MM:SS} \| auto-pilot \| KILLING — TASK_X: stuck for 2 consecutive checks \|` |
 | Kill failed | `\| {HH:MM:SS} \| auto-pilot \| KILL FAILED — TASK_X: {error} \|` |
@@ -147,8 +149,6 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Session archive failed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE WARNING — commit failed: {reason[:200]} \|` |
 
 The log lives at `{SESSION_DIR}log.md` and is **append-only** — never trim or overwrite it. The `state.md` file (in the same directory) is still fully overwritten on each update and holds the structured worker/queue tables. After compaction, restore context from `state.md`; the full event history lives in `log.md`.
-
-> **Compaction limit**: The supervisor session should compact at most 2 times. If the session has already compacted twice and context is still growing, gracefully stop the loop, save state, and instruct the user to re-run `/auto-pilot` to continue from saved state. This prevents degraded performance from excessive compaction.
 
 ---
 
@@ -701,7 +701,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
 > |------------------|--------|
 > | `healthy`        | Log activity summary. No action needed. |
 > | `high_context`   | Log: `"TASK_X worker at high context usage -- still progressing"`. No action. |
-> | `compacting`     | Log: `"TASK_X worker is compacting context"`. No action. |
+> | `compacting`     | Increment `compaction_count` for this worker in state.md. If count == 3: log `COMPACTION WARNING — TASK_X: compacted 3 times, task may be oversized`. If count >= 6: log `COMPACTION LIMIT — TASK_X: compacted 6 times, killing`, call `kill_worker`, trigger Worker Recovery Protocol, increment `retry_count`. |
 > | `stuck`          | Apply two-strike detection (see below). |
 > | `finished`       | Trigger completion handler (Step 7). |
 >
@@ -731,7 +731,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
    |------------------|--------|
    | `healthy`        | Log activity summary. No action needed. |
    | `high_context`   | Log: `"TASK_X worker at high context usage -- still progressing"`. No action. Worker will compact automatically. |
-   | `compacting`     | Log: `"TASK_X worker is compacting context"`. No action. This is normal for long tasks. |
+   | `compacting`     | Increment `compaction_count` for this worker in state.md. If count == 3: log `COMPACTION WARNING — TASK_X: compacted 3 times, task may be oversized`. If count >= 6: log `COMPACTION LIMIT — TASK_X: compacted 6 times, killing`, call `kill_worker`, trigger Worker Recovery Protocol, increment `retry_count`. |
    | `stuck`          | Apply two-strike detection (see below). |
    | `finished`       | Trigger completion handler (Step 7). |
 
@@ -912,6 +912,7 @@ After any worker completion (successful or failed state transition confirmed in 
 | Completion Time | {current_time} |
 | Duration | {duration_minutes}m |
 | Outcome | IMPLEMENTED \| COMPLETE \| FAILED \| STUCK |
+| Compaction Count | {compaction_count} |
 
 > Timestamps (`spawn_time`, `current_time`) must use local time with timezone offset: `YYYY-MM-DD HH:MM:SS +ZZZZ`. To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
 
@@ -1636,13 +1637,13 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 
 ## Active Workers
 
-| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Expected End State |
-|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|-------------------|
-| abc-123   | TASK_2026_003 | Build            | TASK_2026_003-FEATURE-BUILD    | running | 2026-03-24 10:00:00 +0200 | healthy     | 0           | IMPLEMENTED        |
-| def-456   | TASK_2026_004 | ReviewLead       | TASK_2026_004-BUGFIX-REVIEW    | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | REVIEW_DONE        |
-| ghi-789   | TASK_2026_004 | TestLead         | TASK_2026_004-BUGFIX-TEST      | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | TEST_DONE          |
-| jkl-012   | TASK_2026_005 | FixWorker        | TASK_2026_005-FEATURE-FIX      | running | 2026-03-24 10:10:00 +0200 | healthy     | 0           | COMPLETE           |
-| mno-345   | TASK_2026_006 | CompletionWorker | TASK_2026_006-FEATURE-COMPLETE | running | 2026-03-24 10:10:00 +0200 | healthy     | 0           | COMPLETE           |
+| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Compaction Count | Expected End State |
+|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|------------------|-------------------|
+| abc-123   | TASK_2026_003 | Build            | TASK_2026_003-FEATURE-BUILD    | running | 2026-03-24 10:00:00 +0200 | healthy     | 0           | 0                | IMPLEMENTED        |
+| def-456   | TASK_2026_004 | ReviewLead       | TASK_2026_004-BUGFIX-REVIEW    | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | 0                | REVIEW_DONE        |
+| ghi-789   | TASK_2026_004 | TestLead         | TASK_2026_004-BUGFIX-TEST      | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | 0                | TEST_DONE          |
+| jkl-012   | TASK_2026_005 | FixWorker        | TASK_2026_005-FEATURE-FIX      | running | 2026-03-24 10:10:00 +0200 | healthy     | 0           | 0                | COMPLETE           |
+| mno-345   | TASK_2026_006 | CompletionWorker | TASK_2026_006-FEATURE-COMPLETE | running | 2026-03-24 10:10:00 +0200 | healthy     | 0           | 0                | COMPLETE           |
 
 
 ## Serialized Reviews
