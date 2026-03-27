@@ -106,6 +106,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_019 | Fix Print Mode Token/Cost Tracking | COMPLETE | P1-High |
 | TASK_2026_020 | Per-Task Model Selection | COMPLETE | P2-Medium |
 | TASK_2026_021 | Smart Provider & Model Routing | COMPLETE | P1-High |
+| TASK_2026_042 | CLI Provider Configuration and Dependency Validation | COMPLETE | P1-High |
 
 ### Phase 7: Real-Time Dashboard
 **Status**: NOT STARTED

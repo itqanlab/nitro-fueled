@@ -43,7 +43,7 @@
 | TASK_2026_039 | CREATED     | FEATURE     | Dashboard Pipeline and Squad Visualization | 2026-03-25 | default |
 | TASK_2026_040 | CREATED     | FEATURE     | Dashboard Dependency Graph Visualization | 2026-03-25 | default |
 | TASK_2026_041 | CREATED     | FEATURE     | Dashboard Historical Analytics — Cross-Session Trends | 2026-03-25 | default |
-| TASK_2026_042 | IMPLEMENTED | FEATURE     | CLI Provider Configuration and Dependency Validation | 2026-03-25 | default |
+| TASK_2026_042 | COMPLETE    | FEATURE     | CLI Provider Configuration and Dependency Validation | 2026-03-25 | default |
 | TASK_2026_043 | COMPLETE    | REFACTORING | Task Sizing Validation in /create-task Command | 2026-03-27 | — |
 | TASK_2026_044 | COMPLETE    | FEATURE     | Pre-Flight Validation with Task Sizing Check | 2026-03-27 | — |
 | TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-27 | — |
