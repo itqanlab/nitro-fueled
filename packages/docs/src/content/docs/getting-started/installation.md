@@ -97,11 +97,15 @@ The `session-orchestrator` is a standalone MCP server that enables the Superviso
 **Clone and build:**
 
 ```bash
-git clone https://github.com/iamb0ody/session-orchestrator /path/to/session-orchestrator
+git clone https://github.com/your-org/nitro-fueled-session-orchestrator /path/to/session-orchestrator
 cd /path/to/session-orchestrator
 npm install
 npm run build
 ```
+
+:::note
+The `session-orchestrator` repository URL will be published alongside the Nitro-Fueled package. Check the main Nitro-Fueled repository README for the authoritative clone URL.
+:::
 
 **Verify the build:**
 

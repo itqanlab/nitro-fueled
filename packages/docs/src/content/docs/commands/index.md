@@ -65,6 +65,18 @@ Regenerates `task-tracking/registry.md` from the current `status` files, then pr
 
 ---
 
+### `npx nitro-fueled update`
+
+**Purpose:** Update core agent, skill, and command files to the latest version without overwriting project-specific files.
+
+```bash
+npx nitro-fueled update
+```
+
+Updates all `nitro-*` prefixed agent files, all core skills, and all slash commands in `.claude/`. Files without the `nitro-` prefix (your project-specific agents) are never touched. Run after upgrading the `nitro-fueled` package to pull in the latest agent definitions.
+
+---
+
 ## Slash Commands
 
 Slash commands run inside a Claude Code session. Use them for interactive, conversational workflows.
@@ -220,6 +232,81 @@ Scans the project structure, identifies architecture patterns, and generates `CL
 
 ---
 
+### `/status`
+
+**Purpose:** Project status report. Alias for `/project-status`.
+
+```
+/status
+```
+
+Generates a verified status report by cross-referencing the codebase, task-tracking folder, and `registry.md`. Reports task states, active workers, completed milestones, and any inconsistencies. Use interchangeably with `/project-status`.
+
+---
+
+### `/create`
+
+**Purpose:** Unified task creation — routes to the Planner for discussion-based creation or the quick form for immediate scaffolding.
+
+```
+/create [description]           # Planner mode — discussion-based task creation
+/create --quick [description]   # Quick mode — form-based task scaffolding
+```
+
+Without `--quick`, starts a Planner conversation to discuss requirements and scope the work before writing any files. With `--quick`, routes directly to `/create-task` for immediate form-based scaffolding.
+
+---
+
+### `/create-agent`
+
+**Purpose:** Generate a new developer agent from the canonical developer template and update the agent catalog.
+
+```
+/create-agent                 # Interactive — prompts for all fields
+/create-agent [name]          # Pre-fills name, prompts for the rest
+```
+
+Reads the developer template and stack-detection registry, prompts for stack and domain focus, generates a fully populated agent definition, and updates the agent catalog. Agent name must end with `-developer` (e.g., `react-developer`).
+
+---
+
+### `/create-skill`
+
+**Purpose:** Scaffold a new skill directory with a pre-filled `SKILL.md`.
+
+```
+/create-skill                 # Interactive — prompts for all fields
+/create-skill [name]          # Pre-fills name, prompts for the rest
+```
+
+Creates `.claude/skills/{name}/SKILL.md` following the existing skill pattern. The generated file includes YAML frontmatter, trigger conditions, and placeholder sections. Fill in the workflow details after creation.
+
+---
+
+### `/evaluate-agent`
+
+**Purpose:** Agent calibration loop — tests an agent against its definition and auto-fixes failures.
+
+```
+/evaluate-agent <agent-name>
+```
+
+Runs a targeted test against the specified agent, scores the output on four dimensions (scope adherence, instruction compliance, output quality, tool use), and applies definition fixes on failure. Loops up to 3 iterations before flagging the agent for manual review.
+
+---
+
+### `/orchestrate-help`
+
+**Purpose:** Quick reference for orchestration commands and workflow phases.
+
+```
+/orchestrate-help
+```
+
+Prints a concise reference showing the `/orchestrate` command arguments, the workflow phases (Pre-Flight → PM → Researcher → Architect → Developer → Reviewer), quality gates, and common troubleshooting steps.
+
+---
+
 ## Command Summary Table
 
 | Command | Surface | When to Use |
@@ -228,17 +315,24 @@ Scans the project structure, identifies architecture patterns, and generates `CL
 | `npx nitro-fueled create` | CLI | New task creation |
 | `npx nitro-fueled run [TASK_ID]` | CLI | Execute task(s) |
 | `npx nitro-fueled status` | CLI | Check project health |
+| `npx nitro-fueled update` | CLI | Update core agents/skills/commands |
 | `/plan` | Slash | Strategic planning and roadmap |
+| `/create` | Slash | Unified task creation (Planner or quick form) |
 | `/create-task` | Slash | Interactive task scaffolding |
 | `/orchestrate [TASK_ID]` | Slash | Single-task pipeline run |
 | `/auto-pilot` | Slash | Full backlog processing loop |
 | `/run [TASK_ID]` | Slash | Unified execution |
 | `/project-status` | Slash | Verified project health report |
+| `/status` | Slash | Project status report (alias for `/project-status`) |
 | `/review-code` | Slash | Full code quality review |
 | `/review-logic` | Slash | Logic-only review |
 | `/review-security` | Slash | Security-only review |
 | `/retrospective` | Slash | Post-session learning capture |
 | `/initialize-workspace` | Slash | Generate project documentation |
+| `/create-agent` | Slash | Generate a new developer agent |
+| `/create-skill` | Slash | Scaffold a new skill |
+| `/evaluate-agent` | Slash | Agent calibration and testing loop |
+| `/orchestrate-help` | Slash | Quick reference for orchestration workflow |
 
 ---
 

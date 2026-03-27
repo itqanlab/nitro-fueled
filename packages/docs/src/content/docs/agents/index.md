@@ -271,6 +271,6 @@ Mines the codebase for technically accurate content claims. Never uses generic m
 
 ## See Also
 
-- [Core Concepts](../concepts/) — How agents fit into the worker and supervisor architecture
+- [Core Concepts](../concepts/) — How agents fit into the worker and Supervisor architecture
 - [Task Format](../task-format/) — How the `Type` field determines which agents are invoked
 - [Commands Reference](../commands/) — `/plan`, `/orchestrate`, and other agent-triggering commands

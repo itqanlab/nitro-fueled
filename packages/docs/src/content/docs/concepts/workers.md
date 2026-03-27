@@ -9,12 +9,15 @@ The isolation is deliberate: each worker starts with a clean context, preventing
 
 ---
 
-## Two Worker Types
+## Worker Types
 
 | Worker Type | Spawned When | What It Does | Exit State |
 |-------------|-------------|--------------|------------|
 | **Build Worker** | Task status is `CREATED` | Runs `/orchestrate` — drives the PM → Architect → Team-Leader → Developer pipeline. Writes code, creates commits, produces `completion-report.md`. | `IMPLEMENTED` |
-| **Review Worker** | Task status is `IMPLEMENTED` | Runs code review — spawns logic, style, and security reviewer sub-workers in parallel. Applies fixes. Writes `code-*-review.md` files. | `COMPLETE` or `FAILED` |
+| **Review Worker** (Review Lead + Test Lead) | Task status is `IMPLEMENTED` | Spawns two parallel workers: a Review Lead that runs logic, style, and security checks; and a Test Lead that runs the test suite. Both write their findings to the task folder. | `COMPLETE` or `FAILED` |
+| **Fix Worker** | Review Worker finds blocking issues (`FAILED` state) | Applies the reviewer findings, re-runs QA checks, writes updated review output. Spawned automatically when Review Lead or Test Lead finds issues. | `COMPLETE` |
+| **Completion Worker** | Review and tests are clean | Writes `completion-report.md`, sets task status to `COMPLETE`, and updates `plan.md`. Spawned automatically when both Review Lead and Test Lead produce clean results. | `COMPLETE` |
+| **Cleanup Worker** | Build Worker is killed mid-task with uncommitted work | Salvages any uncommitted work from the killed worker, creates a recovery commit, and prepares the task for retry. | Resets to `CREATED` for retry |
 
 ---
 
@@ -34,12 +37,13 @@ The Team-Leader agent (inside the Build Worker) owns all git commits. Each batch
 
 ## Worker Health States
 
-The `session-orchestrator` MCP server monitors each worker's token usage and activity in real time by watching the worker's JSONL conversation file. Health is assessed on every monitoring interval (default: 10 minutes):
+The `session-orchestrator` MCP server monitors each worker's token usage and activity in real time by watching the worker's JSONL conversation file. Health is assessed on every monitoring interval (default: 5 minutes):
 
 | Health State | Condition | Supervisor Action |
 |-------------|-----------|------------------|
 | `healthy` | Active, context under 80%, no long gaps | Continue monitoring |
 | `high_context` | Context usage above 80% | Log warning, continue |
+| `compacting` | Context window is being compacted (normal — Claude Code auto-compaction activated) | Wait for compaction to complete; do not count as stuck |
 | `stuck` | No tool calls in last 120 seconds | First strike: warn and continue |
 | `finished` | Worker process has exited | Check state transition |
 

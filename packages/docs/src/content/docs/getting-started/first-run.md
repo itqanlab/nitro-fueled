@@ -93,6 +93,10 @@ Or from inside Claude Code:
 
 ## Step 3: Watch the Worker
 
+:::caution[Unrestricted Permissions]
+Workers run with `--dangerously-skip-permissions`, granting full file write and shell execution authority. The worker can read, write, and delete any file the process owner can access, and execute any shell command the agents decide is necessary — with no confirmation prompts. Always run Auto-Pilot against a development branch, never directly on main.
+:::
+
 When you run a task, the system:
 
 1. Opens a new iTerm2 tab labeled with the task ID
@@ -128,7 +132,7 @@ The state machine:
 CREATED → IN_PROGRESS → IMPLEMENTED → IN_REVIEW → COMPLETE
 ```
 
-If the Build Worker finishes successfully, the state moves to `IMPLEMENTED` and a Review Worker is automatically spawned. When the review passes, the state moves to `COMPLETE`.
+If the Build Worker finishes successfully, the state moves to `IMPLEMENTED`. When running via the full Supervisor loop (`npx nitro-fueled run` or `/auto-pilot`), a Review Worker is automatically spawned. When running a single task directly (`npx nitro-fueled run TASK_ID`), the review phase runs inline within the same session. When the review passes, the state moves to `COMPLETE`.
 
 > **Tip:** If a worker gets stuck or fails, the state moves to `FAILED`. You can retry by resetting the status file to `CREATED` and running the task again.
 

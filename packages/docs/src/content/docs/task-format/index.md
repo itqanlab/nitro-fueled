@@ -26,7 +26,7 @@ description: The task file format and frontmatter schema used by Nitro-Fueled.
 | Type | Agent Flow |
 |------|-----------|
 | `FEATURE` | PM → Architect → Team-Leader → Developer → Review Lead + Test Lead |
-| `BUGFIX` | Team-Leader → Developer → Review Lead + Test Lead |
+| `BUGFIX` | [Research] → Team-Leader → Developer → Review Lead + Test Lead |
 | `REFACTORING` | Architect → Team-Leader → Developer → Review Lead + Test Lead |
 | `DOCUMENTATION` | PM → Developer → Style Reviewer |
 | `RESEARCH` | Researcher → conditional implementation |

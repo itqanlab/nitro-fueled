@@ -19,28 +19,34 @@ npx nitro-fueled run
 
 Both start the same Supervisor loop. The CLI version runs in the terminal; the slash command version runs inside your Claude Code session.
 
+:::caution[Unrestricted Permissions]
+Workers run with `--dangerously-skip-permissions`, granting full file write and shell execution authority. Workers can read, write, and delete any file the process owner can access, and execute any shell command the agents decide is necessary — with no confirmation prompts. Always run Auto-Pilot against a development branch, never directly on main.
+:::
+
 ---
 
 ## Configuration
 
-Auto-Pilot configuration lives in `task-tracking/orchestrator-state.md`. Edit this file before starting a session to override defaults.
+Auto-Pilot configuration is set via CLI flags when starting the Supervisor. Active configuration is written to the session state file at startup.
 
-| Parameter | Default | Maximum | Description |
-|-----------|---------|---------|-------------|
-| `concurrency` | `3` | `5` | Maximum simultaneous workers |
-| `monitoring_interval_minutes` | `10` | — | Time between health checks per worker |
-| `retry_limit` | `2` | `5` | Maximum retries before a task is marked `FAILED` |
+| Parameter | Default | Maximum | CLI Flag | Description |
+|-----------|---------|---------|----------|-------------|
+| `concurrency` | `3` | `5` | `--concurrency N` | Maximum simultaneous workers |
+| `monitoring_interval_minutes` | `5` | — | `--interval Nm` | Time between health checks per worker |
+| `retry_limit` | `2` | `5` | `--retries N` | Maximum retries before a task is marked `FAILED` |
+| `task_limit` | `0` (unlimited) | — | `--limit N` | Stop after N tasks reach a terminal state |
 
-Example configuration section in `orchestrator-state.md`:
+Example with overrides:
 
-```markdown
-## Active Configuration
+```bash
+npx nitro-fueled run --concurrency 2 --interval 10m --retries 3
+```
 
-| Parameter | Value |
-|-----------|-------|
-| concurrency | 3 |
-| monitoring_interval_minutes | 10 |
-| retry_limit | 2 |
+To test the dependency plan without spawning workers:
+
+```bash
+npx nitro-fueled run --dry-run
+/auto-pilot --dry-run
 ```
 
 ---
@@ -69,6 +75,13 @@ Express task dependencies in the `Dependencies` field of `task.md`:
 
 - TASK_2026_003 — database schema must exist before this task
 - TASK_2026_005 — auth service required for integration tests
+```
+
+Or when there are no dependencies:
+
+```markdown
+## Dependencies
+
 - None
 ```
 
@@ -90,6 +103,7 @@ The Supervisor checks worker health on every monitoring interval by calling `get
 |-------------|-----------|--------|
 | `healthy` | Active, context under 80%, tool calls within last 120s | Continue monitoring |
 | `high_context` | Context usage over 80% | Log warning, continue |
+| `compacting` | Context window is being compacted (auto-compaction active) | Wait for compaction to complete; do not count as stuck |
 | `stuck` | No tool calls in last 120 seconds | First strike: log and continue |
 | `finished` | Worker process has exited | Verify state transition |
 
@@ -139,7 +153,7 @@ Contents:
 | Parameter | Value |
 |-----------|-------|
 | concurrency | 3 |
-| monitoring_interval_minutes | 10 |
+| monitoring_interval_minutes | 5 |
 | retry_limit | 2 |
 ```
 

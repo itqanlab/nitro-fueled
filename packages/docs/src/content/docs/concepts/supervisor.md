@@ -37,7 +37,7 @@ Call the MCP `spawn_worker` tool for each selected task. The tool opens a new iT
 
 **Step 6: Monitor health**
 
-After the configured monitoring interval (default: 10 minutes), call `get_worker_stats` for each active worker. Evaluate health state (`healthy`, `high_context`, `stuck`, `finished`). Apply two-strike stuck detection. Log cost and context percentage.
+After the configured monitoring interval (default: 5 minutes), call `get_worker_stats` for each active worker. Evaluate health state (`healthy`, `high_context`, `compacting`, `stuck`, `finished`). Apply two-strike stuck detection. Log cost and context percentage.
 
 **Step 7: Detect completions**
 
@@ -61,11 +61,12 @@ Return to Step 1. Continue until the stop condition is met.
 
 Before the first worker is spawned, the Supervisor performs these checks:
 
-- `task-tracking/registry.md` exists and is readable
-- At least one task is in `CREATED` or `IMPLEMENTED` state
-- The `session-orchestrator` MCP server is reachable
-- No circular dependencies exist in the dependency graph
-- iTerm2 is running (required for worker tab spawning)
+1. `task-tracking/registry.md` exists and is readable
+2. At least one task is in `CREATED` or `IMPLEMENTED` state
+3. The `session-orchestrator` MCP server is reachable
+4. No circular dependencies exist in the dependency graph
+5. iTerm2 is running (required for worker tab spawning)
+6. The `task-tracking/` directory is writable
 
 If any check fails, the Supervisor reports the issue and exits cleanly rather than spawning workers that will immediately fail.
 
@@ -99,10 +100,10 @@ Default configuration values:
 | Parameter | Default | Maximum | Description |
 |-----------|---------|---------|-------------|
 | Concurrency | 3 | 5 | Maximum simultaneous workers |
-| Monitoring interval | 10 min | — | Time between health checks |
+| Monitoring interval | 5 min | — | Time between health checks |
 | Retry limit | 2 | 5 | Maximum retries per failed task |
 
-Configuration is stored in `task-tracking/orchestrator-state.md` and can be adjusted before starting Auto-Pilot by editing that file or passing flags to `npx nitro-fueled run`.
+Configuration can be adjusted by passing flags to `npx nitro-fueled run` (e.g., `--concurrency N`, `--interval Nm`, `--retries N`). Active configuration is written to the session state file at startup.
 
 ---
 

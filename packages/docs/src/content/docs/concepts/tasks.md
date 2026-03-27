@@ -34,18 +34,18 @@ task-tracking/
 
 Each task moves through a defined sequence of states. The current state is stored in a plain text file called `status` inside the task folder — one word, no metadata.
 
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED : task.md written
-    CREATED --> IN_PROGRESS : Build Worker spawned
-    IN_PROGRESS --> IMPLEMENTED : Build Worker completes
-    IN_PROGRESS --> FAILED : Worker crashes or errors
-    IMPLEMENTED --> IN_REVIEW : Review Worker spawned
-    IN_REVIEW --> COMPLETE : Reviews pass
-    IN_REVIEW --> FAILED : Review finds blocking issues
-    CREATED --> BLOCKED : Dependency not complete
-    BLOCKED --> CREATED : Dependency resolves
-    CREATED --> CANCELLED : Task abandoned
+```
+                   ┌─────────────────────────────────────────────────────┐
+                   │                                                     │
+                   ▼                                                     │
+CREATED ──► IN_PROGRESS ──► IMPLEMENTED ──► IN_REVIEW ──► COMPLETE      │
+   │              │                              │                       │
+   │              ▼                              ▼                       │
+   │            FAILED ◄──────────────────── FAILED                     │
+   │                                                                     │
+   ├──► BLOCKED ──► (back to CREATED when dependency resolves) ─────────┘
+   │
+   └──► CANCELLED
 ```
 
 | State | Meaning |
@@ -130,7 +130,7 @@ The `Type` field in `task.md` determines which agent pipeline the Build Worker r
 | Type | Agent Flow |
 |------|-----------|
 | `FEATURE` | PM → Architect → Team-Leader → Developer → Review Lead + Test Lead |
-| `BUGFIX` | Team-Leader → Developer → Review Lead + Test Lead |
+| `BUGFIX` | [Research] → Team-Leader → Developer → Review Lead + Test Lead |
 | `REFACTORING` | Architect → Team-Leader → Developer → Review Lead + Test Lead |
 | `DOCUMENTATION` | PM → Developer → Style Reviewer |
 | `RESEARCH` | Researcher → conditional implementation |
@@ -143,10 +143,10 @@ The `Type` field in `task.md` determines which agent pipeline the Build Worker r
 
 | Priority | Label | Meaning |
 |----------|-------|---------|
-| `P0` | Critical | Blocker — must run before anything else |
-| `P1` | High | Core feature or urgent fix |
-| `P2` | Medium | Standard work |
-| `P3` | Low | Nice-to-have, run when queue is clear |
+| `P0-Critical` | Critical | Blocker — must run before anything else |
+| `P1-High` | High | Core feature or urgent fix |
+| `P2-Medium` | Medium | Standard work |
+| `P3-Low` | Low | Nice-to-have, run when queue is clear |
 
 The Supervisor orders the queue by priority (P0 first, P3 last) and uses `plan.md` ordering as a tiebreaker within the same priority level.
 

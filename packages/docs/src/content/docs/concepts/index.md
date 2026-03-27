@@ -3,23 +3,34 @@ title: Core Concepts
 description: Understand the fundamental concepts behind Nitro-Fueled.
 ---
 
-Nitro-Fueled is built on five composable layers: **tasks**, **workers**, a **supervisor**, a **planner**, and **agents**. Each layer has a defined scope and communicates with the others through plain Markdown files and Git commits — no databases, no services, no proprietary formats.
+Nitro-Fueled is built on five composable layers: **tasks**, **workers**, a **Supervisor**, a **Planner**, and **agents**. Each layer has a defined scope and communicates with the others through plain Markdown files and Git commits — no databases, no services, no proprietary formats.
 
 ---
 
 ## The Architecture at a Glance
 
-```mermaid
-flowchart TD
-    PO["Product Owner"] --> Planner["Planner Agent\n(plan.md, task.md files)"]
-    Planner --> Supervisor["Supervisor\n(Auto-Pilot loop)"]
-    Supervisor --> BW["Build Workers\nCREATED → IMPLEMENTED"]
-    Supervisor --> RW["Review Workers\nIMPLEMENTED → COMPLETE"]
-    BW --> PM["Project Manager\nArchitect\nTeam-Leader\nDeveloper"]
-    RW --> QA["Review Lead\nTest Lead\nReviewers"]
-    PM --> FS["task-tracking/\nGit commits"]
-    QA --> FS
-    FS --> Supervisor
+```
+Product Owner
+     │
+     ▼
+  Planner (/plan)
+     │
+     ▼
+  Supervisor (Auto-Pilot)
+     │
+     ├──────────────────────┬──────────────────────┐
+     ▼                      ▼                      ▼
+Build Worker           Build Worker           Review Worker
+     │                                             │
+     ▼                                             ▼
+  Agents                                        Agents
+(nitro-*)                                    (nitro-*)
+PM → Architect →                        Review Lead + Test Lead
+Team-Leader → Developer                       │
+     │                                         ▼
+     ▼                                  Fix Worker / Completion Worker
+task-tracking/ ◄─────────────────────────────────┘
+Git commits
 ```
 
 ---
@@ -36,7 +47,7 @@ The `nitro-planner` agent sits between you and the Supervisor. It maintains `tas
 
 ### 3. Supervisor
 
-The orchestrator-of-orchestrators. It reads the task registry, builds a dependency graph, and spawns workers in the correct order. It monitors worker health every 10 minutes, handles failures with a two-strike retry policy, and persists its state to `task-tracking/orchestrator-state.md` to survive context compaction. Invoked via `/auto-pilot` or `npx nitro-fueled run`.
+The orchestrator-of-orchestrators. It reads the task registry, builds a dependency graph, and spawns workers in the correct order. It monitors worker health every 5 minutes, handles failures with a two-strike retry policy, and persists its state to survive context compaction. Invoked via `/auto-pilot` or `npx nitro-fueled run`.
 
 ### 4. Workers
 

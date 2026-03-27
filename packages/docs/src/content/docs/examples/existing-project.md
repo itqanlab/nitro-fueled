@@ -55,7 +55,7 @@ npx nitro-fueled init
 The installer detects the Python stack:
 
 ```
-Nitro-Fueled v1.x initializing...
+Nitro-Fueled v0.1.0 initializing...
 
 Detecting tech stack...
   Found: requirements.txt
@@ -63,7 +63,7 @@ Detecting tech stack...
 
 Copying core agents...       ✓ 22 nitro-* agents installed
 Copying skills...            ✓ 4 skills installed
-Copying commands...          ✓ 15 slash commands installed
+Copying commands...          ✓ all slash commands installed
 Copying anti-patterns.md...  ✓
 Creating task-tracking/...   ✓
 

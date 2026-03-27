@@ -33,7 +33,7 @@ npx nitro-fueled init
 You will see output like:
 
 ```
-Nitro-Fueled v1.x initializing...
+Nitro-Fueled v0.1.0 initializing...
 
 Detecting tech stack...
   Found: package.json
@@ -41,7 +41,7 @@ Detecting tech stack...
 
 Copying core agents...       ✓ 22 nitro-* agents installed
 Copying skills...            ✓ 4 skills installed
-Copying commands...          ✓ 15 slash commands installed
+Copying commands...          ✓ all slash commands installed
 Copying anti-patterns.md...  ✓
 Creating task-tracking/...   ✓
 
@@ -214,7 +214,7 @@ Building dependency graph...
 Spawning Wave 1...
   → Build Worker for TASK_2026_001 (iTerm2 tab: "TASK_2026_001-auth")
 
-Monitoring... (next check in 10 minutes)
+Monitoring... (next check in 5 minutes)
 ```
 
 After TASK_2026_001 reaches `IMPLEMENTED`, the Review Worker spawns automatically:

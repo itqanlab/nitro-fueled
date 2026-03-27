@@ -26,7 +26,11 @@ Before installing, make sure you have:
 - **iTerm2 (macOS)** — workers open in iTerm2 tabs; iTerm2 must be running when you start Auto-Pilot
 - **session-orchestrator MCP server** — the standalone Node.js process that spawns and monitors worker sessions (see [Installation](installation/) for setup)
 
-> **Note:** The `session-orchestrator` MCP server lives in a separate repository and is a required dependency for Auto-Pilot and `/orchestrate` commands. Manual task runs via the slash commands work without it.
+:::note[MCP Server Dependency]
+The `session-orchestrator` MCP server lives in a separate repository. It is **required for Auto-Pilot** (`/auto-pilot`, `npx nitro-fueled run`) because those features spawn workers in separate iTerm2 tabs and need the MCP server to manage those sessions.
+
+Running a pipeline in the **current Claude Code session** (`/orchestrate TASK_ID`, `/plan`) does **not** require the MCP server.
+:::
 
 ## Where to Go Next
 
