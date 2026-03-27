@@ -263,6 +263,54 @@ own log tracks phase-level progress.
 
 ---
 
+## Session Analytics
+
+At the end of every orchestration run — on all exit paths (success, failure, stuck, manual stop) — write a `session-analytics.md` file to the task folder.
+
+### When to Write
+
+- **Success path**: Write immediately after the Completion Phase bookkeeping commit (include `session-analytics.md` in that commit).
+- **Failure path**: Write before exiting when the orchestration cannot complete (unrecoverable error, agent failure).
+- **Stuck/kill path**: Write before exiting when the Supervisor kills the session.
+
+Write is **best-effort**: if the write fails, log a warning to the user and continue. Never let analytics failure interrupt orchestration.
+
+### File Location
+
+`task-tracking/TASK_YYYY_NNN/session-analytics.md`
+
+### File Format
+
+```markdown
+# Session Analytics — TASK_YYYY_NNN
+
+| Field | Value |
+|-------|-------|
+| Task | TASK_YYYY_NNN |
+| Outcome | IMPLEMENTED \| COMPLETE \| FAILED \| STUCK |
+| Start Time | YYYY-MM-DD HH:MM:SS +ZZZZ |
+| End Time | YYYY-MM-DD HH:MM:SS +ZZZZ |
+| Duration | Nm |
+| Phases Completed | PM, Architect, Dev, QA (comma-separated — omit skipped phases) |
+| Files Modified | N |
+```
+
+### Field Derivation
+
+| Field | How to Compute |
+|-------|----------------|
+| Task | Task ID for this run (e.g., `TASK_2026_065`) |
+| Outcome | `COMPLETE` (after Completion Phase), `IMPLEMENTED` (if stopped after dev), `FAILED` (unrecoverable error), `STUCK` (killed) |
+| Start Time | Wall-clock time when this orchestration session started — same timestamp used for Session Logging startup entry. Run `date '+%Y-%m-%d %H:%M:%S %z'` at session start and record it. |
+| End Time | Wall-clock time at exit. Run `date '+%Y-%m-%d %H:%M:%S %z'` |
+| Duration | `End Time - Start Time`, rounded to nearest minute. Format: `Nm` (e.g., `14m`) |
+| Phases Completed | Comma-separated list of phases that actually ran. Use names: `PM`, `Architect`, `Dev`, `QA`. Omit phases that were skipped. |
+| Files Modified | Count of unique files changed in commits that mention this Task ID. Run: `git log --grep="TASK_X" --since="{start_time}" --pretty=format: --name-only \| sort \| uniq \| grep -v '^$' \| wc -l`. If git fails, write `unknown`. |
+
+Token and cost fields are **not included** — they are not derivable from within the session context (only available via MCP `get_worker_stats`).
+
+---
+
 ## Error Handling
 
 ### Validation Rejection

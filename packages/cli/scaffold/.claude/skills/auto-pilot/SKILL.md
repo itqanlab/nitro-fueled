@@ -585,9 +585,21 @@ On success: log `"SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s
 
 **5f. On spawn failure (MCP error):**
 
-- Log: `"Failed to spawn worker for TASK_X: {error}"`
-- Leave task status as-is (will retry next loop iteration)
-- Continue with remaining tasks
+First, distinguish provider failure from MCP-unreachable:
+- **MCP unreachable**: error contains "connection refused", "ECONNREFUSED", or `list_workers` itself fails — apply global MCP failure handler (Step 3b) and EXIT.
+- **Provider failure**: `spawn_worker` returns an error but `list_workers` still succeeds.
+
+On **provider failure**:
+- IF the resolved provider (from step 5c) is NOT `claude`:
+  1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error}), retrying with claude/claude-sonnet-4-6"`
+  2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet |`
+  3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override: `provider=claude`, `model=claude-sonnet-4-6`
+  4. **If retry succeeds**: Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Continue normally (go to step 5e subscriptions).
+  5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
+- IF the resolved provider is already `claude`:
+  - Log: `"Failed to spawn worker for TASK_X: {error}"`
+  - Leave task status as-is (will retry next loop iteration)
+  - Continue with remaining tasks
 
 **5g. Write `{SESSION_DIR}state.md`** after **each** successful spawn (not after all spawns). This prevents orphaned workers if the session compacts mid-spawn sequence.
 
@@ -805,7 +817,7 @@ After any worker completion (successful or failed state transition confirmed in 
 
 0. **Create directory**: Run `mkdir -p {SESSION_DIR}worker-logs/` before writing the first worker log file. This is a no-op on subsequent calls.
 
-1. **Fetch exit stats**: Call `get_worker_stats(worker_id)` to get final tokens and cost. Extract: `tokens.total`, `tokens.input`, `tokens.output`, `tokens.cache_read`, `tokens.cache_write`, `cost.total_usd`. **If the call fails** (worker no longer in MCP after exit): check `{SESSION_DIR}state.md` Active Workers table for a previously-recorded Cost snapshot for this worker and use that as the cost fallback; all token values default to `"unknown"`. **For workers killed in Step 6**: use `final_stats` from the `kill_worker` response instead of calling `get_worker_stats`.
+1. **Fetch exit stats**: Call `get_worker_stats(worker_id)` to get final tokens and cost. Extract: `tokens.total`, `tokens.input`, `tokens.output`, `tokens.cache_read`, `tokens.cache_write`, `cost.total_usd`. **If the call fails** (worker no longer in MCP after exit): check `{SESSION_DIR}state.md` Active Workers table for a previously-recorded Cost snapshot for this worker and use that as the cost fallback; all token values default to `"unknown"`. Then check `task-tracking/TASK_X/session-analytics.md` for fallback Duration and Outcome values: if the file exists and is parseable, extract the `Duration` row value and use it in Step 2 instead of computing from spawn_time, and extract the `Outcome` row value and use it in the worker log `Outcome` field instead of `"unknown"`. If the file does not exist or cannot be parsed, continue with `"unknown"` defaults. **For workers killed in Step 6**: use `final_stats` from the `kill_worker` response instead of calling `get_worker_stats`.
 
 2. **Compute duration**: `duration_minutes = round((current_time - spawn_time) / 60)` where spawn_time is from the Active Workers row in `{SESSION_DIR}state.md`.
 
