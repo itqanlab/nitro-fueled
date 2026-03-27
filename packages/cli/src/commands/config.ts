@@ -1,25 +1,33 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import type { Command } from 'commander';
 import {
   readConfig,
   writeConfig,
-  resolveApiKey,
   getConfigPath,
-  testGlmConnection,
 } from '../utils/provider-config.js';
-import type { NitroFueledConfig, GlmProviderConfig, OpenCodeProviderConfig } from '../utils/provider-config.js';
+import type { NitroFueledConfig } from '../utils/provider-config.js';
 import { runDependencyChecks, checkOpencodeBinary, DEP_NAMES } from '../utils/dep-check.js';
 import type { DependencyResult } from '../utils/dep-check.js';
 import { ensureGitignore } from '../utils/gitignore.js';
-import { prompt } from '../utils/prompt.js';
+import { getProviderStatus, printProviderStatusTable } from '../utils/provider-status.js';
+import type { ProviderStatusResult } from '../utils/provider-status.js';
+import {
+  runGlmMenu,
+  runGlmFirstTimeMenu,
+  runOpenCodeMenu,
+  runOpenCodeFirstTimeMenu,
+} from '../utils/provider-flow.js';
 
-const MODEL_FORMAT_RE = /^[\w.-]+\/[\w.-]+$/;
+/** Known provider names for --unload validation. Claude cannot be unloaded. */
+const UNLOADABLE_PROVIDERS = ['glm', 'opencode'] as const;
+type UnloadableProvider = (typeof UNLOADABLE_PROVIDERS)[number];
 
 interface ConfigOptions {
   check: boolean;
   providers: boolean;
   reset: boolean;
+  test: boolean;
+  unload?: string;
 }
 
 function printDepResult(dep: DependencyResult): void {
@@ -34,90 +42,6 @@ function printDepResult(dep: DependencyResult): void {
   }
 }
 
-async function configureGlmProvider(existing?: GlmProviderConfig): Promise<GlmProviderConfig | null> {
-  const answer = await prompt('\n  ? Enable GLM provider? (y/N) ');
-  if (answer.toLowerCase() !== 'y') return null;
-
-  const defaultKeyHint = existing !== undefined
-    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
-    : '$ZAI_API_KEY';
-  const keyAnswer = await prompt(`  ? Z.AI API key [${defaultKeyHint}]: `);
-  const apiKey = keyAnswer !== ''
-    ? keyAnswer
-    : (existing?.apiKey ?? '$ZAI_API_KEY');
-  const baseUrl = existing?.baseUrl ?? 'https://api.z.ai/api/anthropic';
-
-  process.stdout.write('  ✓ Testing connection...');
-  const testResult = await testGlmConnection(apiKey, baseUrl);
-
-  if (testResult.ok) {
-    console.log(` OK (${testResult.modelName ?? 'connected'} available)`);
-  } else {
-    const reason = testResult.error !== undefined ? ` (${testResult.error})` : '';
-    console.log(` failed${reason}`);
-    const proceed = await prompt('  ? Save anyway? (y/N) ');
-    if (proceed.toLowerCase() !== 'y') return null;
-  }
-
-  console.log('  ✓ GLM configured');
-  return {
-    enabled: true,
-    apiKey,
-    baseUrl,
-    models: existing?.models ?? { opus: 'glm-5', sonnet: 'glm-4.7', haiku: 'glm-4.5-air' },
-  };
-}
-
-async function configureOpenCodeProvider(
-  opencodeFound: boolean,
-  existing?: OpenCodeProviderConfig,
-): Promise<OpenCodeProviderConfig | null> {
-  const answer = await prompt('\n  ? Enable OpenCode provider? (y/N) ');
-  if (answer.toLowerCase() !== 'y') return null;
-
-  if (!opencodeFound) {
-    console.log('  ✗ opencode CLI not found');
-    const install = await prompt('  ? Install opencode globally? (Y/n) ');
-    if (install.toLowerCase() !== 'n') {
-      console.log('  → Running: npm i -g opencode');
-      const result = spawnSync('npm', ['i', '-g', 'opencode'], { stdio: 'inherit' });
-      if (result.status !== 0) {
-        console.log('  Installation failed. Skipping OpenCode configuration.');
-        return null;
-      }
-      console.log('  ✓ opencode installed');
-    } else {
-      return null;
-    }
-  }
-
-  const defaultKeyHint = existing !== undefined
-    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
-    : '$OPENAI_API_KEY';
-  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
-  const apiKey = keyAnswer !== ''
-    ? keyAnswer
-    : (existing?.apiKey ?? '$OPENAI_API_KEY');
-
-  const defaultModel = existing?.defaultModel ?? 'openai/gpt-4.1-mini';
-  let modelAnswer = await prompt(`  ? Default model [${defaultModel}]: `);
-  if (modelAnswer === '') modelAnswer = defaultModel;
-
-  if (!MODEL_FORMAT_RE.test(modelAnswer)) {
-    console.log(`  Warning: "${modelAnswer}" does not match the expected format (provider/model). Saved anyway.`);
-  }
-
-  // Connection check: verify the API key resolves.
-  const resolvedKey = resolveApiKey(apiKey);
-  if (resolvedKey === '') {
-    console.log(`  ✗ API key is empty or env var unset — verify before running.`);
-  } else {
-    console.log(`  ✓ OpenCode configured (${modelAnswer})`);
-  }
-
-  return { enabled: true, apiKey, defaultModel: modelAnswer };
-}
-
 async function runCheckMode(cwd: string): Promise<void> {
   console.log('\nDependencies:');
   const deps = runDependencyChecks();
@@ -125,57 +49,99 @@ async function runCheckMode(cwd: string): Promise<void> {
     printDepResult(dep);
   }
 
-  const config = readConfig(cwd);
   console.log('\nProviders:');
-  if (config === null) {
-    console.log('  No config file found. Run `npx nitro-fueled config` to set up providers.');
-  } else {
-    const claude = config.providers.claude;
-    console.log(claude?.enabled === true ? '  ✓ Claude — connected (subscription)' : '  - Claude — not configured');
-
-    const glm = config.providers.glm;
-    if (glm?.enabled === true) {
-      process.stdout.write('  ✓ GLM — testing...');
-      const live = await testGlmConnection(glm.apiKey, glm.baseUrl);
-      console.log(live.ok
-        ? ` connected (${live.modelName ?? 'OK'} available)`
-        : ` failed${live.error !== undefined ? ` (${live.error})` : ''}`);
-    } else {
-      console.log('  - GLM — not configured');
-    }
-
-    const opencode = config.providers.opencode;
-    if (opencode?.enabled === true) {
-      const binaryOk = checkOpencodeBinary().found;
-      const keyOk = resolveApiKey(opencode.apiKey) !== '';
-      const status = binaryOk && keyOk ? 'ready' : (!binaryOk ? 'binary missing' : 'API key unset');
-      console.log(`  ${binaryOk && keyOk ? '✓' : '✗'} OpenCode — ${status} (${opencode.defaultModel})`);
-    } else {
-      console.log('  - OpenCode — not configured');
-    }
-  }
+  const statuses = await getProviderStatus(cwd);
+  printProviderStatusTable(statuses);
 
   const missing = deps.filter((d) => d.required && !d.found);
   console.log(missing.length > 0 ? '\nNot ready — required dependencies missing.' : '\nReady to run.');
   if (missing.length > 0) process.exitCode = 1;
 }
 
-async function runProvidersPhase(cwd: string, initialOpencodeFound: boolean): Promise<void> {
+async function runTestMode(cwd: string): Promise<void> {
+  console.log('\nProviders:');
+  const statuses = await getProviderStatus(cwd);
+  printProviderStatusTable(statuses);
+
+  const hasFailed = statuses.some((s) => s.status === 'failed');
+  if (hasFailed) process.exitCode = 1;
+}
+
+function runUnloadMode(cwd: string, providerArg: string): void {
+  const lower = providerArg.toLowerCase();
+
+  if (!UNLOADABLE_PROVIDERS.includes(lower as UnloadableProvider)) {
+    console.error(
+      `  ✗ Unknown provider "${providerArg}". Valid providers: ${UNLOADABLE_PROVIDERS.join(', ')}.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const provider = lower as UnloadableProvider;
+  const config = readConfig(cwd);
+
+  if (config === null || config.providers[provider] === undefined) {
+    console.log(`  ${providerArg} is not configured — nothing to unload.`);
+    return;
+  }
+
+  delete config.providers[provider];
+  writeConfig(cwd, config);
+  console.log(`  ✓ ${providerArg} unloaded from config.`);
+}
+
+async function runProvidersPhase(cwd: string, opencodeFound: boolean): Promise<void> {
+  // Step 1: Show current state upfront
+  console.log('');
+  const statuses = await getProviderStatus(cwd);
+  printProviderStatusTable(statuses);
+
   const existing = readConfig(cwd);
   const config: NitroFueledConfig = existing ?? { providers: {} };
 
-  console.log('\nConfigure providers:\n');
-  console.log('  Claude (subscription)');
-  console.log('  ✓ Already configured — logged in via Claude Code');
+  // Claude is always connected — just set it
   config.providers.claude = { enabled: true, source: 'subscription' };
 
-  console.log('\n  GLM (Z.AI)');
-  const glmConfig = await configureGlmProvider(config.providers.glm);
-  if (glmConfig !== null) config.providers.glm = glmConfig;
+  // Step 2: Per-provider menus
+  console.log('\nConfigure each provider:\n');
 
-  console.log('\n  OpenCode (GPT and others)');
-  const opencodeConfig = await configureOpenCodeProvider(initialOpencodeFound, config.providers.opencode);
-  if (opencodeConfig !== null) config.providers.opencode = opencodeConfig;
+  // GLM
+  const glmStatus = statuses.find((s) => s.name === 'GLM');
+  const glmCurrent = config.providers.glm;
+
+  if (glmCurrent !== undefined && glmStatus?.status !== 'not configured') {
+    const result = await runGlmMenu(glmCurrent, glmStatus?.status ?? 'not configured');
+    if (result.action === 'unload') {
+      delete config.providers.glm;
+    } else if (result.action === 'reconfigure') {
+      config.providers.glm = result.config;
+    }
+    // 'keep': no change
+  } else {
+    const result = await runGlmFirstTimeMenu();
+    if (result.action === 'reconfigure') {
+      config.providers.glm = result.config;
+    }
+  }
+
+  // OpenCode
+  const openCodeStatus = statuses.find((s) => s.name === 'OpenCode');
+  const opencodeCurrent = config.providers.opencode;
+
+  if (opencodeCurrent !== undefined && openCodeStatus?.status !== 'not configured') {
+    const result = await runOpenCodeMenu(opencodeCurrent, openCodeStatus?.status ?? 'not configured', opencodeFound);
+    if (result.action === 'unload') {
+      delete config.providers.opencode;
+    } else if (result.action === 'reconfigure') {
+      config.providers.opencode = result.config;
+    }
+  } else {
+    const result = await runOpenCodeFirstTimeMenu(opencodeFound);
+    if (result.action === 'reconfigure') {
+      config.providers.opencode = result.config;
+    }
+  }
 
   writeConfig(cwd, config);
   ensureGitignore(cwd);
@@ -197,6 +163,8 @@ export function registerConfigCommand(program: Command): void {
     .option('--check', 'Validate current config without making changes', false)
     .option('--providers', 'Configure providers only (skip dependency check)', false)
     .option('--reset', 'Remove config and start fresh', false)
+    .option('--test', 'Test all configured provider connections and exit', false)
+    .option('--unload <provider>', 'Remove a single provider non-interactively (glm, opencode)')
     .action(async (opts: ConfigOptions) => {
       const cwd = process.cwd();
       console.log('');
@@ -211,6 +179,16 @@ export function registerConfigCommand(program: Command): void {
         } else {
           console.log('\nNo config file found.');
         }
+        return;
+      }
+
+      if (opts.unload !== undefined) {
+        runUnloadMode(cwd, opts.unload);
+        return;
+      }
+
+      if (opts.test) {
+        await runTestMode(cwd);
         return;
       }
 
