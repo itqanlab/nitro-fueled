@@ -21,6 +21,7 @@ interface RunOptions {
   concurrency: string | undefined;
   interval: string | undefined;
   retries: string | undefined;
+  task: string | undefined;
 }
 
 function displaySummary(rows: RegistryRow[], taskId: string | undefined, options: RunOptions): void {
@@ -205,19 +206,60 @@ function spawnSupervisor(cwd: string, taskId: string | undefined, options: RunOp
   });
 }
 
+function spawnOrchestrate(cwd: string, taskId: string): void {
+  spawnClaude({
+    cwd,
+    args: ['--dangerously-skip-permissions', '-p', `/orchestrate ${taskId}`],
+    label: `Orchestrate ${taskId}`,
+  });
+}
+
+function resolveTaskId(positional: string | undefined, shorthand: string | undefined): string | undefined {
+  if (positional !== undefined) {
+    return positional;
+  }
+  if (shorthand !== undefined) {
+    const year = new Date().getFullYear();
+    const padded = shorthand.padStart(3, '0');
+    return `TASK_${year}_${padded}`;
+  }
+  return undefined;
+}
+
 export function registerRunCommand(program: Command): void {
   program
     .command('run [taskId]')
-    .description('Start the Supervisor loop to process tasks autonomously')
+    .description('Start the Supervisor loop, or orchestrate a single task inline')
+    .option('--task <n>', 'Single task shorthand: 043 expands to TASK_YYYY_043')
     .option('--dry-run', 'Show execution plan without spawning workers', false)
-    .option('--concurrency <n>', 'Max simultaneous workers (default: 3)')
-    .option('--interval <duration>', 'Monitoring interval e.g. 5m (default: 10m)')
-    .option('--retries <n>', 'Max retries per task (default: 2)')
-    .option('--skip-connectivity', 'Skip MCP connectivity check', false)
-    .action(async (taskId: string | undefined, opts: RunOptions & { skipConnectivity: boolean }) => {
+    .option('--concurrency <n>', 'Max simultaneous workers (default: 3) — batch mode only')
+    .option('--interval <duration>', 'Monitoring interval e.g. 5m (default: 10m) — batch mode only')
+    .option('--retries <n>', 'Max retries per task (default: 2) — batch mode only')
+    .option('--skip-connectivity', 'Skip MCP connectivity check — batch mode only', false)
+    .action(async (positionalTaskId: string | undefined, opts: RunOptions & { skipConnectivity: boolean }) => {
       const cwd = process.cwd();
+      const taskId = resolveTaskId(positionalTaskId, opts.task);
 
-      const result = preflightChecks(cwd, taskId);
+      if (taskId !== undefined) {
+        // Single-task mode: spawn Claude with /orchestrate TASK_ID (inline, no MCP workers)
+        const result = preflightChecks(cwd, taskId);
+        if (result === null) {
+          process.exitCode = 1;
+          return;
+        }
+
+        console.log('');
+        console.log('ORCHESTRATING SINGLE TASK');
+        console.log('-------------------------');
+        console.log(`Task: ${taskId}`);
+        console.log('');
+
+        spawnOrchestrate(cwd, taskId);
+        return;
+      }
+
+      // Batch mode: full Supervisor loop
+      const result = preflightChecks(cwd, undefined);
       if (result === null) {
         process.exitCode = 1;
         return;
@@ -232,7 +274,7 @@ export function registerRunCommand(program: Command): void {
 
       const { rows } = result;
 
-      displaySummary(rows, taskId, opts);
+      displaySummary(rows, undefined, opts);
 
       if (opts.dryRun) {
         displayDryRun(rows);
@@ -273,6 +315,6 @@ export function registerRunCommand(program: Command): void {
         });
       }
 
-      spawnSupervisor(cwd, taskId, opts);
+      spawnSupervisor(cwd, undefined, opts);
     });
 }
