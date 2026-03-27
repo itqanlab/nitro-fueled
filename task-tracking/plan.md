@@ -134,7 +134,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
 | TASK_2026_043 | Task Sizing Validation in /create-task Command | COMPLETE | P1-High |
-| TASK_2026_044 | Pre-Flight Validation with Task Sizing Check | CREATED | P1-High |
+| TASK_2026_044 | Pre-Flight Validation with Task Sizing Check | COMPLETE | P1-High |
 | TASK_2026_045 | Planner Retroactive Oversized Task Detection | COMPLETE | P1-High |
 
 ## Current Focus

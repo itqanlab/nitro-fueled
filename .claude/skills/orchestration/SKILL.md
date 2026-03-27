@@ -204,6 +204,61 @@ See [team-leader-modes.md](references/team-leader-modes.md) for detailed integra
 
 ---
 
+## Session Logging
+
+The orchestration skill MUST maintain a session-scoped event log so that direct `/orchestrate`
+invocations are visible in the same audit trail as auto-pilot-spawned workers.
+
+### Session Directory Setup (run once, on skill entry)
+
+1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM}` using the current wall-clock time.
+2. Set `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/`.
+3. Create `{SESSION_DIR}` if it does not exist (mkdir, no-op if exists).
+4. Create `{SESSION_DIR}log.md` with header if it does not already exist:
+   ```markdown
+   # Session Log — {SESSION_ID}
+
+   | Timestamp | Source | Event |
+   |-----------|--------|-------|
+   ```
+5. Register in `task-tracking/active-sessions.md` (append row with source `orchestrate`,
+   Tasks `1`, path `{SESSION_DIR}`).
+6. Append startup entry to `{SESSION_DIR}log.md`:
+   `| {HH:MM:SS} | orchestrate | STARTED TASK_{ID} ({task_type}) |`
+
+On finish (after Completion Phase bookkeeping commit):
+
+1. Append final entry:
+   `| {HH:MM:SS} | orchestrate | FINISHED TASK_{ID} — {COMPLETE | FAILED} |`
+2. Remove this session's row from `task-tracking/active-sessions.md`.
+
+### Phase Transition Log Entries
+
+Append one row to `{SESSION_DIR}log.md` after each phase completes. Use the exact formats
+below.
+
+| Phase | Log Row |
+|-------|---------|
+| PM complete | `\| {HH:MM:SS} \| orchestrate \| PM phase complete for TASK_{ID} \|` |
+| Architect complete | `\| {HH:MM:SS} \| orchestrate \| Architect phase complete for TASK_{ID} \|` |
+| Team-Leader batch assigned | `\| {HH:MM:SS} \| orchestrate \| Batch {N} assigned for TASK_{ID} \|` |
+| Dev batch complete | `\| {HH:MM:SS} \| orchestrate \| Batch {N} complete for TASK_{ID} \|` |
+| All batches complete | `\| {HH:MM:SS} \| orchestrate \| All dev batches complete for TASK_{ID} \|` |
+| QA started | `\| {HH:MM:SS} \| orchestrate \| QA started for TASK_{ID} \|` |
+| QA complete | `\| {HH:MM:SS} \| orchestrate \| QA complete for TASK_{ID} \|` |
+| Completion phase done | `\| {HH:MM:SS} \| orchestrate \| Completion phase done for TASK_{ID} — COMPLETE \|` |
+
+**Log writes are best-effort**: If a write fails, log a warning to the user and continue.
+Never let log failure interrupt orchestration.
+
+**In Build Worker / Review Worker sessions** (spawned by auto-pilot): The worker runs
+`/orchestrate TASK_X` which invokes this skill. The skill will create a new `SESSION_ID`
+for the worker's own session. This is intentional — each worker gets its own session
+directory and log. The auto-pilot session's log tracks spawning/monitoring; the worker's
+own log tracks phase-level progress.
+
+---
+
 ## Error Handling
 
 ### Validation Rejection

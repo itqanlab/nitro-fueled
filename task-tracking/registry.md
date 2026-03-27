@@ -45,6 +45,6 @@
 | TASK_2026_041 | CREATED     | FEATURE     | Dashboard Historical Analytics — Cross-Session Trends | 2026-03-25 | default |
 | TASK_2026_042 | CREATED     | FEATURE     | CLI Provider Configuration and Dependency Validation | 2026-03-25 | default |
 | TASK_2026_043 | COMPLETE    | REFACTORING | Task Sizing Validation in /create-task Command | 2026-03-27 | — |
-| TASK_2026_044 | CREATED     | FEATURE     | Pre-Flight Validation with Task Sizing Check | 2026-03-27 | default |
+| TASK_2026_044 | COMPLETE    | FEATURE     | Pre-Flight Validation with Task Sizing Check | 2026-03-27 | — |
 | TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-27 | — |
 | TASK_2026_046 | COMPLETE    | BUGFIX      | Dashboard Data Service Completion and Validation | 2026-03-27 | — |
