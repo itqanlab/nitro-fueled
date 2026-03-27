@@ -35,7 +35,7 @@
 | TASK_2026_031 | CREATED     | FEATURE     | Add --commit Flag to nitro-fueled init | 2026-03-24 | default |
 | TASK_2026_032 | CREATED     | FEATURE     | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 | default |
 | TASK_2026_033 | CANCELLED   | FEATURE     | Pre-Flight Validation Before Auto-Pilot Spawns Workers (absorbed by TASK_2026_044) | 2026-03-24 | — |
-| TASK_2026_034 | CREATED     | REFACTORING | Session-Scoped State Directories with Unified Event Log | 2026-03-24 | default |
+| TASK_2026_034 | COMPLETE    | REFACTORING | Session-Scoped State Directories with Unified Event Log | 2026-03-24 | default |
 | TASK_2026_035 | CREATED     | FEATURE     | Review Lead — Parallel Reviews with Model Routing | 2026-03-25 | default |
 | TASK_2026_036 | CREATED     | FEATURE     | Test Lead — Parallel Test Writing and Execution with Model Routing | 2026-03-25 | default |
 | TASK_2026_037 | CREATED     | REFACTORING | Updated Pipeline — Parallel Review + Test with Fix Phase | 2026-03-25 | default |
@@ -48,3 +48,4 @@
 | TASK_2026_044 | COMPLETE    | FEATURE     | Pre-Flight Validation with Task Sizing Check | 2026-03-27 | — |
 | TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-27 | — |
 | TASK_2026_046 | COMPLETE    | BUGFIX      | Dashboard Data Service Completion and Validation | 2026-03-27 | — |
+| TASK_2026_047 | CREATED     | REFACTORING | Unified /run, /create, /status Commands + CLI Single-Task Run | 2026-03-27 |
