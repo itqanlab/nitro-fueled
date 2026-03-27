@@ -14,11 +14,13 @@ class WebSocketClient {
   private readonly url: string;
   private handlers: Set<EventHandler> = new Set();
   private stateHandlers: Set<StateHandler> = new Set();
+  private reconnectHandlers: Set<() => void> = new Set();
   private state: WebSocketState = 'disconnected';
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectDelay = DEFAULT_RECONNECT_DELAY;
   private shouldReconnect = true;
+  private hasConnectedBefore = false;
 
   public constructor(url?: string) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -68,6 +70,13 @@ class WebSocketClient {
     };
   }
 
+  public onReconnect(handler: () => void): () => void {
+    this.reconnectHandlers.add(handler);
+    return () => {
+      this.reconnectHandlers.delete(handler);
+    };
+  }
+
   public getState(): WebSocketState {
     return this.state;
   }
@@ -78,6 +87,10 @@ class WebSocketClient {
     this.ws.onopen = () => {
       console.log('[WebSocket] Connected');
       this.setState('connected');
+      if (this.hasConnectedBefore) {
+        this.reconnectHandlers.forEach((h) => h());
+      }
+      this.hasConnectedBefore = true;
       this.reconnectAttempts = 0;
       this.reconnectDelay = DEFAULT_RECONNECT_DELAY;
     };
