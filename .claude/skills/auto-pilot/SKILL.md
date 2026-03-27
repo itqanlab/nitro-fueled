@@ -173,7 +173,7 @@ On startup (after MCP validation passes and Concurrent Session Guard passes), th
 Timestamp is the wall-clock start time (local time, zero-padded, including seconds). Example:
 `task-tracking/sessions/SESSION_2026-03-24_22-00-00/`
 
-All datetime fields written inside session files must include the local timezone offset (e.g., `+0200`).
+All datetime fields written inside session files must use local time with timezone offset: `YYYY-MM-DD HH:MM:SS +ZZZZ` (e.g., `2026-03-24 10:00:00 +0200`). To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
 
 ### Startup Sequence
 
@@ -255,6 +255,8 @@ Auto-pilot row:
 
 Orchestration skill row:
 `| {SESSION_ID} | orchestrate | {HH:MM} | 1 | task-tracking/sessions/{SESSION_ID}/ |`
+
+> The `Started` column uses `HH:MM` (display-only; the authoritative timestamp is the SESSION_ID itself). Full datetime with timezone offset is not required here.
 
 The `Tasks` column is static (set at startup, not updated as tasks complete). It represents the initial task count for the session, not live progress.
 
@@ -570,7 +572,7 @@ If the registry shows a state that does not match the expected transition for th
 - If new state is **COMPLETE** (Review Worker succeeded):
   - Log: `"REVIEW DONE — TASK_X: COMPLETE"`
   - Move worker from active to completed list in state
-  - Record: task_id, completion_timestamp
+  - Record: task_id, completion_timestamp (format: `YYYY-MM-DD HH:MM:SS +ZZZZ`)
 
 **7e. IF state did NOT transition (still at pre-worker state):**
 
@@ -610,7 +612,7 @@ After any worker completion (successful or failed state transition confirmed in 
    ```
    git log --grep="TASK_X" --since="{spawn_time}" --pretty=format: --name-only | sort | uniq | grep -v '^$'
    ```
-   Replace `TASK_X` with the actual validated task ID and `{spawn_time}` with the ISO-format spawn timestamp from state.md. This finds commits mentioning the task after spawn time and extracts unique changed file paths. If git fails or returns no output, set files_modified to an empty list and note `"No committed files detected."`.
+   Replace `TASK_X` with the actual validated task ID and `{spawn_time}` with the spawn timestamp from state.md (format: `YYYY-MM-DD HH:MM:SS +ZZZZ`). This finds commits mentioning the task after spawn time and extracts unique changed file paths. If git fails or returns no output, set files_modified to an empty list and note `"No committed files detected."`.
 
 4. **Get phase timestamps** (Build Workers only): Read `{SESSION_DIR}log.md` and collect all rows whose Event column contains the task ID string (e.g., `TASK_2026_003`). These are the phase transition entries written by the orchestration skill for this worker's task.
 
@@ -708,7 +710,7 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 
 ---
 
-## Session YYYY-MM-DD HH:MM+ZZZZ — HH:MM+ZZZZ
+## Session YYYY-MM-DD HH:MM:SS +ZZZZ — HH:MM:SS +ZZZZ
 
 **Config**: concurrency {N}, interval {N}m, retries {N}
 **Result**: {completed} completed, {failed} failed, {blocked} blocked
@@ -785,8 +787,8 @@ After Step 8b completes (on every session stop — normal, compaction limit, MCP
 ```markdown
 # Session Analytics — {SESSION_ID}
 
-**Generated**: {current_datetime}
-**Session**: {session_start_time} — {session_stop_time}
+**Generated**: {current_datetime (YYYY-MM-DD HH:MM:SS +ZZZZ)}
+**Session**: {session_start_time (YYYY-MM-DD HH:MM:SS +ZZZZ)} — {session_stop_time (YYYY-MM-DD HH:MM:SS +ZZZZ)}
 **Stop Reason**: {all complete | all blocked | compaction limit | MCP unreachable | manual}
 
 ## Summary
