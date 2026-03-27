@@ -181,6 +181,7 @@ export interface DashboardStats {
 export type DashboardEventType =
   | 'task:created'
   | 'task:updated'
+  | 'task:deleted'
   | 'task:state_changed'
   | 'worker:spawned'
   | 'worker:progress'

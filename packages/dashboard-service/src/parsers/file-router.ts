@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import type { DashboardEventBus } from '../events/event-bus.js';
 import type { DashboardEvent } from '../events/event-types.js';
@@ -45,9 +45,16 @@ export class FileRouter {
   }
 
   private loadFile(filePath: string): void {
-    if (!existsSync(filePath)) return;
-
-    const content = readFileSync(filePath, 'utf-8');
+    let content: string;
+    try {
+      content = readFileSync(filePath, 'utf-8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        console.debug(`[file-router] file removed before read: ${filePath}`);
+        return;
+      }
+      throw error;
+    }
 
     if (this.registryParser.canParse(filePath)) {
       const newRecords = this.registryParser.parse(content, filePath);

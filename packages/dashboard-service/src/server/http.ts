@@ -104,12 +104,12 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
       return;
     }
 
-    const url = req.url ?? '/';
+    const pathname = req.url?.split('?')[0] ?? '/';
     const method = req.method ?? 'GET';
 
     for (const route of routes) {
       if (route.method !== method) continue;
-      const match = route.pattern.exec(url);
+      const match = route.pattern.exec(pathname);
       if (match) {
         const params: Record<string, string> = {};
         route.paramNames.forEach((name, idx) => {
@@ -121,8 +121,8 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
     }
 
     // Serve static files from webDistPath
-    if (webDistPath && (url === '/' || url.startsWith('/assets'))) {
-      const filePath = url === '/' ? 'index.html' : url.slice(1);
+    if (webDistPath && (pathname === '/' || pathname.startsWith('/assets'))) {
+      const filePath = pathname === '/' ? 'index.html' : pathname.slice(1);
       const fullPath = join(webDistPath, filePath);
       const ext = extname(filePath);
       const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';

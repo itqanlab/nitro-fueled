@@ -43,7 +43,9 @@ export class WebSocketBroadcaster {
     const message = JSON.stringify(event);
     for (const client of this.wss.clients) {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+        client.send(message, (err) => {
+          if (err) console.error('[websocket] send error:', err.message);
+        });
       }
     }
   }

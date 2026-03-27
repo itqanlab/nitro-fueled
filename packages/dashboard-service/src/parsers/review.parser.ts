@@ -9,6 +9,19 @@ export class ReviewParser implements FileParser<ReviewData> {
 
   public parse(content: string, filePath: string): ReviewData {
     const taskId = this.extractTaskId(filePath);
+    if (!taskId || !taskId.startsWith('TASK_')) {
+      console.warn(`[review-parser] skipping review in non-task folder: ${filePath}`);
+      return {
+        taskId: '',
+        reviewType: '',
+        overallScore: '',
+        assessment: '',
+        criticalIssues: 0,
+        seriousIssues: 0,
+        moderateIssues: 0,
+        findings: [],
+      };
+    }
     const reviewType = this.extractReviewType(filePath);
     const lines = content.split('\n');
 

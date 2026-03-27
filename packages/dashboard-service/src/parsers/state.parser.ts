@@ -170,7 +170,7 @@ export class StateParser implements FileParser<OrchestratorState> {
 
     const result: string[] = [];
     for (let i = startIdx + 1; i < lines.length; i++) {
-      if (lines[i].startsWith('## ') || lines[i].startsWith('**Compaction')) break;
+      if (lines[i].startsWith('## ')) break;
       result.push(lines[i]);
     }
     return result;

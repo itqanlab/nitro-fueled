@@ -85,9 +85,13 @@ export class DashboardService {
 
   private watchAntiPatterns(): void {
     const path = this.options.antiPatternsPath;
-    if (path && existsSync(path)) {
-      this.fileRouter.handleChange(path);
-    }
+    if (!path || !existsSync(path)) return;
+
+    this.fileRouter.handleChange(path);
+    this.watcher.watch(path, (filePath, event) => {
+      if (event === 'unlink') return;
+      this.fileRouter.handleChange(filePath);
+    });
   }
 
   private watchReviewLessons(): void {

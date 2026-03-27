@@ -19,7 +19,7 @@ export function diffRegistry(
       events.push({
         type: 'task:created',
         timestamp: now,
-        payload: { taskId: id, type: newRecord.type, priority: '' },
+        payload: { taskId: id, type: newRecord.type },
       });
       continue;
     }
@@ -41,6 +41,16 @@ export function diffRegistry(
         type: 'task:updated',
         timestamp: now,
         payload: { taskId: id, field: 'description', oldValue: oldRecord.description, newValue: newRecord.description },
+      });
+    }
+  }
+
+  for (const [id, oldRecord] of oldMap) {
+    if (!newMap.has(id)) {
+      events.push({
+        type: 'task:deleted',
+        timestamp: now,
+        payload: { taskId: id, field: 'deleted', oldValue: oldRecord.status, newValue: null },
       });
     }
   }
@@ -90,10 +100,14 @@ export function diffState(
   for (const worker of oldState.activeWorkers) {
     if (!newWorkerIds.has(worker.workerId)) {
       const completed = newState.completedTasks.find(
-        (t) => !oldState.completedTasks.some((ot) => ot.taskId === t.taskId),
+        (t) =>
+          t.taskId === worker.taskId &&
+          !oldState.completedTasks.some((ot) => ot.taskId === t.taskId),
       );
       const failed = newState.failedTasks.find(
-        (t) => !oldState.failedTasks.some((ot) => ot.taskId === t.taskId),
+        (t) =>
+          t.taskId === worker.taskId &&
+          !oldState.failedTasks.some((ot) => ot.taskId === t.taskId),
       );
 
       if (failed) {

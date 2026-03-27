@@ -9,6 +9,19 @@ export class ReportParser implements FileParser<CompletionReport> {
 
   public parse(content: string, filePath: string): CompletionReport {
     const taskId = this.extractTaskId(filePath);
+    if (!taskId || !taskId.startsWith('TASK_')) {
+      console.warn(`[report-parser] skipping report in non-task folder: ${filePath}`);
+      return {
+        taskId: '',
+        filesCreated: [],
+        filesModified: [],
+        reviewScores: [],
+        findingsFixed: [],
+        findingsAcknowledged: [],
+        rootCause: '',
+        fix: '',
+      };
+    }
     const lines = content.split('\n');
 
     return {

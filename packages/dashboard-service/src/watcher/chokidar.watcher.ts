@@ -2,10 +2,10 @@ import { watch, type FSWatcher } from 'chokidar';
 import type { FileWatcher, FileChangeEvent } from './watcher.interface.js';
 
 export class ChokidarWatcher implements FileWatcher {
-  private watcher: FSWatcher | null = null;
+  private readonly watchers: FSWatcher[] = [];
 
   public watch(directory: string, onChange: (path: string, event: FileChangeEvent) => void): void {
-    this.watcher = watch(directory, {
+    const watcher = watch(directory, {
       ignored: /(^|[/\\])\../,
       persistent: true,
       ignoreInitial: false,
@@ -15,20 +15,20 @@ export class ChokidarWatcher implements FileWatcher {
       },
     });
 
-    this.watcher.on('add', (path: string) => onChange(path, 'add'));
-    this.watcher.on('change', (path: string) => onChange(path, 'change'));
-    this.watcher.on('unlink', (path: string) => onChange(path, 'unlink'));
+    watcher.on('add', (path: string) => onChange(path, 'add'));
+    watcher.on('change', (path: string) => onChange(path, 'change'));
+    watcher.on('unlink', (path: string) => onChange(path, 'unlink'));
 
-    this.watcher.on('error', (error: unknown) => {
+    watcher.on('error', (error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       console.error('[watcher] Error:', message);
     });
+
+    this.watchers.push(watcher);
   }
 
   public async close(): Promise<void> {
-    if (this.watcher) {
-      await this.watcher.close();
-      this.watcher = null;
-    }
+    await Promise.all(this.watchers.map((w) => w.close()));
+    this.watchers.length = 0;
   }
 }

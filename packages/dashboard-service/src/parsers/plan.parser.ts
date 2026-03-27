@@ -133,15 +133,18 @@ export class PlanParser implements FileParser<PlanData> {
       const line = lines[i];
       if (line.startsWith('## ')) break;
 
-      if (line.trim().startsWith('| 20')) {
-        const cells = line.split('|').map((c) => c.trim()).filter((c) => c.length > 0);
-        if (cells.length >= 3) {
-          decisions.push({
-            date: cells[0],
-            decision: cells[1],
-            rationale: cells[2],
-          });
-        }
+      const cells = line.split('|').map((c) => c.trim()).filter(Boolean);
+      if (
+        cells.length >= 3 &&
+        cells[0] !== 'Date' &&
+        !cells[0].startsWith('---') &&
+        !cells[0].startsWith(':---')
+      ) {
+        decisions.push({
+          date: cells[0],
+          decision: cells[1],
+          rationale: cells[2],
+        });
       }
     }
 
