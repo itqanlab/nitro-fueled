@@ -1,6 +1,6 @@
 # Task Sizing Rules
 
-Single source of truth for task sizing enforcement. Referenced by `/create-task` (Step 6b) and the Planner agent (Section 4c).
+Single source of truth for task sizing enforcement. Referenced by `/create-task` (Step 6b), the Planner agent (Section 4c: Task Sizing Enforcement), and the Planner **Backlog Sizing Review** (Section 3e).
 
 ## Purpose
 
