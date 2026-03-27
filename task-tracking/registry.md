@@ -60,7 +60,7 @@
 | TASK_2026_055 | CREATED     | DEVOPS        | Scaffold Astro Starlight Docs Site | 2026-03-27 | default |
 | TASK_2026_056 | CREATED     | CREATIVE      | Build Nitro-Fueled Marketing Landing Page | 2026-03-27 | default |
 | TASK_2026_057 | CREATED     | DOCUMENTATION | Write Full Documentation Content | 2026-03-27 | default |
-| TASK_2026_058 | IN_PROGRESS | REFACTORING   | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-27 | default |
+| TASK_2026_058 | IMPLEMENTED | REFACTORING   | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-27 | default |
 | TASK_2026_059 | CREATED     | BUGFIX        | MCP Server — Persist Worker Registry to Disk | 2026-03-27 | default |
 | TASK_2026_060 | CREATED     | BUGFIX        | Supervisor — File-System-First Reconciliation When MCP Returns Empty | 2026-03-27 | default |
 | TASK_2026_061 | CREATED     | FEATURE       | Agent Record Schema and Failure Taxonomy | 2026-03-27 | default |

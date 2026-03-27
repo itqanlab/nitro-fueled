@@ -73,13 +73,20 @@ The new design: each task folder contains a single `status` file (one word). Wor
 
 ## File Scope
 
-- `.claude/skills/orchestration/SKILL.md`
-- `.claude/skills/auto-pilot/SKILL.md`
-- `.claude/agents/planner.md`
-- `.claude/commands/project-status.md`
-- `packages/cli/src/commands/status.ts`
-- `packages/cli/scaffold/.claude/skills/orchestration/SKILL.md`
-- `packages/cli/scaffold/.claude/skills/auto-pilot/SKILL.md`
+**Created** (63 files):
+- `task-tracking/TASK_*/status` — per-task status files (63 created, one per task folder)
+
+**Modified**:
+- `.claude/skills/orchestration/SKILL.md` — Completion Phase, Exit Gates, NEW_TASK initialization
+- `.claude/skills/auto-pilot/SKILL.md` — Step 2 state reads, BLOCKED writes, Registry Write Safety, all 5 worker prompt templates, Step 7a
+- `.claude/agents/planner.md` — Sections 3a, 3b, 3e, 4e, 5d, 9
+- `.claude/commands/project-status.md` — Added Step 0 registry regeneration
+- `.claude/commands/create-task.md` — Step 5 writes status file; Important Rules updated
+- `packages/cli/src/utils/registry.ts` — Added `generateRegistry()`, added FIXING to VALID_STATUSES
+- `packages/cli/src/commands/status.ts` — Calls `generateRegistry()` before `parseRegistry()`
+- `packages/cli/scaffold/.claude/skills/orchestration/SKILL.md` — Mirror of source changes
+- `packages/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` — Mirror of source changes
+- `task-tracking/registry.md` — Added `<!-- DO NOT EDIT — generated -->` header
 
 ## Parallelism
 
