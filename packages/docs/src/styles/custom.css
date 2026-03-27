@@ -18,7 +18,6 @@
   --sl-color-bg-sidebar: #0d1220;
 }
 
-/* Tailwind base styles */
-@tailwind base;
+/* Tailwind utilities — base styles intentionally omitted (applyBaseStyles: false) */
 @tailwind components;
 @tailwind utilities;

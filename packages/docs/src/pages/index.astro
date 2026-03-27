@@ -1,5 +1,6 @@
 ---
 // Root landing page placeholder — full landing page is TASK_2026_056
+const base = import.meta.env.BASE_URL;
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -8,11 +9,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nitro-Fueled</title>
     <style>
+      :root {
+        --nitro-orange: #f97316;
+        --nitro-dark: #0a0e17;
+        --nitro-text: #e2e8f0;
+        --nitro-muted: #94a3b8;
+      }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
         font-family: system-ui, -apple-system, sans-serif;
-        background: #0a0e17;
-        color: #e2e8f0;
+        background: var(--nitro-dark);
+        color: var(--nitro-text);
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -25,18 +32,18 @@
       h1 {
         font-size: 3rem;
         font-weight: 700;
-        color: #f97316;
+        color: var(--nitro-orange);
         margin-bottom: 1rem;
       }
       p {
         font-size: 1.25rem;
-        color: #94a3b8;
+        color: var(--nitro-muted);
         margin-bottom: 2rem;
       }
       a {
         display: inline-block;
-        background: #f97316;
-        color: #0a0e17;
+        background: var(--nitro-orange);
+        color: var(--nitro-dark);
         font-weight: 600;
         padding: 0.75rem 2rem;
         border-radius: 0.5rem;
@@ -50,7 +57,7 @@
     <div class="container">
       <h1>Nitro-Fueled</h1>
       <p>Coming soon — full landing page in progress.</p>
-      <a href="/nitro-fueled/getting-started/">View Documentation</a>
+      <a href={`${base}getting-started/`}>View Documentation</a>
     </div>
   </body>
 </html>
