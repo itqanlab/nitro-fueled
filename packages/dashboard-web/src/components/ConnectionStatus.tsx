@@ -4,10 +4,16 @@ import { tokens } from '../theme/tokens.js';
 
 export function ConnectionStatus(): React.JSX.Element {
   const [state, setState] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [time, setTime] = useState(() => new Date().toLocaleTimeString());
 
   useEffect(() => {
     const unsubscribe = ws.onStateChange((newState) => setState(newState));
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const isHealthy = state === 'connected';
@@ -47,7 +53,7 @@ export function ConnectionStatus(): React.JSX.Element {
         {state === 'error' && 'Connection Error'}
       </div>
       <div style={{ color: tokens.colors.textDim }}>
-        {new Date().toLocaleTimeString()}
+        {time}
       </div>
     </div>
   );

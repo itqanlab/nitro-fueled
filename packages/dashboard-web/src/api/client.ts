@@ -9,7 +9,8 @@ import type {
   DashboardStats,
 } from '../types/index.js';
 
-const API_BASE = (import.meta as unknown as { env: Record<string, string | undefined> }).env.VITE_API_BASE || '/api';
+const API_BASE = (import.meta as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE ?? '/api';
+const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
 class ApiClient {
   private readonly baseUrl: string;
@@ -43,10 +44,12 @@ class ApiClient {
   }
 
   public async getTask(taskId: string): Promise<FullTaskData> {
+    if (!TASK_ID_RE.test(taskId)) throw new Error(`Invalid taskId: ${taskId}`);
     return this.fetchJson<FullTaskData>(`/tasks/${taskId}`);
   }
 
   public async getTaskReviews(taskId: string): Promise<readonly ReviewData[]> {
+    if (!TASK_ID_RE.test(taskId)) throw new Error(`Invalid taskId: ${taskId}`);
     return this.fetchJson<readonly ReviewData[]>(`/tasks/${taskId}/reviews`);
   }
 

@@ -135,10 +135,11 @@ export function CostDashboard(): React.JSX.Element {
               gap: '12px',
             }}
           >
-            {Object.entries(byStatus)
+            {(() => {
+              const maxCount = Math.max(0, ...Object.values(byStatus));
+              return Object.entries(byStatus)
               .sort(([, a], [, b]) => b - a)
               .map(([status, count]) => {
-                const maxCount = Math.max(...Object.values(byStatus));
                 const width = maxCount > 0 ? (count / maxCount) * 100 : 0;
                 const colors =
                   tokens.stateColors[status as keyof typeof tokens.stateColors];
@@ -182,7 +183,8 @@ export function CostDashboard(): React.JSX.Element {
                     </div>
                   </div>
                 );
-              })}
+              });
+            })()}
           </div>
         </div>
 
@@ -211,11 +213,12 @@ export function CostDashboard(): React.JSX.Element {
               gap: '12px',
             }}
           >
-            {Object.entries(byType)
+            {(() => {
+              const maxCount = Math.max(0, ...Object.values(byType));
+              return Object.entries(byType)
               .filter(([, count]) => count > 0)
               .sort(([, a], [, b]) => b - a)
               .map(([type, count]) => {
-                const maxCount = Math.max(...Object.values(byType));
                 const width = maxCount > 0 ? (count / maxCount) * 100 : 0;
                 const colors =
                   tokens.typeColors[type as keyof typeof tokens.typeColors];
@@ -259,7 +262,8 @@ export function CostDashboard(): React.JSX.Element {
                     </div>
                   </div>
                 );
-              })}
+              });
+            })()}
           </div>
         </div>
       </div>
