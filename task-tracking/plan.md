@@ -175,11 +175,12 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 #### Task Map
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_059 | MCP Server — Persist Worker Registry to Disk | CREATED | P1-High |
+| TASK_2026_059 | MCP Server — Persist Worker Registry to Disk | COMPLETE | P1-High |
 | TASK_2026_060 | Supervisor — File-System-First Reconciliation When MCP Returns Empty | CREATED | P1-High |
 | TASK_2026_067 | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | CREATED | P1-High |
 | TASK_2026_068 | Provider Config UX — State Display, Per-Provider Test and Unload | CREATED | P1-High |
 | TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | CREATED | P1-High |
+| TASK_2026_070 | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | CREATED | P1-High |
 
 ### Phase 10: Agent Calibration
 **Status**: NOT STARTED
@@ -200,11 +201,11 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 **Active Phase**: Multiple active phases
 **Active Milestone**: Various
 **Next Priorities**:
-1. TASK_2026_059 — MCP Server Persist Worker Registry (P1-High, unblocked)
-2. TASK_2026_060 — Supervisor FS Reconciliation (P1-High, unblocked, parallel with 059)
-3. TASK_2026_068 — Provider Config UX (P1-High, unblocked, parallel with 059/060)
-4. TASK_2026_069 — Supervisor Spawn Fallback (P1-High, unblocked, parallel with 059/060)
-5. TASK_2026_067 — Event-Driven Worker Completion (P1-High, after 059)
+1. TASK_2026_060 — Supervisor FS Reconciliation (P1-High, unblocked)
+2. TASK_2026_068 — Provider Config UX (P1-High, unblocked, parallel with 060)
+3. TASK_2026_069 — Supervisor Spawn Fallback (P1-High, unblocked, parallel with 060)
+4. TASK_2026_067 — Event-Driven Worker Completion (P1-High, after 059 ✓)
+5. TASK_2026_070 — Session Artifact Commit Ownership (P1-High, after 060 + 067)
 6. TASK_2026_061 — Agent Record Schema and Failure Taxonomy (P1-High, unblocked, can run in parallel)
 
 **Supervisor Guidance**: PROCEED
