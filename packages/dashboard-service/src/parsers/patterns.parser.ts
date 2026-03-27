@@ -13,7 +13,7 @@ export class PatternsParser implements FileParser<ReadonlyArray<AntiPatternRule>
     let currentRules: string[] = [];
 
     for (const line of lines) {
-      const h2Match = line.match(/^## \d+\.\s*(.+)$/);
+      const h2Match = line.match(/^##\s+(?:\d+\.\s*)?(.+)$/);
       if (h2Match) {
         if (currentCategory && currentRules.length > 0) {
           rules.push({ category: currentCategory, rules: [...currentRules] });

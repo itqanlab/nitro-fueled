@@ -129,8 +129,13 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
       }
     }
 
+    const isApiPath = pathname === '/health' || pathname === '/api' || pathname.startsWith('/api/');
+    const requestExt = extname(pathname);
+    const isRouteLikePath = requestExt.length === 0;
+
     // Serve static files from webDistPath with path traversal protection.
-    if (webDistPath && (pathname === '/' || pathname.startsWith('/assets'))) {
+    // For SPA routing, any non-API GET path falls back to index.html.
+    if (webDistPath && method === 'GET' && !isApiPath) {
       const resolvedBase = resolve(webDistPath);
       const filePath = pathname === '/' ? 'index.html' : pathname.slice(1);
       const fullPath = resolve(join(resolvedBase, filePath));
@@ -147,8 +152,8 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
 
       readFile(fullPath, (err, data) => {
         if (err) {
-          // Fall back to index.html for SPA routing
-          if (filePath !== 'index.html') {
+          // Fall back to index.html only for extension-less SPA routes.
+          if (filePath !== 'index.html' && isRouteLikePath) {
             readFile(join(resolvedBase, 'index.html'), (fallbackErr, indexData) => {
               if (fallbackErr) {
                 res.writeHead(404, { 'Content-Type': 'application/json' });

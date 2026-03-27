@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { tokens } from '../theme/tokens.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { api } from '../api/client.js';
 import type { FullTaskData } from '../types/index.js';
 
+type TaskDetailTab = 'definition' | 'reviews' | 'report';
+
+function getDefaultTab(data: FullTaskData): TaskDetailTab {
+  if (data.definition) return 'definition';
+  return 'reviews';
+}
+
 export function TaskDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const [taskData, setTaskData] = useState<FullTaskData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'definition' | 'reviews' | 'report'>('definition');
+  const [activeTab, setActiveTab] = useState<TaskDetailTab>('definition');
+  const fromRoute = (location.state as { from?: string } | null)?.from ?? '/';
 
   useEffect(() => {
     if (!id) return;
@@ -19,6 +28,7 @@ export function TaskDetail(): React.JSX.Element {
       try {
         const data = await api.getTask(id);
         setTaskData(data);
+        setActiveTab(getDefaultTab(data));
       } catch (error) {
         console.error('Failed to load task:', error);
       } finally {
@@ -52,7 +62,7 @@ export function TaskDetail(): React.JSX.Element {
   return (
     <div>
       <Link
-        to="/"
+        to={fromRoute}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -75,7 +85,7 @@ export function TaskDetail(): React.JSX.Element {
           e.currentTarget.style.color = tokens.colors.textDim;
         }}
       >
-        ← Back to Board
+        ← Back
       </Link>
 
       <div style={{ marginBottom: '24px' }}>

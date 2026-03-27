@@ -21,6 +21,19 @@ interface DashboardOptions {
   open: boolean; // false when --no-open is passed
 }
 
+async function checkLegacyHealthOnPort(port: number): Promise<boolean> {
+  try {
+    const resp = await fetch(`http://localhost:${port}/health`, {
+      signal: AbortSignal.timeout(1000),
+    });
+    if (!resp.ok) return false;
+    const body = await resp.json() as Record<string, unknown>;
+    return body.service === 'nitro-fueled-dashboard' || body.status === 'ok';
+  } catch {
+    return false;
+  }
+}
+
 export function registerDashboardCommand(program: Command): void {
   program
     .command('dashboard')
@@ -69,7 +82,8 @@ export function registerDashboardCommand(program: Command): void {
           console.log(`Dashboard available at ${url}`);
           if (opts.open && !opts.service) openBrowser(url);
         } else {
-          console.error('Error: Dashboard startup timed out.');
+          releaseLock(lockPath); // stale lock recovery
+          console.error('Error: Dashboard startup timed out (stale startup lock cleared, retry command).');
           process.exitCode = 1;
         }
         return;
@@ -118,7 +132,12 @@ export function registerDashboardCommand(program: Command): void {
           cwd,
         });
 
+        const releaseStartupLock = (): void => {
+          releaseLock(lockPath);
+        };
+
         const forwardSignal = (signal: NodeJS.Signals): void => {
+          releaseStartupLock();
           if (child.pid !== undefined) {
             try { process.kill(child.pid, signal); } catch { /* already exited */ }
           }
@@ -126,28 +145,43 @@ export function registerDashboardCommand(program: Command): void {
 
         process.once('SIGINT', () => forwardSignal('SIGINT'));
         process.once('SIGTERM', () => forwardSignal('SIGTERM'));
+        process.once('exit', releaseStartupLock);
 
         // Poll for .dashboard-port to get the actual assigned port, then open browser
         if (opts.open && !opts.service) {
           pollForPortFile(portFilePath, STARTUP_TIMEOUT_MS).then((actualPort) => {
-            releaseLock(lockPath);
+            releaseStartupLock();
             if (actualPort !== null) {
               const url = `http://localhost:${actualPort}`;
               console.log(`Dashboard available at ${url}`);
               openBrowser(url);
+            } else if (requestedPort > 0) {
+              // Compatibility path for older dashboard-service builds that do not write .dashboard-port.
+              checkLegacyHealthOnPort(requestedPort).then((isHealthy) => {
+                if (isHealthy) {
+                  const url = `http://localhost:${requestedPort}`;
+                  console.log(`Dashboard available at ${url}`);
+                  openBrowser(url);
+                } else {
+                  console.warn('Warning: Dashboard did not report its port within timeout.');
+                }
+              }).catch(() => {
+                console.warn('Warning: Dashboard did not report its port within timeout.');
+              });
             } else {
               console.warn('Warning: Dashboard did not report its port within timeout.');
             }
           }).catch((err: unknown) => {
-            releaseLock(lockPath);
+            releaseStartupLock();
             console.warn(`Warning: Error waiting for dashboard: ${String(err)}`);
           });
         } else {
           // Release lock immediately when not waiting for port
-          releaseLock(lockPath);
+          releaseStartupLock();
         }
 
         child.on('exit', (code) => {
+          releaseStartupLock();
           process.exitCode = code ?? 0;
         });
       } catch (err: unknown) {

@@ -81,7 +81,12 @@ export function Reviews(): React.JSX.Element {
           const totalModerate = taskReviews.reduce((sum, r) => sum + r.moderateIssues, 0);
 
           return (
-            <Link key={taskId} to={`/task/${taskId}`} style={{ textDecoration: 'none' }}>
+            <Link
+              key={taskId}
+              to={`/task/${taskId}`}
+              state={{ from: '/reviews' }}
+              style={{ textDecoration: 'none' }}
+            >
               <div
                 style={{
                   backgroundColor: tokens.colors.bgCard,

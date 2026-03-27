@@ -24,12 +24,12 @@ export function findEntryScript(): string | null {
 export function findWebDistPath(): string | undefined {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    // Monorepo sibling (preferred during local development to avoid stale embedded assets)
+    resolve(thisDir, '../../../dashboard-web/dist'),
     // Embedded in published CLI package (copied during build)
     resolve(thisDir, '../../dashboard-assets'),
     // Installed as a peer npm package
     resolve(thisDir, '../../node_modules/@nitro-fueled/dashboard-web/dist'),
-    // Monorepo sibling
-    resolve(thisDir, '../../../dashboard-web/dist'),
   ];
   for (const candidate of candidates) {
     if (existsSync(candidate)) return candidate;
@@ -63,21 +63,35 @@ export async function pollForPortFile(portFilePath: string, timeoutMs: number): 
 export async function checkExistingService(portFilePath: string): Promise<number | null> {
   if (!existsSync(portFilePath)) return null;
 
+  const clearStalePortFile = (): void => {
+    try { unlinkSync(portFilePath); } catch { /* ignore */ }
+  };
+
   const raw = readFileSync(portFilePath, 'utf-8').trim();
   const port = parseInt(raw, 10);
-  if (Number.isNaN(port) || port <= 0) return null;
+  if (Number.isNaN(port) || port <= 0) {
+    clearStalePortFile();
+    return null;
+  }
 
   try {
     const resp = await fetch(`http://localhost:${port}/health`, {
       signal: AbortSignal.timeout(1000),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      clearStalePortFile();
+      return null;
+    }
     const body = await resp.json() as Record<string, unknown>;
     // Validate service identity — reject any other HTTP server on that port
-    if (body.service !== 'nitro-fueled-dashboard') return null;
+    if (body.service !== 'nitro-fueled-dashboard') {
+      clearStalePortFile();
+      return null;
+    }
     return port;
   } catch {
     // stale port file — service not running, will be overwritten on next start
+    clearStalePortFile();
   }
   return null;
 }

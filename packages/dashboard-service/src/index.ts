@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { createHttpServer } from './server/http.js';
@@ -85,6 +85,10 @@ export class DashboardService {
   }
 
   private watchTaskTracking(): void {
+    for (const filePath of this.listMarkdownFilesRecursive(this.options.taskTrackingDir)) {
+      this.fileRouter.handleChange(filePath);
+    }
+
     this.watcher.watch(this.options.taskTrackingDir, (filePath, event) => {
       if (!filePath.endsWith('.md')) return;
 
@@ -95,6 +99,25 @@ export class DashboardService {
 
       this.fileRouter.handleChange(filePath);
     });
+  }
+
+  private listMarkdownFilesRecursive(dir: string): ReadonlyArray<string> {
+    const files: string[] = [];
+    const walk = (current: string): void => {
+      for (const entry of readdirSync(current, { withFileTypes: true })) {
+        const fullPath = join(current, entry.name);
+        if (entry.isDirectory()) {
+          walk(fullPath);
+          continue;
+        }
+        if (entry.isFile() && entry.name.endsWith('.md')) {
+          files.push(fullPath);
+        }
+      }
+    };
+
+    walk(dir);
+    return files;
   }
 
   private watchAntiPatterns(): void {
@@ -111,6 +134,11 @@ export class DashboardService {
   private watchReviewLessons(): void {
     const dir = this.options.reviewLessonsDir;
     if (!dir || !existsSync(dir)) return;
+
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+      this.fileRouter.handleChange(join(dir, entry.name));
+    }
 
     this.watcher.watch(dir, (filePath, event) => {
       if (!filePath.endsWith('.md') || event === 'unlink') return;
