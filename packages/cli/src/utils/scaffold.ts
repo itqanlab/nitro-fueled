@@ -30,8 +30,11 @@ export function resolveScaffoldRoot(): string {
 }
 
 export interface CopyResult {
+  /** Number of files written (new or overwritten). */
   copied: number;
+  /** Number of files skipped because they already existed and overwrite was false. */
   skipped: number;
+  /** Number of directories created. */
   dirs: number;
   /** Absolute destination paths of files actually written (new or overwritten). */
   files: string[];

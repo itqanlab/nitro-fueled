@@ -12,6 +12,7 @@ import { generateAntiPatterns, buildStackLabel } from '../utils/anti-patterns.js
 import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
 import { ensureGitignore } from '../utils/gitignore.js';
+import { isInsideGitRepo, commitFiles } from '../utils/git.js';
 
 interface InitOptions {
   mcpPath: string | undefined;
@@ -147,23 +148,23 @@ async function handleStackDetection(
   cwd: string,
   stacks: DetectedStack[],
   opts: InitOptions
-): Promise<void> {
-  if (opts.skipAgents) return;
+): Promise<string[]> {
+  if (opts.skipAgents) return [];
 
   if (!isClaudeAvailable()) {
     console.log('  Claude CLI not available; skipping developer agent generation.');
     console.log('  Use /create-agent to manually generate developer agents later.');
-    return;
+    return [];
   }
 
   if (stacks.length === 0) {
     console.log('  No recognized tech stack detected.');
     console.log('  Use /create-agent to manually generate developer agents later.');
-    return;
+    return [];
   }
 
   const proposals = proposeAgents(stacks);
-  if (proposals.length === 0) return;
+  if (proposals.length === 0) return [];
 
   console.log('');
   console.log('Proposed developer agents:');
@@ -180,13 +181,23 @@ async function handleStackDetection(
   if (shouldGenerate) {
     console.log('');
     console.log('Generating developer agents (this may take a moment)...');
+    const createdPaths: string[] = [];
     let generated = 0;
     for (const p of proposals) {
-      if (generateAgent(cwd, p)) generated++;
+      const agentPath = resolve(cwd, '.claude', 'agents', `${p.agentName}.md`);
+      const preExisted = existsSync(agentPath);
+      if (generateAgent(cwd, p)) {
+        generated++;
+        if (!preExisted && existsSync(agentPath)) {
+          createdPaths.push(agentPath);
+        }
+      }
     }
     console.log(`  ${generated}/${proposals.length} developer agents generated`);
+    return createdPaths;
   } else {
     console.log('Skipping agent generation. Use /create-agent to generate later.');
+    return [];
   }
 }
 
@@ -227,42 +238,23 @@ async function handleMcpConfig(cwd: string, opts: InitOptions): Promise<void> {
   }
 }
 
-function commitScaffold(cwd: string, files: string[]): void {
+function commitScaffold(cwd: string, files: string[]): boolean {
   if (files.length === 0) {
     console.log('Commit: no new files to commit (all files already existed)');
-    return;
+    return true;
   }
 
-  if (!existsSync(resolve(cwd, '.git'))) {
-    console.error('Commit: git is not initialized in this directory. Run `git init` first.');
-    return;
+  if (!isInsideGitRepo(cwd)) {
+    console.error('Commit: not inside a git repository. Run `git init` first.');
+    return false;
   }
 
-  const addResult = spawnSync('git', ['add', '--', ...files], {
-    cwd,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  if (addResult.status !== 0) {
-    const stderr = addResult.stderr?.toString().trim() ?? '';
-    console.error(`Commit: git add failed${stderr !== '' ? ': ' + stderr : ''}`);
-    return;
+  const success = commitFiles(cwd, files, 'chore: initialize nitro-fueled orchestration');
+  if (success) {
+    console.log('Committed: chore: initialize nitro-fueled orchestration');
+    console.log(`  ${files.length} files staged and committed`);
   }
-
-  const commitResult = spawnSync(
-    'git',
-    ['commit', '-m', 'chore: initialize nitro-fueled orchestration'],
-    { cwd, stdio: ['ignore', 'pipe', 'pipe'] }
-  );
-
-  if (commitResult.status !== 0) {
-    const stderr = commitResult.stderr?.toString().trim() ?? '';
-    console.error(`Commit: git commit failed${stderr !== '' ? ': ' + stderr : ''}`);
-    return;
-  }
-
-  console.log('Committed: chore: initialize nitro-fueled orchestration');
-  console.log(`  ${files.length} files staged and committed`);
+  return success;
 }
 
 function printSummary(mcpConfigured: boolean, skipMcp: boolean): void {
@@ -360,15 +352,13 @@ export function registerInitCommand(program: Command): void {
         allCreatedFiles.push(claudeMdPath);
       }
 
-      // Step 5b: Ensure .nitro-fueled/ is gitignored
+      // Step 6: Ensure .nitro-fueled/ is gitignored
       const gitignorePath = resolve(cwd, '.gitignore');
-      const gitignoreExisted = existsSync(gitignorePath);
-      ensureGitignore(cwd);
-      if (!gitignoreExisted) {
+      if (ensureGitignore(cwd)) {
         allCreatedFiles.push(gitignorePath);
       }
 
-      // Step 6: Detect stack and generate stack-aware anti-patterns
+      // Step 7: Detect stack and generate stack-aware anti-patterns
       console.log('');
       console.log('Detecting project stack...');
       const apPath = resolve(cwd, '.claude', 'anti-patterns.md');
@@ -378,25 +368,29 @@ export function registerInitCommand(program: Command): void {
         allCreatedFiles.push(apPath);
       }
       if (detectedStacks.length > 0) {
-        console.log(`  Detected: ${detectedStacks.map((s) => {
-          if (s.frameworks.length > 0) return `${s.language} (${s.frameworks.join(', ')})`;
-          return s.language;
-        }).join(', ')}`);
+        const detectedLabel = detectedStacks.map((s) =>
+          s.frameworks.length > 0 ? `${s.language} (${s.frameworks.join(', ')})` : s.language
+        ).join(', ');
+        console.log(`  Detected: ${detectedLabel}`);
       }
 
-      // Step 6b: Generate developer agents for detected stack
-      await handleStackDetection(cwd, detectedStacks, opts);
+      // Step 8: Generate developer agents for detected stack
+      const agentPaths = await handleStackDetection(cwd, detectedStacks, opts);
+      allCreatedFiles.push(...agentPaths);
 
-      // Step 7: MCP configuration
+      // Step 9: MCP configuration
       await handleMcpConfig(cwd, opts);
 
-      // Step 8: Commit scaffolded files if --commit flag is set
+      // Step 10: Commit scaffolded files if --commit flag is set
       if (opts.commit) {
         console.log('');
-        commitScaffold(cwd, allCreatedFiles);
+        const committed = commitScaffold(cwd, allCreatedFiles);
+        if (!committed) {
+          process.exitCode = 1;
+        }
       }
 
-      // Step 9: Summary
+      // Step 11: Summary
       const mcpAfter = detectMcpConfig(cwd);
       printSummary(mcpAfter.found, opts.skipMcp);
     });
