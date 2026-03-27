@@ -62,9 +62,13 @@ Add a new row to `task-tracking/registry.md`:
 
 Registry columns: **Task ID** | **Status** | **Type** | **Description** | **Created**
 
-### Step 5b: Validate Auto-Pilot Readiness
+### Step 6: Post-Creation Validation
 
-Before displaying the summary, verify the task is ready for auto-pilot pickup:
+Run two sequential checks before displaying the summary. All warnings are **non-blocking** — display them and continue to Step 7.
+
+**6a. Validate Auto-Pilot Readiness**
+
+Verify the task is ready for auto-pilot pickup:
 
 | Check | Requirement | If Missing |
 |-------|------------|------------|
@@ -75,7 +79,32 @@ Before displaying the summary, verify the task is ready for auto-pilot pickup:
 
 These checks ensure the task won't be skipped by auto-pilot's Step 2b validation.
 
-### Step 6: Display Summary
+**6b. Validate Task Sizing**
+
+Read `task-tracking/sizing-rules.md` and validate the task against the hard limits. If any limit is exceeded, display a non-blocking warning:
+
+```
+[SIZING WARNING] — This task may be too large for a single worker session:
+  - [specific violation 1]
+  - [specific violation 2]
+
+  See task-tracking/sizing-rules.md for guidance on splitting.
+  You can proceed as-is or split the task into smaller pieces.
+```
+
+Checks to run against the written task.md:
+
+| Check | Condition | Warning Message |
+|-------|-----------|-----------------|
+| Description length | > 150 lines | "Description exceeds 150 lines (actual: N lines)" |
+| Acceptance criteria | > 5 groups | "More than 5 acceptance criteria groups (actual: N)" |
+| File scope | > 7 files listed in File Scope | "File Scope lists more than 7 files (actual: N)" |
+| Complexity + layers | Complexity is "Complex" AND description mentions multiple architectural layers | "Complex task spanning multiple architectural layers — consider splitting" |
+| Unrelated areas | Multiple unrelated functional areas detected (use judgment) | "Task appears to span multiple unrelated functional areas" |
+
+When a count is indeterminate (e.g., ambiguous description structure), skip that check — do not warn based on uncertainty alone.
+
+### Step 7: Display Summary
 
 ```
 Task created successfully.

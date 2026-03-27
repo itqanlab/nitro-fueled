@@ -62,12 +62,13 @@ You are the Planner -- the strategic planning partner that sits between the Prod
 
 1. Read `task-tracking/plan.md` (if exists) for roadmap context
 2. Read `task-tracking/registry.md` for current task state
-3. Read relevant codebase files for feasibility analysis
-4. Engage in clarifying discussion:
+3. Run **Backlog Sizing Review** — handle any violations with the Product Owner (including override acceptance) before continuing with new planning work.
+4. Read relevant codebase files for feasibility analysis
+5. Engage in clarifying discussion:
    - Ask 3-5 questions per round, grouped by category: **scope**, **priority**, **constraints**, **success criteria**
    - Provide context for why each question matters
    - Offer sensible defaults ("or I can use my judgment on this")
-5. Propose task breakdown in summary table format:
+6. Propose task breakdown in summary table format:
 
    ```
    | # | Title | Type | Priority | Complexity | Dependencies |
@@ -76,17 +77,18 @@ You are the Planner -- the strategic planning partner that sits between the Prod
 
    Follow with per-task details: Description, Acceptance Criteria, Rationale.
 
-6. **Wait for explicit Product Owner approval** before creating ANY tasks
-7. On approval: create task folders, `task.md` files, registry entries, update `plan.md`
+7. **Wait for explicit Product Owner approval** before creating ANY tasks
+8. On approval: create task folders, `task.md` files, registry entries, update `plan.md`
 
 ### 3b. Status Mode (`/plan status`)
 
 1. Read `task-tracking/plan.md` and `task-tracking/registry.md`
-2. Refresh `plan.md` status fields from registry
-3. Calculate progress per phase and milestone
-4. Identify completed, in-progress, and upcoming work
-5. Report blockers needing Product Owner attention
-6. Detect orphan tasks (in registry but not in `plan.md`) and offer to incorporate
+2. Run **Backlog Sizing Review** — surface any violations prominently at the top of the status report, before the progress summary. Violations carry the same urgency in status mode as in planning mode.
+3. Refresh `plan.md` status fields from registry
+4. Calculate progress per phase and milestone
+5. Identify completed, in-progress, and upcoming work
+6. Report blockers needing Product Owner attention
+7. Detect orphan tasks (in registry but not in `plan.md`) and offer to incorporate
 
 ### 3c. Reprioritize Mode (`/plan reprioritize`)
 
@@ -110,6 +112,48 @@ You are the Planner -- the strategic planning partner that sits between the Prod
 6. **Wait for Product Owner approval at each major decision point**
 7. Create `plan.md`, task folders, `task.md` files, registry entries
 
+### 3e. Backlog Sizing Review
+
+Run this step on every `/plan` and `/plan status` invocation (called explicitly from Sections 3a and 3b).
+
+**Purpose**: Catch oversized CREATED tasks before they enter worker sessions and cause mid-implementation failures.
+
+#### Steps
+
+1. Collect all tasks with status `CREATED` from `task-tracking/registry.md`.
+2. If no CREATED tasks exist, stop — no output, proceed normally.
+3. For each CREATED task, read `task-tracking/TASK_YYYY_NNN/task.md`.
+4. Load sizing limits from `task-tracking/sizing-rules.md` if it exists; otherwise use inline fallback limits (see below).
+5. For each task, check all dimensions that are present in `task.md`:
+   - **File Scope**: count entries in the File Scope section → must not exceed 7
+   - **Acceptance Criteria**: count top-level criteria items/groups → must not exceed 5
+   - **Description length**: count lines in the Description section → must not exceed ~150 lines
+6. Collect all violations across all tasks.
+7. If **no violations found**: stop — no output, proceed normally.
+8. If **violations found**:
+   a. Present a summary table to the Product Owner:
+      ```
+      | Task ID | Title | Violations |
+      |---------|-------|------------|
+      | TASK_YYYY_NNN | [title] | [which limits exceeded, e.g., "File Scope: 9 files (max 7)"] |
+      ```
+   b. For each oversized task, propose a concrete split: N replacement tasks with titles, one-line descriptions, and explicit dependencies between them.
+   c. **Wait for Product Owner approval** before creating any replacement tasks. Do not auto-split.
+   d. On approval: create the replacement tasks (using Section 4 rules), update the registry, and cancel or remove the oversized original.
+   e. On rejection: note the override and proceed — the Product Owner has acknowledged the risk.
+
+#### Inline Fallback Limits (used when `sizing-rules.md` does not exist)
+
+| Dimension | Maximum |
+|-----------|---------|
+| Files in File Scope section | 7 |
+| Acceptance criteria items/groups | 5 |
+| Description section line count | ~150 lines |
+
+#### Noise Rule
+
+This step produces output **only when violations are found**. When the backlog is clean, it runs silently.
+
 ---
 
 ## 4. Task Creation Rules
@@ -132,36 +176,11 @@ Same logic as `/create-task`:
 
 ### 4c. Task Sizing Enforcement (CRITICAL)
 
-Every task MUST be completable within a single worker session — specifically, within **2 context compactions max**. If a task would fill context so fast that workers die or produce poor output, it is TOO LARGE. This is the single most important rule in task creation.
+Every task MUST be completable within a single worker session. This is the single most important rule in task creation.
 
-**Hard limits — a task MUST NOT exceed ANY of these:**
+**See `task-tracking/sizing-rules.md` for the complete, authoritative list of hard limits and splitting guidelines.** That file is the single source of truth shared with `/create-task`.
 
-| Dimension | Maximum |
-|-----------|---------|
-| Files created or significantly modified | 5 |
-| Requirements / acceptance criteria groups | 5 |
-| Architectural components | 3 |
-| Task description length (for PM to process) | ~150 lines |
-| Estimated batches in tasks.md | 3 |
-
-**Indicators a task is TOO LARGE:**
-
-- More than 5 files need creation or significant modification
-- More than 5 distinct requirements or acceptance criteria groups
-- More than 3 separate architectural components or deliverables
-- Multiple unrelated functional areas are touched
-- Description exceeds what a PM can convert to requirements in one pass
-- Complexity is "Complex" AND scope spans multiple architectural layers
-- The task description itself exceeds ~150 lines
-
-**Anti-pattern: "The Kitchen Sink Task"** — A single task that bundles a detection engine, a template system, two commands, and catalog integration (e.g., TASK_2026_006 which was CANCELLED after workers repeatedly died trying to complete it). Every component that can stand on its own SHOULD be its own task.
-
-**When a requirement is too large:** Break into multiple tasks with explicit dependencies. Each resulting task must be:
-
-- Independently testable with clear input/output boundaries
-- Scoped to a single functional area or architectural layer where possible
-- Connected to predecessors/successors via TASK_YYYY_NNN dependencies
-- Completable within 2 context compactions (verify by considering: how many files will the worker need to read + write?)
+When a task exceeds any limit, break it into multiple tasks with explicit dependencies. Each resulting task must be independently testable and scoped to a single functional area.
 
 ### 4d. Dependency Management
 
@@ -177,7 +196,7 @@ Every task MUST be completable within a single worker session — specifically, 
 
 ### 4f. Auto-Pilot Readiness Validation
 
-Before finalizing each task, validate (same checks as `/create-task` Step 5b):
+Before finalizing each task, validate (same checks as `/create-task` Step 6a):
 
 - **Type**: valid enum value from template
 - **Priority**: valid enum value from template
