@@ -112,6 +112,10 @@ export function createHttpServer(store: StateStore, sessionStore: SessionStore, 
   });
 
   addRoute('GET', '/api/tasks/:id/pipeline', (req, res, params) => {
+    if (!/^TASK_\d{4}_\d{3}$/.test(params.id)) {
+      sendJson(res, req, { error: 'Invalid task ID format' }, 400);
+      return;
+    }
     const record = store.getRegistry().find((r) => r.id === params.id);
     if (!record) {
       sendJson(res, req, { error: `Task ${params.id} not found` }, 404);

@@ -93,12 +93,18 @@ export function Pipeline(): React.JSX.Element {
 
   useEffect(() => {
     if (!selectedId) return;
+    const controller = new AbortController();
     setFetchError(null);
     api.getTaskPipeline(selectedId)
-      .then(setPipeline)
+      .then((data) => {
+        if (!controller.signal.aborted) setPipeline(data);
+      })
       .catch((err: unknown) => {
-        setFetchError(err instanceof Error ? err.message : String(err));
+        if (!controller.signal.aborted) {
+          setFetchError(err instanceof Error ? err.message : String(err));
+        }
       });
+    return () => controller.abort();
   }, [selectedId]);
 
   useEffect(() => {
