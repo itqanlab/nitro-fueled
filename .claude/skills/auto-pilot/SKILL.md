@@ -1254,7 +1254,7 @@ AUTONOMOUS MODE — no human at this terminal. Do NOT pause.
 You are the Review Lead for TASK_YYYY_NNN. Your job is to orchestrate
 parallel review sub-workers via MCP, then fix findings and complete the task.
 
-Read your full instructions from: .claude/agents/review-lead.md
+Read your full instructions from: .claude/agents/nitro-review-lead.md
 
 Follow these rules strictly:
 
@@ -1277,7 +1277,7 @@ Follow these rules strictly:
    - Style Reviewer: model claude-sonnet-4-6
    - Logic Reviewer: model claude-opus-4-5
    - Security Reviewer: model claude-sonnet-4-6
-   Full sub-worker prompts are in .claude/agents/review-lead.md.
+   Full sub-worker prompts are in .claude/agents/nitro-review-lead.md.
 
 6. Monitor sub-workers via mcp__session-orchestrator__get_worker_activity
    every 2 minutes until all reach finished or failed state.
@@ -1332,7 +1332,7 @@ AUTONOMOUS MODE — follow these rules strictly:
    Resume from the first incomplete step.
 
 4. For any review type not yet complete, spawn a sub-worker via MCP.
-   Full spawn instructions in .claude/agents/review-lead.md.
+   Full spawn instructions in .claude/agents/nitro-review-lead.md.
 
 5. Continue from where the previous Review Lead stopped.
    Do NOT restart completed phases.
@@ -1355,7 +1355,7 @@ You are the Test Lead for TASK_YYYY_NNN. Your job is to detect the test
 framework, spawn parallel test writer sub-workers via MCP, execute the
 test suite, and write test-report.md.
 
-Read your full instructions from: .claude/agents/test-lead.md
+Read your full instructions from: .claude/agents/nitro-test-lead.md
 
 Follow these rules strictly:
 
@@ -1374,7 +1374,7 @@ Follow these rules strictly:
 3. Generate test-context.md (if not already done).
 
 4. Spawn test writer sub-workers in parallel via MCP (for any not yet done).
-   Full sub-worker prompts and model routing in .claude/agents/test-lead.md.
+   Full sub-worker prompts and model routing in .claude/agents/nitro-test-lead.md.
 
 5. Monitor sub-workers via mcp__session-orchestrator__get_worker_activity
    every 2 minutes until all reach finished or failed state.
@@ -1414,7 +1414,7 @@ Do NOT modify registry.md — the Review Lead owns registry state transitions.
    Resume from the first incomplete step.
 
 2. For any test type not yet complete, spawn a sub-worker via MCP.
-   Full spawn instructions in .claude/agents/test-lead.md.
+   Full spawn instructions in .claude/agents/nitro-test-lead.md.
 
 3. Continue from where the previous Test Lead stopped.
    Do NOT restart completed phases.

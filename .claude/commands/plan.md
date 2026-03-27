@@ -16,7 +16,7 @@ create well-scoped tasks, manage the roadmap, and track progress.
 
 ### Step 1: Load Planner Agent
 
-Read `.claude/agents/planner.md` -- this contains the full Planner agent
+Read `.claude/agents/nitro-nitro-planner.md` -- this contains the full Planner agent
 definition, interaction protocols, task creation rules, and plan management rules.
 
 ### Step 2: Parse Arguments
@@ -62,7 +62,7 @@ The Planner agent definition contains the full flow for each mode.
 
 ## Important Rules
 
-1. ALWAYS read `planner.md` first -- never bypass the agent definition
+1. ALWAYS read `nitro-planner.md` first -- never bypass the agent definition
 2. ALWAYS read `task-template.md` before creating any tasks -- never hardcode template structure
 3. ALWAYS read `registry.md` to determine next task ID -- never guess
 4. NEVER create tasks without Product Owner approval -- always present and wait
@@ -71,7 +71,7 @@ The Planner agent definition contains the full flow for each mode.
 
 ## References
 
-- Planner agent: `.claude/agents/planner.md`
+- Planner agent: `.claude/agents/nitro-planner.md`
 - Task template: `task-tracking/task-template.md`
 - Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
 - Orchestration skill: `.claude/skills/orchestration/SKILL.md`

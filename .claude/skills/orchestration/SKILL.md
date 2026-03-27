@@ -30,7 +30,7 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
 | RESEARCH      | Researcher -> [conditional implementation]         |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
-| CREATIVE      | [nitro-ui-ux-designer] -> content-writer -> frontend     |
+| CREATIVE      | [nitro-ui-ux-designer] -> nitro-technical-content-writer -> nitro-frontend-developer |
 
 See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
