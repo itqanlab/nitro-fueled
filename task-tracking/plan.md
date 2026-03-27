@@ -169,7 +169,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 - [ ] Supervisor reconciles via status files when MCP returns empty
 - [ ] Event-driven completion: workers fire events instead of supervisor polling every 5 min
 - [ ] 30-second event drain loop replaces 5-minute polling as primary completion detection
-- [ ] Supervisor falls back to Claude Sonnet when a non-Claude provider spawn fails
+- [x] Supervisor falls back to Claude Sonnet when a non-Claude provider spawn fails
 - [ ] `nitro-fueled config` shows provider state upfront with per-provider test/unload actions
 
 #### Task Map
@@ -179,7 +179,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_060 | Supervisor — File-System-First Reconciliation When MCP Returns Empty | COMPLETE | P1-High |
 | TASK_2026_067 | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | COMPLETE | P1-High |
 | TASK_2026_068 | Provider Config UX — State Display, Per-Provider Test and Unload | COMPLETE | P1-High |
-| TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | CREATED | P1-High |
+| TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | COMPLETE | P1-High |
 | TASK_2026_070 | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | CREATED | P1-High |
 
 ### Phase 10: Agent Calibration
@@ -201,9 +201,8 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 **Active Phase**: Multiple active phases
 **Active Milestone**: Various
 **Next Priorities**:
-1. TASK_2026_069 — Supervisor Spawn Fallback (P1-High, unblocked)
-2. TASK_2026_070 — Session Artifact Commit Ownership (P1-High, after 060 ✓ + 067 ✓)
-3. TASK_2026_062 — /evaluate-agent Command (P1-High, unblocked — 061 COMPLETE)
+1. TASK_2026_070 — Session Artifact Commit Ownership (P1-High, unblocked — 060 ✓ + 067 ✓)
+2. TASK_2026_062 — /evaluate-agent Command (P1-High, unblocked — 061 COMPLETE)
 
 **Supervisor Guidance**: PROCEED
 **Guidance Note**: Phase 11 (Supervisor Reliability) added with 059, 060, 067. Run 059+060 first (parallel), then 067. Phase 10 (Agent Calibration) continues in parallel. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
