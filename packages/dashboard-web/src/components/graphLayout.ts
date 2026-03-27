@@ -18,44 +18,45 @@ export function computeLayout(
 ): LayoutNode[] {
   if (nodes.length === 0) return [];
 
-  const inDegree = new Map<string, number>();
   const outEdges = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
   for (const n of nodes) {
-    inDegree.set(n.id, 0);
     outEdges.set(n.id, []);
+    inDegree.set(n.id, 0);
   }
   for (const e of edges) {
     outEdges.get(e.from)?.push(e.to);
     inDegree.set(e.to, (inDegree.get(e.to) ?? 0) + 1);
   }
 
-  // Longest-path column assignment (cycle-safe)
+  // Kahn's BFS for longest-path column assignment (correct on DAGs, skips cycles)
   const col = new Map<string, number>();
-  const visited = new Set<string>();
-  const nodeIds = nodes.map((n) => n.id);
+  const remaining = new Map(inDegree);
+  const queue: string[] = [];
+  for (const n of nodes) {
+    col.set(n.id, 0);
+    if ((inDegree.get(n.id) ?? 0) === 0) queue.push(n.id);
+  }
 
-  function assignCol(id: string, depth: number): void {
-    const current = col.get(id) ?? 0;
-    if (depth > current) col.set(id, depth);
-    if (visited.has(id)) return;
-    visited.add(id);
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    const myCol = col.get(id) ?? 0;
     for (const next of outEdges.get(id) ?? []) {
-      assignCol(next, (col.get(id) ?? depth) + 1);
+      // Longest-path: child column = max(current, parent + 1)
+      col.set(next, Math.max(col.get(next) ?? 0, myCol + 1));
+      const left = (remaining.get(next) ?? 1) - 1;
+      remaining.set(next, left);
+      if (left === 0) queue.push(next);
     }
   }
+  // Nodes still in cycles stay at col 0 (already initialised)
 
-  for (const id of nodeIds) {
-    if ((inDegree.get(id) ?? 0) === 0) assignCol(id, 0);
-  }
-  for (const id of nodeIds) {
-    if (!col.has(id)) col.set(id, 0);
-  }
-
+  // Assign rows within each column
   const colGroups = new Map<number, string[]>();
-  for (const id of nodeIds) {
-    const c = col.get(id) ?? 0;
+  for (const n of nodes) {
+    const c = col.get(n.id) ?? 0;
     const group = colGroups.get(c) ?? [];
-    group.push(id);
+    group.push(n.id);
     colGroups.set(c, group);
   }
 
@@ -82,14 +83,18 @@ export function computeCriticalPath(
   for (const n of nodes) outEdges.set(n.id, []);
   for (const e of edges) outEdges.get(e.from)?.push(e.to);
 
+  // Iterative longest-path using memoization (avoids spread-spread stack issues)
   const memo = new Map<string, number>();
   function longestFrom(id: string, visiting: Set<string>): number {
     if (memo.has(id)) return memo.get(id)!;
-    if (visiting.has(id)) return 0;
+    if (visiting.has(id)) return 0; // cycle guard
     visiting.add(id);
     const nexts = outEdges.get(id) ?? [];
-    const len =
-      nexts.length === 0 ? 0 : 1 + Math.max(...nexts.map((n) => longestFrom(n, visiting)));
+    let len = 0;
+    for (const n of nexts) {
+      const nLen = longestFrom(n, visiting);
+      if (nLen + 1 > len) len = nLen + 1;
+    }
     visiting.delete(id);
     memo.set(id, len);
     return len;
@@ -97,14 +102,16 @@ export function computeCriticalPath(
 
   for (const n of nodes) longestFrom(n.id, new Set());
 
-  const maxLen = Math.max(...[...memo.values()]);
+  let maxLen = 0;
+  for (const v of memo.values()) { if (v > maxLen) maxLen = v; }
   if (maxLen === 0) return new Set();
 
   const criticalNodes = new Set<string>();
   function trace(id: string): void {
     criticalNodes.add(id);
+    const myLen = memo.get(id) ?? 0;
     for (const next of outEdges.get(id) ?? []) {
-      if ((memo.get(next) ?? 0) === (memo.get(id) ?? 0) - 1) trace(next);
+      if ((memo.get(next) ?? 0) === myLen - 1) trace(next);
     }
   }
   for (const n of nodes) {

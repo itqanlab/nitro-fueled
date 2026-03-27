@@ -31,15 +31,20 @@ export function DependencyGraph(): React.JSX.Element {
 
   const isPanning = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
+  const fetchAbort = useRef<AbortController | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
   const fetchGraph = useCallback(async () => {
+    fetchAbort.current?.abort();
+    const controller = new AbortController();
+    fetchAbort.current = controller;
     try {
-      const data = await api.getGraph();
+      const data = await api.getGraph(controller.signal);
       setGraphData(data);
       setError(null);
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Failed to load graph');
     } finally {
       setLoading(false);
@@ -68,8 +73,12 @@ export function DependencyGraph(): React.JSX.Element {
   const fitToView = useCallback(() => {
     if (layoutNodes.length === 0 || !svgContainerRef.current) return;
     const { clientWidth: w, clientHeight: h } = svgContainerRef.current;
-    const maxX = Math.max(...layoutNodes.map((n) => n.x + NODE_W));
-    const maxY = Math.max(...layoutNodes.map((n) => n.y + NODE_H));
+    let maxX = 0;
+    let maxY = 0;
+    for (const n of layoutNodes) {
+      if (n.x + NODE_W > maxX) maxX = n.x + NODE_W;
+      if (n.y + NODE_H > maxY) maxY = n.y + NODE_H;
+    }
     setScale(Math.min((w - 64) / maxX, (h - 64) / maxY, 1.5));
     setPan({ x: 32, y: 32 });
   }, [layoutNodes]);
@@ -168,8 +177,8 @@ export function DependencyGraph(): React.JSX.Element {
           minHeight: 0,
         }}
         onClick={(e) => {
-          const tag = (e.target as Element).tagName;
-          if (tag === 'svg' || tag === 'g') setSelectedId(null);
+          // Nodes call stopPropagation, so any click reaching here is SVG background
+          if ((e.target as Element).tagName === 'svg') setSelectedId(null);
         }}
       >
         {layoutNodes.length === 0 ? (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { tokens } from '../theme/tokens.js';
 import { NODE_W, NODE_H } from './graphLayout.js';
 import type { LayoutNode } from './graphLayout.js';
@@ -11,7 +11,7 @@ export function statusColor(status: TaskStatus): string {
 }
 
 export function statusDim(status: TaskStatus): string {
-  return tokens.stateColors[status]?.dim ?? 'rgba(100,100,100,0.15)';
+  return tokens.stateColors[status]?.dim ?? tokens.colors.bgCardHover;
 }
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ export function GraphSvg({
   svgRef,
   svgContainerRef,
 }: GraphSvgProps): React.JSX.Element {
-  const nodeMap = new Map(layoutNodes.map((n) => [n.id, n]));
+  const nodeMap = useMemo(() => new Map(layoutNodes.map((n) => [n.id, n])), [layoutNodes]);
 
   return (
     <div
@@ -187,7 +187,7 @@ export function GraphSvg({
                 key={n.id}
                 transform={`translate(${n.x}, ${n.y})`}
                 style={{ cursor: 'pointer' }}
-                onClick={() => onNodeClick(n.id)}
+                onClick={(e) => { e.stopPropagation(); onNodeClick(n.id); }}
                 onMouseEnter={() => onNodeHover(n.id)}
                 onMouseLeave={() => onNodeHover(null)}
                 opacity={isDimmed ? 0.25 : 1}

@@ -204,50 +204,52 @@ export class StateStore {
 
   public getGraph(): GraphData {
     const TASK_ID_RE = /TASK_\d{4}_\d{3}/;
-    const taskIdSet = new Set(this.registry.map((r) => r.id));
+    // Map for O(1) status lookup instead of O(n) linear scan per dep
+    const registryById = new Map(this.registry.map((r) => [r.id, r]));
+    const taskIdSet = new Set(registryById.keys());
 
     const nodes: GraphNode[] = [];
-    const edges: GraphEdge[] = [];
+    const edgeSet = new Set<string>();
+    const dedupedEdges: GraphEdge[] = [];
 
-    // Build edges and track which tasks have unmet dependencies
-    const depsOf = new Map<string, string[]>();
+    // rawDepsByTask tracks the original dep strings for isUnblocked computation
+    const rawDepsByTask = new Map<string, ReadonlyArray<string>>();
+    // resolvedDepsByTask tracks which TASK IDs were successfully resolved
+    const resolvedDepsByTask = new Map<string, string[]>();
 
     for (const record of this.registry) {
       const def = this.taskDefinitions.get(record.id);
       const rawDeps = def?.dependencies ?? [];
+      rawDepsByTask.set(record.id, rawDeps);
 
-      // Extract TASK_YYYY_NNN IDs from dependency strings (may include description text)
       const resolvedDeps: string[] = [];
       for (const dep of rawDeps) {
         const match = dep.match(TASK_ID_RE);
         if (match && taskIdSet.has(match[0])) {
           resolvedDeps.push(match[0]);
-          edges.push({ from: match[0], to: record.id });
+          const key = `${match[0]}→${record.id}`;
+          if (!edgeSet.has(key)) {
+            edgeSet.add(key);
+            dedupedEdges.push({ from: match[0], to: record.id });
+          }
         }
       }
-      depsOf.set(record.id, resolvedDeps);
-    }
-
-    // Deduplicate edges (same from→to may appear multiple times)
-    const edgeSet = new Set<string>();
-    const dedupedEdges: GraphEdge[] = [];
-    for (const edge of edges) {
-      const key = `${edge.from}→${edge.to}`;
-      if (!edgeSet.has(key)) {
-        edgeSet.add(key);
-        dedupedEdges.push(edge);
-      }
+      resolvedDepsByTask.set(record.id, resolvedDeps);
     }
 
     for (const record of this.registry) {
       const def = this.taskDefinitions.get(record.id);
-      const deps = depsOf.get(record.id) ?? [];
+      const rawDeps = rawDepsByTask.get(record.id) ?? [];
+      const resolvedDeps = resolvedDepsByTask.get(record.id) ?? [];
+
+      // Count how many raw dep strings contain a TASK ID pattern
+      const rawTaskDepCount = rawDeps.filter((d) => TASK_ID_RE.test(d)).length;
+      // Unblocked only if: no task deps at all, OR all task deps resolved AND all COMPLETE
       const isUnblocked =
-        deps.length === 0 ||
-        deps.every((depId) => {
-          const depRecord = this.registry.find((r) => r.id === depId);
-          return depRecord?.status === 'COMPLETE';
-        });
+        rawTaskDepCount === 0
+          ? rawDeps.length === 0
+          : resolvedDeps.length >= rawTaskDepCount &&
+            resolvedDeps.every((depId) => registryById.get(depId)?.status === 'COMPLETE');
 
       nodes.push({
         id: record.id,

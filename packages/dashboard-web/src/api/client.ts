@@ -24,8 +24,8 @@ class ApiClient {
     this.baseUrl = baseUrl ?? API_BASE;
   }
 
-  private async fetchJson<T>(path: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`);
+  private async fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, { signal });
     if (!response.ok) {
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
@@ -70,8 +70,8 @@ class ApiClient {
     return this.fetchJson<DashboardStats>('/stats');
   }
 
-  public async getGraph(): Promise<GraphData> {
-    return this.fetchJson<GraphData>('/graph');
+  public async getGraph(signal?: AbortSignal): Promise<GraphData> {
+    return this.fetchJson<GraphData>('/graph', signal);
   }
 
   public async getTaskPipeline(taskId: string): Promise<PipelineData> {
