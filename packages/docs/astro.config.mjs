@@ -4,7 +4,7 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   site: 'https://iamb0ody.github.io',
-  base: '/nitro-fueled',
+  base: process.env.GITHUB_ACTIONS === 'true' ? '/nitro-fueled' : '/',
   integrations: [
     starlight({
       title: 'Nitro-Fueled',
