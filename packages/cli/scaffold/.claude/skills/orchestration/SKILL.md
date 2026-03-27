@@ -234,7 +234,8 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 | [task-tracking.md](references/task-tracking.md)         | Managing state               | Folder structure, registry           |
 | [checkpoints.md](references/checkpoints.md)             | Presenting checkpoints       | Templates, error handling            |
 | [git-standards.md](references/git-standards.md)         | Creating commits             | Commitlint, hook protocol            |
-| [review-lessons/](../../review-lessons/)                | Before dev + after reviews   | Accumulated review findings by role (replaces anti-patterns.md) |
+| [review-lessons/](../../review-lessons/)                | Before dev + after reviews   | Accumulated review findings by role |
+| [.claude/anti-patterns.md](../../anti-patterns.md)      | Before dev + in Exit Gate    | Stack-specific anti-patterns (generated at init, Exit Gate check) |
 
 ### Example Traces
 

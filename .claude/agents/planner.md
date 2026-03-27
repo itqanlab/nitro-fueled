@@ -356,9 +356,10 @@ update `.claude/anti-patterns.md` so workers have accurate rules to check before
 
 1. Check the header line in `.claude/anti-patterns.md` to see which stack it currently covers
 2. Read `.claude/anti-patterns-master.md` to find sections tagged for the newly confirmed tech
-3. Append the relevant tagged sections to `.claude/anti-patterns.md` (do NOT remove existing sections)
-4. Update the header line to reflect the expanded stack
-5. Record the decision in `plan.md` Decisions Log:
+3. For each candidate section, check if its heading already appears in `.claude/anti-patterns.md` — skip any section whose `##` heading is already present (prevents duplicate rules on repeat planning sessions)
+4. Append only the new sections to `.claude/anti-patterns.md` (do NOT remove existing sections)
+5. Update the header line to reflect the expanded stack
+6. Record the decision in `plan.md` Decisions Log:
    `| YYYY-MM-DD | Updated anti-patterns for [tech] | [tech choice] confirmed during planning |`
 
 ### Example

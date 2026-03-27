@@ -8,7 +8,7 @@ import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, proposeAgents } from '../utils/stack-detect.js';
 import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
-import { generateAntiPatterns } from '../utils/anti-patterns.js';
+import { generateAntiPatterns, buildStackLabel } from '../utils/anti-patterns.js';
 import { generateClaudeMd } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
 import { ensureGitignore } from '../utils/gitignore.js';
@@ -124,15 +124,7 @@ function handleAntiPatterns(cwd: string, scaffoldRoot: string, overwrite: boolea
 
   const generated = generateAntiPatterns(cwd, stacks, scaffoldRoot);
   if (generated) {
-    const label =
-      stacks.length === 0
-        ? 'universal (no framework detected)'
-        : stacks
-            .map((s) =>
-              s.frameworks.length > 0 ? `${s.language} + ${s.frameworks.join(', ')}` : s.language
-            )
-            .join(', ');
-    console.log(`  Anti-patterns: generated for stack [${label}]`);
+    console.log(`  Anti-patterns: generated for stack [${buildStackLabel(stacks)}]`);
   } else {
     console.log('  Anti-patterns: master file not found; skipped');
   }
