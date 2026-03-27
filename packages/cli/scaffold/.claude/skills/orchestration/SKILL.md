@@ -105,7 +105,7 @@ See [strategies.md](references/strategies.md) for detailed selection guidance.
 ### Mode Detection
 
 ```
-if ($ARGUMENTS matches /^TASK_2026_\d{3}$/)
+if ($ARGUMENTS matches /^TASK_\d{4}_\d{3}$/)
     -> CONTINUATION mode (resume existing task)
 else
     -> NEW_TASK mode (create new task)
