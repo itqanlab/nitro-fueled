@@ -47,7 +47,7 @@ After completing your review, check if any of your findings represent NEW securi
 
 ---
 
-## Required Review Process
+## REQUIRED REVIEW PROCESS
 
 ### Step 1: Read Context
 

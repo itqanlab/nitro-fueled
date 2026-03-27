@@ -1021,7 +1021,11 @@ AUTONOMOUS MODE — follow these rules strictly:
 1. FIRST: Ensure registry.md shows IN_REVIEW for this task.
    If it shows IMPLEMENTED, set it to IN_REVIEW.
 
-2. Check existing review artifacts to determine where to resume:
+2. Verify MCP is available: call mcp__session-orchestrator__list_workers.
+   If MCP is unavailable, STOP and write exit-gate-failure.md explaining
+   that MCP is required for parallel review spawning.
+
+3. Check existing review artifacts to determine where to resume:
    - review-context.md exists? -> context generation done
    - review-code-style.md with Verdict? -> style review done
    - review-code-logic.md with Verdict? -> logic review done
@@ -1030,13 +1034,13 @@ AUTONOMOUS MODE — follow these rules strictly:
    - completion-report.md? -> completion phase done
    Resume from the first incomplete step.
 
-3. For any review type not yet complete, spawn a sub-worker via MCP.
+4. For any review type not yet complete, spawn a sub-worker via MCP.
    Full spawn instructions in .claude/agents/review-lead.md.
 
-4. Continue from where the previous Review Lead stopped.
+5. Continue from where the previous Review Lead stopped.
    Do NOT restart completed phases.
 
-5. Complete all remaining phases: fixes, completion, exit gate.
+6. Complete all remaining phases: fixes, completion, exit gate.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
