@@ -136,6 +136,7 @@ else
 | tasks.md (IN PROGRESS)  | Team-leader MODE 2 (verify)         |
 | tasks.md (IMPLEMENTED)  | Team-leader MODE 2 (commit)         |
 | tasks.md (all COMPLETE) | Team-leader MODE 3 OR QA choice     |
+| review-context.md       | Review Lead context generated — spawn sub-workers |
 | future-enhancements.md  | Workflow complete                   |
 
 See [task-tracking.md](references/task-tracking.md) for full phase detection.
@@ -314,6 +315,11 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 > and do NOT execute this phase. In interactive mode, the single session
 > runs this phase as before.
 
+> **Review Lead Note**: In Review Lead mode (spawned by Supervisor using the
+> Review Lead pattern), the completion phase is executed directly by the Review
+> Lead after all sub-worker reviews are collected and fixes applied. The Review
+> Lead reads the sub-worker reports directly from the task folder.
+
 After the QA cycle (reviews + fixes + final commit), the orchestrator MUST complete ALL of these bookkeeping steps BEFORE the final commit. The completion report is the #1 most-skipped deliverable — if you skip it, the task is considered INCOMPLETE regardless of code quality.
 
 **Commit order:**
@@ -422,7 +428,8 @@ Run these checks after reviews, fixes, and completion phase are done:
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| Review files exist | Glob task folder for review-*.md | At least style + logic reviews present |
+| Review files exist | Glob task folder for review-*.md | review-context.md + at least style + logic reviews present |
+| Security review | Glob task folder for review-security.md | Present (or note if sub-worker failed) |
 | Findings fixed | Check review files for BLOCKING/SERIOUS items | All blocking/serious items resolved |
 | Fix commit exists | Check git log | Commit with review fixes present |
 | completion-report.md exists | Read task folder | File exists and is non-empty |
