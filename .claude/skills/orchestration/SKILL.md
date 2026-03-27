@@ -22,10 +22,10 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 
 ### Strategy Quick Reference
 
-| Task Type     | Strategy Flow                                      |
-| ------------- | -------------------------------------------------- |
-| FEATURE       | PM -> [Research] -> Architect -> Team-Leader -> QA |
-| BUGFIX        | [Research] -> Team-Leader -> QA                    |
+| Task Type     | Strategy Flow                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| FEATURE       | PM -> [Research] -> Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker] |
+| BUGFIX        | [Research] -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker]             |
 | REFACTORING   | Architect -> Team-Leader -> QA                     |
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
 | RESEARCH      | Researcher -> [conditional implementation]         |
@@ -441,6 +441,7 @@ Run these checks after reviews, fixes, and completion phase are done:
 | completion-report.md exists | Read task folder | File exists and is non-empty |
 | Registry updated | Grep task ID in registry.md | Status shows COMPLETE |
 | All committed | Check git status | Clean working tree for task files |
+| Test report exists | Read task folder for test-report.md | Present (or note if Test Lead was skipped/failed — advisory only, does not block COMPLETE) |
 
 ### Exit Gate Failure
 

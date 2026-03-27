@@ -10,6 +10,7 @@
 | Priority   | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity | [Simple | Medium | Complex]                                                   |
 | Model      | [claude-opus-4-6 | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | default]    |
+| Testing    | [required \| optional \| skip]                                               |
 
 <!-- Type: Determines agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
@@ -32,6 +33,12 @@
        claude-sonnet-4-6          — Balanced capability and cost. Use for most tasks.
        claude-haiku-4-5-20251001  — Fastest and cheapest. Use for simple/mechanical tasks.
        default                    — Uses the system default model (set by DEFAULT_MODEL env var in session-orchestrator). Omit this field or set to "default" to use the system default. -->
+
+<!-- Testing: Optional override for the test type decision matrix.
+       required — force test phase even if task type would normally skip
+       optional — run tests if framework detected (default for most task types)
+       skip     — suppress test phase entirely (use for tasks that touch no testable code)
+     Omit this field to use the default matrix behavior based on task type. -->
 
 ## Description
 

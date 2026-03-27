@@ -63,6 +63,10 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `{SESSION_DIR}state.md`. Written as part of Session Lifecycle startup (after Session Directory is created).
 
+> **Concurrency and Review+Test phase**: Spawning a Review Lead + Test Lead for one task consumes 2 concurrency slots (one per worker). A task in the review/test phase uses 2 of the available slots. Example: `concurrency_limit=3`, one task reaches IMPLEMENTED → spawn both workers (2 slots used) → 1 slot remains for a Build Worker.
+>
+> If `concurrency_limit == 1`: spawn Review Lead first (higher priority — it owns state transitions). Spawn Test Lead only after Review Lead finishes or a slot opens.
+
 ---
 
 ## Registry Write Safety
@@ -103,6 +107,10 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | No transition (failure) | `\| {HH:MM:SS} \| auto-pilot \| NO TRANSITION — TASK_X: expected {expected_state}, still {current_state} (retry {N}/{limit}) \|` |
 | Build done | `\| {HH:MM:SS} \| auto-pilot \| BUILD DONE — TASK_X: IMPLEMENTED, spawning Review Worker \|` |
 | Review done | `\| {HH:MM:SS} \| auto-pilot \| REVIEW DONE — TASK_X: COMPLETE \|` |
+| Test Lead spawned | `\| {HH:MM:SS} \| auto-pilot \| SPAWNED {worker_id} for TASK_X (TestLead: {TaskType}) \|` |
+| Test Lead done | `\| {HH:MM:SS} \| auto-pilot \| TEST DONE — TASK_X: test-report.md written \|` |
+| Test Lead skipped | `\| {HH:MM:SS} \| auto-pilot \| TEST SKIP — TASK_X: task type {type} does not require tests \|` |
+| Both done | `\| {HH:MM:SS} \| auto-pilot \| REVIEW AND TEST DONE — TASK_X: COMPLETE \|` |
 | Retry scheduled | `\| {HH:MM:SS} \| auto-pilot \| RETRY — TASK_X: attempt {N}/{retry_limit} \|` |
 | Task blocked (max retries) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: exceeded {retry_limit} retries \|` |
 | Task blocked (cycle) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency cycle with TASK_Y \|` |
@@ -441,7 +449,15 @@ For each selected task:
 **5a. Determine Worker Type:**
 
 - Task state CREATED or IN_PROGRESS --> **Build Worker**
-- Task state IMPLEMENTED or IN_REVIEW --> **Review Worker**
+- Task state IMPLEMENTED --> **Review Lead + Test Lead** (spawn both simultaneously)
+- Task state IN_REVIEW --> **Review Lead** (if no review artifacts yet) | **Test Lead** (if no `test-report.md` yet) | both
+
+When a task transitions to IMPLEMENTED, the Supervisor spawns **two workers simultaneously** for that task — one Review Lead and one Test Lead. Both are tracked in the active workers table with different labels and worker types:
+
+```
+| worker_id_A | TASK_YYYY_NNN | ReviewLead | TASK_YYYY_NNN-TYPE-REVIEW | running | ... | COMPLETE  |
+| worker_id_B | TASK_YYYY_NNN | TestLead   | TASK_YYYY_NNN-TYPE-TEST   | running | ... | TEST_DONE |
+```
 
 **5b. Generate Worker Prompt:**
 
@@ -472,12 +488,22 @@ If the task's Provider field is `default` or absent, use the **Provider Routing 
 If an explicit Provider is set in task.md, always honor it — no routing table override.
 
 > **Review Lead model**: For Review Lead workers, always pass `model: claude-sonnet-4-6` regardless of the task's Model field. The task's Model field applies to Build Workers only.
+> **Test Lead model**: For Test Lead workers, always pass `model: claude-sonnet-4-6`. The Test Lead's role is orchestration only — spawning sub-workers, monitoring, and writing test-report.md. Sonnet is sufficient.
+
+**Test Lead Provider Routing** (fixed — not overridable):
+
+| Condition | Provider | Model | Reason |
+|-----------|----------|-------|--------|
+| Test Lead worker | `claude` | `claude-sonnet-4-6` | Orchestration only — sonnet is sufficient |
 
 **5d. Call MCP `spawn_worker`:**
 
 - `prompt`: the generated prompt from 5b
 - `working_directory`: project root absolute path
-- `label`: `"TASK_YYYY_NNN-TYPE-BUILD"` or `"TASK_YYYY_NNN-TYPE-REVIEW"` (e.g., `"TASK_2026_003-FEATURE-BUILD"`)
+- `label`: `"TASK_YYYY_NNN-TYPE-BUILD"` or `"TASK_YYYY_NNN-TYPE-REVIEW"` or `"TASK_YYYY_NNN-TYPE-TEST"` (e.g., `"TASK_2026_003-FEATURE-BUILD"`)
+  - Build Worker: `TASK_YYYY_NNN-TYPE-BUILD`
+  - Review Lead: `TASK_YYYY_NNN-TYPE-REVIEW`
+  - Test Lead: `TASK_YYYY_NNN-TYPE-TEST`
 - `model`: the resolved model from step 5c (omit if `default` sentinel was never resolved — should not happen after routing table lookup)
 - `provider`: the resolved provider from step 5c (omit if `claude` — that is the MCP default, so omitting is equivalent)
 
@@ -485,8 +511,9 @@ If an explicit Provider is set in task.md, always honor it — no routing table 
 
 - Do NOT update the registry (workers update their own registry states)
 - Record in `{SESSION_DIR}state.md` active workers table:
-  - worker_id, task_id, worker_type=`"Build"|"Review"|"ReviewLead"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — never record the sentinel `"default"`), provider (the **resolved** provider — never record `"default"`)
+  - worker_id, task_id, worker_type=`"Build"|"Review"|"ReviewLead"|"TestLead"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"|"TEST_DONE"`, model (the **resolved** model name — never record the sentinel `"default"`), provider (the **resolved** provider — never record `"default"`)
   - (`"ReviewLead"` = Review Lead workers; distinct from the old monolithic `"Review"` type)
+  - (`"TestLead"` = Test Lead workers; `expected_end_state="TEST_DONE"` — the Supervisor detects completion by checking for `test-report.md` existence in the task folder, not via a registry state change)
 
 **5f. On spawn failure (MCP error):**
 
@@ -569,10 +596,46 @@ If the registry shows a state that does not match the expected transition for th
   - Move worker from active to completed list in state
   - Task will be picked up as READY_FOR_REVIEW on next loop iteration (Step 3)
 
-- If new state is **COMPLETE** (Review Worker succeeded):
-  - Log: `"REVIEW DONE — TASK_X: COMPLETE"`
-  - Move worker from active to completed list in state
-  - Record: task_id, completion_timestamp (format: `YYYY-MM-DD HH:MM:SS +ZZZZ`)
+- If new state is **COMPLETE** (Review Lead succeeded):
+  - Remove ReviewLead from active workers in state.
+  - If a TestLead worker is still running for the same task_id → wait. Do not close the task yet.
+  - If no TestLead is running (or TestLead already finished):
+    - Check for `task-tracking/TASK_X/test-report.md`. If present → both done.
+      - Log: `"REVIEW AND TEST DONE — TASK_X: COMPLETE"`
+    - If `test-report.md` is missing → task is still COMPLETE (Review Lead owns COMPLETE). Note: `"Test Lead did not produce report"`.
+      - Log: `"REVIEW DONE — TASK_X: COMPLETE (no test-report.md)"`
+    - Move task from active to completed list in state.
+    - Record: task_id, completion_timestamp (format: `YYYY-MM-DD HH:MM:SS +ZZZZ`)
+
+- If worker_type is **TestLead** and `test-report.md` exists in task folder:
+  - Remove TestLead from active workers in state.
+  - If a ReviewLead worker is still running for the same task_id → wait.
+  - If ReviewLead is no longer running: check registry state.
+    - If registry == COMPLETE → both done. Log: `"REVIEW AND TEST DONE — TASK_X: COMPLETE"`. Move task to completed list.
+    - If registry != COMPLETE → Review Lead not done yet — log warning: `"TEST DONE but REVIEW still pending — TASK_X: waiting for ReviewLead"`.
+
+**Combined completion conditions for a task with both ReviewLead + TestLead workers:**
+
+```
+ReviewLead finished:
+  - Check registry state. If COMPLETE → Review Lead done.
+  - Remove ReviewLead from active workers.
+  - If TestLead still running → wait (do not close task yet).
+
+TestLead finished:
+  - Check for test-report.md in task folder. If present → Test Lead done.
+  - Remove TestLead from active workers.
+  - If ReviewLead still running → wait.
+
+Both done:
+  - Check registry state == COMPLETE (Review Lead sets this).
+  - Check test-report.md exists (Test Lead writes this).
+  - If both conditions met → log: "REVIEW AND TEST DONE — TASK_X: COMPLETE"
+  - If registry == COMPLETE but test-report.md missing → task is COMPLETE, note "Test Lead did not produce report"
+  - If registry != COMPLETE but test-report.md exists → log warning: ReviewLead not done yet
+```
+
+Note: Test Lead does NOT block COMPLETE. If the registry shows COMPLETE (from Review Lead), the task is COMPLETE regardless of Test Lead status.
 
 **7e. IF state did NOT transition (still at pre-worker state):**
 
@@ -1048,6 +1111,84 @@ AUTONOMOUS MODE — follow these rules strictly:
    Do NOT restart completed phases.
 
 6. Complete all remaining phases: fixes, completion, exit gate.
+
+Working directory: {project_root}
+Task folder: task-tracking/TASK_YYYY_NNN/
+```
+
+### First-Run Test Lead Prompt
+
+```
+TEST LEAD — TASK_YYYY_NNN
+
+AUTONOMOUS MODE — no human at this terminal. Do NOT pause.
+
+You are the Test Lead for TASK_YYYY_NNN. Your job is to detect the test
+framework, spawn parallel test writer sub-workers via MCP, execute the
+test suite, and write test-report.md.
+
+Read your full instructions from: .claude/agents/test-lead.md
+
+Follow these rules strictly:
+
+1. Verify MCP is available: call mcp__session-orchestrator__list_workers.
+   If MCP is unavailable, write test-report.md noting "MCP unavailable —
+   tests not written" and exit.
+
+2. Check for existing artifacts (continuation support):
+   - test-context.md exists? -> skip context generation
+   - test-unit-results.md exists with Results section? -> skip Unit Test Writer spawn
+   - test-integration-results.md exists with Results section? -> skip Integration Test Writer spawn
+   - test-e2e-results.md exists with Results section? -> skip E2E Test Writer spawn
+   - test-report.md exists with Results section? -> skip to exit gate
+
+3. Generate test-context.md (if not already done).
+
+4. Spawn test writer sub-workers in parallel via MCP (for any not yet done).
+   Full sub-worker prompts and model routing in .claude/agents/test-lead.md.
+
+5. Monitor sub-workers via mcp__session-orchestrator__get_worker_activity
+   every 2 minutes until all reach finished or failed state.
+
+6. Execute test suite using the command from test-context.md.
+
+7. Write test-report.md to the task folder.
+
+8. EXIT GATE — Before exiting, verify:
+   - [ ] test-context.md exists (or skip was written)
+   - [ ] test-report.md exists and is non-empty
+   - [ ] All test files are committed
+   If any check fails, write exit-gate-failure.md and exit.
+
+Working directory: {project_root}
+Task folder: task-tracking/TASK_YYYY_NNN/
+```
+
+### Retry Test Lead Prompt
+
+```
+TEST LEAD — CONTINUATION MODE
+TASK_YYYY_NNN — retry attempt {N}
+
+The previous Test Lead {reason: stuck / crashed / stopped}.
+
+AUTONOMOUS MODE — follow these rules strictly:
+
+1. Check existing artifacts to determine where to resume:
+   - test-context.md exists? -> context done
+   - test-unit-results.md with Results section? -> unit tests done
+   - test-integration-results.md with Results section? -> integration tests done
+   - test-e2e-results.md with Results section? -> e2e tests done
+   - test-report.md with Results section? -> report done
+   Resume from the first incomplete step.
+
+2. For any test type not yet complete, spawn a sub-worker via MCP.
+   Full spawn instructions in .claude/agents/test-lead.md.
+
+3. Continue from where the previous Test Lead stopped.
+   Do NOT restart completed phases.
+
+4. Complete all remaining phases: execution, report, exit gate.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
