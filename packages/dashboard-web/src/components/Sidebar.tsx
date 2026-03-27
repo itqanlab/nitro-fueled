@@ -21,6 +21,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { path: '/graph', label: 'Dep. Graph', icon: '🕸️' },
   { path: '/reviews', label: 'Reviews', icon: '🔍' },
   { path: '/cost', label: 'Cost', icon: '💰' },
+  { path: '/analytics', label: 'Analytics', icon: '📈' },
   { path: '/patterns', label: 'Anti-Patterns', icon: '⚠️' },
   { path: '/lessons', label: 'Lessons', icon: '📚' },
 ];

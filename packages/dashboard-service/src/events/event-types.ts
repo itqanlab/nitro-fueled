@@ -299,3 +299,59 @@ export interface SessionAnalytics {
   readonly phasesCompleted: ReadonlyArray<string>;
   readonly filesModified: number | null;
 }
+
+export interface SessionCostPoint {
+  readonly sessionId: string;
+  readonly date: string;
+  readonly totalCost: number;
+  readonly costByModel: Record<string, number>;
+  readonly taskCount: number;
+}
+
+export interface EfficiencyPoint {
+  readonly sessionId: string;
+  readonly date: string;
+  readonly avgDurationMinutes: number;
+  readonly avgTokensPerTask: number;
+  readonly retryRate: number;
+  readonly failureRate: number;
+  readonly avgReviewScore: number;
+}
+
+export interface ModelUsagePoint {
+  readonly model: string;
+  readonly totalCost: number;
+  readonly taskCount: number;
+  readonly tokenCount: number;
+}
+
+export interface SessionComparisonRow {
+  readonly sessionId: string;
+  readonly date: string;
+  readonly taskCount: number;
+  readonly durationMinutes: number;
+  readonly totalCost: number;
+  readonly failureCount: number;
+  readonly avgReviewScore: number;
+}
+
+export interface AnalyticsCostData {
+  readonly sessions: ReadonlyArray<SessionCostPoint>;
+  readonly cumulativeCost: number;
+  readonly hypotheticalOpusCost: number;
+}
+
+export interface AnalyticsEfficiencyData {
+  readonly sessions: ReadonlyArray<EfficiencyPoint>;
+}
+
+export interface AnalyticsModelsData {
+  readonly models: ReadonlyArray<ModelUsagePoint>;
+  readonly totalCost: number;
+  readonly hypotheticalOpusCost: number;
+  readonly actualSavings: number;
+}
+
+export interface AnalyticsSessionsData {
+  readonly sessions: ReadonlyArray<SessionComparisonRow>;
+}

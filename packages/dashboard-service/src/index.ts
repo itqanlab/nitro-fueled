@@ -8,6 +8,7 @@ import type { FileWatcher } from './watcher/watcher.interface.js';
 import { createEventBus } from './events/event-bus.js';
 import { StateStore } from './state/store.js';
 import { SessionStore } from './state/session-store.js';
+import { AnalyticsStore } from './state/analytics-store.js';
 import { FileRouter } from './parsers/file-router.js';
 import type { Server } from 'node:http';
 
@@ -24,6 +25,7 @@ export interface DashboardServiceOptions {
 export class DashboardService {
   private readonly store: StateStore;
   private readonly sessionStore: SessionStore;
+  private readonly analyticsStore: AnalyticsStore;
   private readonly eventBus: ReturnType<typeof createEventBus>;
   private readonly watcher: FileWatcher;
   private readonly wsBroadcaster: WebSocketBroadcaster;
@@ -35,6 +37,7 @@ export class DashboardService {
     this.options = options;
     this.store = new StateStore();
     this.sessionStore = new SessionStore();
+    this.analyticsStore = new AnalyticsStore(resolve(options.taskTrackingDir, '..'));
     this.eventBus = createEventBus();
     this.watcher = new ChokidarWatcher();
     this.wsBroadcaster = new WebSocketBroadcaster();
@@ -42,7 +45,7 @@ export class DashboardService {
   }
 
   public async start(): Promise<void> {
-    const server = createHttpServer(this.store, this.sessionStore, this.options.webDistPath);
+    const server = createHttpServer(this.store, this.sessionStore, this.analyticsStore, this.options.webDistPath);
     this.httpServer = server;
 
     this.wsBroadcaster.attach(server, this.eventBus);

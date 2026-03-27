@@ -12,6 +12,10 @@ import type {
   GraphData,
   PipelineData,
   WorkerTree,
+  AnalyticsCostData,
+  AnalyticsEfficiencyData,
+  AnalyticsModelsData,
+  AnalyticsSessionsData,
 } from '../types/index.js';
 
 const API_BASE = (import.meta as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE ?? '/api';
@@ -97,6 +101,22 @@ class ApiClient {
 
   public async getSession(id: string): Promise<SessionData> {
     return this.fetchJson<SessionData>(`/sessions/${encodeURIComponent(id)}`);
+  }
+
+  public async getAnalyticsCost(): Promise<AnalyticsCostData> {
+    return this.fetchJson<AnalyticsCostData>('/analytics/cost');
+  }
+
+  public async getAnalyticsEfficiency(): Promise<AnalyticsEfficiencyData> {
+    return this.fetchJson<AnalyticsEfficiencyData>('/analytics/efficiency');
+  }
+
+  public async getAnalyticsModels(): Promise<AnalyticsModelsData> {
+    return this.fetchJson<AnalyticsModelsData>('/analytics/models');
+  }
+
+  public async getAnalyticsSessions(): Promise<AnalyticsSessionsData> {
+    return this.fetchJson<AnalyticsSessionsData>('/analytics/sessions');
   }
 }
 

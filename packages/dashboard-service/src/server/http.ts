@@ -3,6 +3,7 @@ import { readFile } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 import type { StateStore } from '../state/store.js';
 import type { SessionStore } from '../state/session-store.js';
+import type { AnalyticsStore } from '../state/analytics-store.js';
 
 const MIME_TYPES: Readonly<Record<string, string>> = {
   '.html': 'text/html',
@@ -39,7 +40,7 @@ function getCorsHeaders(origin: string | undefined): Record<string, string> {
   };
 }
 
-export function createHttpServer(store: StateStore, sessionStore: SessionStore, webDistPath?: string): Server {
+export function createHttpServer(store: StateStore, sessionStore: SessionStore, analyticsStore?: AnalyticsStore, webDistPath?: string): Server {
   const routes: Route[] = [];
 
   function addRoute(method: string, path: string, handler: RouteHandler): void {
@@ -145,6 +146,26 @@ export function createHttpServer(store: StateStore, sessionStore: SessionStore, 
 
   addRoute('GET', '/api/sessions', (req, res) => {
     sendJson(res, req, sessionStore.getSessions());
+  });
+
+  addRoute('GET', '/api/analytics/cost', (req, res) => {
+    const promise = analyticsStore?.getCostData() ?? Promise.resolve({ sessions: [], cumulativeCost: 0, hypotheticalOpusCost: 0 });
+    promise.then((data) => sendJson(res, req, data)).catch(() => sendJson(res, req, { error: 'Analytics unavailable' }, 500));
+  });
+
+  addRoute('GET', '/api/analytics/efficiency', (req, res) => {
+    const promise = analyticsStore?.getEfficiencyData() ?? Promise.resolve({ sessions: [] });
+    promise.then((data) => sendJson(res, req, data)).catch(() => sendJson(res, req, { error: 'Analytics unavailable' }, 500));
+  });
+
+  addRoute('GET', '/api/analytics/models', (req, res) => {
+    const promise = analyticsStore?.getModelsData() ?? Promise.resolve({ models: [], totalCost: 0, hypotheticalOpusCost: 0, actualSavings: 0 });
+    promise.then((data) => sendJson(res, req, data)).catch(() => sendJson(res, req, { error: 'Analytics unavailable' }, 500));
+  });
+
+  addRoute('GET', '/api/analytics/sessions', (req, res) => {
+    const promise = analyticsStore?.getSessionsData() ?? Promise.resolve({ sessions: [] });
+    promise.then((data) => sendJson(res, req, data)).catch(() => sendJson(res, req, { error: 'Analytics unavailable' }, 500));
   });
 
   const server = createServer((req, res) => {
