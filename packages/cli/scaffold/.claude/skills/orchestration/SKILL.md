@@ -22,10 +22,10 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 
 ### Strategy Quick Reference
 
-| Task Type     | Strategy Flow                                      |
-| ------------- | -------------------------------------------------- |
-| FEATURE       | PM -> [Research] -> Architect -> Team-Leader -> QA |
-| BUGFIX        | [Research] -> Team-Leader -> QA                    |
+| Task Type     | Strategy Flow                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| FEATURE       | PM -> [Research] -> Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker] |
+| BUGFIX        | [Research] -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker]             |
 | REFACTORING   | Architect -> Team-Leader -> QA                     |
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
 | RESEARCH      | Researcher -> [conditional implementation]         |
@@ -136,6 +136,7 @@ else
 | tasks.md (IN PROGRESS)  | Team-leader MODE 2 (verify)         |
 | tasks.md (IMPLEMENTED)  | Team-leader MODE 2 (commit)         |
 | tasks.md (all COMPLETE) | Team-leader MODE 3 OR QA choice     |
+| review-context.md       | Review Lead context generated — spawn sub-workers |
 | future-enhancements.md  | Workflow complete                   |
 
 See [task-tracking.md](references/task-tracking.md) for full phase detection.
@@ -204,6 +205,61 @@ See [team-leader-modes.md](references/team-leader-modes.md) for detailed integra
 
 ---
 
+## Session Logging
+
+The orchestration skill MUST maintain a session-scoped event log so that direct `/orchestrate`
+invocations are visible in the same audit trail as auto-pilot-spawned workers.
+
+### Session Directory Setup (run once, on skill entry)
+
+1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` using the current wall-clock time.
+2. Set `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/`.
+3. Create `{SESSION_DIR}` if it does not exist (mkdir, no-op if exists).
+4. Create `{SESSION_DIR}log.md` with header if it does not already exist:
+   ```markdown
+   # Session Log — {SESSION_ID}
+
+   | Timestamp | Source | Event |
+   |-----------|--------|-------|
+   ```
+5. Register in `task-tracking/active-sessions.md` (append row with source `orchestrate`,
+   Tasks `1`, path `{SESSION_DIR}`).
+6. Append startup entry to `{SESSION_DIR}log.md`:
+   `| {HH:MM:SS} | orchestrate | STARTED TASK_{ID} ({task_type}) |`
+
+On finish (after Completion Phase bookkeeping commit):
+
+1. Append final entry:
+   `| {HH:MM:SS} | orchestrate | FINISHED TASK_{ID} — {COMPLETE | FAILED} |`
+2. Remove this session's row from `task-tracking/active-sessions.md`.
+
+### Phase Transition Log Entries
+
+Append one row to `{SESSION_DIR}log.md` after each phase completes. Use the exact formats
+below.
+
+| Phase | Log Row |
+|-------|---------|
+| PM complete | `\| {HH:MM:SS} \| orchestrate \| PM phase complete for TASK_{ID} \|` |
+| Architect complete | `\| {HH:MM:SS} \| orchestrate \| Architect phase complete for TASK_{ID} \|` |
+| Team-Leader batch assigned | `\| {HH:MM:SS} \| orchestrate \| Batch {N} assigned for TASK_{ID} \|` |
+| Dev batch complete | `\| {HH:MM:SS} \| orchestrate \| Batch {N} complete for TASK_{ID} \|` |
+| All batches complete | `\| {HH:MM:SS} \| orchestrate \| All dev batches complete for TASK_{ID} \|` |
+| QA started | `\| {HH:MM:SS} \| orchestrate \| QA started for TASK_{ID} \|` |
+| QA complete | `\| {HH:MM:SS} \| orchestrate \| QA complete for TASK_{ID} \|` |
+| Completion phase done | `\| {HH:MM:SS} \| orchestrate \| Completion phase done for TASK_{ID} — COMPLETE \|` |
+
+**Log writes are best-effort**: If a write fails, log a warning to the user and continue.
+Never let log failure interrupt orchestration.
+
+**In Build Worker / Review Worker sessions** (spawned by auto-pilot): The worker runs
+`/orchestrate TASK_X` which invokes this skill. The skill will create a new `SESSION_ID`
+for the worker's own session. This is intentional — each worker gets its own session
+directory and log. The auto-pilot session's log tracks spawning/monitoring; the worker's
+own log tracks phase-level progress.
+
+---
+
 ## Error Handling
 
 ### Validation Rejection
@@ -259,6 +315,11 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 > **Review Worker** session only. Build Workers stop after implementation
 > and do NOT execute this phase. In interactive mode, the single session
 > runs this phase as before.
+
+> **Review Lead Note**: In Review Lead mode (spawned by Supervisor using the
+> Review Lead pattern), the completion phase is executed directly by the Review
+> Lead after all sub-worker reviews are collected and fixes applied. The Review
+> Lead reads the sub-worker reports directly from the task folder.
 
 After the QA cycle (reviews + fixes + final commit), the orchestrator MUST complete ALL of these bookkeeping steps BEFORE the final commit. The completion report is the #1 most-skipped deliverable — if you skip it, the task is considered INCOMPLETE regardless of code quality.
 
@@ -337,6 +398,8 @@ Run these checks after implementation is committed and registry is updated:
 
 | Check | Command | Expected |
 |-------|---------|----------|
+| tasks.md exists | Glob task-tracking/TASK_[ID]/ for tasks.md | File found |
+| tasks.md has content | Grep "Task" in tasks.md | At least one `### Task N.N:` heading present |
 | All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
 | Anti-patterns consulted | Read `.claude/anti-patterns.md` | Reviewed relevant sections; no violations in implementation |
 | Implementation committed | Check git status | No unstaged implementation files |
@@ -351,18 +414,35 @@ it requires you to read the file and compare against your implementation.
 If any check fails, fix it before exiting. Do not exit with uncommitted
 work or an un-updated registry.
 
+**If tasks.md is missing**: Create it by listing all implementation steps you completed as task entries with `**Status**: COMPLETE`. See the tasks.md format under `## MODE 1: DECOMPOSITION` > `### Expected Output` in `.claude/skills/orchestration/references/team-leader-modes.md`. If that file is unavailable, use this minimal structure:
+
+```markdown
+# Development Tasks - TASK_[ID]
+
+## Batch 1: [Description] - COMPLETE
+
+**Developer**: systems-developer
+
+### Task 1.1: [What you implemented]
+
+**File**: [path/to/file]
+**Status**: COMPLETE
+```
+
 ### Review Worker Exit Gate
 
 Run these checks after reviews, fixes, and completion phase are done:
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| Review files exist | Glob task folder for review-*.md | At least style + logic reviews present |
-| Findings fixed | Check review files for BLOCKING/SERIOUS items | All blocking/serious items resolved |
+| Review files exist | Glob task folder for review-*.md | review-context.md + at least style + logic reviews present |
+| Security review | Glob task folder for review-security.md | Present (or note if sub-worker failed) |
+| Findings fixed | Check review files for all findings | All findings resolved or documented in out-of-scope-findings.md |
 | Fix commit exists | Check git log | Commit with review fixes present |
 | completion-report.md exists | Read task folder | File exists and is non-empty |
 | Registry updated | Grep task ID in registry.md | Status shows COMPLETE |
 | All committed | Check git status | Clean working tree for task files |
+| Test report exists | Read task folder for test-report.md | Present (or note if Test Lead was skipped/failed — advisory only, does not block COMPLETE) |
 
 ### Exit Gate Failure
 
