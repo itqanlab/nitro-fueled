@@ -4,7 +4,7 @@
 
 You define scope and priorities. Nitro-Fueled plans, builds, reviews, and advances tasks — autonomously.
 
-[Live Overview](https://itqanlab.github.io/nitro-fueled/) · [Design Doc](docs/nitro-fueled-design.md)
+[Documentation](https://iamb0ody.github.io/nitro-fueled/) · [Design Doc](docs/nitro-fueled-design.md)
 
 ---
 

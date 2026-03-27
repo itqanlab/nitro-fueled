@@ -1,0 +1,24 @@
+/* Nitro-Fueled brand colors for Starlight */
+:root {
+  --sl-color-accent-low: #7c2d00;
+  --sl-color-accent: #f97316;
+  --sl-color-accent-high: #fed7aa;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #fed7aa;
+  --sl-color-accent: #ea6200;
+  --sl-color-accent-high: #7c2d00;
+}
+
+/* Dark background */
+:root[data-theme='dark'] {
+  --sl-color-bg: #0a0e17;
+  --sl-color-bg-nav: #0a0e17;
+  --sl-color-bg-sidebar: #0d1220;
+}
+
+/* Tailwind base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
