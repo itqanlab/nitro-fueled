@@ -21,6 +21,18 @@ export interface Manifest {
   generatedFiles: Record<string, GeneratedFileEntry>;
 }
 
+function isManifest(val: unknown): val is Manifest {
+  if (typeof val !== 'object' || val === null) return false;
+  const obj = val as Record<string, unknown>;
+  return (
+    typeof obj['version'] === 'string' &&
+    typeof obj['installedAt'] === 'string' &&
+    typeof obj['updatedAt'] === 'string' &&
+    typeof obj['coreFiles'] === 'object' && obj['coreFiles'] !== null &&
+    typeof obj['generatedFiles'] === 'object' && obj['generatedFiles'] !== null
+  );
+}
+
 /**
  * Reads and parses `.nitro-fueled/manifest.json` from the given directory.
  * Returns null if the file does not exist or cannot be parsed.
@@ -31,8 +43,14 @@ export function readManifest(cwd: string): Manifest | null {
 
   try {
     const raw = readFileSync(manifestPath, 'utf8');
-    return JSON.parse(raw) as Manifest;
-  } catch {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isManifest(parsed)) {
+      console.error(`Warning: manifest.json has unexpected shape, ignoring`);
+      return null;
+    }
+    return parsed;
+  } catch (err: unknown) {
+    console.error(`Warning: failed to read manifest.json: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -44,17 +62,25 @@ export function readManifest(cwd: string): Manifest | null {
 export function writeManifest(cwd: string, manifest: Manifest): void {
   const manifestPath = resolve(cwd, '.nitro-fueled', 'manifest.json');
   const dir = dirname(manifestPath);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  } catch (err: unknown) {
+    throw new Error(`Failed to write manifest: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 /**
  * Computes the SHA-256 checksum of a file, prefixed with `sha256:`.
  */
 export function computeChecksum(filePath: string): string {
-  const content = readFileSync(filePath);
-  const hash = createHash('sha256').update(content).digest('hex');
-  return `sha256:${hash}`;
+  try {
+    const content = readFileSync(filePath);
+    const hash = createHash('sha256').update(content).digest('hex');
+    return `sha256:${hash}`;
+  } catch (err: unknown) {
+    throw new Error(`Failed to checksum ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 /**

@@ -19,15 +19,19 @@ import type { Manifest, GeneratedFileEntry } from '../utils/manifest.js';
 
 const initRequire = createRequire(import.meta.url);
 
+function hasVersion(obj: object): obj is { version: unknown } {
+  return 'version' in obj;
+}
+
 function getPackageVersion(): string {
   try {
     const pkg: unknown = initRequire('../../package.json');
-    if (typeof pkg === 'object' && pkg !== null && 'version' in pkg) {
-      const v = (pkg as Record<string, unknown>)['version'];
+    if (typeof pkg === 'object' && pkg !== null && hasVersion(pkg)) {
+      const v = pkg.version;
       if (typeof v === 'string') return v;
     }
-  } catch {
-    // Fall through
+  } catch (err: unknown) {
+    console.error(`Warning: could not read package.json version: ${err instanceof Error ? err.message : String(err)}`);
   }
   return '0.0.0';
 }
@@ -464,7 +468,14 @@ export function registerInitCommand(program: Command): void {
         generatedFileInfos.push({ path: agentPath, stack: stackLabel, generator: 'ai' });
       }
 
-      buildAndWriteManifest(cwd, scaffoldedFiles, generatedFileInfos);
+      try {
+        buildAndWriteManifest(cwd, scaffoldedFiles, generatedFileInfos);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Error: Failed to write manifest: ${msg}`);
+        process.exitCode = 1;
+        return;
+      }
 
       // Step 10: MCP configuration
       await handleMcpConfig(cwd, opts);
