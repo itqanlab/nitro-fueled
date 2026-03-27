@@ -1,6 +1,6 @@
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
 import { readFile } from 'node:fs';
-import { extname, join } from 'node:path';
+import { extname, join, resolve } from 'node:path';
 import type { StateStore } from '../state/store.js';
 
 const MIME_TYPES: Readonly<Record<string, string>> = {
@@ -14,6 +14,11 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
   '.ico': 'image/x-icon',
 };
 
+// Localhost-only CORS: allow the specific origins that the dashboard client runs on.
+// Wildcard (*) is intentionally avoided to prevent arbitrary browser tabs from reading
+// orchestration state via a backgrounded service.
+const ALLOWED_ORIGINS = new Set(['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4200']);
+
 type RouteHandler = (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) => void;
 
 interface Route {
@@ -21,6 +26,16 @@ interface Route {
   readonly pattern: RegExp;
   readonly paramNames: ReadonlyArray<string>;
   readonly handler: RouteHandler;
+}
+
+function getCorsHeaders(origin: string | undefined): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : 'null';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
+  };
 }
 
 export function createHttpServer(store: StateStore, webDistPath?: string): Server {
@@ -40,66 +55,60 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
     });
   }
 
-  function sendJson(res: ServerResponse, data: unknown, status = 200): void {
+  function sendJson(res: ServerResponse, req: IncomingMessage, data: unknown, status = 200): void {
     res.writeHead(status, {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...getCorsHeaders(req.headers.origin),
     });
     res.end(JSON.stringify(data));
   }
 
-  addRoute('GET', '/health', (_req, res) => {
-    sendJson(res, { status: 'ok', service: 'nitro-fueled-dashboard', timestamp: new Date().toISOString() });
+  addRoute('GET', '/health', (req, res) => {
+    sendJson(res, req, { status: 'ok', service: 'nitro-fueled-dashboard', timestamp: new Date().toISOString() });
   });
 
-  addRoute('GET', '/api/registry', (_req, res) => {
-    sendJson(res, store.getRegistry());
+  addRoute('GET', '/api/registry', (req, res) => {
+    sendJson(res, req, store.getRegistry());
   });
 
-  addRoute('GET', '/api/plan', (_req, res) => {
+  addRoute('GET', '/api/plan', (req, res) => {
     const plan = store.getPlan();
-    sendJson(res, plan ?? { error: 'Plan not found' });
+    sendJson(res, req, plan ?? { error: 'Plan not found' });
   });
 
-  addRoute('GET', '/api/state', (_req, res) => {
+  addRoute('GET', '/api/state', (req, res) => {
     const state = store.getOrchestratorState();
-    sendJson(res, state ?? { error: 'Orchestrator state not found' });
+    sendJson(res, req, state ?? { error: 'Orchestrator state not found' });
   });
 
-  addRoute('GET', '/api/tasks/:id', (_req, res, params) => {
+  addRoute('GET', '/api/tasks/:id', (req, res, params) => {
     const taskData = store.getFullTask(params.id);
     if (!taskData.definition && !taskData.registryRecord) {
-      sendJson(res, { error: `Task ${params.id} not found` }, 404);
+      sendJson(res, req, { error: `Task ${params.id} not found` }, 404);
       return;
     }
-    sendJson(res, taskData);
+    sendJson(res, req, taskData);
   });
 
-  addRoute('GET', '/api/tasks/:id/reviews', (_req, res, params) => {
-    sendJson(res, store.getReviews(params.id));
+  addRoute('GET', '/api/tasks/:id/reviews', (req, res, params) => {
+    sendJson(res, req, store.getReviews(params.id));
   });
 
-  addRoute('GET', '/api/anti-patterns', (_req, res) => {
-    sendJson(res, store.getAntiPatterns());
+  addRoute('GET', '/api/anti-patterns', (req, res) => {
+    sendJson(res, req, store.getAntiPatterns());
   });
 
-  addRoute('GET', '/api/review-lessons', (_req, res) => {
-    sendJson(res, store.getLessons());
+  addRoute('GET', '/api/review-lessons', (req, res) => {
+    sendJson(res, req, store.getLessons());
   });
 
-  addRoute('GET', '/api/stats', (_req, res) => {
-    sendJson(res, store.getStats());
+  addRoute('GET', '/api/stats', (req, res) => {
+    sendJson(res, req, store.getStats());
   });
 
   const server = createServer((req, res) => {
     if (req.method === 'OPTIONS') {
-      res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      });
+      res.writeHead(204, getCorsHeaders(req.headers.origin));
       res.end();
       return;
     }
@@ -120,10 +129,19 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
       }
     }
 
-    // Serve static files from webDistPath
+    // Serve static files from webDistPath with path traversal protection.
     if (webDistPath && (pathname === '/' || pathname.startsWith('/assets'))) {
+      const resolvedBase = resolve(webDistPath);
       const filePath = pathname === '/' ? 'index.html' : pathname.slice(1);
-      const fullPath = join(webDistPath, filePath);
+      const fullPath = resolve(join(resolvedBase, filePath));
+
+      // Reject any path that escapes the web root.
+      if (!fullPath.startsWith(resolvedBase + '/') && fullPath !== resolvedBase) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Forbidden' }));
+        return;
+      }
+
       const ext = extname(filePath);
       const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
 
@@ -131,16 +149,18 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
         if (err) {
           // Fall back to index.html for SPA routing
           if (filePath !== 'index.html') {
-            readFile(join(webDistPath, 'index.html'), (fallbackErr, indexData) => {
+            readFile(join(resolvedBase, 'index.html'), (fallbackErr, indexData) => {
               if (fallbackErr) {
-                sendJson(res, { error: 'Not found' }, 404);
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Not found' }));
                 return;
               }
               res.writeHead(200, { 'Content-Type': 'text/html' });
               res.end(indexData);
             });
           } else {
-            sendJson(res, { error: 'Not found' }, 404);
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not found' }));
           }
           return;
         }
@@ -150,7 +170,8 @@ export function createHttpServer(store: StateStore, webDistPath?: string): Serve
       return;
     }
 
-    sendJson(res, { error: 'Not found' }, 404);
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
   });
 
   return server;

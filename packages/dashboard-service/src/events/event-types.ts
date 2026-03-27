@@ -31,6 +31,7 @@ export interface TaskRecord {
   readonly type: string;
   readonly description: string;
   readonly created: string;
+  readonly model: string;
 }
 
 export interface TaskDefinition {
@@ -174,8 +175,13 @@ export interface DashboardStats {
   readonly totalTasks: number;
   readonly byStatus: Record<string, number>;
   readonly byType: Record<string, number>;
+  readonly byModel: Record<string, number>;
   readonly completionRate: number;
   readonly activeWorkers: number;
+  readonly totalCost: number;
+  readonly totalTokens: number;
+  readonly costByModel: Record<string, number>;
+  readonly tokensByModel: Record<string, number>;
 }
 
 export type DashboardEventType =

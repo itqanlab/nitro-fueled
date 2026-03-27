@@ -3,12 +3,22 @@ import type { DashboardEvent } from '../events/event-types.js';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Server } from 'node:http';
 
+// Mirror the allowed origins from the HTTP server.
+const ALLOWED_ORIGINS = new Set(['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4200']);
+
 export class WebSocketBroadcaster {
   private wss: WebSocketServer | null = null;
   private unsubscribe: (() => void) | null = null;
 
   public attach(httpServer: Server, eventBus: DashboardEventBus): void {
-    this.wss = new WebSocketServer({ server: httpServer });
+    this.wss = new WebSocketServer({
+      server: httpServer,
+      verifyClient: ({ origin }: { origin: string }) => {
+        // Allow connections with no origin header (curl, native ws clients, same-origin).
+        if (!origin) return true;
+        return ALLOWED_ORIGINS.has(origin);
+      },
+    });
 
     this.wss.on('connection', (ws) => {
       ws.send(JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() }));

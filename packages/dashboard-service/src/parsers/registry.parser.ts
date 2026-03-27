@@ -1,5 +1,15 @@
 import type { FileParser } from './parser.interface.js';
-import type { TaskRecord } from '../events/event-types.js';
+import type { TaskRecord, TaskStatus } from '../events/event-types.js';
+
+const VALID_STATUSES = new Set<string>([
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+]);
+
+function toTaskStatus(raw: string): TaskStatus {
+  const upper = raw.toUpperCase().trim();
+  return VALID_STATUSES.has(upper) ? (upper as TaskStatus) : 'CREATED';
+}
 
 export class RegistryParser implements FileParser<ReadonlyArray<TaskRecord>> {
   public canParse(filePath: string): boolean {
@@ -28,10 +38,11 @@ export class RegistryParser implements FileParser<ReadonlyArray<TaskRecord>> {
 
       records.push({
         id,
-        status: cells[1] as TaskRecord['status'],
+        status: toTaskStatus(cells[1]),
         type: cells[2],
         description: cells[3],
         created: cells[4],
+        model: cells[5] ?? '',
       });
     }
 

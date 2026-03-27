@@ -41,6 +41,10 @@ export class StateStore {
     return old;
   }
 
+  public clearPlan(): void {
+    this.plan = null;
+  }
+
   public getOrchestratorState(): OrchestratorState | null {
     return this.orchestratorState;
   }
@@ -49,6 +53,10 @@ export class StateStore {
     const old = this.orchestratorState;
     this.orchestratorState = state;
     return old;
+  }
+
+  public clearOrchestratorState(): void {
+    this.orchestratorState = null;
   }
 
   public getTaskDefinition(taskId: string): TaskDefinition | null {
@@ -70,6 +78,17 @@ export class StateStore {
     this.reviews.set(taskId, filtered);
   }
 
+  public removeReview(taskId: string, reviewType: string): void {
+    const existing = this.reviews.get(taskId);
+    if (!existing) return;
+    const filtered = existing.filter((r) => r.reviewType !== reviewType);
+    if (filtered.length === 0) {
+      this.reviews.delete(taskId);
+    } else {
+      this.reviews.set(taskId, filtered);
+    }
+  }
+
   public getCompletionReport(taskId: string): CompletionReport | null {
     return this.completionReports.get(taskId) ?? null;
   }
@@ -78,12 +97,20 @@ export class StateStore {
     this.completionReports.set(taskId, report);
   }
 
+  public removeCompletionReport(taskId: string): void {
+    this.completionReports.delete(taskId);
+  }
+
   public getAntiPatterns(): ReadonlyArray<AntiPatternRule> {
     return this.antiPatterns;
   }
 
   public setAntiPatterns(patterns: ReadonlyArray<AntiPatternRule>): void {
     this.antiPatterns = patterns;
+  }
+
+  public clearAntiPatterns(): void {
+    this.antiPatterns = [];
   }
 
   public getLessons(): ReadonlyArray<LessonEntry> {
@@ -96,6 +123,10 @@ export class StateStore {
 
   public setLessons(domain: string, entries: ReadonlyArray<LessonEntry>): void {
     this.lessons.set(domain, entries);
+  }
+
+  public removeLessons(domain: string): void {
+    this.lessons.delete(domain);
   }
 
   public getFullTask(taskId: string): FullTaskData {
@@ -111,10 +142,14 @@ export class StateStore {
   public getStats(): DashboardStats {
     const byStatus: Record<string, number> = {};
     const byType: Record<string, number> = {};
+    const byModel: Record<string, number> = {};
 
     for (const record of this.registry) {
       byStatus[record.status] = (byStatus[record.status] ?? 0) + 1;
       byType[record.type] = (byType[record.type] ?? 0) + 1;
+      if (record.model) {
+        byModel[record.model] = (byModel[record.model] ?? 0) + 1;
+      }
     }
 
     const totalTasks = this.registry.length;
@@ -122,7 +157,40 @@ export class StateStore {
     const completionRate = totalTasks > 0 ? completedCount / totalTasks : 0;
     const activeWorkers = this.orchestratorState?.activeWorkers.length ?? 0;
 
-    return { totalTasks, byStatus, byType, completionRate, activeWorkers };
+    // Aggregate cost and token data from the orchestrator session log if available.
+    // Workers write cost totals into the state; sum across completed + active workers.
+    let totalCost = 0;
+    let totalTokens = 0;
+    const costByModel: Record<string, number> = {};
+    const tokensByModel: Record<string, number> = {};
+
+    if (this.orchestratorState) {
+      for (const worker of [
+        ...this.orchestratorState.activeWorkers,
+      ]) {
+        const workerAny = worker as unknown as Record<string, unknown>;
+        const cost = typeof workerAny['cost'] === 'number' ? workerAny['cost'] : 0;
+        const tokens = typeof workerAny['tokens'] === 'number' ? workerAny['tokens'] : 0;
+        const model = typeof workerAny['model'] === 'string' ? workerAny['model'] : 'unknown';
+        totalCost += cost;
+        totalTokens += tokens;
+        if (cost > 0) costByModel[model] = (costByModel[model] ?? 0) + cost;
+        if (tokens > 0) tokensByModel[model] = (tokensByModel[model] ?? 0) + tokens;
+      }
+    }
+
+    return {
+      totalTasks,
+      byStatus,
+      byType,
+      byModel,
+      completionRate,
+      activeWorkers,
+      totalCost,
+      totalTokens,
+      costByModel,
+      tokensByModel,
+    };
   }
 
   public removeTask(taskId: string): void {

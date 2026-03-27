@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { createHttpServer } from './server/http.js';
 import { WebSocketBroadcaster } from './server/websocket.js';
 import { ChokidarWatcher } from './watcher/chokidar.watcher.js';
+import type { FileWatcher } from './watcher/watcher.interface.js';
 import { createEventBus } from './events/event-bus.js';
 import { StateStore } from './state/store.js';
 import { FileRouter } from './parsers/file-router.js';
@@ -22,7 +23,7 @@ export interface DashboardServiceOptions {
 export class DashboardService {
   private readonly store: StateStore;
   private readonly eventBus: ReturnType<typeof createEventBus>;
-  private readonly watcher: ChokidarWatcher;
+  private readonly watcher: FileWatcher;
   private readonly wsBroadcaster: WebSocketBroadcaster;
   private readonly fileRouter: FileRouter;
   private readonly options: DashboardServiceOptions;

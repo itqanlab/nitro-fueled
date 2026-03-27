@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import type { DashboardEventBus } from '../events/event-bus.js';
 import type { DashboardEvent } from '../events/event-types.js';
@@ -23,31 +23,75 @@ export class FileRouter {
   private readonly patternsParser = new PatternsParser();
   private readonly lessonsParser = new LessonsParser();
 
+  // Per-file debounce timers (100ms) to absorb burst writes during active orchestration.
+  private readonly debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
   public constructor(
     private readonly store: StateStore,
     private readonly eventBus: DashboardEventBus,
   ) {}
 
   public handleChange(filePath: string): void {
-    try {
-      this.loadFile(filePath);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`[dashboard-service] Error parsing ${filePath}: ${message}`);
-    }
+    const existing = this.debounceTimers.get(filePath);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.debounceTimers.delete(filePath);
+      void this.loadFile(filePath).catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[dashboard-service] Error parsing ${filePath}: ${message}`);
+      });
+    }, 100);
+    this.debounceTimers.set(filePath, timer);
   }
 
   public handleRemoval(filePath: string): void {
     const taskIdMatch = filePath.match(/TASK_\d{4}_\d{3}/);
+
     if (taskIdMatch && filePath.endsWith('task.md')) {
       this.store.removeTask(taskIdMatch[0]);
+      return;
+    }
+
+    if (taskIdMatch && this.reviewParser.canParse(filePath)) {
+      // Derive review type from filename (e.g. review-code.md → code)
+      const reviewTypeMatch = basename(filePath, '.md').match(/^(?:review-)?(.+)$/);
+      if (reviewTypeMatch) {
+        this.store.removeReview(taskIdMatch[0], reviewTypeMatch[1]);
+      }
+      return;
+    }
+
+    if (taskIdMatch && filePath.endsWith('completion-report.md')) {
+      this.store.removeCompletionReport(taskIdMatch[0]);
+      return;
+    }
+
+    if (this.stateParser.canParse(filePath)) {
+      this.store.clearOrchestratorState();
+      return;
+    }
+
+    if (this.planParser.canParse(filePath)) {
+      this.store.clearPlan();
+      return;
+    }
+
+    if (this.patternsParser.canParse(filePath)) {
+      this.store.clearAntiPatterns();
+      return;
+    }
+
+    if (this.lessonsParser.canParse(filePath)) {
+      const domain = basename(filePath, '.md');
+      this.store.removeLessons(domain);
+      return;
     }
   }
 
-  private loadFile(filePath: string): void {
+  private async loadFile(filePath: string): Promise<void> {
     let content: string;
     try {
-      content = readFileSync(filePath, 'utf-8');
+      content = await readFile(filePath, 'utf-8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         console.debug(`[file-router] file removed before read: ${filePath}`);
@@ -97,6 +141,10 @@ export class FileRouter {
 
     if (this.reviewParser.canParse(filePath)) {
       const review = this.reviewParser.parse(content, filePath);
+      if (!review.taskId) {
+        console.warn(`[file-router] review parsed with empty taskId, skipping store write: ${filePath}`);
+        return;
+      }
       this.store.addReview(review.taskId, review);
       this.emitEvents([{
         type: 'review:written',
@@ -108,6 +156,10 @@ export class FileRouter {
 
     if (this.reportParser.canParse(filePath)) {
       const report = this.reportParser.parse(content, filePath);
+      if (!report.taskId) {
+        console.warn(`[file-router] report parsed with empty taskId, skipping store write: ${filePath}`);
+        return;
+      }
       this.store.setCompletionReport(report.taskId, report);
       return;
     }

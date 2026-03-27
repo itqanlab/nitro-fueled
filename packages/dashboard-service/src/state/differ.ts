@@ -19,7 +19,7 @@ export function diffRegistry(
       events.push({
         type: 'task:created',
         timestamp: now,
-        payload: { taskId: id, type: newRecord.type },
+        payload: { taskId: id, type: newRecord.type, model: newRecord.model },
       });
       continue;
     }
@@ -45,12 +45,12 @@ export function diffRegistry(
     }
   }
 
-  for (const [id, oldRecord] of oldMap) {
+  for (const [id] of oldMap) {
     if (!newMap.has(id)) {
       events.push({
         type: 'task:deleted',
         timestamp: now,
-        payload: { taskId: id, field: 'deleted', oldValue: oldRecord.status, newValue: null },
+        payload: { taskId: id },
       });
     }
   }
@@ -134,7 +134,11 @@ export function diffState(
     }
   }
 
-  if (newState.sessionLog.length > oldState.sessionLog.length) {
+  // Compaction-aware session log diffing.
+  // After compaction, the log is truncated and compactionCount increments.
+  // Reset the baseline when compaction is detected to avoid emitting stale entries.
+  const compacted = newState.compactionCount > oldState.compactionCount;
+  if (!compacted && newState.sessionLog.length > oldState.sessionLog.length) {
     const newEntries = newState.sessionLog.slice(oldState.sessionLog.length);
     for (const entry of newEntries) {
       events.push({
