@@ -286,6 +286,7 @@ export function TaskDetail(): React.JSX.Element {
                     <Link
                       key={dep}
                       to={`/task/${dep}`}
+                      state={{ from: `/task/${id}` }}
                       style={{
                         padding: '4px 10px',
                         borderRadius: '999px',

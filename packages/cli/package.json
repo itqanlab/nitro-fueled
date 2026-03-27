@@ -10,7 +10,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "copy-web-assets": "rm -rf ./dashboard-assets && mkdir -p ./dashboard-assets && cp -R ../dashboard-web/dist/. ./dashboard-assets",
+    "copy-web-assets": "test -d ../dashboard-web/dist || (echo 'Error: ../dashboard-web/dist not found — run: cd ../dashboard-web && npm run build' >&2 && exit 1) && rm -rf ./dashboard-assets && cp -R ../dashboard-web/dist ./dashboard-assets",
     "prepare-scaffold": "bash scripts/prepare-scaffold.sh",
     "prepublishOnly": "npm run prepare-scaffold && npm run build"
   },

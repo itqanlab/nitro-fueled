@@ -132,7 +132,10 @@ export function registerDashboardCommand(program: Command): void {
           cwd,
         });
 
+        let lockReleased = false;
         const releaseStartupLock = (): void => {
+          if (lockReleased) return;
+          lockReleased = true;
           releaseLock(lockPath);
         };
 

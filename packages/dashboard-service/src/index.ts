@@ -102,6 +102,7 @@ export class DashboardService {
   }
 
   private listMarkdownFilesRecursive(dir: string): ReadonlyArray<string> {
+    if (!existsSync(dir)) return [];
     const files: string[] = [];
     const walk = (current: string): void => {
       for (const entry of readdirSync(current, { withFileTypes: true })) {
