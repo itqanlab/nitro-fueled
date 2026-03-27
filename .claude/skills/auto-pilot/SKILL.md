@@ -36,7 +36,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 4. **Monitor worker health** on a configurable interval
 5. **Handle completions**: check if state transitioned, decide next action
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
-7. **Persist state** to `orchestrator-state.md` for compaction survival
+7. **Persist state** to `{SESSION_DIR}state.md` for compaction survival
 8. **Loop** until the backlog is drained or all remaining tasks are blocked
 
 ### What You Never Do
@@ -61,7 +61,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 > **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
 
-When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `orchestrator-state.md`.
+When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `{SESSION_DIR}state.md`. Written as part of Session Lifecycle startup (after Session Directory is created).
 
 ---
 
@@ -162,12 +162,22 @@ The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions 
 
 ## Session Directory
 
-On startup, the supervisor creates a session-scoped directory for all state and log output.
+On startup (after MCP validation passes and Concurrent Session Guard passes), the supervisor creates a session-scoped directory for all state and log output.
 
-**Directory path**: `task-tracking/sessions/SESSION_{YYYY-MM-DD}_{HH-MM}/`
+**Directory path**: `task-tracking/sessions/SESSION_{YYYY-MM-DD}_{HH-MM-SS}/`
 
-Timestamp is the wall-clock start time (local time, zero-padded). Example:
-`task-tracking/sessions/SESSION_2026-03-24_22-00/`
+Timestamp is the wall-clock start time (local time, zero-padded, including seconds). Example:
+`task-tracking/sessions/SESSION_2026-03-24_22-00-00/`
+
+### Startup Sequence
+
+The supervisor startup follows this exact order:
+
+1. **MCP validation** (see ## MCP Requirement) — HARD FAIL if MCP unavailable
+2. **Concurrent Session Guard** (see ## Concurrent Session Guard) — warns/aborts if another supervisor is running
+3. **Session Directory creation** — create dir, create log.md, register in active-sessions.md
+4. **Step 1: Read State** — check for existing state.md in session dir (compaction recovery)
+5. **Enter Core Loop**
 
 ### Files inside the session directory
 
@@ -182,7 +192,8 @@ Timestamp is the wall-clock start time (local time, zero-padded). Example:
 
 **On startup**:
 
-1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM}` using current timestamp.
+0. (Run after MCP validation and Concurrent Session Guard — see those sections for prerequisites.)
+1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` using current timestamp.
 2. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
 3. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
    ```markdown
@@ -193,10 +204,9 @@ Timestamp is the wall-clock start time (local time, zero-padded). Example:
    ```
 4. Append first log entry to `log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} |`
-5. Register in `task-tracking/active-sessions.md` (append row — see Active Sessions File section).
+5. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
 6. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
-   subsequent state and log writes. Every reference to `orchestrator-state.md` in this skill
-   means `{SESSION_DIR}state.md`.
+   subsequent state and log writes.
 
 **On stop** (normal completion, compaction limit, MCP unreachable, manual):
 
@@ -208,9 +218,44 @@ Timestamp is the wall-clock start time (local time, zero-padded). Example:
 
 ---
 
+## Active Sessions File
+
+`task-tracking/active-sessions.md` is a live registry of currently running sessions.
+Every session (auto-pilot or orchestrate) appends a row on startup and removes it on stop.
+
+### Format
+
+```markdown
+# Active Sessions
+
+| Session | Source | Started | Tasks | Path |
+|---------|--------|---------|-------|------|
+| SESSION_2026-03-24_22-00-00 | auto-pilot | 22:00 | 14 | task-tracking/sessions/SESSION_2026-03-24_22-00-00/ |
+| SESSION_2026-03-24_22-05-00 | orchestrate | 22:05 | 1 | task-tracking/sessions/SESSION_2026-03-24_22-05-00/ |
+```
+
+### Write Rules
+
+- **On session start** (after Concurrent Session Guard passes): read the file, append one row, write back. If the file does not exist, create it with the header and first row.
+- **On session stop** (normal, compaction limit, MCP unreachable, manual): read the file, remove the row whose `Session` matches this session's `SESSION_ID`, write back.
+- **On crash/kill**: the row is left as stale. Stale rows from source `orchestrate` (Build/Review Workers) are expected and acceptable — workers can be killed at any time. The Concurrent Session Guard filters by source `auto-pilot` only, so stale `orchestrate` rows do not cause false positives.
+- If writing fails (permissions), log a warning and continue — the file is advisory.
+
+### Row Format
+
+Auto-pilot row:
+`| {SESSION_ID} | auto-pilot | {HH:MM} | {N tasks at startup} | task-tracking/sessions/{SESSION_ID}/ |`
+
+Orchestration skill row:
+`| {SESSION_ID} | orchestrate | {HH:MM} | 1 | task-tracking/sessions/{SESSION_ID}/ |`
+
+The `Tasks` column is static (set at startup, not updated as tasks complete). It represents the initial task count for the session, not live progress.
+
+---
+
 ## Concurrent Session Guard
 
-On startup, **after MCP validation passes, before entering the loop**:
+On startup, **after MCP validation passes, before Session Directory creation, before entering the loop**:
 
 1. Read `task-tracking/active-sessions.md` (if it exists).
 2. If any row with Source `auto-pilot` is present:
@@ -245,7 +290,14 @@ On startup, **after MCP validation passes, before entering the loop**:
    - **Case 4 -- IMPLEMENTED in registry, worker NOT in MCP**: Build Worker succeeded, queue Review Worker.
    - **Case 5 -- IN_REVIEW in registry, worker NOT in MCP**: Treat as failed Review Worker.
 
-**Compaction recovery note**: After a compaction, `SESSION_DIR` must be re-derived from the session timestamp stored in `state.md` (`Session Started` field). The supervisor re-reads `{SESSION_DIR}state.md` and restores `SESSION_DIR` from the stored path before continuing.
+**Compaction recovery bootstrap**: After a compaction, `SESSION_DIR` is lost from memory.
+To recover:
+1. Read `task-tracking/active-sessions.md`
+2. Find the row matching source `auto-pilot` and the startup timestamp that matches when this session began
+3. Extract the `Path` column — this is `SESSION_DIR`
+4. Read `{SESSION_DIR}state.md` to restore full supervisor state
+
+If `active-sessions.md` is missing or the row is not found, scan `task-tracking/sessions/` for directories matching `SESSION_{YYYY-MM-DD}_{HH-MM-SS}` and select the most recently created one.
 
 **ELSE** (no state file):
 
@@ -348,7 +400,7 @@ For each IMPLEMENTED task (ready for review), check file scope overlaps:
 3. If ANY files appear in multiple tasks' File Scopes:
    - Log warning: `"OVERLAP DETECTED — TASK_A and TASK_B share files: {shared-files}"`
    - Mark those tasks for serialization (do NOT spawn parallel reviews)
-4. Record serialized tasks in orchestrator-state.md under a new `## Serialized Reviews` table:
+4. Record serialized tasks in `{SESSION_DIR}state.md` under a new `## Serialized Reviews` table:
    | Task ID | Reason |
    |---------|---------|
    | TASK_A  | Overlaps with TASK_B on {file-list} |
@@ -368,7 +420,7 @@ For each IMPLEMENTED task (ready for review), check file scope overlaps:
 
 3. Select tasks: first from **Review Queue**, then from **Build Queue**, until slots filled. Review Workers take priority over Build Workers (finishing tasks is more valuable than starting new ones).
 
-**Serialization check**: Before selecting tasks from Review Queue, check the `## Serialized Reviews` table in orchestrator-state.md. If a task is in that table, SKIP it for this spawn cycle (it will be handled in a serial pass after current parallel reviews complete).
+**Serialization check**: Before selecting tasks from Review Queue, check the `## Serialized Reviews` table in `{SESSION_DIR}state.md`. If a task is in that table, SKIP it for this spawn cycle (it will be handled in a serial pass after current parallel reviews complete).
 
 
 4. If `slots <= 0`, skip to **Step 6** (monitoring).
@@ -401,7 +453,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 **5d. On successful spawn:**
 
 - Do NOT update the registry (workers update their own registry states)
-- Record in `orchestrator-state.md` active workers table:
+- Record in `{SESSION_DIR}state.md` active workers table:
   - worker_id, task_id, worker_type=`"Build"|"Review"`, label, status=`"running"`, spawn_time, retry_count, expected_end_state=`"IMPLEMENTED"|"COMPLETE"`, model (the **resolved** model name — if the task's Model field was `default` or absent, record the actual system default model ID that spawn_worker will use, e.g. `claude-opus-4-6`; never record the sentinel `"default"`)
 
 **5e. On spawn failure (MCP error):**
@@ -416,7 +468,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 
 1. **Wait** for the configured monitoring interval.
 
-2. For each active worker in `orchestrator-state.md`:
+2. For each active worker in `{SESSION_DIR}state.md`:
 
    **6a.** Call MCP `get_worker_activity`(worker_id) for routine checks. This returns a compact summary -- context-efficient (~5-10 lines).
 
@@ -440,7 +492,7 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 
    **Two-strike stuck detection**:
 
-   - Check `orchestrator-state.md` for this worker's `stuck_count`.
+   - Check `{SESSION_DIR}state.md` for this worker's `stuck_count`.
    - **IF** `stuck_count == 0` (first detection):
      - Set `stuck_count = 1` in state.
      - Log: `"WARNING: TASK_X worker appears stuck (strike 1/2)"`
@@ -468,7 +520,7 @@ For each worker with health `finished` (or discovered missing during reconciliat
 
 **7b. Determine if state transitioned:**
 
-- Look up `expected_end_state` from `orchestrator-state.md` for this worker
+- Look up `expected_end_state` from `{SESSION_DIR}state.md` for this worker
 - Read current state from registry
 
 **7c. Validate state transition against expected transitions for worker type:**
@@ -531,7 +583,7 @@ This means any worker can be replaced at any time — the supervisor never depen
 
 | Condition | Action |
 |-----------|--------|
-| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `{SESSION_DIR}state.md` with `loop_status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
+| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
 | No actionable tasks **BUT** active workers exist | Log: `"No actionable tasks. Waiting for {N} active workers..."` Go to **Step 6** (monitor, wait for completions that may unblock). |
 | Actionable tasks exist | Go to **Step 4** (select and spawn). |
 
@@ -566,6 +618,7 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 | Time | Event |
 |------|-------|
 {copy full event table from {SESSION_DIR}log.md}
+(Copy Timestamp and Event columns only — omit the Source column. History entries use two columns: `| Time | Event |`.)
 ```
 
 3. This file is **append-only** — never overwrite previous sessions.
@@ -855,9 +908,9 @@ Task folder: task-tracking/TASK_YYYY_NNN/
 
 ---
 
-## orchestrator-state.md Format
+## state.md Format
 
-Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24_22-00/state.md`). Must be parseable after compaction -- uses clear section headers and markdown tables.
+Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24_22-00-00/state.md`). Must be parseable after compaction -- uses clear section headers and markdown tables.
 
 ```markdown
 # Orchestrator State
@@ -865,7 +918,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 **Loop Status**: RUNNING | STOPPED
 **Last Updated**: YYYY-MM-DD HH:MM:SS
 **Session Started**: YYYY-MM-DD HH:MM:SS
-**Session Directory**: task-tracking/sessions/SESSION_2026-03-24_22-00/
+**Session Directory**: task-tracking/sessions/SESSION_2026-03-24_22-00-00/
 
 ## Configuration
 
@@ -924,7 +977,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on session startup with the header row, then one row appended per event.
 
 ```markdown
-# Session Log — SESSION_2026-03-24_22-00
+# Session Log — SESSION_2026-03-24_22-00-00
 
 | Timestamp | Source | Event |
 |-----------|--------|-------|
@@ -1001,7 +1054,7 @@ If an MCP call fails, apply scoped retry logic:
 **Global MCP failure** (e.g., `list_workers` during reconciliation, or ALL worker checks fail in the same pass):
 1. Retry up to **3 times** with **30-second backoff**.
 2. If still failing:
-   - Write current state to `orchestrator-state.md`.
+   - Write current state to `{SESSION_DIR}state.md`.
    - Log: `"MCP session-orchestrator unreachable after 3 retries. Supervisor paused. State saved. Resolve MCP connection and re-run /auto-pilot to resume."`
    - **STOP** the loop (graceful pause -- do not crash).
 
@@ -1017,7 +1070,7 @@ If `task.md` is missing, unparseable, or has invalid fields:
 
 On any unexpected error:
 
-1. Write current state to `orchestrator-state.md` **FIRST** (state preservation is top priority).
+1. Write current state to `{SESSION_DIR}state.md` **FIRST** (state preservation is top priority).
 2. Then surface the error with context.
 3. State is preserved for recovery on next `/auto-pilot` invocation.
 
@@ -1034,7 +1087,7 @@ On any unexpected error:
 1. **You are the Supervisor** -- spawn, monitor, loop
 2. **Workers invoke /orchestrate** -- you never re-implement agent logic
 3. **Registry is the source of truth** for task status
-4. **orchestrator-state.md is your private memory** across compactions
+4. **`{SESSION_DIR}state.md` and `{SESSION_DIR}log.md` are your private memory** across compactions
 5. **Workers update the registry themselves** -- you monitor state transitions, not cause them
 6. **Prefer get_worker_activity over get_worker_stats** for context efficiency
 7. **Never spawn duplicate workers** -- check both registry (IN_PROGRESS/IN_REVIEW) and state (active workers), and verify worker_type matches expected worker for current state
