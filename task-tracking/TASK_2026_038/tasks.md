@@ -1,7 +1,7 @@
 # Development Tasks - TASK_2026_038
 # Dashboard Session Support — Multi-Session View and History
 
-**Total Tasks**: 13 | **Batches**: 3 | **Status**: 2/3 complete
+**Total Tasks**: 13 | **Batches**: 3 | **Status**: 3/3 complete
 
 ---
 
@@ -64,7 +64,7 @@
 
 **Pattern to follow**: `event-types.ts:187-205` — existing interface and union patterns.
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
@@ -115,7 +115,7 @@ This is used in both `FileRouter` and `SessionStore`. Centralise here to avoid d
 - `parse(content, _filePath)`: parse the 5-column markdown table `| Session | Source | Started | Tasks | Path |`; skip header and separator rows; map columns to `{sessionId, source, started, tasks, path}`
 - Pattern to follow: `packages/dashboard-service/src/parsers/registry.parser.ts` for table-parsing pattern
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
@@ -180,7 +180,7 @@ This is used in both `FileRouter` and `SessionStore`. Centralise here to avoid d
 
 **Pattern to follow**: `file-router.ts:16-186`; `index.ts:34-39` for constructor injection pattern
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
@@ -210,7 +210,7 @@ This is used in both `FileRouter` and `SessionStore`. Centralise here to avoid d
 
 **Pattern to follow**: `http.ts:41-107` — all existing routes follow the exact `addRoute` / `sendJson` pattern
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
@@ -257,7 +257,7 @@ This is used in both `FileRouter` and `SessionStore`. Centralise here to avoid d
 
 **Pattern to follow**: `packages/dashboard-web/src/store/index.ts:11-96` — existing Zustand `create` slice pattern
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
@@ -319,7 +319,7 @@ getSession(id: string): Promise<SessionData>         // GET /api/sessions/:id
 
 **Pattern to follow**: `hooks/index.ts:9-135`
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
@@ -332,12 +332,12 @@ getSession(id: string): Promise<SessionData>         // GET /api/sessions/:id
 
 ---
 
-## Batch 3: Frontend UI - PENDING
+## Batch 3: Frontend UI - IMPLEMENTED
 
 **Developer**: frontend-developer
 **Tasks**: 7 (Tasks 3.1 through 3.7) | **Dependencies**: Batch 2 must be COMPLETE (store slice and hooks available)
 
-### Task 3.1: Create SessionPicker component - PENDING
+### Task 3.1: Create SessionPicker component - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/components/SessionPicker.tsx`
 **Action**: CREATE
@@ -358,11 +358,11 @@ getSession(id: string): Promise<SessionData>         // GET /api/sessions/:id
 - If 2 or more sessions are active, show a badge in the component title with the active count
 - If `sessions` is empty, render nothing (return null)
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
-### Task 3.2: Create Sessions view - PENDING
+### Task 3.2: Create Sessions view - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/views/Sessions.tsx`
 **Action**: CREATE
@@ -375,11 +375,11 @@ getSession(id: string): Promise<SessionData>         // GET /api/sessions/:id
 - If `sessions` is empty, show an empty state message: "No sessions recorded yet."
 - No pagination needed
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
-### Task 3.3: Add Sessions nav item and render SessionPicker in Sidebar - PENDING
+### Task 3.3: Add Sessions nav item and render SessionPicker in Sidebar - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/components/Sidebar.tsx`
 **Action**: MODIFY
@@ -388,11 +388,11 @@ getSession(id: string): Promise<SessionData>         // GET /api/sessions/:id
 1. Add a Sessions entry to the `NAV_ITEMS` array (see `Sidebar.tsx:11-21` for pattern): `{ path: '/sessions', label: 'Sessions', icon: '...' }` — choose an appropriate icon
 2. Import and render `<SessionPicker />` below the nav list
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
-### Task 3.4: Update Workers view to read session-scoped state - PENDING
+### Task 3.4: Update Workers view to read session-scoped state - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/views/Workers.tsx`
 **Action**: MODIFY
@@ -412,11 +412,11 @@ const workers = sessionData?.state?.activeWorkers ?? [];
 
 Apply the same pattern to any other fields read from `state` in this file.
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
-### Task 3.5: Update SessionLog view to read session-scoped log with Source column - PENDING
+### Task 3.5: Update SessionLog view to read session-scoped log with Source column - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/views/SessionLog.tsx`
 **Action**: MODIFY
@@ -427,11 +427,11 @@ Apply the same pattern to any other fields read from `state` in this file.
 3. Update the table render to show the Source column: `| Timestamp | Source | Event |`
    - The existing render likely only shows 2 columns (timestamp + event); add the middle Source column
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
-### Task 3.6: Update CostDashboard view to read session-scoped state - PENDING
+### Task 3.6: Update CostDashboard view to read session-scoped state - IMPLEMENTED (skipped — no state call present)
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/views/CostDashboard.tsx`
 **Action**: MODIFY
@@ -439,11 +439,11 @@ Apply the same pattern to any other fields read from `state` in this file.
 **Change**:
 Replace `useDashboardStore(s => s.state)` with `useSessionData()` and read cost data from `sessionData?.state` scoped to the selected session. Apply the same pattern as Tasks 3.4 and 3.5.
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 
-### Task 3.7: Add /sessions route to App.tsx - PENDING
+### Task 3.7: Add /sessions route to App.tsx - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/packages/dashboard-web/src/App.tsx`
 **Action**: MODIFY
@@ -454,7 +454,7 @@ Import `Sessions` view and add route (see `App.tsx:83-96` for the existing route
 <Route path="/sessions" element={wrap('Sessions', <Sessions />)} />
 ```
 
-**Status**: PENDING
+**Status**: COMPLETE
 
 ---
 

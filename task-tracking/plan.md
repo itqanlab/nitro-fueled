@@ -123,6 +123,7 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_022 | Dashboard Data Service | IMPLEMENTED | P1-High |
 | TASK_2026_023 | Dashboard Web Client | IMPLEMENTED | P1-High |
 | TASK_2026_024 | Dashboard CLI Command + Service Integration | COMPLETE | P2-Medium |
+| TASK_2026_038 | Dashboard Session Support — Multi-Session View and History | COMPLETE | P2-Medium |
 
 ### Phase 8: Orchestration Refinements
 **Status**: COMPLETE
@@ -161,13 +162,15 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 
 ### Phase 11: Supervisor Reliability & Performance
 **Status**: NOT STARTED
-**Description**: Make the Supervisor production-grade — persistent MCP state, event-driven completion detection, and file-system-first reconciliation so it survives MCP restarts and never waits unnecessarily.
+**Description**: Make the Supervisor production-grade — persistent MCP state, event-driven completion detection, file-system-first reconciliation, provider fallback, and a usable provider config UX.
 
 #### Milestones
 - [ ] MCP worker registry persisted to disk (survives server restart)
 - [ ] Supervisor reconciles via status files when MCP returns empty
 - [ ] Event-driven completion: workers fire events instead of supervisor polling every 5 min
 - [ ] 30-second event drain loop replaces 5-minute polling as primary completion detection
+- [ ] Supervisor falls back to Claude Sonnet when a non-Claude provider spawn fails
+- [ ] `nitro-fueled config` shows provider state upfront with per-provider test/unload actions
 
 #### Task Map
 | Task ID | Title | Status | Priority |
@@ -175,6 +178,8 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 | TASK_2026_059 | MCP Server — Persist Worker Registry to Disk | CREATED | P1-High |
 | TASK_2026_060 | Supervisor — File-System-First Reconciliation When MCP Returns Empty | CREATED | P1-High |
 | TASK_2026_067 | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | CREATED | P1-High |
+| TASK_2026_068 | Provider Config UX — State Display, Per-Provider Test and Unload | CREATED | P1-High |
+| TASK_2026_069 | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | CREATED | P1-High |
 
 ### Phase 10: Agent Calibration
 **Status**: NOT STARTED
@@ -197,8 +202,10 @@ claude-nitro-fueled is a reusable AI development orchestration package. Install 
 **Next Priorities**:
 1. TASK_2026_059 — MCP Server Persist Worker Registry (P1-High, unblocked)
 2. TASK_2026_060 — Supervisor FS Reconciliation (P1-High, unblocked, parallel with 059)
-3. TASK_2026_067 — Event-Driven Worker Completion (P1-High, after 059)
-4. TASK_2026_061 — Agent Record Schema and Failure Taxonomy (P1-High, unblocked, can run in parallel)
+3. TASK_2026_068 — Provider Config UX (P1-High, unblocked, parallel with 059/060)
+4. TASK_2026_069 — Supervisor Spawn Fallback (P1-High, unblocked, parallel with 059/060)
+5. TASK_2026_067 — Event-Driven Worker Completion (P1-High, after 059)
+6. TASK_2026_061 — Agent Record Schema and Failure Taxonomy (P1-High, unblocked, can run in parallel)
 
 **Supervisor Guidance**: PROCEED
 **Guidance Note**: Phase 11 (Supervisor Reliability) added with 059, 060, 067. Run 059+060 first (parallel), then 067. Phase 10 (Agent Calibration) continues in parallel. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
