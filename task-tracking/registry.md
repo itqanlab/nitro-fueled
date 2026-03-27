@@ -53,10 +53,12 @@
 | TASK_2026_049 | CREATED     | FEATURE     | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-27 | default |
 | TASK_2026_050 | CREATED     | FEATURE     | `update` Command — Manifest-Based Safe Updates | 2026-03-27 | default |
 | TASK_2026_051 | CREATED     | REFACTORING | Rename All Agents to `nitro-*` Prefix | 2026-03-27 | default |
-| TASK_2026_052 | IN_REVIEW   | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
+| TASK_2026_052 | COMPLETE    | FEATURE     | Manifest — Version Tracking and Install Record | 2026-03-27 | default |
 | TASK_2026_053 | CREATED     | DOCUMENTATION | Update Docs and Workspace to Reflect Package Vision | 2026-03-27 | default |
 | TASK_2026_054 | CREATED     | FEATURE       | OpenCode Provider — Subscription/OAuth Auth Support | 2026-03-27 | default |
 | TASK_2026_055 | CREATED     | DEVOPS        | Scaffold Astro Starlight Docs Site | 2026-03-27 | default |
 | TASK_2026_056 | CREATED     | CREATIVE      | Build Nitro-Fueled Marketing Landing Page | 2026-03-27 | default |
 | TASK_2026_057 | CREATED     | DOCUMENTATION | Write Full Documentation Content | 2026-03-27 | default |
-| TASK_2026_058 | CREATED     | REFACTORING   | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-27 | default |
+| TASK_2026_058 | IN_PROGRESS | REFACTORING   | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-27 | default |
+| TASK_2026_059 | CREATED     | BUGFIX        | MCP Server — Persist Worker Registry to Disk | 2026-03-27 | default |
+| TASK_2026_060 | CREATED     | BUGFIX        | Supervisor — File-System-First Reconciliation When MCP Returns Empty | 2026-03-27 | default |
