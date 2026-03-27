@@ -585,9 +585,21 @@ On success: log `"SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s
 
 **5f. On spawn failure (MCP error):**
 
-- Log: `"Failed to spawn worker for TASK_X: {error}"`
-- Leave task status as-is (will retry next loop iteration)
-- Continue with remaining tasks
+First, distinguish provider failure from MCP-unreachable:
+- **MCP unreachable**: error contains "connection refused", "ECONNREFUSED", or `list_workers` itself fails — apply global MCP failure handler (Step 3b) and EXIT.
+- **Provider failure**: `spawn_worker` returns an error but `list_workers` still succeeds.
+
+On **provider failure**:
+- IF the resolved provider (from step 5c) is NOT `claude`:
+  1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error}), retrying with claude/claude-sonnet-4-6"`
+  2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet |`
+  3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override: `provider=claude`, `model=claude-sonnet-4-6`
+  4. **If retry succeeds**: Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Continue normally (go to step 5e subscriptions).
+  5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
+- IF the resolved provider is already `claude`:
+  - Log: `"Failed to spawn worker for TASK_X: {error}"`
+  - Leave task status as-is (will retry next loop iteration)
+  - Continue with remaining tasks
 
 **5g. Write `{SESSION_DIR}state.md`** after **each** successful spawn (not after all spawns). This prevents orphaned workers if the session compacts mid-spawn sequence.
 
