@@ -2,7 +2,8 @@ import { existsSync, copyFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
-import type { Command } from 'commander';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../base-command.js';
 import { detectMcpConfig } from '../utils/mcp-config.js';
 import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
@@ -17,10 +18,10 @@ import { readManifest, writeManifest, buildCoreFileEntry } from '../utils/manife
 import type { Manifest, GeneratedFileEntry } from '../utils/manifest.js';
 import { getPackageVersion } from '../utils/package-version.js';
 
-interface InitOptions {
-  mcpPath: string | undefined;
-  skipMcp: boolean;
-  skipAgents: boolean;
+interface InitFlags {
+  'mcp-path': string | undefined;
+  'skip-mcp': boolean;
+  'skip-agents': boolean;
   overwrite: boolean;
   yes: boolean;
   commit: boolean;
@@ -149,9 +150,9 @@ function handleAntiPatterns(cwd: string, scaffoldRoot: string, overwrite: boolea
 
 async function handleStackDetection(
   cwd: string,
-  opts: InitOptions
+  opts: InitFlags
 ): Promise<string[]> {
-  if (opts.skipAgents) return [];
+  if (opts['skip-agents']) return [];
 
   const claudeAvailable = isClaudeAvailable();
 
@@ -227,7 +228,7 @@ async function handleStackDetection(
   return createdPaths;
 }
 
-async function handleMcpConfig(cwd: string, opts: InitOptions): Promise<void> {
+async function handleMcpConfig(cwd: string, opts: InitFlags): Promise<void> {
   console.log('');
   const mcpConfig = detectMcpConfig(cwd);
   if (mcpConfig.found) {
@@ -235,7 +236,7 @@ async function handleMcpConfig(cwd: string, opts: InitOptions): Promise<void> {
     return;
   }
 
-  if (opts.skipMcp) {
+  if (opts['skip-mcp']) {
     console.log('MCP configuration: skipped (--skip-mcp)');
     return;
   }
@@ -244,7 +245,7 @@ async function handleMcpConfig(cwd: string, opts: InitOptions): Promise<void> {
   console.log('The Supervisor requires this to spawn and manage worker sessions.');
   console.log('');
 
-  let serverPath = opts.mcpPath;
+  let serverPath = opts['mcp-path'];
   if (serverPath === undefined) {
     serverPath = await prompt('Path to session-orchestrator directory (or press Enter to skip): ');
     if (serverPath === '') {
@@ -354,147 +355,151 @@ function printSummary(mcpConfigured: boolean, skipMcp: boolean): void {
   console.log('');
 }
 
-export function registerInitCommand(program: Command): void {
-  program
-    .command('init')
-    .description('Scaffold .claude/ and task-tracking/ into the current project')
-    .option('--mcp-path <path>', 'Path to session-orchestrator server')
-    .option('--skip-mcp', 'Skip MCP server configuration', false)
-    .option('--skip-agents', 'Skip AI-assisted developer agent generation', false)
-    .option('--overwrite', 'Overwrite existing files instead of merging', false)
-    .option('-y, --yes', 'Accept all defaults without prompting', false)
-    .option('--commit', 'Stage and commit all scaffolded files after init', false)
-    .action(async (opts: InitOptions) => {
-      const cwd = process.cwd();
+export default class Init extends BaseCommand {
+  public static override description = 'Scaffold .claude/ and task-tracking/ into the current project';
 
-      console.log('');
-      console.log('nitro-fueled init');
-      console.log('=================');
-      console.log('');
+  public static override flags = {
+    'mcp-path': Flags.string({ description: 'Path to session-orchestrator server' }),
+    'skip-mcp': Flags.boolean({ description: 'Skip MCP server configuration', default: false }),
+    'skip-agents': Flags.boolean({ description: 'Skip AI-assisted developer agent generation', default: false }),
+    overwrite: Flags.boolean({ description: 'Overwrite existing files instead of merging', default: false }),
+    yes: Flags.boolean({ char: 'y', description: 'Accept all defaults without prompting', default: false }),
+    commit: Flags.boolean({ description: 'Stage and commit all scaffolded files after init', default: false }),
+  };
 
-      // Step 1: Check prerequisites
-      if (isClaudeAvailable()) {
-        console.log('Prerequisites: Claude CLI found');
-      } else {
-        console.log('Prerequisites: Claude CLI not found (agent generation will be skipped)');
-      }
+  public async run(): Promise<void> {
+    const { flags } = await this.parse(Init);
+    const opts: InitFlags = flags;
+    const cwd = process.cwd();
 
-      // Step 2: Handle existing .claude/ directory
-      const claudeDir = resolve(cwd, '.claude');
-      if (existsSync(claudeDir) && !opts.overwrite) {
-        if (!opts.yes) {
-          const answer = await prompt('.claude/ directory already exists. Merge new files? (y/n) [y]: ');
-          if (answer.toLowerCase() === 'n') {
-            console.log('Aborting. Use --overwrite to replace existing files.');
-            return;
-          }
-        }
-        console.log('Merging into existing .claude/ (existing files preserved)');
-      }
+    console.log('');
+    console.log('nitro-fueled init');
+    console.log('=================');
+    console.log('');
 
-      // Step 3: Resolve scaffold source
-      let scaffoldRoot: string;
-      try {
-        scaffoldRoot = resolveScaffoldRoot();
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error: ${msg}`);
-        process.exitCode = 1;
-        return;
-      }
+    // Step 1: Check prerequisites
+    if (isClaudeAvailable()) {
+      console.log('Prerequisites: Claude CLI found');
+    } else {
+      console.log('Prerequisites: Claude CLI not found (agent generation will be skipped)');
+    }
 
-      // Step 4: Copy all scaffold files
-      console.log('');
-      console.log('Scaffolding project...');
-      let scaffoldedFiles: string[];
-      try {
-        scaffoldedFiles = scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error: Failed to scaffold project files: ${msg}`);
-        process.exitCode = 1;
-        return;
-      }
-      const allCreatedFiles: string[] = [...scaffoldedFiles];
-
-      // Step 5: Generate CLAUDE.md
-      console.log('');
-      const claudeMdPath = resolve(cwd, 'CLAUDE.md');
-      const claudeMdExisted = existsSync(claudeMdPath);
-      generateClaudeMd(cwd, opts.overwrite);
-      if ((!claudeMdExisted || opts.overwrite) && existsSync(claudeMdPath)) {
-        allCreatedFiles.push(claudeMdPath);
-      }
-
-      // Step 6: Ensure .nitro-fueled/ is gitignored
-      const gitignorePath = resolve(cwd, '.gitignore');
-      if (ensureGitignore(cwd)) {
-        allCreatedFiles.push(gitignorePath);
-      }
-
-      // Step 7: Detect stack and generate stack-aware anti-patterns
-      console.log('');
-      console.log('Detecting project stack...');
-      const apPath = resolve(cwd, '.claude', 'anti-patterns.md');
-      const apExisted = existsSync(apPath);
-      const detectedStacks = handleAntiPatterns(cwd, scaffoldRoot, opts.overwrite);
-      if ((!apExisted || opts.overwrite) && existsSync(apPath)) {
-        allCreatedFiles.push(apPath);
-      }
-      if (detectedStacks.length > 0) {
-        const detectedLabel = detectedStacks.map((s) =>
-          s.frameworks.length > 0 ? `${s.language} (${s.frameworks.join(', ')})` : s.language
-        ).join(', ');
-        console.log(`  Detected: ${detectedLabel}`);
-      }
-
-      // Step 8: Generate developer agents for detected stack
-      const agentPaths = await handleStackDetection(cwd, opts);
-      allCreatedFiles.push(...agentPaths);
-
-      // Step 9: Write manifest
-      console.log('');
-      const stackLabel = buildStackLabel(detectedStacks);
-      const generatedFileInfos: GeneratedFileInfo[] = [];
-
-      // CLAUDE.md is a template-generated file
-      if (existsSync(claudeMdPath)) {
-        generatedFileInfos.push({ path: claudeMdPath, stack: stackLabel, generator: 'template' });
-      }
-
-      // Anti-patterns is a template-generated file
-      if (existsSync(apPath)) {
-        generatedFileInfos.push({ path: apPath, stack: stackLabel, generator: 'template' });
-      }
-
-      // AI-generated developer agents
-      for (const agentPath of agentPaths) {
-        generatedFileInfos.push({ path: agentPath, stack: stackLabel, generator: 'ai' });
-      }
-
-      try {
-        buildAndWriteManifest(cwd, scaffoldedFiles, generatedFileInfos);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error: Failed to write manifest: ${msg}`);
-        process.exitCode = 1;
-        return;
-      }
-
-      // Step 10: MCP configuration
-      await handleMcpConfig(cwd, opts);
-
-      // Step 11: Commit scaffolded files if --commit flag is set
-      if (opts.commit) {
-        console.log('');
-        const committed = commitScaffold(cwd, allCreatedFiles);
-        if (!committed) {
-          process.exitCode = 1;
+    // Step 2: Handle existing .claude/ directory
+    const claudeDir = resolve(cwd, '.claude');
+    if (existsSync(claudeDir) && !opts.overwrite) {
+      if (!opts.yes) {
+        const answer = await prompt('.claude/ directory already exists. Merge new files? (y/n) [y]: ');
+        if (answer.toLowerCase() === 'n') {
+          console.log('Aborting. Use --overwrite to replace existing files.');
+          return;
         }
       }
+      console.log('Merging into existing .claude/ (existing files preserved)');
+    }
 
-      // Step 12: Summary
-      const mcpAfter = detectMcpConfig(cwd);
-      printSummary(mcpAfter.found, opts.skipMcp);
-    });
+    // Step 3: Resolve scaffold source
+    let scaffoldRoot: string;
+    try {
+      scaffoldRoot = resolveScaffoldRoot();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: ${msg}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    // Step 4: Copy all scaffold files
+    console.log('');
+    console.log('Scaffolding project...');
+    let scaffoldedFiles: string[];
+    try {
+      scaffoldedFiles = scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: Failed to scaffold project files: ${msg}`);
+      process.exitCode = 1;
+      return;
+    }
+    const allCreatedFiles: string[] = [...scaffoldedFiles];
+
+    // Step 5: Generate CLAUDE.md
+    console.log('');
+    const claudeMdPath = resolve(cwd, 'CLAUDE.md');
+    const claudeMdExisted = existsSync(claudeMdPath);
+    generateClaudeMd(cwd, opts.overwrite);
+    if ((!claudeMdExisted || opts.overwrite) && existsSync(claudeMdPath)) {
+      allCreatedFiles.push(claudeMdPath);
+    }
+
+    // Step 6: Ensure .nitro-fueled/ is gitignored
+    const gitignorePath = resolve(cwd, '.gitignore');
+    if (ensureGitignore(cwd)) {
+      allCreatedFiles.push(gitignorePath);
+    }
+
+    // Step 7: Detect stack and generate stack-aware anti-patterns
+    console.log('');
+    console.log('Detecting project stack...');
+    const apPath = resolve(cwd, '.claude', 'anti-patterns.md');
+    const apExisted = existsSync(apPath);
+    const detectedStacks = handleAntiPatterns(cwd, scaffoldRoot, opts.overwrite);
+    if ((!apExisted || opts.overwrite) && existsSync(apPath)) {
+      allCreatedFiles.push(apPath);
+    }
+    if (detectedStacks.length > 0) {
+      const detectedLabel = detectedStacks.map((s) =>
+        s.frameworks.length > 0 ? `${s.language} (${s.frameworks.join(', ')})` : s.language
+      ).join(', ');
+      console.log(`  Detected: ${detectedLabel}`);
+    }
+
+    // Step 8: Generate developer agents for detected stack
+    const agentPaths = await handleStackDetection(cwd, opts);
+    allCreatedFiles.push(...agentPaths);
+
+    // Step 9: Write manifest
+    console.log('');
+    const stackLabel = buildStackLabel(detectedStacks);
+    const generatedFileInfos: GeneratedFileInfo[] = [];
+
+    // CLAUDE.md is a template-generated file
+    if (existsSync(claudeMdPath)) {
+      generatedFileInfos.push({ path: claudeMdPath, stack: stackLabel, generator: 'template' });
+    }
+
+    // Anti-patterns is a template-generated file
+    if (existsSync(apPath)) {
+      generatedFileInfos.push({ path: apPath, stack: stackLabel, generator: 'template' });
+    }
+
+    // AI-generated developer agents
+    for (const agentPath of agentPaths) {
+      generatedFileInfos.push({ path: agentPath, stack: stackLabel, generator: 'ai' });
+    }
+
+    try {
+      buildAndWriteManifest(cwd, scaffoldedFiles, generatedFileInfos);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: Failed to write manifest: ${msg}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    // Step 10: MCP configuration
+    await handleMcpConfig(cwd, opts);
+
+    // Step 11: Commit scaffolded files if --commit flag is set
+    if (opts.commit) {
+      console.log('');
+      const committed = commitScaffold(cwd, allCreatedFiles);
+      if (!committed) {
+        process.exitCode = 1;
+      }
+    }
+
+    // Step 12: Summary
+    const mcpAfter = detectMcpConfig(cwd);
+    printSummary(mcpAfter.found, opts['skip-mcp']);
+  }
 }

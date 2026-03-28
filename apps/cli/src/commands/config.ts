@@ -1,5 +1,6 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import type { Command } from 'commander';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../base-command.js';
 import {
   readConfig,
   writeConfig,
@@ -20,14 +21,6 @@ import {
 /** Known provider names for --unload validation. Claude cannot be unloaded. */
 const UNLOADABLE_PROVIDERS = ['glm', 'opencode'] as const;
 type UnloadableProvider = (typeof UNLOADABLE_PROVIDERS)[number];
-
-interface ConfigOptions {
-  check: boolean;
-  providers: boolean;
-  reset: boolean;
-  test: boolean;
-  unload?: string;
-}
 
 function printDepResult(dep: DependencyResult): void {
   if (dep.found) {
@@ -169,59 +162,62 @@ async function runProvidersPhase(cwd: string, opencodeFound: boolean): Promise<v
   console.log('\nConfig saved to .nitro-fueled/config.json');
 }
 
-export function registerConfigCommand(program: Command): void {
-  program
-    .command('config')
-    .description('Configure providers and validate dependencies')
-    .option('--check', 'Validate current config without making changes', false)
-    .option('--providers', 'Configure providers only (skip dependency check)', false)
-    .option('--reset', 'Remove config and start fresh', false)
-    .option('--test', 'Test all configured provider connections and exit', false)
-    .option('--unload <provider>', 'Remove a single provider non-interactively (glm, opencode)')
-    .action(async (opts: ConfigOptions) => {
-      const cwd = process.cwd();
-      console.log('');
-      console.log('nitro-fueled config');
-      console.log('===================');
+export default class Config extends BaseCommand {
+  public static override description = 'Configure providers and validate dependencies';
 
-      if (opts.reset) {
-        const configPath = getConfigPath(cwd);
-        if (existsSync(configPath)) {
-          unlinkSync(configPath);
-          console.log('\nConfig removed. Run `npx nitro-fueled config` to start fresh.');
-        } else {
-          console.log('\nNo config file found.');
-        }
-        return;
-      }
+  public static override flags = {
+    check: Flags.boolean({ description: 'Validate current config without making changes', default: false }),
+    providers: Flags.boolean({ description: 'Configure providers only (skip dependency check)', default: false }),
+    reset: Flags.boolean({ description: 'Remove config and start fresh', default: false }),
+    test: Flags.boolean({ description: 'Test all configured provider connections and exit', default: false }),
+    unload: Flags.string({ description: 'Remove a single provider non-interactively (glm, opencode)' }),
+  };
 
-      if (opts.unload !== undefined) {
-        runUnloadMode(cwd, opts.unload);
-        return;
-      }
+  public async run(): Promise<void> {
+    const { flags } = await this.parse(Config);
+    const cwd = process.cwd();
+    console.log('');
+    console.log('nitro-fueled config');
+    console.log('===================');
 
-      if (opts.test) {
-        await runTestMode(cwd);
-        return;
-      }
-
-      if (opts.check) {
-        await runCheckMode(cwd);
-        return;
-      }
-
-      let opencodeFound = false;
-      if (!opts.providers) {
-        console.log('\nChecking dependencies...');
-        const deps = runDependencyChecks();
-        for (const dep of deps) {
-          printDepResult(dep);
-        }
-        opencodeFound = deps.find((d) => d.name === DEP_NAMES.opencodeCli)?.found ?? false;
+    if (flags.reset) {
+      const configPath = getConfigPath(cwd);
+      if (existsSync(configPath)) {
+        unlinkSync(configPath);
+        console.log('\nConfig removed. Run `npx nitro-fueled config` to start fresh.');
       } else {
-        opencodeFound = checkOpencodeBinary().found;
+        console.log('\nNo config file found.');
       }
+      return;
+    }
 
-      await runProvidersPhase(cwd, opencodeFound);
-    });
+    if (flags.unload !== undefined) {
+      runUnloadMode(cwd, flags.unload);
+      return;
+    }
+
+    if (flags.test) {
+      await runTestMode(cwd);
+      return;
+    }
+
+    if (flags.check) {
+      await runCheckMode(cwd);
+      return;
+    }
+
+    let opencodeFound = false;
+    if (!flags.providers) {
+      console.log('\nChecking dependencies...');
+      const deps = runDependencyChecks();
+      for (const dep of deps) {
+        printDepResult(dep);
+      }
+      opencodeFound = deps.find((d) => d.name === DEP_NAMES.opencodeCli)?.found ?? false;
+    } else {
+      opencodeFound = checkOpencodeBinary().found;
+    }
+
+    await runProvidersPhase(cwd, opencodeFound);
+  }
 }

@@ -1,12 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Command } from 'commander';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../base-command.js';
 import { parseRegistry, generateRegistry } from '../utils/registry.js';
 import type { RegistryRow, TaskStatus } from '../utils/registry.js';
-
-interface StatusOptions {
-  brief: boolean;
-}
 
 interface WorkerEntry {
   workerId: string;
@@ -284,33 +281,36 @@ function displayFull(rows: RegistryRow[], workers: WorkerEntry[], plan: PlanInfo
   console.log('');
 }
 
-export function registerStatusCommand(program: Command): void {
-  program
-    .command('status')
-    .description('Show task statuses, active workers, and plan progress')
-    .option('--brief', 'Show one-line summary', false)
-    .action((opts: StatusOptions) => {
-      const cwd = process.cwd();
-      generateRegistry(cwd);
-      const rows = parseRegistry(cwd);
-      const workers = parseActiveWorkers(cwd);
+export default class Status extends BaseCommand {
+  public static override description = 'Show task statuses, active workers, and plan progress';
 
-      if (rows.length === 0) {
-        const registryPath = resolve(cwd, 'task-tracking/registry.md');
-        if (!existsSync(registryPath)) {
-          console.log('No task registry found. Run `npx nitro-fueled init` first.');
-        } else {
-          console.log('No tasks in registry.');
-        }
-        return;
+  public static override flags = {
+    brief: Flags.boolean({ description: 'Show one-line summary', default: false }),
+  };
+
+  public async run(): Promise<void> {
+    const { flags } = await this.parse(Status);
+    const cwd = process.cwd();
+    generateRegistry(cwd);
+    const rows = parseRegistry(cwd);
+    const workers = parseActiveWorkers(cwd);
+
+    if (rows.length === 0) {
+      const registryPath = resolve(cwd, 'task-tracking/registry.md');
+      if (!existsSync(registryPath)) {
+        console.log('No task registry found. Run `npx nitro-fueled init` first.');
+      } else {
+        console.log('No tasks in registry.');
       }
+      return;
+    }
 
-      if (opts.brief) {
-        displayBrief(rows, workers);
-        return;
-      }
+    if (flags.brief) {
+      displayBrief(rows, workers);
+      return;
+    }
 
-      const plan = parsePlan(cwd);
-      displayFull(rows, workers, plan);
-    });
+    const plan = parsePlan(cwd);
+    displayFull(rows, workers, plan);
+  }
 }

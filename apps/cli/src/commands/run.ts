@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
-import type { Command } from 'commander';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../base-command.js';
 import type { RegistryRow } from '../utils/registry.js';
 import { parseRegistry } from '../utils/registry.js';
 import { basicPreflightChecks, preflightChecks } from '../utils/preflight.js';
@@ -18,16 +19,16 @@ import {
 } from '../utils/dashboard-helpers.js';
 import { checkProviderConfig } from '../utils/provider-config.js';
 
-interface RunOptions {
-  dryRun: boolean;
+interface RunFlags {
+  task: string | undefined;
+  'dry-run': boolean;
   concurrency: string | undefined;
   interval: string | undefined;
   retries: string | undefined;
-  task: string | undefined;
-  skipConnectivity: boolean;
+  'skip-connectivity': boolean;
 }
 
-function displaySummary(rows: RegistryRow[], options: RunOptions): void {
+function displaySummary(rows: RegistryRow[], options: RunFlags): void {
   const created = rows.filter((r) => r.status === 'CREATED').length;
   const inProgress = rows.filter((r) => r.status === 'IN_PROGRESS').length;
   const implemented = rows.filter((r) => r.status === 'IMPLEMENTED').length;
@@ -40,7 +41,7 @@ function displaySummary(rows: RegistryRow[], options: RunOptions): void {
 
   const concurrency = options.concurrency ?? '3';
   const interval = options.interval ?? '10m';
-  const mode = options.dryRun ? 'dry-run' : 'all';
+  const mode = options['dry-run'] ? 'dry-run' : 'all';
 
   console.log('');
   console.log('SUPERVISOR STARTING');
@@ -112,7 +113,7 @@ function displayDryRun(rows: RegistryRow[]): void {
   console.log('No workers spawned (dry run).');
 }
 
-function validateBatchOptions(options: RunOptions): string | null {
+function validateBatchOptions(options: RunFlags): string | null {
   if (options.concurrency !== undefined && !/^[1-9]\d*$/.test(options.concurrency)) {
     return `Invalid --concurrency value "${options.concurrency}". Must be a positive integer (>= 1).`;
   }
@@ -125,7 +126,7 @@ function validateBatchOptions(options: RunOptions): string | null {
   return null;
 }
 
-function buildAutoPilotArgs(options: RunOptions): string[] {
+function buildAutoPilotArgs(options: RunFlags): string[] {
   const parts: string[] = [];
 
   if (options.concurrency !== undefined) {
@@ -188,13 +189,13 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
   return child;
 }
 
-function spawnSupervisor(cwd: string, options: RunOptions): void {
+function spawnSupervisor(cwd: string, options: RunFlags): void {
   const autoPilotParts = buildAutoPilotArgs(options);
-  const prompt = ['/auto-pilot', ...autoPilotParts].join(' ');
+  const autoPilotPrompt = ['/auto-pilot', ...autoPilotParts].join(' ');
 
   spawnClaude({
     cwd,
-    args: ['--dangerously-skip-permissions', '-p', prompt],
+    args: ['--dangerously-skip-permissions', '-p', autoPilotPrompt],
     label: 'Supervisor',
   });
 }
@@ -219,165 +220,173 @@ function resolveTaskId(positional: string | undefined, shorthand: string | undef
   return undefined;
 }
 
-export function registerRunCommand(program: Command): void {
-  program
-    .command('run [taskId]')
-    .description('Start the Supervisor loop, or orchestrate a single task inline')
-    .option('--task <n>', 'Task number shorthand (e.g. 043 → TASK_<current-year>_043)')
-    .option('--dry-run', 'Show execution plan without spawning workers (batch mode only)', false)
-    .option('--concurrency <n>', 'Max simultaneous workers (default: 3) — batch mode only')
-    .option('--interval <duration>', 'Monitoring interval e.g. 5m (default: 10m) — batch mode only')
-    .option('--retries <n>', 'Max retries per task (default: 2) — batch mode only')
-    .option('--skip-connectivity', 'Skip MCP connectivity check (batch mode only)', false)
-    .action(async (positionalTaskId: string | undefined, opts: RunOptions) => {
-      const cwd = process.cwd();
+export default class Run extends BaseCommand {
+  public static override description = 'Start the Supervisor loop, or orchestrate a single task inline';
 
-      // Validate --task shorthand format before expanding
-      if (opts.task !== undefined && !/^\d{1,3}$/.test(opts.task)) {
-        console.error(`Error: Invalid --task value "${opts.task}". Expected a 1-3 digit number (e.g., 43 or 043).`);
+  public static override args = {
+    taskId: Args.string({ description: 'Task ID to orchestrate (e.g. TASK_2026_010)', required: false }),
+  };
+
+  public static override flags = {
+    task: Flags.string({ description: 'Task number shorthand (e.g. 043 → TASK_<current-year>_043)' }),
+    'dry-run': Flags.boolean({ description: 'Show execution plan without spawning workers (batch mode only)', default: false }),
+    concurrency: Flags.string({ description: 'Max simultaneous workers (default: 3) — batch mode only' }),
+    interval: Flags.string({ description: 'Monitoring interval e.g. 5m (default: 10m) — batch mode only' }),
+    retries: Flags.string({ description: 'Max retries per task (default: 2) — batch mode only' }),
+    'skip-connectivity': Flags.boolean({ description: 'Skip MCP connectivity check (batch mode only)', default: false }),
+  };
+
+  public async run(): Promise<void> {
+    const { args, flags } = await this.parse(Run);
+    const opts: RunFlags = flags;
+    const cwd = process.cwd();
+
+    // Validate --task shorthand format before expanding
+    if (opts.task !== undefined && !/^\d{1,3}$/.test(opts.task)) {
+      console.error(`Error: Invalid --task value "${opts.task}". Expected a 1-3 digit number (e.g., 43 or 043).`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const taskId = resolveTaskId(args.taskId, opts.task);
+
+    if (taskId !== undefined) {
+      // Single-task mode: spawn Claude with /orchestrate TASK_ID (inline, no MCP workers)
+
+      // Reject batch-only options — they are silently ignored in this path otherwise
+      const batchOnlyUsed: string[] = [];
+      if (opts['dry-run']) batchOnlyUsed.push('--dry-run');
+      if (opts.concurrency !== undefined) batchOnlyUsed.push('--concurrency');
+      if (opts.interval !== undefined) batchOnlyUsed.push('--interval');
+      if (opts.retries !== undefined) batchOnlyUsed.push('--retries');
+      if (opts['skip-connectivity']) batchOnlyUsed.push('--skip-connectivity');
+      if (batchOnlyUsed.length > 0) {
+        const plural = batchOnlyUsed.length === 1 ? 'is a batch-only option' : 'are batch-only options';
+        console.error(`Error: ${batchOnlyUsed.join(', ')} ${plural} and cannot be used with a task ID.`);
+        console.error('Remove the option(s) to run a single task, or omit the task ID for batch mode.');
         process.exitCode = 1;
         return;
       }
 
-      const taskId = resolveTaskId(positionalTaskId, opts.task);
-
-      if (taskId !== undefined) {
-        // Single-task mode: spawn Claude with /orchestrate TASK_ID (inline, no MCP workers)
-
-        // Reject batch-only options — they are silently ignored in this path otherwise
-        const batchOnlyUsed: string[] = [];
-        if (opts.dryRun) batchOnlyUsed.push('--dry-run');
-        if (opts.concurrency !== undefined) batchOnlyUsed.push('--concurrency');
-        if (opts.interval !== undefined) batchOnlyUsed.push('--interval');
-        if (opts.retries !== undefined) batchOnlyUsed.push('--retries');
-        if (opts.skipConnectivity) batchOnlyUsed.push('--skip-connectivity');
-        if (batchOnlyUsed.length > 0) {
-          const plural = batchOnlyUsed.length === 1 ? 'is a batch-only option' : 'are batch-only options';
-          console.error(`Error: ${batchOnlyUsed.join(', ')} ${plural} and cannot be used with a task ID.`);
-          console.error('Remove the option(s) to run a single task, or omit the task ID for batch mode.');
-          process.exitCode = 1;
-          return;
-        }
-
-        // Basic workspace + Claude CLI check (no MCP needed — /orchestrate runs inline)
-        if (!basicPreflightChecks(cwd)) {
-          process.exitCode = 1;
-          return;
-        }
-
-        const registryPath = resolve(cwd, 'task-tracking/registry.md');
-        if (!existsSync(registryPath)) {
-          console.error('Error: task-tracking/registry.md not found.');
-          console.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
-          process.exitCode = 1;
-          return;
-        }
-
-        const taskIdPattern = /^TASK_\d{4}_\d{3}$/;
-        if (!taskIdPattern.test(taskId)) {
-          console.error(`Error: Invalid task ID format "${taskId}".`);
-          console.error('Expected format: TASK_YYYY_NNN (e.g., TASK_2026_010)');
-          process.exitCode = 1;
-          return;
-        }
-
-        const rows = parseRegistry(cwd);
-        const task = rows.find((r) => r.id === taskId);
-        if (task === undefined) {
-          console.error(`Error: Task ${taskId} not found in registry.`);
-          process.exitCode = 1;
-          return;
-        }
-
-        if (task.status === 'BLOCKED' || task.status === 'CANCELLED' || task.status === 'FAILED') {
-          console.error(`Error: Task ${taskId} is ${task.status} and cannot be processed.`);
-          process.exitCode = 1;
-          return;
-        }
-
-        if (task.status === 'COMPLETE') {
-          console.warn(`Warning: Task ${taskId} is already COMPLETE.`);
-          process.exitCode = 1;
-          return;
-        }
-
-        console.log('');
-        console.log('ORCHESTRATING SINGLE TASK');
-        console.log('-------------------------');
-        console.log(`Task: ${taskId}`);
-        console.log('');
-
-        spawnOrchestrate(cwd, taskId);
-        return;
-      }
-
-      // Batch mode: full Supervisor loop
-      const result = preflightChecks(cwd, undefined);
-      if (result === null) {
+      // Basic workspace + Claude CLI check (no MCP needed — /orchestrate runs inline)
+      if (!basicPreflightChecks(cwd)) {
         process.exitCode = 1;
         return;
       }
 
-      const validationError = validateBatchOptions(opts);
-      if (validationError !== null) {
-        console.error(`Error: ${validationError}`);
+      const registryPath = resolve(cwd, 'task-tracking/registry.md');
+      if (!existsSync(registryPath)) {
+        console.error('Error: task-tracking/registry.md not found.');
+        console.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
         process.exitCode = 1;
         return;
       }
 
-      const { rows } = result;
-
-      displaySummary(rows, opts);
-
-      if (opts.dryRun) {
-        displayDryRun(rows);
-        return;
-      }
-
-      // Provider config pre-flight (fail fast if enabled provider has empty credentials)
-      const providerIssues = checkProviderConfig(cwd);
-      if (providerIssues.length > 0) {
-        for (const issue of providerIssues) {
-          console.error(`Error: Provider ${issue.provider} — ${issue.message}`);
-        }
+      const taskIdPattern = /^TASK_\d{4}_\d{3}$/;
+      if (!taskIdPattern.test(taskId)) {
+        console.error(`Error: Invalid task ID format "${taskId}".`);
+        console.error('Expected format: TASK_YYYY_NNN (e.g., TASK_2026_010)');
         process.exitCode = 1;
         return;
       }
 
-      if (!opts.skipConnectivity) {
-        console.log('Verifying MCP session-orchestrator connectivity...');
-        const connectivity = testMcpConnectivity(result.mcpConfig);
-        if (connectivity.status !== 'ok') {
-          console.error(`Error: ${connectivity.message}`);
-          console.error('');
-          console.error('Use --skip-connectivity to bypass this check.');
-          process.exitCode = 1;
-          return;
+      const rows = parseRegistry(cwd);
+      const task = rows.find((r) => r.id === taskId);
+      if (task === undefined) {
+        console.error(`Error: Task ${taskId} not found in registry.`);
+        process.exitCode = 1;
+        return;
+      }
+
+      if (task.status === 'BLOCKED' || task.status === 'CANCELLED' || task.status === 'FAILED') {
+        console.error(`Error: Task ${taskId} is ${task.status} and cannot be processed.`);
+        process.exitCode = 1;
+        return;
+      }
+
+      if (task.status === 'COMPLETE') {
+        console.warn(`Warning: Task ${taskId} is already COMPLETE.`);
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log('');
+      console.log('ORCHESTRATING SINGLE TASK');
+      console.log('-------------------------');
+      console.log(`Task: ${taskId}`);
+      console.log('');
+
+      spawnOrchestrate(cwd, taskId);
+      return;
+    }
+
+    // Batch mode: full Supervisor loop
+    const result = preflightChecks(cwd, undefined);
+    if (result === null) {
+      process.exitCode = 1;
+      return;
+    }
+
+    const validationError = validateBatchOptions(opts);
+    if (validationError !== null) {
+      console.error(`Error: ${validationError}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const { rows } = result;
+
+    displaySummary(rows, opts);
+
+    if (opts['dry-run']) {
+      displayDryRun(rows);
+      return;
+    }
+
+    // Provider config pre-flight (fail fast if enabled provider has empty credentials)
+    const providerIssues = checkProviderConfig(cwd);
+    if (providerIssues.length > 0) {
+      for (const issue of providerIssues) {
+        console.error(`Error: Provider ${issue.provider} — ${issue.message}`);
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    if (!opts['skip-connectivity']) {
+      console.log('Verifying MCP session-orchestrator connectivity...');
+      const connectivity = testMcpConnectivity(result.mcpConfig);
+      if (connectivity.status !== 'ok') {
+        console.error(`Error: ${connectivity.message}`);
+        console.error('');
+        console.error('Use --skip-connectivity to bypass this check.');
+        process.exitCode = 1;
+        return;
+      }
+      console.log(connectivity.message);
+      console.log('');
+    }
+
+    // Start dashboard service in the background so it's available during the run.
+    // Failures are non-fatal — the Supervisor must start regardless.
+    let dashboardProcess: ChildProcess | null = null;
+    try {
+      dashboardProcess = await startDashboardService(cwd);
+    } catch (err: unknown) {
+      console.warn(`Warning: Dashboard service failed to start: ${String(err)}`);
+    }
+
+    if (dashboardProcess !== null) {
+      // Use process.on('exit') only — spawnClaude already registers SIGINT/SIGTERM
+      // handlers that forward to the Claude child. When Claude exits, Node drains
+      // naturally, triggering 'exit', which sends SIGTERM to the dashboard child.
+      process.on('exit', () => {
+        if (dashboardProcess!.pid !== undefined) {
+          try { process.kill(dashboardProcess!.pid, 'SIGTERM'); } catch { /* already exited */ }
         }
-        console.log(connectivity.message);
-        console.log('');
-      }
+      });
+    }
 
-      // Start dashboard service in the background so it's available during the run.
-      // Failures are non-fatal — the Supervisor must start regardless.
-      let dashboardProcess: ChildProcess | null = null;
-      try {
-        dashboardProcess = await startDashboardService(cwd);
-      } catch (err: unknown) {
-        console.warn(`Warning: Dashboard service failed to start: ${String(err)}`);
-      }
-
-      if (dashboardProcess !== null) {
-        // Use process.on('exit') only — spawnClaude already registers SIGINT/SIGTERM
-        // handlers that forward to the Claude child. When Claude exits, Node drains
-        // naturally, triggering 'exit', which sends SIGTERM to the dashboard child.
-        process.on('exit', () => {
-          if (dashboardProcess!.pid !== undefined) {
-            try { process.kill(dashboardProcess!.pid, 'SIGTERM'); } catch { /* already exited */ }
-          }
-        });
-      }
-
-      spawnSupervisor(cwd, opts);
-    });
+    spawnSupervisor(cwd, opts);
+  }
 }

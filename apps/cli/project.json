@@ -17,9 +17,17 @@
       }
     },
     "start": {
-      "executor": "nx:run-script",
+      "executor": "nx:run-commands",
       "options": {
-        "script": "start"
+        "command": "node dist/index.js",
+        "cwd": "apps/cli"
+      }
+    },
+    "run-cli": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node dist/index.js {args.command}",
+        "cwd": "apps/cli"
       }
     },
     "test": {

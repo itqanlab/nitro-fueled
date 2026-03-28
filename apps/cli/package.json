@@ -33,8 +33,18 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "oclif": {
+    "bin": "nitro-fueled",
+    "dirname": "nitro-fueled",
+    "commands": "./dist/commands",
+    "topics": {
+      "config": {
+        "description": "Configure providers and validate dependencies"
+      }
+    }
+  },
   "dependencies": {
-    "commander": "^13.1.0"
+    "@oclif/core": "^4.10.3"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",

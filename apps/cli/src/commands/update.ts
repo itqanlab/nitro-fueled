@@ -1,17 +1,14 @@
-import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve, dirname, sep } from 'node:path';
-import type { Command } from 'commander';
+import { copyFileSync, mkdirSync } from 'node:fs';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../base-command.js';
 import { resolveScaffoldRoot, walkScaffoldFiles } from '../utils/scaffold.js';
 import { readManifest, writeManifest, computeChecksum, buildCoreFileEntry } from '../utils/manifest.js';
 import type { Manifest } from '../utils/manifest.js';
 import { detectStack } from '../utils/stack-detect.js';
 import { generateAntiPatterns } from '../utils/anti-patterns.js';
 import { getPackageVersion } from '../utils/package-version.js';
-
-interface UpdateOptions {
-  dryRun: boolean;
-  regen: boolean;
-}
 
 type FileOutcome = 'updated' | 'added' | 'skipped' | 'reinstalled';
 
@@ -209,91 +206,94 @@ function handleRegen(cwd: string, scaffoldRoot: string, manifest: Manifest, dryR
   }
 }
 
-export function registerUpdateCommand(program: Command): void {
-  program
-    .command('update')
-    .description('Update core agents, skills, and commands to the latest version')
-    .option('--dry-run', 'Show what would change without writing any files', false)
-    .option('--regen', 'Also regenerate AI agents and anti-patterns', false)
-    .action(async (opts: UpdateOptions) => {
-      const cwd = process.cwd();
+export default class Update extends BaseCommand {
+  public static override description = 'Update core agents, skills, and commands to the latest version';
 
+  public static override flags = {
+    'dry-run': Flags.boolean({ description: 'Show what would change without writing any files', default: false }),
+    regen: Flags.boolean({ description: 'Also regenerate AI agents and anti-patterns', default: false }),
+  };
+
+  public async run(): Promise<void> {
+    const { flags } = await this.parse(Update);
+    const cwd = process.cwd();
+
+    console.log('');
+    console.log('nitro-fueled update');
+    console.log('===================');
+    console.log('');
+
+    // Step 1: Read the manifest
+    const manifest = readManifest(cwd);
+    if (manifest === null) {
+      console.error('Error: No manifest found. Run `npx nitro-fueled init` first.');
+      process.exitCode = 1;
+      return;
+    }
+
+    // Step 2: Resolve scaffold root
+    let scaffoldRoot: string;
+    try {
+      scaffoldRoot = resolveScaffoldRoot();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: ${msg}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    // Step 3: Determine versions
+    const latestVersion = getPackageVersion();
+    console.log(`Current version: ${manifest.version}`);
+    console.log(`Latest version:  ${latestVersion}`);
+    console.log('');
+
+    if (flags['dry-run']) {
+      console.log('(dry-run — no files will be written)');
       console.log('');
-      console.log('nitro-fueled update');
-      console.log('===================');
-      console.log('');
+    }
 
-      // Step 1: Read the manifest
-      const manifest = readManifest(cwd);
-      if (manifest === null) {
-        console.error('Error: No manifest found. Run `npx nitro-fueled init` first.');
-        process.exitCode = 1;
-        return;
-      }
+    // Step 4: Walk scaffold and process files
+    console.log('Checking core files...');
+    let scaffoldFiles: Map<string, string>;
+    try {
+      scaffoldFiles = walkScaffoldFiles(scaffoldRoot);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: Failed to walk scaffold directory: ${msg}`);
+      process.exitCode = 1;
+      return;
+    }
 
-      // Step 2: Resolve scaffold root
-      let scaffoldRoot: string;
-      try {
-        scaffoldRoot = resolveScaffoldRoot();
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error: ${msg}`);
-        process.exitCode = 1;
-        return;
-      }
+    const results = processScaffoldFiles(scaffoldFiles, manifest, cwd, flags['dry-run']);
 
-      // Step 3: Determine versions
-      const latestVersion = getPackageVersion();
-      console.log(`Current version: ${manifest.version}`);
-      console.log(`Latest version:  ${latestVersion}`);
-      console.log('');
+    // Step 5: Print summary
+    printResults(results, manifest, latestVersion, flags['dry-run']);
 
-      if (opts.dryRun) {
-        console.log('(dry-run — no files will be written)');
-        console.log('');
-      }
-
-      // Step 4: Walk scaffold and process files
-      console.log('Checking core files...');
-      let scaffoldFiles: Map<string, string>;
-      try {
-        scaffoldFiles = walkScaffoldFiles(scaffoldRoot);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error: Failed to walk scaffold directory: ${msg}`);
-        process.exitCode = 1;
-        return;
-      }
-
-      const results = processScaffoldFiles(scaffoldFiles, manifest, cwd, opts.dryRun);
-
-      // Step 5: Print summary
-      printResults(results, manifest, latestVersion, opts.dryRun);
-
-      // Step 6: Handle --regen (must run before manifest write to capture new generatedAt)
-      if (opts.regen) {
-        handleRegen(cwd, scaffoldRoot, manifest, opts.dryRun);
-        // Update generatedAt for regenerated files in manifest
-        if (!opts.dryRun) {
-          const now = new Date().toISOString();
-          const apRelPath = '.claude/anti-patterns.md';
-          if (apRelPath in manifest.generatedFiles) {
-            manifest.generatedFiles[apRelPath].generatedAt = now;
-          }
+    // Step 6: Handle --regen (must run before manifest write to capture new generatedAt)
+    if (flags.regen) {
+      handleRegen(cwd, scaffoldRoot, manifest, flags['dry-run']);
+      // Update generatedAt for regenerated files in manifest
+      if (!flags['dry-run']) {
+        const now = new Date().toISOString();
+        const apRelPath = '.claude/anti-patterns.md';
+        if (apRelPath in manifest.generatedFiles) {
+          manifest.generatedFiles[apRelPath].generatedAt = now;
         }
       }
+    }
 
-      // Step 7: Write updated manifest
-      if (!opts.dryRun) {
-        updateManifestData(manifest, results, scaffoldFiles, cwd, latestVersion);
-        try {
-          writeManifest(cwd, manifest);
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error(`Error: Failed to write manifest: ${msg}`);
-          process.exitCode = 1;
-          return;
-        }
+    // Step 7: Write updated manifest
+    if (!flags['dry-run']) {
+      updateManifestData(manifest, results, scaffoldFiles, cwd, latestVersion);
+      try {
+        writeManifest(cwd, manifest);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Error: Failed to write manifest: ${msg}`);
+        process.exitCode = 1;
+        return;
       }
-    });
+    }
+  }
 }
