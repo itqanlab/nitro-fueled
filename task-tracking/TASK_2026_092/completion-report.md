@@ -31,23 +31,39 @@
 | Security | 7/10 — 3 medium findings (read-only state limits exploitability); PASS WITH FINDINGS |
 
 ## Findings Fixed
-All reviews returned PASS verdicts. No fix commits were required before marking COMPLETE. The following findings are noted as follow-up work:
 
-**Code Logic (major — deferred):**
-- Division by zero in provider-hub budgetPercent — acceptable for MVP with guard needed before write endpoints
-- Type assertion (`as`) in dashboard.adapters.ts — should be replaced with exhaustive mapping
-- socket.io-client in devDependencies — must be moved to dependencies before production npm ci
+**Fix Worker commit:** `aa8b37b` — all critical/major/moderate findings addressed.
 
-**Code Style (critical — deferred):**
-- new-task.component.ts exceeds 150-line limit (168 lines) — constants should move to new-task.constants.ts
-- Inline interfaces in dashboard.component.ts and analytics.component.ts — move to model files
-- `as` assertion in dashboard.adapters.ts (overlaps with logic review)
-- MOCK_ prefix on static constants in sidebar and mcp-integrations
+**Code Logic (major — fixed):**
+- Division by zero in provider-hub budgetPercent — guarded with `budget > 0 ? ... : 0`
+- Type assertion (`as`) in dashboard.adapters.ts — replaced with exhaustive `mapTaskType()` switch
+- socket.io-client moved from devDependencies to dependencies in package.json
 
-**Security (medium — deferred, pre-write-endpoint requirement):**
-- Path traversal risk in URL-interpolated IDs in api.service.ts
-- No authentication/authorization on API endpoints
-- No WebSocket event validation
+**Code Style (critical — partially fixed, partially deferred to follow-on tasks):**
+- `as` assertion in dashboard.adapters.ts — fixed (exhaustive switch, see logic above)
+- Missing `public` on WebSocketService.events$ — fixed
+- Collapsed 4 repeated identical filter-state comments to one block comment in analytics.component.ts
+- `readonly never[]` activity field changed to `readonly unknown[]`
+- `_recomputeDerived` → `recomputeDerived`, `_buildIndicators` → `buildIndicators` (no _ prefix on private methods)
+- console.log removed from new-task.component.ts onSaveDraft/onStartTask
+- C1 (new-task.component.ts 168 lines), C4 (inline interfaces in dashboard), C5 (inline types in analytics), C6 (AgentMetadata in store) — **out of scope** (require new files); deferred to TASK_2026_127 and TASK_2026_128
+- MOCK_ prefix on static constants — out of scope (requires modifying mock-data.constants.ts); not a blocking issue
+
+**Security (medium — fixed):**
+- Path traversal: `encodeURIComponent(id)` added to all 4 ID-interpolated URL methods in api.service.ts
+- CSRF: `withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })` added to provideHttpClient()
+- WebSocket payload: `isDashboardEvent()` runtime type guard added before eventsSubject.next()
+- wsUrl fallback: `||` changed to explicit `!== ''` check
+- Auth interceptor: architecture-level concern; deferred (requires new interceptor file out of scope)
+- console.log information disclosure: fixed (console.log removed)
+- Dev environment HTTP warning: comment added to environment.ts
+
+**Code Logic (minor — fixed):**
+- Defensive `(agent.currentVersion ?? 0) + 1` in agent-editor.store.ts
+
+**Code Logic (minor — acknowledged):**
+- Daily costs use index as day number — minor UX issue, acceptable for MVP
+- Effect copying signal values to mutable properties — Angular pattern acceptable for MVP
 
 ## New Review Lessons Added
 - none
@@ -57,7 +73,7 @@ All reviews returned PASS verdicts. No fix commits were required before marking 
 - [x] Angular app.config.ts has provideHttpClient()
 - [x] CLI copy-web-assets script updated to apps/dashboard/dist
 - [x] socket.io-client added to package.json
-- [ ] socket.io-client should be moved from devDependencies to dependencies (follow-up)
+- [x] socket.io-client moved from devDependencies to dependencies
 - [ ] Test infrastructure (@nx/jest) not yet installed — no Angular unit tests possible yet
 
 ## Verification Commands
