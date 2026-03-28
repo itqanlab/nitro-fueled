@@ -11,6 +11,8 @@ import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model
 import { AnalyticsData } from '../models/analytics.model';
 import { ModelAssignmentsData } from '../models/model-assignment.model';
 import { ProviderGroup } from '../models/new-task.model';
+import { ProviderHubData } from '../models/provider-hub.model';
+import { MOCK_PROVIDER_HUB_DATA } from './provider-hub.constants';
 import {
   MOCK_AGENT_EDITOR_LIST,
   MOCK_PROJECTS,
@@ -100,6 +102,10 @@ export class MockDataService {
 
   public getModelAssignmentsData(): ModelAssignmentsData {
     return MOCK_MODEL_ASSIGNMENTS_DATA;
+  }
+
+  public getProviderHubData(): ProviderHubData {
+    return MOCK_PROVIDER_HUB_DATA;
   }
 
   public getProviderGroups(): readonly ProviderGroup[] {

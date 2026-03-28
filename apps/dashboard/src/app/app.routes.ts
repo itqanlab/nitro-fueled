@@ -8,6 +8,7 @@ import { AgentEditorViewComponent } from './views/agent-editor/agent-editor-view
 import { ModelAssignmentsComponent } from './views/models/model-assignments.component';
 import { NewTaskComponent } from './views/new-task/new-task.component';
 import { OnboardingComponent } from './views/onboarding/onboarding.component';
+import { ProviderHubComponent } from './views/providers/provider-hub.component';
 
 export const APP_ROUTES: Routes = [
   {
@@ -22,7 +23,7 @@ export const APP_ROUTES: Routes = [
       { path: 'models', component: ModelAssignmentsComponent },
       { path: 'new-task', component: NewTaskComponent },
       { path: 'onboarding', component: OnboardingComponent },
-      { path: 'providers', component: PlaceholderViewComponent, data: { title: 'Provider Hub' } },
+      { path: 'providers', component: ProviderHubComponent },
     ],
   },
 ];

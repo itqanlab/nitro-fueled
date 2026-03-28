@@ -39,8 +39,16 @@ Implement the Provider Hub view at route `/providers` matching the N.Gine mockup
 
 ## File Scope
 
-- apps/dashboard/src/app/views/providers/provider-hub.component.ts
-- apps/dashboard/src/app/views/providers/provider-hub.component.html
-- apps/dashboard/src/app/views/providers/provider-hub.component.scss
-- apps/dashboard/src/app/views/providers/provider-card/provider-card.component.ts
-- apps/dashboard/src/app/views/providers/model-table/model-table.component.ts
+- apps/dashboard/src/app/models/provider-hub.model.ts (created)
+- apps/dashboard/src/app/services/provider-hub.constants.ts (created)
+- apps/dashboard/src/app/services/mock-data.service.ts (modified)
+- apps/dashboard/src/app/views/providers/provider-hub.component.ts (created)
+- apps/dashboard/src/app/views/providers/provider-hub.component.html (created)
+- apps/dashboard/src/app/views/providers/provider-hub.component.scss (created)
+- apps/dashboard/src/app/views/providers/provider-card/provider-card.component.ts (created)
+- apps/dashboard/src/app/views/providers/provider-card/provider-card.component.html (created)
+- apps/dashboard/src/app/views/providers/provider-card/provider-card.component.scss (created)
+- apps/dashboard/src/app/views/providers/model-table/model-table.component.ts (created)
+- apps/dashboard/src/app/views/providers/model-table/model-table.component.html (created)
+- apps/dashboard/src/app/views/providers/model-table/model-table.component.scss (created)
+- apps/dashboard/src/app/app.routes.ts (modified)

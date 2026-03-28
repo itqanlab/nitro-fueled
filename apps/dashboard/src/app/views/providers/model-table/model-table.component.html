@@ -1,0 +1,55 @@
+<div class="models-section">
+  <div class="models-title">
+    @if (cliMode()) {
+      Models Available via CLI
+    } @else {
+      Available Models
+    }
+  </div>
+
+  <div class="model-row header">
+    <div>Model</div>
+    <div>Capability</div>
+    <div>Context</div>
+    <div>Price (M tok)</div>
+    <div>Active</div>
+  </div>
+
+  @for (model of models(); track model.id) {
+    <div class="model-row">
+      <div>
+        <div class="model-name">{{ model.name }}</div>
+        <div class="model-name-sub">
+          @if (cliMode()) {
+            via claude --model {{ model.id.replace('cli-', '') }}
+          } @else {
+            {{ model.id }}
+          }
+        </div>
+      </div>
+      <div>
+        <span class="model-capability" [ngClass]="'cap-' + model.capability">
+          {{ model.capabilityLabel }}
+        </span>
+      </div>
+      <div class="model-context">{{ model.context }}</div>
+      <div class="model-price">
+        @if (model.outputPrice) {
+          {{ model.inputPrice }} / {{ model.outputPrice }}
+        } @else {
+          {{ model.inputPrice }}
+        }
+      </div>
+      <div>
+        <button
+          class="model-toggle"
+          [ngClass]="{ on: model.enabled }"
+          (click)="onToggle(model.id)"
+          type="button"
+        >
+          <div class="model-toggle-knob"></div>
+        </button>
+      </div>
+    </div>
+  }
+</div>
