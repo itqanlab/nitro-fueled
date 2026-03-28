@@ -5,6 +5,9 @@ import { DashboardComponent } from './views/dashboard/dashboard.component';
 import { McpIntegrationsComponent } from './views/mcp/mcp-integrations.component';
 import { AnalyticsComponent } from './views/analytics/analytics.component';
 import { AgentEditorViewComponent } from './views/agent-editor/agent-editor-view.component';
+import { ModelAssignmentsComponent } from './views/models/model-assignments.component';
+import { NewTaskComponent } from './views/new-task/new-task.component';
+import { OnboardingComponent } from './views/onboarding/onboarding.component';
 
 export const APP_ROUTES: Routes = [
   {
@@ -16,9 +19,9 @@ export const APP_ROUTES: Routes = [
       { path: 'analytics', component: AnalyticsComponent },
       { path: 'agents', component: AgentEditorViewComponent },
       { path: 'mcp', component: McpIntegrationsComponent },
-      { path: 'models', component: PlaceholderViewComponent, data: { title: 'Models' } },
-      { path: 'new-task', component: PlaceholderViewComponent, data: { title: 'New Task' } },
-      { path: 'onboarding', component: PlaceholderViewComponent, data: { title: 'Onboarding' } },
+      { path: 'models', component: ModelAssignmentsComponent },
+      { path: 'new-task', component: NewTaskComponent },
+      { path: 'onboarding', component: OnboardingComponent },
       { path: 'providers', component: PlaceholderViewComponent, data: { title: 'Provider Hub' } },
     ],
   },

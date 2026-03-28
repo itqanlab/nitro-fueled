@@ -39,8 +39,15 @@ Implement the New Task view at route `/new-task` matching the N.Gine mockup. Bre
 
 ## File Scope
 
-- apps/dashboard/src/app/views/new-task/new-task.component.ts
-- apps/dashboard/src/app/views/new-task/new-task.component.html
-- apps/dashboard/src/app/views/new-task/new-task.component.scss
-- apps/dashboard/src/app/views/new-task/strategy-selector/strategy-selector.component.ts
-- apps/dashboard/src/app/views/new-task/workflow-preview/workflow-preview.component.ts
+- apps/dashboard/src/app/models/new-task.model.ts (created)
+- apps/dashboard/src/app/views/new-task/new-task.component.ts (created)
+- apps/dashboard/src/app/views/new-task/new-task.component.html (created)
+- apps/dashboard/src/app/views/new-task/new-task.component.scss (created)
+- apps/dashboard/src/app/views/new-task/strategy-selector/strategy-selector.component.ts (created)
+- apps/dashboard/src/app/views/new-task/strategy-selector/strategy-selector.component.html (created)
+- apps/dashboard/src/app/views/new-task/strategy-selector/strategy-selector.component.scss (created)
+- apps/dashboard/src/app/views/new-task/workflow-preview/workflow-preview.component.ts (created)
+- apps/dashboard/src/app/views/new-task/workflow-preview/workflow-preview.component.html (created)
+- apps/dashboard/src/app/views/new-task/workflow-preview/workflow-preview.component.scss (created)
+- apps/dashboard/src/app/services/mock-data.service.ts (modified — added getProviderGroups)
+- apps/dashboard/src/app/app.routes.ts (modified — wired NewTaskComponent route)

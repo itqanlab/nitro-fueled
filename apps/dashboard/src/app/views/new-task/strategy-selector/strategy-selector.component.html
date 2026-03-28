@@ -1,0 +1,20 @@
+@if (autoDetectLabel()) {
+  <div class="strategy-auto-detect">
+    <span class="auto-detect-icon">&#x2728;</span>
+    <span>Auto-detected: <strong>{{ autoDetectLabel() }}</strong></span>
+  </div>
+}
+<div class="strategy-grid">
+  @for (card of strategies(); track card.type) {
+    <button
+      type="button"
+      class="strategy-card"
+      [class.selected]="card.type === selected()"
+      (click)="select(card.type)"
+    >
+      <div class="strategy-card-icon">{{ card.icon }}</div>
+      <div class="strategy-card-name">{{ card.name }}</div>
+      <div class="strategy-card-desc">{{ card.description }}</div>
+    </button>
+  }
+</div>

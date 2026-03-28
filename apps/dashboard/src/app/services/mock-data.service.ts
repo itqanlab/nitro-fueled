@@ -9,6 +9,8 @@ import { StatusIndicator } from '../models/provider.model';
 import { SidebarSection } from '../models/sidebar.model';
 import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
 import { AnalyticsData } from '../models/analytics.model';
+import { ModelAssignmentsData } from '../models/model-assignment.model';
+import { ProviderGroup } from '../models/new-task.model';
 import {
   MOCK_AGENT_EDITOR_LIST,
   MOCK_PROJECTS,
@@ -24,6 +26,7 @@ import {
   MOCK_MCP_INTEGRATIONS,
   MOCK_ANALYTICS_PAGE_DATA,
 } from './mock-data.constants';
+import { MOCK_MODEL_ASSIGNMENTS_DATA } from './model-assignment.constants';
 
 @Injectable({ providedIn: 'root' })
 export class MockDataService {
@@ -93,5 +96,16 @@ export class MockDataService {
 
   public getAgentEditorData(id: string): AgentEditorData | undefined {
     return MOCK_AGENT_EDITOR_LIST.find((a) => a.id === id);
+  }
+
+  public getModelAssignmentsData(): ModelAssignmentsData {
+    return MOCK_MODEL_ASSIGNMENTS_DATA;
+  }
+
+  public getProviderGroups(): readonly ProviderGroup[] {
+    return [
+      { provider: 'Anthropic', models: ['Claude Opus 4', 'Claude Sonnet 4', 'Claude Haiku 4'] },
+      { provider: 'OpenAI', models: ['GPT-4o', 'Codex Mini'] },
+    ];
   }
 }

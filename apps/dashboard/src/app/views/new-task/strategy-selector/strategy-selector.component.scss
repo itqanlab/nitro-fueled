@@ -1,0 +1,63 @@
+.strategy-auto-detect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border, #1d3a5c);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.auto-detect-icon {
+  flex-shrink: 0;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.strategy-card {
+  padding: 14px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  background: transparent;
+  color: var(--text-primary);
+
+  &:hover {
+    border-color: var(--accent);
+    background: var(--bg-tertiary);
+  }
+
+  &.selected {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+
+    .strategy-card-name {
+      color: var(--accent);
+    }
+  }
+}
+
+.strategy-card-icon {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.strategy-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.strategy-card-desc {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
