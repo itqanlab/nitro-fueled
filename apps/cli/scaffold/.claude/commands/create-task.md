@@ -17,11 +17,18 @@ Read `task-tracking/task-template.md` as the source of truth for task structure.
 
 ### Step 2: Determine Task ID
 
-1. Read `task-tracking/registry.md`
-2. Find the highest `NNN` value among existing `TASK_YYYY_NNN` entries for the current year
-3. Increment by 1, zero-pad to 3 digits
-4. Format: `TASK_YYYY_NNN` (e.g., `TASK_2026_001`)
-5. If no entries exist for the current year, start at `001`
+Run this command to find the highest existing task folder:
+
+```bash
+ls task-tracking/ | grep -E '^TASK_[0-9]{4}_[0-9]{3}$' | sort | tail -1
+```
+
+Increment the `NNN` portion by 1, zero-pad to 3 digits, use the current year for `YYYY`.
+Format: `TASK_YYYY_NNN` (e.g., `TASK_2026_116`). If no folders exist, start at `001`.
+
+**Do NOT read `registry.md` for the next ID — it may be stale.** The folder scan is always authoritative.
+
+**Collision guard:** Before creating any folder or file, verify the path does not already exist. If `task-tracking/TASK_YYYY_NNN/` already exists, **stop immediately** — do NOT overwrite or delete it. Increment NNN and re-check until a free slot is found. Never destroy existing task data.
 
 ### Step 3: Gather Task Information
 
@@ -146,7 +153,7 @@ Task created successfully.
 ## Important Rules
 
 1. **ALWAYS read `task-template.md` first** — never hardcode template structure
-2. **ALWAYS read `registry.md` to determine the next ID** — never guess or assume
+2. **ALWAYS scan task folders to determine the next ID** — never read registry.md for this, it may be stale
 3. **Write status file immediately after creating the task folder**: `task-tracking/TASK_YYYY_NNN/status` containing `CREATED` (no trailing newline)
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
 5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
