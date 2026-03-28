@@ -38,7 +38,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 ```
 
 ### Field Values
@@ -50,12 +50,21 @@ Generated-By: nitro-fueled@{version}
 | Worker | `test-worker` | Fixed for this agent |
 | Task | From test-context.md (`Task ID` field) | e.g., `TASK_2026_100` |
 | Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
-| Provider | From execution context | e.g., `anthropic`, `glm` |
+| Provider | From execution context | e.g., `claude`, `glm`, `opencode` |
 | Model | From execution context | e.g., `claude-sonnet-4-6` |
 | Retry | From prompt context | e.g., `0/2`, `1/2` |
 | Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |
 | Priority | From task.md | e.g., `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
 | Generated-By | Read from `apps/cli/package.json` at project root | Fallback: `nitro-fueled@unknown` |
+
+### Reading the Version
+
+Before creating a commit, read the version from `apps/cli/package.json`:
+
+```bash
+VERSION=$(node -e "const p=require('./apps/cli/package.json'); console.log(p.version)" 2>/dev/null || echo "unknown")
+# Use in footer: Generated-By: nitro-fueled v${VERSION} (https://github.com/itqanlab/nitro-fueled)
+```
 
 ### Apply to Step 7 Commit
 

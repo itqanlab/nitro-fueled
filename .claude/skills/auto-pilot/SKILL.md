@@ -2208,7 +2208,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 Agent identity: use the value that matches the task type —
 nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
@@ -2282,7 +2282,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 Agent identity: use the value that matches the task type —
 nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
@@ -2366,7 +2366,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 Phase values: use "review" for context generation and review artifact commits,
 use "review-fix" for any fix commits applied during this phase.
@@ -2424,7 +2424,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 Phase values: use "review" for context generation and review artifact commits,
 use "review-fix" for any fix commits applied during this phase.
@@ -2494,7 +2494,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
@@ -2544,7 +2544,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
 All placeholder values in {} are injected by the Supervisor before this prompt is sent.
@@ -2627,7 +2627,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 Phase values: use "review-fix" when fixing review findings, use "test-fix" when
 fixing test failures. Use "completion" for the bookkeeping commit.
@@ -2695,7 +2695,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 Phase values: use "review-fix" when fixing review findings, use "test-fix" when
 fixing test failures. Use "completion" for the bookkeeping commit.
@@ -2744,7 +2744,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
@@ -2808,7 +2808,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 
 All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
@@ -2832,6 +2832,7 @@ injecting commit metadata into worker prompts:
 | Fix Worker | `nitro-fix-worker` |
 | Completion Worker | `nitro-completion-worker` |
 | Cleanup Worker | `auto-pilot` |
+| Team-Leader (MODE 2 commits on behalf of developers) | `nitro-team-leader` |
 
 **Build Worker subtype selection**: determine the agent value from the task's Type field
 and the nature of the work. DEVOPS tasks use `nitro-devops-engineer`. DOCUMENTATION and

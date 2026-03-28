@@ -37,7 +37,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 ```
 
 ### Field Values
@@ -49,7 +49,7 @@ Generated-By: nitro-fueled@{version}
 | Worker | `test-worker` | Fixed for this agent |
 | Task | From task folder name | e.g., `TASK_2026_100` |
 | Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
-| Provider | From execution context | e.g., `anthropic`, `glm` |
+| Provider | From execution context | e.g., `claude`, `glm`, `opencode` |
 | Model | From execution context | e.g., `claude-sonnet-4-6` |
 | Retry | From prompt context | e.g., `0/2`, `1/2` |
 | Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |

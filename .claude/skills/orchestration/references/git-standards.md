@@ -45,7 +45,7 @@ Generated-By: nitro-fueled v<version> (https://github.com/itqanlab/nitro-fueled)
 |------------|----------|---------|----------|
 | Task       | Yes | `TASK_YYYY_NNN` | Which task this commit belongs to |
 | Agent      | Yes | `nitro-backend-developer`, `nitro-frontend-developer`, `nitro-devops-engineer`, `nitro-systems-developer`, `nitro-team-leader`, `nitro-unit-tester`, `nitro-integration-tester`, `nitro-e2e-tester`, `nitro-review-lead`, `auto-pilot`, `orchestrator` | Which agent authored the code |
-| Phase      | Yes | `implementation`, `review-fix`, `test-fix`, `review`, `test`, `completion` | Where in the pipeline |
+| Phase      | Yes | `pm`, `architecture`, `implementation`, `review`, `review-fix`, `test`, `test-fix`, `completion`, `salvage`, `supervision` | Where in the pipeline |
 | Worker     | Yes | `build-worker`, `fix-worker`, `review-worker`, `test-worker`, `completion-worker` | Worker type that spawned this agent |
 | Session    | Yes | `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` | Which auto-pilot session spawned this. For `/orchestrate` (no auto-pilot session), use `manual` |
 | Provider   | Yes | `claude`, `glm`, `opencode` | Which AI provider ran this worker |
