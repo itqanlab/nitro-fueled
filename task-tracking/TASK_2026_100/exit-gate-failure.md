@@ -23,6 +23,7 @@ From `task.md`:
 - Supervisor should schedule TASK_2026_099 first
 - After TASK_2026_099 reaches COMPLETE or CANCELLED, retry TASK_2026_100
 
-## Timestamp
+## Timestamps
 
-2026-03-28 11:40:03 +0200
+- 2026-03-28 11:40:03 +0200 — Initial detection
+- 2026-03-28 ~14:00 +0200 — Retry attempt, TASK_2026_099 still CREATED
