@@ -23,7 +23,6 @@ const COMPLEX_PATTERNS: RegExp[] = [
 ];
 
 const SIMPLE_PATTERNS: RegExp[] = [
-  /\bfix\s+typo\b/i,
   /\bupdate\s+config\b/i,
   /\badd\s+field\b/i,
   /\brename\b/i,
@@ -41,7 +40,6 @@ const MEDIUM_PATTERNS: RegExp[] = [
   /\bcreate\s+component\b/i,
   /\bnew\s+component\b/i,
   /\bmigrate\s+command\b/i,
-  /\bimplement\s+service\b/i,
   /\brefactor\b/i,
   /\badd\s+feature\b/i,
   /\bimplement\b/i,
@@ -61,12 +59,13 @@ const TIER_MAP: Record<ComplexityTier, PreferredTier> = {
  * Low-confidence estimates default to `medium` / `balanced`.
  */
 export function estimateComplexity(description: string): ComplexityEstimate {
+  const input = description.slice(0, 4096);
   const signals: string[] = [];
 
   let complexScore = 0;
   for (const pattern of COMPLEX_PATTERNS) {
-    const match = description.match(pattern);
-    if (match !== null && match[0] !== undefined) {
+    const match = input.match(pattern);
+    if (match !== null) {
       complexScore++;
       signals.push(match[0].toLowerCase());
     }
@@ -74,8 +73,8 @@ export function estimateComplexity(description: string): ComplexityEstimate {
 
   let simpleScore = 0;
   for (const pattern of SIMPLE_PATTERNS) {
-    const match = description.match(pattern);
-    if (match !== null && match[0] !== undefined) {
+    const match = input.match(pattern);
+    if (match !== null) {
       simpleScore++;
       signals.push(match[0].toLowerCase());
     }
@@ -83,8 +82,8 @@ export function estimateComplexity(description: string): ComplexityEstimate {
 
   let mediumScore = 0;
   for (const pattern of MEDIUM_PATTERNS) {
-    const match = description.match(pattern);
-    if (match !== null && match[0] !== undefined) {
+    const match = input.match(pattern);
+    if (match !== null) {
       mediumScore++;
       signals.push(match[0].toLowerCase());
     }

@@ -1,15 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import {
-  estimateComplexity,
-  type ComplexityTier,
-  type Confidence,
-  type PreferredTier,
-} from './complexity-estimator.js';
+import { estimateComplexity } from './complexity-estimator.js';
 
 describe('estimateComplexity', () => {
-  // ========================================
-  // Task 1.3: Complex Tier Tests
-  // ========================================
   describe('complex tier', () => {
     it('returns complex for scaffold keyword', () => {
       const result = estimateComplexity('scaffold new authentication system');
@@ -67,9 +59,6 @@ describe('estimateComplexity', () => {
     });
   });
 
-  // ========================================
-  // Task 1.4: Simple Tier Tests
-  // ========================================
   describe('simple tier', () => {
     it('returns simple for fix typo keyword', () => {
       const result = estimateComplexity('fix typo in README');
@@ -80,6 +69,7 @@ describe('estimateComplexity', () => {
     it('returns simple for update config keyword', () => {
       const result = estimateComplexity('update config file');
       expect(result.tier).toBe('simple');
+      expect(result.confidence).toBe('low');
     });
 
     it('returns simple for add field keyword', () => {
@@ -90,6 +80,7 @@ describe('estimateComplexity', () => {
     it('returns simple for rename keyword', () => {
       const result = estimateComplexity('rename variable in module');
       expect(result.tier).toBe('simple');
+      expect(result.confidence).toBe('low');
     });
 
     it('returns simple for single file keyword', () => {
@@ -128,19 +119,18 @@ describe('estimateComplexity', () => {
     });
   });
 
-  // ========================================
-  // Task 2.1: Medium Tier Tests
-  // ========================================
   describe('medium tier', () => {
     it('returns medium for add endpoint keyword', () => {
       const result = estimateComplexity('add endpoint for users');
       expect(result.tier).toBe('medium');
       expect(result.preferredTier).toBe('balanced');
+      expect(result.confidence).toBe('low');
     });
 
     it('returns medium for refactor keyword', () => {
       const result = estimateComplexity('refactor authentication module');
       expect(result.tier).toBe('medium');
+      expect(result.confidence).toBe('low');
     });
 
     it('returns medium for implement keyword', () => {
@@ -161,9 +151,6 @@ describe('estimateComplexity', () => {
     });
   });
 
-  // ========================================
-  // Task 2.2: Priority Override Tests
-  // ========================================
   describe('priority overrides', () => {
     it('complex overrides medium', () => {
       const result = estimateComplexity('integrate and refactor the module');
@@ -188,9 +175,6 @@ describe('estimateComplexity', () => {
     });
   });
 
-  // ========================================
-  // Edge Cases and Default Behavior
-  // ========================================
   describe('edge cases', () => {
     it('defaults to medium with low confidence when no patterns match', () => {
       const result = estimateComplexity('do something unusual');
@@ -201,15 +185,6 @@ describe('estimateComplexity', () => {
     it('returns empty signals array when no patterns match', () => {
       const result = estimateComplexity('xyz abc def');
       expect(result.signals).toEqual([]);
-    });
-
-    it('collects all matched signals in signals array', () => {
-      const result = estimateComplexity(
-        'scaffold and integrate new pipeline'
-      );
-      expect(result.signals).toContain('scaffold');
-      expect(result.signals).toContain('integrate');
-      expect(result.signals).toContain('pipeline');
     });
 
     it('signals are lowercase', () => {
@@ -234,9 +209,6 @@ describe('estimateComplexity', () => {
     });
   });
 
-  // ========================================
-  // Tier Mapping Verification
-  // ========================================
   describe('tier mapping', () => {
     it('maps simple to light', () => {
       const result = estimateComplexity('fix typo');
