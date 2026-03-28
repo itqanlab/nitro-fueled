@@ -1,6 +1,6 @@
 # Development Tasks - TASK_2026_080
 
-**Total Tasks**: 15 | **Batches**: 4 | **Status**: 1/4 complete (Batch 1 COMPLETE)
+**Total Tasks**: 15 | **Batches**: 4 | **Status**: 2/4 complete (Batch 1 COMPLETE, Batch 2 COMPLETE)
 
 ---
 
@@ -142,12 +142,13 @@
 
 ---
 
-## Batch 2: Shell + Sidebar IN PROGRESS
+## Batch 2: Shell + Sidebar COMPLETE
 
 **Developer**: nitro-frontend-developer
-**Tasks**: 3 | **Dependencies**: Batch 1 (model, store, mock data must exist)
+**Tasks**: 4 | **Dependencies**: Batch 1 (model, store, mock data must exist)
+**Commit**: 8de9c19
 
-### Task 2.1: Create AgentEditorStore signal service IN PROGRESS
+### Task 2.1: Create AgentEditorStore signal service COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/agent-editor.store.ts`
 **Action**: CREATE
@@ -175,7 +176,7 @@
 
 ---
 
-### Task 2.2: Create AgentEditorViewComponent (container + 3-column layout) IN PROGRESS
+### Task 2.2: Create AgentEditorViewComponent (container + 3-column layout) COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/agent-editor-view.component.ts`
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/agent-editor-view.component.html`
@@ -202,7 +203,7 @@
 
 ---
 
-### Task 2.3: Create AgentListSidebarComponent IN PROGRESS
+### Task 2.3: Create AgentListSidebarComponent COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/agent-list-sidebar/agent-list-sidebar.component.ts`
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/agent-list-sidebar/agent-list-sidebar.component.html`
@@ -229,7 +230,7 @@
 
 **Also update app.routes.ts**: In Task 2.2's batch, ALSO modify:
 
-### Task 2.4: Update app.routes.ts to point /agents to AgentEditorViewComponent IN PROGRESS
+### Task 2.4: Update app.routes.ts to point /agents to AgentEditorViewComponent COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/app.routes.ts`
 **Action**: MODIFY
@@ -253,12 +254,12 @@
 
 ---
 
-## Batch 3: Metadata Panel PENDING
+## Batch 3: Metadata Panel IN PROGRESS
 
 **Developer**: nitro-frontend-developer
 **Tasks**: 4 | **Dependencies**: Batch 1 (model + store) — can be implemented in parallel with Batch 2 if store is ready
 
-### Task 3.1: Create MetadataPanelComponent PENDING
+### Task 3.1: Create MetadataPanelComponent IN PROGRESS
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/metadata-panel/metadata-panel.component.ts`
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/metadata-panel/metadata-panel.component.html`
@@ -285,7 +286,7 @@
 
 ---
 
-### Task 3.2: Create McpToolAccessComponent PENDING
+### Task 3.2: Create McpToolAccessComponent IN PROGRESS
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/metadata-panel/mcp-tool-access.component.ts`
 **Action**: CREATE (single-file component)
@@ -307,7 +308,7 @@
 
 ---
 
-### Task 3.3: Create KnowledgeScopeComponent PENDING
+### Task 3.3: Create KnowledgeScopeComponent IN PROGRESS
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/metadata-panel/knowledge-scope.component.ts`
 **Action**: CREATE (single-file component)
@@ -329,7 +330,7 @@
 
 ---
 
-### Task 3.4: Create CompatibilityListComponent PENDING
+### Task 3.4: Create CompatibilityListComponent IN PROGRESS
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/agent-editor/metadata-panel/compatibility-list.component.ts`
 **Action**: CREATE (single-file component)
