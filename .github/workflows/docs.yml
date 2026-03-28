@@ -28,6 +28,7 @@ jobs:
         uses: withastro/action@v3
         with:
           path: packages/docs
+          package-manager: npm
 
   deploy:
     name: Deploy to GitHub Pages
