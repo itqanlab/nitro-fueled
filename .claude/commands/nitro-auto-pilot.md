@@ -35,7 +35,7 @@ and loops until all tasks are complete or blocked.
 | --pause         | flag                         | false   | Stop cleanly after current monitoring cycle; workers keep running |
 | --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given)  |
 | --evaluate      | model-id string              | —       | Enter evaluation mode: run benchmark suite against specified model |
-| --compare       | model-id string              | —       | A/B comparison: run same benchmarks on both models in parallel worktrees |
+| --compare       | model-id string              | —       | A/B comparison: run same benchmarks for both models (parallel worktrees in builder mode; sequential phases in reviewer/both modes) |
 | --role          | builder\|reviewer\|both       | builder | Which role to test the model in. `reviewer` and `both` require `--compare` |
 | --reviewer      | model-id string              | —       | Override the reviewer model for evaluation (defaults to baseline or system default) |
 
