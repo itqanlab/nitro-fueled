@@ -1,0 +1,33 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@nitro-fueled/dashboard-web",
+  "sourceRoot": "apps/dashboard-web/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "preview"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'No test script configured for @nitro-fueled/dashboard-web'",
+        "cwd": "apps/dashboard-web"
+      }
+    }
+  }
+}

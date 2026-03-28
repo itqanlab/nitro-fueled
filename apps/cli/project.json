@@ -1,0 +1,33 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@itqanlab/nitro-fueled",
+  "sourceRoot": "apps/cli/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev"
+      }
+    },
+    "start": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "start"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'No test script configured for @itqanlab/nitro-fueled'",
+        "cwd": "apps/cli"
+      }
+    }
+  }
+}
