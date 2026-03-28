@@ -1307,8 +1307,10 @@ through implementation. Follow these rules strictly:
    d. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
 
 5. Before developers write any code, they MUST read
-   .claude/review-lessons/ (review-general.md, backend.md,
-   frontend.md). These contain accumulated rules from past reviews.
+   ALL review-lessons files and anti-patterns:
+   - Read .claude/review-lessons/*.md (all lesson files: review-general.md, backend.md, frontend.md, security.md)
+   - Read .claude/anti-patterns.md
+   These contain accumulated rules and patterns from past reviews.
 
 6. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
@@ -1358,7 +1360,10 @@ AUTONOMOUS MODE — follow these rules strictly:
 4. Do NOT restart from scratch. Resume from the detected phase.
 
 5. Before developers write code, ensure they read
-   .claude/review-lessons/ for accumulated rules.
+   ALL review-lessons files and anti-patterns:
+   - Read .claude/review-lessons/*.md (all lesson files: review-general.md, backend.md, frontend.md, security.md)
+   - Read .claude/anti-patterns.md
+   These contain accumulated rules and patterns from past reviews.
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
    a. Create a git commit with all implementation code
