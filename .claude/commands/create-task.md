@@ -65,6 +65,38 @@ Output a `## Parallelism` section in the task.md with:
 
 This analysis is **mandatory** — every task must have a Parallelism section.
 
+### Step 3c: Pre-Write Sizing Validation
+
+**Before writing any files**, validate the gathered task information against sizing rules. Read `task-tracking/sizing-rules.md` and check:
+
+| Check | Condition |
+|-------|-----------|
+| Description length | > 150 lines |
+| Acceptance criteria | > 5 groups |
+| File scope | > 7 files listed in File Scope |
+| Complexity + layers | Complexity is "Complex" AND description mentions multiple architectural layers |
+| Unrelated areas | Multiple unrelated functional areas detected (use judgment) |
+
+When a count is indeterminate (e.g., ambiguous description structure), skip that check — do not block based on uncertainty alone.
+
+**If any check fails — auto-split:**
+
+Do NOT ask the user whether to split. Do NOT create the oversized task. Instead, **automatically split** the work into properly-sized tasks:
+
+1. Analyze the task and determine the natural split boundaries (by functional area, by type, by layer, etc.)
+2. Log: `[AUTO-SPLIT] — Task too large for a single worker. Splitting into N tasks.`
+3. Create N separate task folders and task.md files, each within sizing limits
+4. Each split task gets:
+   - Its own sequential Task ID (TASK_YYYY_NNN, NNN+1, NNN+2, ...)
+   - Dependencies on prior split tasks where order matters
+   - Parallelism analysis reflecting the split
+   - A reference back to the original intent (e.g., "Part 1 of N — original request: [title]")
+5. Display a summary of all created tasks
+
+**Only skip auto-split if the user explicitly says** words like "force", "create as-is", "don't split", or "single task". In that case, create it with a sizing warning.
+
+**If all checks pass:** proceed to Step 4.
+
 ### Step 4: Create Task Folder and File
 
 1. Create directory: `task-tracking/TASK_YYYY_NNN/`
@@ -101,30 +133,7 @@ Verify the task is ready for auto-pilot pickup:
 
 These checks ensure the task won't be skipped by auto-pilot's Step 2b validation.
 
-**6b. Validate Task Sizing**
-
-Read `task-tracking/sizing-rules.md` and validate the task against the hard limits. If any limit is exceeded, display a non-blocking warning:
-
-```
-[SIZING WARNING] — This task may be too large for a single worker session:
-  - [specific violation 1]
-  - [specific violation 2]
-
-  See task-tracking/sizing-rules.md for guidance on splitting.
-  You can proceed as-is or split the task into smaller pieces.
-```
-
-Checks to run against the written task.md:
-
-| Check | Condition | Warning Message |
-|-------|-----------|-----------------|
-| Description length | > 150 lines | "Description exceeds 150 lines (actual: N lines)" |
-| Acceptance criteria | > 5 groups | "More than 5 acceptance criteria groups (actual: N)" |
-| File scope | > 7 files listed in File Scope | "File Scope lists more than 7 files (actual: N)" |
-| Complexity + layers | Complexity is "Complex" AND description mentions multiple architectural layers | "Complex task spanning multiple architectural layers — consider splitting" |
-| Unrelated areas | Multiple unrelated functional areas detected (use judgment) | "Task appears to span multiple unrelated functional areas" |
-
-When a count is indeterminate (e.g., ambiguous description structure), skip that check — do not warn based on uncertainty alone.
+**6b.** *(Removed — sizing validation now runs in Step 3c before writing any files.)*
 
 ### Step 7: Display Summary
 
