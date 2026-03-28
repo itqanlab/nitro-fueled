@@ -56,7 +56,7 @@ Parse $ARGUMENTS for:
   and jump directly to the Continue Mode sequence in SKILL.md.
 - `--evaluate <model-id>` -> evaluation mode: enter single-model evaluation against the
   benchmark suite. The `<model-id>` is required (e.g., `claude-opus-4-6`, `claude-sonnet-4-6`,
-  `glm-5`). **If `--evaluate` is present, skip Steps 3 and 4 entirely** and jump
+  `glm-5`). **If `--evaluate` is present, skip Steps 3, 4, 5, and 6 entirely** and jump
   directly to the Evaluation Mode sequence in SKILL.md.
 
 ### Step 3: Pre-Flight Checks
@@ -234,18 +234,6 @@ Mode: {all | single-task TASK_ID | dry-run}
 ```
 
 ### Step 6: Handle Mode
-
-**IF `--evaluate <model-id>`:**
-
-Enter Evaluation Mode. See the `## Evaluation Mode` section in SKILL.md.
-The supervisor loads benchmark tasks from `benchmark-suite/`, creates an isolated
-worktree, spawns Evaluation Build Workers using the specified model, collects
-execution metrics, and stores results in `evaluations/<date>-<model>/`.
-This mode does NOT read the task registry or process real tasks.
-
-STOP after all benchmark tasks complete or fail.
-
----
 
 **IF `--dry-run`:**
 
