@@ -59,11 +59,15 @@ Extend `nitro-cortex` with session state management tools and worker lifecycle t
 
 ## File Scope
 
-- `packages/mcp-cortex/src/tools/sessions.ts`
-- `packages/mcp-cortex/src/tools/workers.ts`
-- `packages/mcp-cortex/src/process/spawn.ts`
-- `packages/mcp-cortex/src/events/subscriptions.ts`
-- `packages/mcp-cortex/src/index.ts`
+- `packages/mcp-cortex/src/db/schema.ts` (modified — extended workers table, added types/helpers)
+- `packages/mcp-cortex/src/tools/sessions.ts` (created — session CRUD tools)
+- `packages/mcp-cortex/src/tools/workers.ts` (created — spawn, list, stats, activity, kill)
+- `packages/mcp-cortex/src/process/spawn.ts` (created — process launcher, GLM key resolution)
+- `packages/mcp-cortex/src/process/token-calculator.ts` (created — cost calculation with model pricing)
+- `packages/mcp-cortex/src/process/jsonl-watcher.ts` (created — stream-json monitoring, stats accumulator)
+- `packages/mcp-cortex/src/events/subscriptions.ts` (created — file watcher, subscribe/get-pending-events)
+- `packages/mcp-cortex/src/index.ts` (modified — registered all 12 new tools)
+- `packages/mcp-cortex/package.json` (modified — added chokidar dependency)
 
 ## Parallelism
 

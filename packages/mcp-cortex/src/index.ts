@@ -8,6 +8,10 @@ import { initDatabase } from './db/schema.js';
 import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles } from './tools/sync.js';
+import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession } from './tools/sessions.js';
+import { handleSpawnWorker, handleListWorkers, handleGetWorkerStats, handleGetWorkerActivity, handleKillWorker } from './tools/workers.js';
+import { FileWatcher, handleSubscribeWorker, handleGetPendingEvents } from './events/subscriptions.js';
+import { JsonlWatcher } from './process/jsonl-watcher.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -18,10 +22,15 @@ console.error(`[nitro-cortex] database: ${dbPath}`);
 const db = initDatabase(dbPath);
 console.error('[nitro-cortex] database initialized');
 
+const jsonlWatcher = new JsonlWatcher(db);
+const fileWatcher = new FileWatcher();
+
 const server = new McpServer({
   name: 'nitro-cortex',
-  version: '0.1.0',
+  version: '0.2.0',
 });
+
+// --- Task tools (from Part 1) ---
 
 server.registerTool('get_tasks', {
   description: 'Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE.',
@@ -72,10 +81,141 @@ server.registerTool('sync_tasks_from_files', {
   description: 'Bootstrap: scan task-tracking/TASK_*/ folders, import into DB. Safe to re-run (upsert).',
 }, () => handleSyncTasksFromFiles(db, projectRoot));
 
+// --- Session tools ---
+
+server.registerTool('create_session', {
+  description: 'Create a new supervisor session. Returns session_id.',
+  inputSchema: {
+    source: z.string().optional().describe('Session source identifier'),
+    config: z.string().optional().describe('JSON config string'),
+    task_count: z.number().optional().describe('Expected number of tasks'),
+  },
+}, (args) => handleCreateSession(db, args));
+
+server.registerTool('get_session', {
+  description: 'Get full session state including active workers, completed/failed lists, counters.',
+  inputSchema: {
+    session_id: z.string().describe('Session ID to retrieve'),
+  },
+}, (args) => handleGetSession(db, args));
+
+server.registerTool('update_session', {
+  description: 'Partial update of session fields (loop_status, tasks_terminal, config, etc.).',
+  inputSchema: {
+    session_id: z.string().describe('Session ID to update'),
+    fields: z.string().describe('JSON string of fields to update'),
+  },
+}, (args) => {
+  const parsed = JSON.parse(args.fields) as Record<string, unknown>;
+  return handleUpdateSession(db, { session_id: args.session_id, fields: parsed });
+});
+
+server.registerTool('list_sessions', {
+  description: 'List all sessions or filter by loop_status. Enables cross-session awareness.',
+  inputSchema: {
+    status: z.string().optional().describe('Filter by loop_status (running/paused/stopped)'),
+  },
+}, (args) => handleListSessions(db, args));
+
+server.registerTool('end_session', {
+  description: 'Mark session as stopped, write final counters and optional summary.',
+  inputSchema: {
+    session_id: z.string().describe('Session ID to end'),
+    summary: z.string().optional().describe('Optional summary of session results'),
+  },
+}, (args) => handleEndSession(db, args));
+
+// --- Worker lifecycle tools ---
+
+server.registerTool('spawn_worker', {
+  description: 'Launch a Claude Code worker process and track it in the DB. Returns worker_id.',
+  inputSchema: {
+    session_id: z.string().describe('Session ID this worker belongs to'),
+    task_id: z.string().optional().describe('Task ID this worker is executing'),
+    worker_type: z.enum(['build', 'review']).describe('Worker type'),
+    prompt: z.string().describe('Full prompt to send to the worker'),
+    working_directory: z.string().describe('Project directory to run in'),
+    label: z.string().describe('Label for the worker'),
+    model: z.string().optional().describe('Model to use (default: claude-sonnet-4-6)'),
+    provider: z.enum(['claude', 'glm', 'opencode']).optional().describe('Provider to use'),
+    auto_close: z.boolean().optional().describe('Auto-kill when worker finishes'),
+  },
+}, (args) => handleSpawnWorker(db, jsonlWatcher, args));
+
+server.registerTool('list_workers', {
+  description: 'List tracked workers with status, tokens, cost, and health.',
+  inputSchema: {
+    session_id: z.string().optional().describe('Filter by session ID'),
+    status_filter: z.enum(['active', 'completed', 'failed', 'killed', 'all']).optional().describe('Filter by status'),
+  },
+}, (args) => handleListWorkers(db, args));
+
+server.registerTool('get_worker_stats', {
+  description: 'Detailed token usage, cost, progress, and health for a specific worker.',
+  inputSchema: {
+    worker_id: z.string().describe('Worker ID'),
+  },
+}, (args) => handleGetWorkerStats(db, args));
+
+server.registerTool('get_worker_activity', {
+  description: 'Compact, context-efficient summary of a worker. Minimizes token usage.',
+  inputSchema: {
+    worker_id: z.string().describe('Worker ID'),
+  },
+}, (args) => handleGetWorkerActivity(db, args));
+
+server.registerTool('kill_worker', {
+  description: 'Terminate a worker process (SIGTERM then SIGKILL) and update status.',
+  inputSchema: {
+    worker_id: z.string().describe('Worker ID to terminate'),
+    reason: z.string().optional().describe('Reason for termination'),
+  },
+}, (args) => handleKillWorker(db, args));
+
+// --- Event subscription tools ---
+
+const watchConditionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('file_value'),
+    path: z.string().min(1).max(500).describe('Path relative to worker working_directory'),
+    value: z.string().max(500).describe('File content (trimmed) must equal this value'),
+    event_label: z.string().min(1).max(100).describe('Label for the emitted event'),
+  }),
+  z.object({
+    type: z.literal('file_contains'),
+    path: z.string().min(1).max(500).describe('Path relative to worker working_directory'),
+    contains: z.string().min(1).max(500).describe('File content must contain this substring'),
+    event_label: z.string().min(1).max(100).describe('Label for the emitted event'),
+  }),
+  z.object({
+    type: z.literal('file_exists'),
+    path: z.string().min(1).max(500).describe('Path relative to worker working_directory'),
+    event_label: z.string().min(1).max(100).describe('Label for the emitted event'),
+  }),
+]);
+
+server.registerTool('subscribe_worker', {
+  description: 'Register file-system watch conditions for a worker. When met, a completion event is enqueued.',
+  inputSchema: {
+    worker_id: z.string().describe('Worker ID'),
+    conditions: z.array(watchConditionSchema).min(1).max(20).describe('Watch conditions'),
+  },
+}, (args) => handleSubscribeWorker(db, fileWatcher, args));
+
+server.registerTool('get_pending_events', {
+  description: 'Drain and return all pending worker completion events (idempotent drain).',
+  inputSchema: {
+    session_id: z.string().optional().describe('Optional session filter (not yet implemented)'),
+  },
+}, () => handleGetPendingEvents(fileWatcher));
+
+// --- Start ---
+
+jsonlWatcher.start();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-console.error('[nitro-cortex] MCP server connected via stdio');
+console.error('[nitro-cortex] MCP server connected via stdio (v0.2.0 — sessions + workers)');
 
-process.on('SIGINT', () => { db.close(); process.exit(0); });
-process.on('SIGTERM', () => { db.close(); process.exit(0); });
+process.on('SIGINT', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
+process.on('SIGTERM', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
