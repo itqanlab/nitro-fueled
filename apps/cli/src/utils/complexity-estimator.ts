@@ -11,7 +11,7 @@ export interface ComplexityEstimate {
 
 const COMPLEX_PATTERNS: RegExp[] = [
   /\bscaffold\b/i,
-  /\bintegrat/i,
+  /\bintegrate\b/i,
   /\bcross[- ]service\b/i,
   /\barchitect/i,
   /\bpipeline\b/i,
@@ -106,11 +106,6 @@ export function estimateComplexity(description: string): ComplexityEstimate {
     // No signals — default to medium with low confidence
     tier = 'medium';
     confidence = 'low';
-  }
-
-  // Low-confidence estimates default to medium
-  if (confidence === 'low') {
-    tier = 'medium';
   }
 
   return {

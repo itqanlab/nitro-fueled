@@ -54,16 +54,15 @@ describe('estimateComplexity', () => {
       expect(result.confidence).toBe('high');
     });
 
-    it('single complex signal falls back to medium (low confidence)', () => {
-      // Per implementation: low confidence estimates default to medium
+    it('single complex signal stays complex with low confidence', () => {
       const result = estimateComplexity('scaffold');
-      expect(result.tier).toBe('medium');
+      expect(result.tier).toBe('complex');
       expect(result.confidence).toBe('low');
     });
 
-    it('single integrate signal falls back to medium (low confidence)', () => {
+    it('single integrate signal stays complex with low confidence', () => {
       const result = estimateComplexity('integrate');
-      expect(result.tier).toBe('medium');
+      expect(result.tier).toBe('complex');
       expect(result.confidence).toBe('low');
     });
   });
@@ -126,6 +125,66 @@ describe('estimateComplexity', () => {
       const result = estimateComplexity('fix typo in scaffold documentation');
       expect(result.tier).toBe('complex');
       expect(result.tier).not.toBe('simple');
+    });
+  });
+
+  // ========================================
+  // Task 2.1: Medium Tier Tests
+  // ========================================
+  describe('medium tier', () => {
+    it('returns medium for add endpoint keyword', () => {
+      const result = estimateComplexity('add endpoint for users');
+      expect(result.tier).toBe('medium');
+      expect(result.preferredTier).toBe('balanced');
+    });
+
+    it('returns medium for refactor keyword', () => {
+      const result = estimateComplexity('refactor authentication module');
+      expect(result.tier).toBe('medium');
+    });
+
+    it('returns medium for implement keyword', () => {
+      const result = estimateComplexity('implement new service');
+      expect(result.tier).toBe('medium');
+    });
+
+    it('returns medium when only medium patterns match', () => {
+      const result = estimateComplexity('create service for users');
+      expect(result.tier).toBe('medium');
+      expect(result.preferredTier).toBe('balanced');
+    });
+
+    it('returns high confidence when 2+ medium signals match', () => {
+      const result = estimateComplexity('add endpoint and refactor module');
+      expect(result.tier).toBe('medium');
+      expect(result.confidence).toBe('high');
+    });
+  });
+
+  // ========================================
+  // Task 2.2: Priority Override Tests
+  // ========================================
+  describe('priority overrides', () => {
+    it('complex overrides medium', () => {
+      const result = estimateComplexity('integrate and refactor the module');
+      expect(result.tier).toBe('complex');
+    });
+
+    it('complex overrides simple', () => {
+      const result = estimateComplexity('scaffold new system - fix typo in docs');
+      expect(result.tier).toBe('complex');
+    });
+
+    it('medium overrides simple', () => {
+      const result = estimateComplexity('fix typo and add endpoint');
+      expect(result.tier).toBe('medium');
+    });
+
+    it('signals array captures all matched patterns', () => {
+      const result = estimateComplexity('scaffold and integrate new pipeline');
+      expect(result.signals).toContain('scaffold');
+      expect(result.signals).toContain('integrate');
+      expect(result.signals).toContain('pipeline');
     });
   });
 
