@@ -78,3 +78,32 @@ Reviewers MUST only flag and fix issues in these files:
 
 Issues found outside this scope: document only, do NOT fix.
 The `evaluations/` directory is created at runtime — no static file to review.
+
+## Findings Summary
+- Blocking: 2
+- Serious: 4
+- Minor: 12
+
+### Blocking
+- Logic C1: Benchmark task path unreachable from worktree — worker reads `benchmark-suite/tasks/{task_id}/task.md` but working directory is the isolated worktree where that path does not exist
+- Security SEC-1: Path traversal via `.` in model ID sanitization — `..` passes sanitization, enabling traversal in evaluation dir and worktree paths
+
+### Serious
+- Logic M1: Compaction count not tracked — acceptance criteria gap (metric missing from per-task result file and session.md table)
+- Logic M2: Orphan branch vs detached HEAD documentation mismatch — prose says "orphan branch", command uses `--detach`
+- Security SEC-2: No upper bound on evaluation worker polling loop — hung worker causes indefinite loop
+- Security SEC-3: Missing prompt injection guard in Evaluation Build Worker Prompt — standard guard present in normal Build Worker Prompt is absent here
+
+### Minor
+- Style S1: Stale cross-reference — `auto-pilot.md` should be `nitro-auto-pilot.md`
+- Style S2: Dead variable — branch name computed in E4 but never used (worktree is `--detach`)
+- Style S3: `session.md` initial template missing `Finished` placeholder
+- Style S4: Variable casing inconsistency — `EVAL_WORKTREE` (prose) vs `{eval_worktree}` (prompt template)
+- Style S5: `{notes}` in session.md table is undefined
+- Style C1: Contradictory routing for `--evaluate` in Step 2 vs Step 6 of command file
+- Logic m1: Unused branch name computation (duplicate of Style S2)
+- Logic m2: Success detection overly permissive — git commits alone count as SUCCESS
+- Logic m3: No delay in worktree cleanup retry
+- Logic m4: Error messages not captured on worktree failure
+- Security SEC-4: User-controlled model ID passed to `spawn_worker` without allowlist
+- Security SEC-5: `eval-result.md` success signal is worker-controlled and trivially forgeable
