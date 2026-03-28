@@ -31,17 +31,19 @@ export type ReviewSeverity = 'critical' | 'serious' | 'moderate' | 'minor' | 'in
 export interface TaskRecord {
   readonly id: string;
   readonly status: TaskStatus;
-  readonly type: string;
+  readonly type: TaskType;
   readonly description: string;
   readonly created: string;
   readonly model: string;
 }
 
+export type TaskComplexity = 'Low' | 'Medium' | 'High';
+
 export interface TaskDefinition {
   readonly title: string;
   readonly type: TaskType;
   readonly priority: TaskPriority;
-  readonly complexity: string;
+  readonly complexity: TaskComplexity;
   readonly description: string;
   readonly dependencies: ReadonlyArray<string>;
   readonly acceptanceCriteria: ReadonlyArray<string>;
@@ -56,8 +58,8 @@ export interface PlanPhase {
   readonly taskMap: ReadonlyArray<{
     readonly taskId: string;
     readonly title: string;
-    readonly status: string;
-    readonly priority: string;
+    readonly status: TaskStatus;
+    readonly priority: TaskPriority;
   }>;
 }
 
@@ -81,13 +83,16 @@ export interface PlanData {
 export interface ActiveWorker {
   readonly workerId: string;
   readonly taskId: string;
-  readonly workerType: string;
+  readonly workerType: WorkerType;
   readonly label: string;
-  readonly status: string;
+  readonly status: WorkerStatus;
   readonly spawnTime: string;
   readonly stuckCount: number;
   readonly lastHealth: string;
   readonly expectedEndState: string;
+  readonly cost?: number;
+  readonly tokens?: number;
+  readonly model?: string;
 }
 
 export interface CompletedTask {
@@ -103,6 +108,7 @@ export interface FailedTask {
 
 export interface LogEntry {
   readonly timestamp: string;
+  readonly source: string;
   readonly event: string;
 }
 
@@ -207,7 +213,7 @@ export interface SessionSummary {
 export interface SessionData {
   readonly summary: SessionSummary;
   readonly state: OrchestratorState | null;
-  readonly log: ReadonlyArray<{ readonly timestamp: string; readonly source: string; readonly event: string }>;
+  readonly log: ReadonlyArray<LogEntry>;
 }
 
 export interface GraphNode {

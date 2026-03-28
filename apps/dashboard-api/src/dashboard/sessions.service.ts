@@ -3,9 +3,8 @@ import type {
   SessionData,
   SessionSummary,
   OrchestratorState,
+  LogEntry,
 } from './dashboard.types';
-
-type LogEntry = { readonly timestamp: string; readonly source: string; readonly event: string };
 
 /**
  * SessionsService manages session state data.

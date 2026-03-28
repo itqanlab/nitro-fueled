@@ -4,6 +4,8 @@ import { PipelineService } from './pipeline.service';
 import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
 import { WatcherService } from './watcher.service';
+import { DiffService } from './diff.service';
+import { WorkerTreeService } from './worker-tree.service';
 
 /**
  * DashboardModule registers all dashboard-related services and controllers.
@@ -12,6 +14,8 @@ import { WatcherService } from './watcher.service';
 @Module({
   controllers: [DashboardController],
   providers: [
+    DiffService,
+    WorkerTreeService,
     PipelineService,
     SessionsService,
     {
@@ -20,6 +24,6 @@ import { WatcherService } from './watcher.service';
     },
     WatcherService,
   ],
-  exports: [PipelineService, SessionsService, AnalyticsService, WatcherService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService],
 })
 export class DashboardModule {}

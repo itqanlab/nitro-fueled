@@ -13,10 +13,12 @@ import { PipelineService } from './pipeline.service';
 import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
 
+const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
+
 /**
- * DashboardController exposes REST routes for the dashboard API.
- * Migrated from dashboard-service/src/server/http.ts.
- * All routes delegate to the injected services.
+ * DashboardController — Internal dev-tool API.
+ * Authentication: none required — this server is intended for local use only (127.0.0.1 bind).
+ * DO NOT expose on a non-loopback interface without adding authentication.
  */
 @Controller('api')
 export class DashboardController {
@@ -67,26 +69,32 @@ export class DashboardController {
 
   @Get('tasks/:id')
   public getTask(@Param('id') id: string): ReturnType<PipelineService['getFullTask']> | { error: string } {
+    if (!TASK_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid task ID format' });
+    }
     const taskData = this.pipelineService.getFullTask(id);
     if (!taskData.definition && !taskData.registryRecord) {
-      throw new NotFoundException({ error: `Task ${id} not found` });
+      throw new NotFoundException({ error: 'Task not found' });
     }
     return taskData;
   }
 
   @Get('tasks/:id/reviews')
   public getTaskReviews(@Param('id') id: string): ReturnType<PipelineService['getReviews']> {
+    if (!TASK_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid task ID format' });
+    }
     return this.pipelineService.getReviews(id);
   }
 
   @Get('tasks/:id/pipeline')
   public getTaskPipeline(@Param('id') id: string): ReturnType<PipelineService['getTaskPipeline']> | { error: string } {
-    if (!/^TASK_\d{4}_\d{3}$/.test(id)) {
+    if (!TASK_ID_RE.test(id)) {
       throw new BadRequestException({ error: 'Invalid task ID format' });
     }
     const record = this.pipelineService.getRegistry().find((r) => r.id === id);
     if (!record) {
-      throw new NotFoundException({ error: `Task ${id} not found` });
+      throw new NotFoundException({ error: 'Task not found' });
     }
     return this.pipelineService.getTaskPipeline(id);
   }
@@ -135,7 +143,7 @@ export class DashboardController {
   public getSession(@Param('id') id: string): ReturnType<SessionsService['getSession']> {
     const data = this.sessionsService.getSession(id);
     if (!data) {
-      throw new NotFoundException({ error: `Session ${id} not found` });
+      throw new NotFoundException({ error: 'Session not found' });
     }
     return data;
   }
@@ -151,7 +159,8 @@ export class DashboardController {
   public async getAnalyticsCost(): Promise<ReturnType<AnalyticsService['getCostData']>> {
     try {
       return await this.analyticsService.getCostData();
-    } catch {
+    } catch (err) {
+      this.logger.error('Analytics cost failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
     }
   }
@@ -160,7 +169,8 @@ export class DashboardController {
   public async getAnalyticsEfficiency(): Promise<ReturnType<AnalyticsService['getEfficiencyData']>> {
     try {
       return await this.analyticsService.getEfficiencyData();
-    } catch {
+    } catch (err) {
+      this.logger.error('Analytics efficiency failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
     }
   }
@@ -169,7 +179,8 @@ export class DashboardController {
   public async getAnalyticsModels(): Promise<ReturnType<AnalyticsService['getModelsData']>> {
     try {
       return await this.analyticsService.getModelsData();
-    } catch {
+    } catch (err) {
+      this.logger.error('Analytics models failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
     }
   }
@@ -178,7 +189,8 @@ export class DashboardController {
   public async getAnalyticsSessions(): Promise<ReturnType<AnalyticsService['getSessionsData']>> {
     try {
       return await this.analyticsService.getSessionsData();
-    } catch {
+    } catch (err) {
+      this.logger.error('Analytics sessions failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
     }
   }

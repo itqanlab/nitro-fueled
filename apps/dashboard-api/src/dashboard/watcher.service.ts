@@ -58,7 +58,7 @@ export class WatcherService implements OnModuleInit, OnModuleDestroy {
     const watcher = watch(directory, {
       ignored: /(^|[/\\])\../,
       persistent: true,
-      ignoreInitial: false,
+      ignoreInitial: true,
       awaitWriteFinish: {
         stabilityThreshold: 200,
         pollInterval: 50,

@@ -17,7 +17,11 @@ import type {
   PipelinePhase,
   PipelinePhaseStatus,
   WorkerTree,
+  PlanData,
+  DashboardEvent,
 } from './dashboard.types';
+import { DiffService } from './diff.service';
+import { WorkerTreeService } from './worker-tree.service';
 
 const PHASE_ORDER: ReadonlyArray<string> = ['Build', 'Review', 'Fix', 'Complete'];
 
@@ -54,21 +58,27 @@ const ANALYTICS_PHASE_TO_LAST_PIPELINE_PHASE: Readonly<Record<string, string>> =
 };
 
 /**
- * PipelineService provides task pipeline state and diffing.
- * Migrated from dashboard-service/src/state/store.ts, pipeline-helpers.ts, and differ.ts.
+ * PipelineService provides task registry, plan, orchestrator state, stats, and graph data.
+ * Diff logic delegated to DiffService; worker-tree logic delegated to WorkerTreeService.
+ * Migrated from dashboard-service/src/state/store.ts and pipeline-helpers.ts.
  */
 @Injectable()
 export class PipelineService {
   private readonly logger = new Logger(PipelineService.name);
   private registry: ReadonlyArray<TaskRecord> = [];
-  private plan: import('./dashboard.types').PlanData | null = null;
+  private plan: PlanData | null = null;
   private orchestratorState: OrchestratorState | null = null;
-  private taskDefinitions: Map<string, TaskDefinition> = new Map();
-  private reviews: Map<string, ReviewData[]> = new Map();
-  private completionReports: Map<string, CompletionReport> = new Map();
+  private readonly taskDefinitions: Map<string, TaskDefinition> = new Map();
+  private readonly reviews: Map<string, ReviewData[]> = new Map();
+  private readonly completionReports: Map<string, CompletionReport> = new Map();
   private antiPatterns: ReadonlyArray<AntiPatternRule> = [];
-  private lessons: Map<string, ReadonlyArray<LessonEntry>> = new Map();
-  private sessionAnalyticsMap: Map<string, SessionAnalytics> = new Map();
+  private readonly lessons: Map<string, ReadonlyArray<LessonEntry>> = new Map();
+  private readonly sessionAnalyticsMap: Map<string, SessionAnalytics> = new Map();
+
+  public constructor(
+    private readonly diffService: DiffService,
+    private readonly workerTreeService: WorkerTreeService,
+  ) {}
 
   // === Registry Methods ===
 
@@ -84,11 +94,11 @@ export class PipelineService {
 
   // === Plan Methods ===
 
-  public getPlan(): import('./dashboard.types').PlanData | null {
+  public getPlan(): PlanData | null {
     return this.plan;
   }
 
-  public setPlan(plan: import('./dashboard.types').PlanData): import('./dashboard.types').PlanData | null {
+  public setPlan(plan: PlanData): PlanData | null {
     const old = this.plan;
     this.plan = plan;
     return old;
@@ -234,10 +244,9 @@ export class PipelineService {
 
     if (this.orchestratorState) {
       for (const worker of this.orchestratorState.activeWorkers) {
-        const workerAny = worker as unknown as Record<string, unknown>;
-        const cost = typeof workerAny['cost'] === 'number' ? workerAny['cost'] : 0;
-        const tokens = typeof workerAny['tokens'] === 'number' ? workerAny['tokens'] : 0;
-        const model = typeof workerAny['model'] === 'string' ? workerAny['model'] : 'unknown';
+        const cost = worker.cost ?? 0;
+        const tokens = worker.tokens ?? 0;
+        const model = worker.model ?? 'unknown';
         totalCost += cost;
         totalTokens += tokens;
         if (cost > 0) costByModel[model] = (costByModel[model] ?? 0) + cost;
@@ -413,154 +422,23 @@ export class PipelineService {
 
   public getWorkerTree(): ReadonlyArray<WorkerTree> {
     const workers = this.orchestratorState?.activeWorkers ?? [];
-    return this.buildWorkerTrees(workers);
+    return this.workerTreeService.buildWorkerTrees(workers);
   }
 
-  // === Diff Methods (migrated from differ.ts) ===
+  // === Diff Methods (delegated to DiffService) ===
 
   public diffRegistry(
     oldRecords: ReadonlyArray<TaskRecord>,
     newRecords: ReadonlyArray<TaskRecord>,
-  ): ReadonlyArray<import('./dashboard.types').DashboardEvent> {
-    const events: import('./dashboard.types').DashboardEvent[] = [];
-    const now = new Date().toISOString();
-    const oldMap = new Map(oldRecords.map((r) => [r.id, r]));
-    const newMap = new Map(newRecords.map((r) => [r.id, r]));
-
-    for (const [id, newRecord] of newMap) {
-      const oldRecord = oldMap.get(id);
-      if (!oldRecord) {
-        events.push({
-          type: 'task:created',
-          timestamp: now,
-          payload: { taskId: id, type: newRecord.type, model: newRecord.model },
-        });
-        continue;
-      }
-
-      if (oldRecord.status !== newRecord.status) {
-        events.push({
-          type: 'task:state_changed',
-          timestamp: now,
-          payload: {
-            taskId: id,
-            from: oldRecord.status,
-            to: newRecord.status,
-          },
-        });
-      }
-
-      if (oldRecord.description !== newRecord.description || oldRecord.type !== newRecord.type) {
-        events.push({
-          type: 'task:updated',
-          timestamp: now,
-          payload: { taskId: id, field: 'description', oldValue: oldRecord.description, newValue: newRecord.description },
-        });
-      }
-    }
-
-    for (const [id] of oldMap) {
-      if (!newMap.has(id)) {
-        events.push({
-          type: 'task:deleted',
-          timestamp: now,
-          payload: { taskId: id },
-        });
-      }
-    }
-
-    return events;
+  ): ReadonlyArray<DashboardEvent> {
+    return this.diffService.diffRegistry(oldRecords, newRecords);
   }
 
   public diffState(
     oldState: OrchestratorState | null,
     newState: OrchestratorState,
-  ): ReadonlyArray<import('./dashboard.types').DashboardEvent> {
-    const events: import('./dashboard.types').DashboardEvent[] = [];
-    const now = new Date().toISOString();
-
-    if (oldState === null) {
-      for (const worker of newState.activeWorkers) {
-        events.push({
-          type: 'worker:spawned',
-          timestamp: now,
-          payload: {
-            workerId: worker.workerId,
-            taskId: worker.taskId,
-            type: worker.workerType,
-          },
-        });
-      }
-      return events;
-    }
-
-    const oldWorkerIds = new Set(oldState.activeWorkers.map((w) => w.workerId));
-    const newWorkerIds = new Set(newState.activeWorkers.map((w) => w.workerId));
-
-    for (const worker of newState.activeWorkers) {
-      if (!oldWorkerIds.has(worker.workerId)) {
-        events.push({
-          type: 'worker:spawned',
-          timestamp: now,
-          payload: {
-            workerId: worker.workerId,
-            taskId: worker.taskId,
-            type: worker.workerType,
-          },
-        });
-      }
-    }
-
-    for (const worker of oldState.activeWorkers) {
-      if (!newWorkerIds.has(worker.workerId)) {
-        const completed = newState.completedTasks.find(
-          (t) =>
-            t.taskId === worker.taskId &&
-            !oldState.completedTasks.some((ot) => ot.taskId === t.taskId),
-        );
-        const failed = newState.failedTasks.find(
-          (t) =>
-            t.taskId === worker.taskId &&
-            !oldState.failedTasks.some((ot) => ot.taskId === t.taskId),
-        );
-
-        if (failed) {
-          events.push({
-            type: 'worker:failed',
-            timestamp: now,
-            payload: {
-              workerId: worker.workerId,
-              taskId: worker.taskId,
-              reason: failed.reason,
-            },
-          });
-        } else {
-          events.push({
-            type: 'worker:completed',
-            timestamp: now,
-            payload: {
-              workerId: worker.workerId,
-              taskId: worker.taskId,
-              finalState: completed ? 'completed' : 'removed',
-            },
-          });
-        }
-      }
-    }
-
-    const compacted = newState.compactionCount > oldState.compactionCount;
-    if (!compacted && newState.sessionLog.length > oldState.sessionLog.length) {
-      const newEntries = newState.sessionLog.slice(oldState.sessionLog.length);
-      for (const entry of newEntries) {
-        events.push({
-          type: 'log:entry',
-          timestamp: now,
-          payload: { timestamp: entry.timestamp, event: entry.event },
-        });
-      }
-    }
-
-    return events;
+  ): ReadonlyArray<DashboardEvent> {
+    return this.diffService.diffState(oldState, newState);
   }
 
   // === Task Cleanup ===
@@ -569,113 +447,5 @@ export class PipelineService {
     this.taskDefinitions.delete(taskId);
     this.reviews.delete(taskId);
     this.completionReports.delete(taskId);
-  }
-
-  // === Worker Tree Helpers (migrated from worker-tree-helpers.ts) ===
-
-  private buildWorkerTrees(
-    workers: ReadonlyArray<OrchestratorState['activeWorkers'][0]>,
-  ): ReadonlyArray<WorkerTree> {
-    const byTask = new Map<string, OrchestratorState['activeWorkers'][0][]>();
-    for (const w of workers) {
-      const group = byTask.get(w.taskId) ?? [];
-      group.push(w);
-      byTask.set(w.taskId, group);
-    }
-
-    return Array.from(byTask.entries()).map(([taskId, taskWorkers]) => {
-      return this.buildTaskTree(taskId, taskWorkers);
-    });
-  }
-
-  private buildTaskTree(
-    taskId: string,
-    taskWorkers: ReadonlyArray<OrchestratorState['activeWorkers'][0]>,
-  ): WorkerTree {
-    const roots: import('./dashboard.types').WorkerTreeNode[] = [];
-    const reviewLeadChildren: import('./dashboard.types').WorkerTreeNode[] = [];
-    const testLeadChildren: import('./dashboard.types').WorkerTreeNode[] = [];
-    let reviewLeadNode: import('./dashboard.types').WorkerTreeNode | null = null;
-    let testLeadNode: import('./dashboard.types').WorkerTreeNode | null = null;
-
-    const REVIEW_LEAD_CHILDREN = new Set([
-      'style reviewer', 'logic reviewer', 'security reviewer',
-      'code style', 'code logic', 'code security',
-      'code-style', 'code-logic', 'code-security',
-    ]);
-
-    const TEST_LEAD_CHILDREN = new Set([
-      'unit tester', 'integration tester', 'e2e tester',
-      'unit-tester', 'integration-tester', 'e2e-tester',
-    ]);
-
-    for (const w of taskWorkers) {
-      const role = this.inferRole(w.label);
-      const health = this.computeHealth(w.stuckCount);
-      const spawnMs = w.spawnTime ? new Date(w.spawnTime).getTime() : NaN;
-      const elapsedMs = Number.isNaN(spawnMs) ? 0 : Math.max(0, Date.now() - spawnMs);
-
-      const node: import('./dashboard.types').WorkerTreeNode = {
-        workerId: w.workerId,
-        taskId: w.taskId,
-        label: w.label,
-        role,
-        workerType: w.workerType,
-        status: w.status,
-        health,
-        elapsedMs,
-        spawnTime: w.spawnTime,
-        stuckCount: w.stuckCount,
-        children: [],
-      };
-
-      if (role === 'Review Lead') {
-        reviewLeadNode = node;
-      } else if (role === 'Test Lead') {
-        testLeadNode = node;
-      } else if (REVIEW_LEAD_CHILDREN.has(role.toLowerCase())) {
-        reviewLeadChildren.push(node);
-      } else if (TEST_LEAD_CHILDREN.has(role.toLowerCase())) {
-        testLeadChildren.push(node);
-      } else {
-        roots.push(node);
-      }
-    }
-
-    if (reviewLeadNode !== null) {
-      roots.push({ ...reviewLeadNode, children: reviewLeadChildren });
-    } else {
-      roots.push(...reviewLeadChildren);
-    }
-
-    if (testLeadNode !== null) {
-      roots.push({ ...testLeadNode, children: testLeadChildren });
-    } else {
-      roots.push(...testLeadChildren);
-    }
-
-    return { taskId, roots };
-  }
-
-  private inferRole(label: string): string {
-    const lower = label.toLowerCase();
-    if (lower.includes('build worker')) return 'Build Worker';
-    if (lower.includes('review lead')) return 'Review Lead';
-    if (lower.includes('test lead')) return 'Test Lead';
-    if (lower.includes('fix worker')) return 'Fix Worker';
-    if (lower.includes('completion worker')) return 'Completion Worker';
-    if (lower.includes('style reviewer') || lower.includes('code style') || lower.includes('code-style')) return 'Style Reviewer';
-    if (lower.includes('logic reviewer') || lower.includes('code logic') || lower.includes('code-logic')) return 'Logic Reviewer';
-    if (lower.includes('security reviewer') || lower.includes('code security') || lower.includes('code-security')) return 'Security Reviewer';
-    if (lower.includes('unit tester') || lower.includes('unit-tester')) return 'Unit Tester';
-    if (lower.includes('integration tester') || lower.includes('integration-tester')) return 'Integration Tester';
-    if (lower.includes('e2e tester') || lower.includes('e2e-tester')) return 'E2E Tester';
-    return label;
-  }
-
-  private computeHealth(stuckCount: number): import('./dashboard.types').WorkerHealth {
-    if (stuckCount > 2) return 'stuck';
-    if (stuckCount > 0) return 'warning';
-    return 'healthy';
   }
 }
