@@ -35,6 +35,6 @@ After TASK_2026_092 confirms the full pipeline works end-to-end, remove the lega
 
 ## File Scope
 
-- package.json
-- CLAUDE.md
-- README.md
+- CLAUDE.md (modified: project structure section updated to reflect apps/ + libs/ layout)
+- README.md (modified: project structure section updated to reflect apps/ + libs/ layout)
+- packages/ (removed: empty directory deleted)

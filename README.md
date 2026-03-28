@@ -230,8 +230,8 @@ nitro-fueled/
 │   ├── commands/            # 12 slash commands
 │   ├── anti-patterns.md     # QA-derived rules
 │   └── review-lessons/      # Per-domain learned patterns
-├── packages/
-│   └── cli/                 # npx @itqanlab/nitro-fueled (init, run, status, create)
+├── apps/                    # Nx workspace apps (cli, dashboard, dashboard-api, docs, session-orchestrator)
+├── libs/                    # Shared libraries
 ├── task-tracking/           # Registry, plan, state, task folders
 ├── docs/                    # Design docs + landing page
 └── CLAUDE.md                # Project instructions

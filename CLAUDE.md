@@ -23,9 +23,8 @@ docs/                      # Design docs and architecture
   anti-patterns.md         # Starter checklist
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure
-packages/                  # Nx workspace packages
-  cli/                     # npx @itqanlab/nitro-fueled init|run|status|create
-  cli/scaffold/            # Template files copied into target projects at init
+apps/                      # Nx workspace apps (cli, dashboard, dashboard-api, docs, session-orchestrator)
+libs/                      # Shared libraries
 ```
 
 ## Key Docs
@@ -38,7 +37,7 @@ packages/                  # Nx workspace packages
 - Claude Code CLI
 
 ## Current State
-- CLI package built (`packages/cli/`) — `npx @itqanlab/nitro-fueled init|run|status|create` operational
+- CLI package built (`apps/cli/`) — `npx @itqanlab/nitro-fueled init|run|status|create` operational
 - .claude/ is the scaffold — changes here sync to what `init` installs in target projects
 - Supervisor architecture: Build Workers and Review Workers spawned/monitored by auto-pilot
 - Planner agent: strategic planning layer between Product Owner and Supervisor (/plan command)
