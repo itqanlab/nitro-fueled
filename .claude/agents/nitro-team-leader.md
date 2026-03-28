@@ -418,7 +418,7 @@ Model: {model}
 Retry: {retry_count}/{max_retries}
 Complexity: {complexity}
 Priority: {priority}
-Generated-By: nitro-fueled@{version}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
 ```
 
 ### Field Values
