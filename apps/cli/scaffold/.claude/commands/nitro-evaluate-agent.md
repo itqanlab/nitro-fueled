@@ -1,4 +1,4 @@
-# `/evaluate-agent` — Agent Calibration Loop
+# `/nitro-evaluate-agent` — Agent Calibration Loop
 
 **Usage**: `/nitro-evaluate-agent <agent-name>`
 
@@ -106,7 +106,7 @@ Produce your output exactly as your agent definition specifies. Do not explain w
 5b. **Run the agent**:
 
 ```
-Task({
+Agent({
   subagent_type: '{AGENT_NAME}',
   description: 'Evaluation run for {AGENT_NAME} — iteration {ITERATION} of 3',
   prompt: [constructed evaluation prompt]

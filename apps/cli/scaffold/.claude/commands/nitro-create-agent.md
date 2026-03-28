@@ -91,15 +91,15 @@ Read `.claude/skills/orchestration/references/agent-catalog.md` and update ALL 4
 
 **5d. Header Count** — Increment N in `Comprehensive catalog of all N specialist agents...`.
 
-### Step 5b: Update Orchestrate Command
+### Step 6: Update Orchestrate Command
 
 Read `.claude/commands/nitro-orchestrate.md` and update the Quick Reference **Agents** line: increment the count in parentheses and add the new agent name to the comma-separated list.
 
-### Step 5c: Validate Catalog Updates
+### Step 7: Validate Catalog Updates
 
 Verify: Capability Matrix row count matches header count, new agent appears in Development Agents section, Category Summary includes the new agent, `nitro-orchestrate.md` Agents count matches catalog header count.
 
-### Step 6: Display Summary
+### Step 8: Display Summary
 
 ```
 Agent created successfully.

@@ -153,8 +153,6 @@ Verify the task is ready for auto-pilot pickup:
 
 These checks ensure the task won't be skipped by auto-pilot's Step 2b validation.
 
-**6b.** *(Removed — sizing validation now runs in Step 3c before writing any files.)*
-
 ### Step 7: Display Summary
 
 ```

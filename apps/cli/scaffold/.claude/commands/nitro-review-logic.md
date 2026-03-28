@@ -1,6 +1,6 @@
 # Business Logic Review Command
 
-**Agent Integration**: This command is executed by the code-reviewer agent as Phase 2 of the systematic triple review protocol.
+**Agent Integration**: This command is executed by the nitro-code-logic-reviewer agent as Phase 2 of the systematic triple review protocol.
 
 **Purpose**: Universal business logic evaluation that identifies dummy data, placeholders, hardcoded implementations, and technical debt regardless of technology stack.
 

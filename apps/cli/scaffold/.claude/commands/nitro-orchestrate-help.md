@@ -1,6 +1,6 @@
 # Orchestrator Quick Reference
 
-Quick help guide for the `/orchestrate` command workflow system.
+Quick help guide for the `/nitro-orchestrate` command workflow system.
 
 ## Command Usage
 
@@ -92,23 +92,13 @@ Quick help guide for the `/orchestrate` command workflow system.
 ### Check Status
 
 ```bash
-!cat task-tracking/registry.md | grep "IN_PROGRESS\|BLOCKED\|FAILED"
+grep "IN_PROGRESS\|BLOCKED\|FAILED" task-tracking/registry.md
 ```
 
 ### View Task Progress
 
 ```bash
-!cat task-tracking/TASK_CMD_009/progress.md
-```
-
-### Validate Specific Phase
-
-```bash
-/validate-project-manager TASK_CMD_009
-/validate-architect TASK_CMD_009
-/validate-developer TASK_CMD_009
-/validate-tester TASK_CMD_009
-/validate-reviewer TASK_CMD_009
+cat task-tracking/TASK_YYYY_NNN/progress.md
 ```
 
 ## Troubleshooting

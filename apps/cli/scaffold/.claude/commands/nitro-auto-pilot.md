@@ -120,7 +120,7 @@ For each CREATED or IMPLEMENTED task in scope, parse the Dependencies section. F
 - If the dependency has status BLOCKED → add to `blocking_issues`: `"TASK_X: dependency TASK_Y is BLOCKED — unsatisfiable"`
 - If the dependency has any unrecognized status value → record warning: `"TASK_X: dependency TASK_Y has unrecognized status '{value}' — verify manually"`
 
-**4c-ii. Validation B-ii: Orphan BLOCKED Task Detection (Warning)**
+**Validation B-ii: Orphan BLOCKED Task Detection (Warning)**
 
 1. For each task with status BLOCKED:
    - Check if any other task has it in its Dependencies field (directly or transitively)
