@@ -43,10 +43,10 @@
     <button
       type="button"
       class="status-btn status-btn--primary"
-      [attr.aria-label]="'Save as version ' + (store.selectedAgent()?.currentVersion ?? 1)"
+      [attr.aria-label]="'Save as version ' + ((store.selectedAgent()?.currentVersion ?? 0) + 1)"
       (click)="onSaveVersion()"
     >
-      Save as v{{ store.selectedAgent()?.currentVersion ?? 1 }}
+      Save as v{{ (store.selectedAgent()?.currentVersion ?? 0) + 1 }}
     </button>
   </div>
 </div>

@@ -31,10 +31,10 @@ const SCOPE_BADGES: readonly ScopeBadge[] = [
           <button
             type="button"
             class="scope-badge"
-            [class.active]="isActive(badge.value)"
+            [class.active]="activeScopes().has(badge.value)"
             role="switch"
-            [attr.aria-checked]="isActive(badge.value)"
-            [attr.aria-label]="badge.label + ' scope ' + (isActive(badge.value) ? 'enabled' : 'disabled')"
+            [attr.aria-checked]="activeScopes().has(badge.value)"
+            [attr.aria-label]="badge.label + ' scope ' + (activeScopes().has(badge.value) ? 'enabled' : 'disabled')"
             (click)="toggleScope(badge.value)"
           >
             {{ badge.label }}
@@ -90,16 +90,12 @@ export class KnowledgeScopeComponent {
   protected readonly store = inject(AgentEditorStore);
   protected readonly badges: readonly ScopeBadge[] = SCOPE_BADGES;
 
-  protected readonly activeScopes = computed<readonly KnowledgeScope[]>(
-    () => this.store.metadata().knowledgeScope,
+  protected readonly activeScopes = computed<ReadonlySet<KnowledgeScope>>(
+    () => new Set(this.store.metadata().knowledgeScope),
   );
 
-  protected isActive(scope: KnowledgeScope): boolean {
-    return this.activeScopes().includes(scope);
-  }
-
   protected toggleScope(scope: KnowledgeScope): void {
-    const current = this.activeScopes();
+    const current = this.store.metadata().knowledgeScope;
     const newScopes: readonly KnowledgeScope[] = current.includes(scope)
       ? current.filter((s) => s !== scope)
       : [...current, scope];

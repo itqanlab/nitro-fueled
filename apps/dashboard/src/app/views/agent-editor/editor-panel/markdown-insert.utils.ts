@@ -17,11 +17,21 @@ export function buildInsertedContent(
 
   switch (type) {
     case 'bold': {
-      const wrapped = `**${selectedText || 'bold text'}**`;
+      if (selectedText === '') {
+        const wrapped = `****`;
+        // Cursor lands inside: after 2nd asterisk (position start + 2)
+        return { newContent: before + wrapped + after, newCursorPos: start + 2 };
+      }
+      const wrapped = `**${selectedText}**`;
       return { newContent: before + wrapped + after, newCursorPos: start + wrapped.length };
     }
     case 'italic': {
-      const wrapped = `_${selectedText || 'italic text'}_`;
+      if (selectedText === '') {
+        const wrapped = `__`;
+        // Cursor lands inside: after opening underscore (position start + 1)
+        return { newContent: before + wrapped + after, newCursorPos: start + 1 };
+      }
+      const wrapped = `_${selectedText}_`;
       return { newContent: before + wrapped + after, newCursorPos: start + wrapped.length };
     }
     case 'heading': {
@@ -38,9 +48,14 @@ export function buildInsertedContent(
       return { newContent: before + insertion + after, newCursorPos: start + insertion.length };
     }
     case 'code': {
-      const wrapped = selectedText.includes('\n')
-        ? `\`\`\`\n${selectedText || 'code'}\n\`\`\``
-        : `\`${selectedText || 'code'}\``;
+      if (selectedText === '' || selectedText.includes('\n')) {
+        const inner = selectedText === '' ? 'language\ncode here' : selectedText;
+        const wrapped = `\`\`\`\n${inner}\n\`\`\``;
+        // Place cursor inside the fenced block, after the opening fence newline
+        const cursorPos = selectedText === '' ? start + 4 : start + wrapped.length;
+        return { newContent: before + wrapped + after, newCursorPos: cursorPos };
+      }
+      const wrapped = `\`${selectedText}\``;
       return { newContent: before + wrapped + after, newCursorPos: start + wrapped.length };
     }
     case 'link': {

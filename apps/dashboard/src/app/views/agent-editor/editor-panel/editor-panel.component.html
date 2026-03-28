@@ -95,7 +95,7 @@
   </div>
 
   <div class="editor-body" id="editor-split-view">
-    @if (isEditorVisible) {
+    @if (isEditorVisible()) {
       <div class="editor-pane">
         <textarea
           #editorTextarea
@@ -110,7 +110,8 @@
       </div>
     }
 
-    @if (isPreviewVisible) {
+    @if (isPreviewVisible()) {
+      <!-- previewHtml: marked.parse() → DOMPurify.sanitize() chain. Do not add bypassSecurityTrustHtml here. -->
       <div
         class="preview-pane"
         aria-label="Markdown preview"

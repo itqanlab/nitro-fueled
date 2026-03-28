@@ -94,6 +94,9 @@ export class AgentEditorStore {
   }
 
   public selectAgent(id: string): void {
+    if (this.isDirty()) {
+      this.saveDraft();
+    }
     const agent = this.mockData.getAgentEditorData(id);
     if (!agent) return;
 
@@ -137,5 +140,6 @@ export class AgentEditorStore {
     if (!agent) return;
     this.originalContent.set(this.editorContent());
     this.originalMetadata.set(this.metadata());
+    this.selectedAgent.set({ ...agent, currentVersion: agent.currentVersion + 1 });
   }
 }

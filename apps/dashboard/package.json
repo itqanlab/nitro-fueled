@@ -1,5 +1,10 @@
 {
   "name": "@nitro-fueled/dashboard",
   "version": "0.1.0",
-  "description": "Angular 19 + NG-ZORRO dashboard for Nitro-Fueled orchestration"
+  "description": "Angular 19 + NG-ZORRO dashboard for Nitro-Fueled orchestration",
+  "dependencies": {
+    "@types/dompurify": "^3.0.5",
+    "dompurify": "^3.3.3",
+    "marked": "^17.0.5"
+  }
 }

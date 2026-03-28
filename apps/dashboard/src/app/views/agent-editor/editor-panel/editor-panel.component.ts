@@ -6,6 +6,7 @@ import {
   ElementRef,
   OnDestroy,
   ViewChild,
+  computed,
   inject,
 } from '@angular/core';
 import { marked } from 'marked';
@@ -42,15 +43,13 @@ export class EditorPanelComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected get isEditorVisible(): boolean {
-    const mode = this.store.viewMode();
-    return mode === 'split' || mode === 'editor';
-  }
+  protected readonly isEditorVisible = computed(
+    () => this.store.viewMode() === 'split' || this.store.viewMode() === 'editor',
+  );
 
-  protected get isPreviewVisible(): boolean {
-    const mode = this.store.viewMode();
-    return mode === 'split' || mode === 'preview';
-  }
+  protected readonly isPreviewVisible = computed(
+    () => this.store.viewMode() === 'split' || this.store.viewMode() === 'preview',
+  );
 
   protected setViewMode(mode: EditorViewMode): void {
     this.store.setViewMode(mode);
@@ -123,10 +122,10 @@ export class EditorPanelComponent implements AfterViewInit, OnDestroy {
 
   private renderMarkdown(content: string): string {
     try {
-      const raw = marked.parse(content) as string;
+      const raw = marked.parse(content, { async: false }) as string;
       return DOMPurify.sanitize(raw);
     } catch {
-      return content;
+      return DOMPurify.sanitize(content);
     }
   }
 }
