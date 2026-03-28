@@ -65,7 +65,12 @@ server.registerTool('update_task', {
     fields: z.string().describe('JSON string of fields to update'),
   },
 }, (args) => {
-  const parsed = JSON.parse(args.fields) as Record<string, unknown>;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(args.fields) as Record<string, unknown>;
+  } catch {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] };
+  }
   return handleUpdateTask(db, { task_id: args.task_id, fields: parsed });
 });
 
@@ -106,7 +111,12 @@ server.registerTool('update_session', {
     fields: z.string().describe('JSON string of fields to update'),
   },
 }, (args) => {
-  const parsed = JSON.parse(args.fields) as Record<string, unknown>;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(args.fields) as Record<string, unknown>;
+  } catch {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] };
+  }
   return handleUpdateSession(db, { session_id: args.session_id, fields: parsed });
 });
 
@@ -207,7 +217,7 @@ server.registerTool('get_pending_events', {
   inputSchema: {
     session_id: z.string().optional().describe('Optional session filter (not yet implemented)'),
   },
-}, () => handleGetPendingEvents(fileWatcher));
+}, (args) => handleGetPendingEvents(fileWatcher, args.session_id));
 
 // --- Start ---
 

@@ -1,11 +1,12 @@
 import type Database from 'better-sqlite3';
-import { randomUUID } from 'node:crypto';
 import type { LoopStatus } from '../db/schema.js';
+import type { ToolResult } from './types.js';
 
-type ToolResult = { content: Array<{ type: 'text'; text: string }> };
-
+// M1: 'ended_at' and 'summary' are updatable here; use end_session to set them atomically
+// together with loop_status='stopped'. These are also allowed as direct updates for cases
+// where the caller wants to set them independently.
 const UPDATABLE_SESSION_COLUMNS = new Set([
-  'loop_status', 'tasks_terminal', 'config', 'task_limit', 'source',
+  'loop_status', 'tasks_terminal', 'config', 'task_limit', 'source', 'ended_at', 'summary',
 ]);
 
 export function handleCreateSession(

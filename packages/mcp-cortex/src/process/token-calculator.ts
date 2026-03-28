@@ -1,5 +1,26 @@
 import type { WorkerCost } from '../db/schema.js';
 
+/**
+ * Context window sizes (in tokens) per model.
+ * Used for context_percent calculation: Math.round((lastInputTokens / contextWindow) * 100).
+ * If a model is not listed here, DEFAULT_CONTEXT_WINDOW is used.
+ */
+export const CONTEXT_WINDOWS: Record<string, number> = {
+  'claude-opus-4-6': 200_000,
+  'claude-sonnet-4-6': 200_000,
+  'claude-haiku-4-5-20251001': 200_000,
+  'glm-5': 128_000,
+  'glm-4.7': 128_000,
+  'glm-4.5-air': 128_000,
+  'openai/gpt-5.4': 128_000,
+  'openai/gpt-4.1': 128_000,
+  'openai/gpt-4.1-mini': 128_000,
+  'openai/o4-mini': 128_000,
+};
+
+/** Default context window when the model is not in CONTEXT_WINDOWS. */
+export const DEFAULT_CONTEXT_WINDOW = 200_000;
+
 interface ModelPricing {
   input_per_mtok: number;
   output_per_mtok: number;

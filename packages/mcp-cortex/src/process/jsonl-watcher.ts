@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 import type { WorkerTokenStats, WorkerCost, WorkerProgress } from '../db/schema.js';
 import { calculateCost } from './token-calculator.js';
+import { CONTEXT_WINDOWS, DEFAULT_CONTEXT_WINDOW } from './token-calculator.js';
 import { isProcessAlive, killWorkerProcess } from './spawn.js';
 
 interface ContentBlock {
@@ -33,9 +34,16 @@ interface SessionAccumulator {
   filesWritten: Set<string>;
   lastAction: string;
   lastActionAt: number;
+  /** Unix ms when the accumulator was first created (= process spawn time). Used for elapsed_minutes. */
+  spawnTime: number;
   model: string;
   endTurnAt: number | null;
   autoCloseTriggered: boolean;
+}
+
+/** Validates that a value is a finite non-negative number (safe for token arithmetic). */
+function isFiniteNonNeg(v: unknown): v is number {
+  return typeof v === 'number' && isFinite(v) && v >= 0;
 }
 
 export class JsonlWatcher {
@@ -89,19 +97,27 @@ export class JsonlWatcher {
   feedMessage(workerId: string, model: string, msg: Record<string, unknown>): void {
     const acc = this.getOrCreate(workerId, model);
     this.processMessage(msg, acc);
-    this.pushStatsToDB(workerId, acc, model);
+    // H3: wrap DB write in try/catch so SQLITE_BUSY or any other error does not
+    // propagate as an uncaught exception and crash the MCP server.
+    try {
+      this.pushStatsToDB(workerId, acc, model);
+    } catch (err) {
+      process.stderr.write(`[jsonl-watcher] pushStatsToDB failed for ${workerId}: ${err}\n`);
+    }
   }
 
   private getOrCreate(workerId: string, model: string): SessionAccumulator {
     let acc = this.accumulators.get(workerId);
     if (!acc) {
+      const now = Date.now();
       acc = {
         totalInput: 0, totalOutput: 0,
         totalCacheCreation: 0, totalCacheRead: 0,
         lastInputTokens: 0, compactionCount: 0,
         messageCount: 0, toolCalls: 0,
         filesRead: new Set(), filesWritten: new Set(),
-        lastAction: 'spawned', lastActionAt: Date.now(),
+        lastAction: 'spawned', lastActionAt: now,
+        spawnTime: now,
         model, endTurnAt: null, autoCloseTriggered: false,
       };
       this.accumulators.set(workerId, acc);
@@ -110,6 +126,14 @@ export class JsonlWatcher {
   }
 
   private processMessage(msg: Record<string, unknown>, acc: SessionAccumulator): void {
+    /**
+     * Token accumulation contract:
+     * - `result` message: provides the authoritative cumulative total. Its usage fields
+     *   OVERWRITE the incremental accumulator (totalInput, totalOutput, etc.), superseding
+     *   any per-`assistant` increments accumulated so far.
+     * - `assistant` message: provides per-message increments that are ACCUMULATED (+=)
+     *   until a `result` message supersedes them with the authoritative total.
+     */
     if (msg.type === 'last-prompt' || msg.type === 'result') {
       const usage = (msg as Record<string, Record<string, number>>).usage;
       if (msg.type === 'result' && usage) {
@@ -127,16 +151,30 @@ export class JsonlWatcher {
     if (!assistant.message?.usage) return;
     const usage = assistant.message.usage;
 
-    acc.totalInput += usage.input_tokens;
-    acc.totalOutput += usage.output_tokens;
-    acc.totalCacheCreation += usage.cache_creation_input_tokens ?? 0;
-    acc.totalCacheRead += usage.cache_read_input_tokens ?? 0;
+    // H9: validate token fields before arithmetic to guard against malformed messages
+    const inputTokens = usage.input_tokens;
+    const outputTokens = usage.output_tokens;
+    if (!isFiniteNonNeg(inputTokens) || !isFiniteNonNeg(outputTokens)) {
+      process.stderr.write(
+        `[jsonl-watcher] skipping message with invalid token counts: input=${inputTokens} output=${outputTokens}\n`,
+      );
+      return;
+    }
+    const cacheCreation = isFiniteNonNeg(usage.cache_creation_input_tokens) ? usage.cache_creation_input_tokens : 0;
+    const cacheRead = isFiniteNonNeg(usage.cache_read_input_tokens) ? usage.cache_read_input_tokens : 0;
+
+    acc.totalInput += inputTokens;
+    acc.totalOutput += outputTokens;
+    acc.totalCacheCreation += cacheCreation;
+    acc.totalCacheRead += cacheRead;
     acc.messageCount++;
 
-    if (acc.lastInputTokens > 0 && usage.input_tokens < acc.lastInputTokens * 0.7) {
+    // M3: Use 0.3 threshold (tighter than 0.7) to reduce false positives from normal
+    // tool-result context trimming. A >70% drop is a much stronger compaction signal.
+    if (acc.lastInputTokens > 0 && inputTokens < acc.lastInputTokens * 0.3) {
       acc.compactionCount++;
     }
-    acc.lastInputTokens = usage.input_tokens;
+    acc.lastInputTokens = inputTokens;
 
     if (assistant.message.content) {
       this.extractToolCalls(assistant.message.content, acc);
@@ -176,7 +214,10 @@ export class JsonlWatcher {
   private pushStatsToDB(workerId: string, acc: SessionAccumulator, model: string): void {
     const totalCombined = acc.totalInput + acc.totalOutput + acc.totalCacheCreation + acc.totalCacheRead;
     const contextK = Math.round(acc.lastInputTokens / 1000);
-    const contextPercent = Math.round((acc.lastInputTokens / 1_000_000) * 100);
+    // H4: Use model-specific context window size so context_percent is accurate across
+    // all models. Falls back to DEFAULT_CONTEXT_WINDOW (200k) for unknown models.
+    const contextWindow = CONTEXT_WINDOWS[model] ?? DEFAULT_CONTEXT_WINDOW;
+    const contextPercent = Math.round((acc.lastInputTokens / contextWindow) * 100);
 
     const tokens: WorkerTokenStats = {
       total_input: acc.totalInput, total_output: acc.totalOutput,
@@ -190,11 +231,14 @@ export class JsonlWatcher {
       acc.totalCacheCreation, acc.totalCacheRead, model,
     );
 
+    // L2: Compute elapsed_minutes from the spawn time recorded in the accumulator.
+    const elapsedMinutes = Math.round((Date.now() - acc.spawnTime) / 60_000);
+
     const progress: WorkerProgress = {
       message_count: acc.messageCount, tool_calls: acc.toolCalls,
       files_read: Array.from(acc.filesRead), files_written: Array.from(acc.filesWritten),
       last_action: acc.lastAction, last_action_at: acc.lastActionAt,
-      elapsed_minutes: 0,
+      elapsed_minutes: elapsedMinutes,
     };
 
     this.db.prepare(

@@ -2,8 +2,7 @@ import { watch } from 'chokidar';
 import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type Database from 'better-sqlite3';
-
-type ToolResult = { content: Array<{ type: 'text'; text: string }> };
+import type { ToolResult } from '../tools/types.js';
 
 const MAX_CONDITIONS_PER_WORKER = 20;
 const MAX_EVENT_QUEUE_SIZE = 1_000;
@@ -30,24 +29,39 @@ interface FileExistsCondition {
 
 type WatchCondition = FileValueCondition | FileContainsCondition | FileExistsCondition;
 
-interface WatchEvent {
+export interface WatchEvent {
   worker_id: string;
+  /** H5: session_id stored on each event so drainEvents can filter by it. */
+  session_id: string;
   event_label: string;
   triggered_at: string;
   condition: WatchCondition;
 }
 
+/** Synthetic event pushed when the queue overflows so callers can detect dropped events. */
+interface QueueOverflowEvent {
+  type: 'queue_overflow';
+  worker_id: string;
+  session_id: string;
+  dropped_count: number;
+  triggered_at: string;
+}
+
+type QueueEntry = WatchEvent | QueueOverflowEvent;
+
 interface WorkerSubscription {
   conditions: WatchCondition[];
   watchers: ReturnType<typeof watch>[];
   satisfied: boolean;
+  /** H5: session_id of the worker that created this subscription. */
+  session_id: string;
 }
 
 export class FileWatcher {
   private subscriptions = new Map<string, WorkerSubscription>();
-  private eventQueue: WatchEvent[] = [];
+  private eventQueue: QueueEntry[] = [];
 
-  subscribe(workerId: string, workingDirectory: string, conditions: WatchCondition[]): string[] {
+  subscribe(workerId: string, sessionId: string, workingDirectory: string, conditions: WatchCondition[]): string[] {
     if (conditions.length > MAX_CONDITIONS_PER_WORKER) {
       throw new Error(`Too many conditions: ${conditions.length} > ${MAX_CONDITIONS_PER_WORKER}`);
     }
@@ -64,16 +78,21 @@ export class FileWatcher {
     this.cleanup(workerId);
 
     const watchers: ReturnType<typeof watch>[] = [];
-    const sub: WorkerSubscription = { conditions, watchers, satisfied: false };
+    const sub: WorkerSubscription = { conditions, watchers, satisfied: false, session_id: sessionId };
     this.subscriptions.set(workerId, sub);
 
     for (let i = 0; i < conditions.length; i++) {
       const condition = conditions[i]!;
       const absolutePath = absolutePaths[i]!;
 
+      // L3: file_exists should fire immediately on existing files (ignoreInitial: false).
+      // file_value and file_contains should NOT fire on existing content until a change
+      // occurs (ignoreInitial: true) — avoids spurious events at subscription time.
+      const ignoreInitial = condition.type !== 'file_exists';
+
       let watcher: ReturnType<typeof watch>;
       try {
-        watcher = watch(absolutePath, { persistent: false, ignoreInitial: false, followSymlinks: false });
+        watcher = watch(absolutePath, { persistent: false, ignoreInitial, followSymlinks: false });
       } catch (err) {
         process.stderr.write(`[file-watcher] failed to watch ${absolutePath}: ${err}\n`);
         continue;
@@ -95,7 +114,21 @@ export class FileWatcher {
     return absolutePaths;
   }
 
-  drainEvents(): WatchEvent[] {
+  /** H5: Accept optional session_id to filter events. Only returns events for that session. */
+  drainEvents(sessionId?: string): QueueEntry[] {
+    if (sessionId) {
+      const matching: QueueEntry[] = [];
+      const remaining: QueueEntry[] = [];
+      for (const event of this.eventQueue) {
+        if (event.session_id === sessionId) {
+          matching.push(event);
+        } else {
+          remaining.push(event);
+        }
+      }
+      this.eventQueue = remaining;
+      return matching;
+    }
     return this.eventQueue.splice(0);
   }
 
@@ -117,7 +150,7 @@ export class FileWatcher {
     workerId: string, condition: WatchCondition, absolutePath: string, sub: WorkerSubscription,
   ): Promise<void> {
     if (condition.type === 'file_exists') {
-      this.enqueueAndCleanup(workerId, condition, sub);
+      this.enqueueAndCleanup(workerId, sub.session_id, condition, sub);
       return;
     }
 
@@ -143,22 +176,33 @@ export class FileWatcher {
     }
 
     if (met) {
-      this.enqueueAndCleanup(workerId, condition, sub);
+      this.enqueueAndCleanup(workerId, sub.session_id, condition, sub);
     } else {
       sub.satisfied = false;
     }
   }
 
-  private enqueueAndCleanup(workerId: string, condition: WatchCondition, sub: WorkerSubscription): void {
+  private enqueueAndCleanup(workerId: string, sessionId: string, condition: WatchCondition, sub: WorkerSubscription): void {
     if (this.eventQueue.length < MAX_EVENT_QUEUE_SIZE) {
+      // H5: store session_id on the event for session-scoped draining.
       this.eventQueue.push({
         worker_id: workerId,
+        session_id: sessionId,
         event_label: condition.event_label,
         triggered_at: new Date().toISOString(),
         condition,
       });
     } else {
-      process.stderr.write(`[file-watcher] event queue full, dropping event for ${workerId}\n`);
+      // L4: Replace the oldest event with a queue_overflow sentinel so callers detect drops.
+      process.stderr.write(`[file-watcher] event queue full, dropping oldest event for ${workerId}\n`);
+      this.eventQueue.shift();
+      this.eventQueue.push({
+        type: 'queue_overflow',
+        worker_id: workerId,
+        session_id: sessionId,
+        dropped_count: 1,
+        triggered_at: new Date().toISOString(),
+      });
     }
     this.cleanup(workerId);
   }
@@ -169,7 +213,7 @@ export function handleSubscribeWorker(
   fileWatcher: FileWatcher,
   args: { worker_id: string; conditions: WatchCondition[] },
 ): ToolResult {
-  const worker = db.prepare('SELECT id, working_directory FROM workers WHERE id = ?').get(args.worker_id) as { id: string; working_directory: string | null } | undefined;
+  const worker = db.prepare('SELECT id, session_id, working_directory FROM workers WHERE id = ?').get(args.worker_id) as { id: string; session_id: string; working_directory: string | null } | undefined;
 
   if (!worker || !worker.working_directory) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({
@@ -178,14 +222,16 @@ export function handleSubscribeWorker(
   }
 
   try {
-    const watchedPaths = fileWatcher.subscribe(args.worker_id, worker.working_directory, args.conditions);
+    // H5: pass session_id so events are tagged for session-scoped draining.
+    const watchedPaths = fileWatcher.subscribe(args.worker_id, worker.session_id, worker.working_directory, args.conditions);
     return { content: [{ type: 'text' as const, text: JSON.stringify({ subscribed: true, watched_paths: watchedPaths }) }] };
   } catch (err) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ subscribed: false, error: String(err), watched_paths: [] }) }] };
   }
 }
 
-export function handleGetPendingEvents(fileWatcher: FileWatcher): ToolResult {
-  const events = fileWatcher.drainEvents();
+export function handleGetPendingEvents(fileWatcher: FileWatcher, sessionId?: string): ToolResult {
+  // H5: filter by session_id when provided.
+  const events = fileWatcher.drainEvents(sessionId);
   return { content: [{ type: 'text' as const, text: JSON.stringify({ events: events.length > 0 ? events : [] }, events.length > 0 ? null : undefined, events.length > 0 ? 2 : undefined) }] };
 }

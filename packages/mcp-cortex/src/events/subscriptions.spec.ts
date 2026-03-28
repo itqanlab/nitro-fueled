@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { initDatabase } from '../db/schema.js';
 import { handleCreateSession } from '../tools/sessions.js';
-import { FileWatcher, handleSubscribeWorker, handleGetPendingEvents } from './subscriptions.js';
+import { FileWatcher, handleSubscribeWorker, handleGetPendingEvents, type WatchEvent } from './subscriptions.js';
 import type Database from 'better-sqlite3';
 
 function makeTempDb(): { db: Database.Database; cleanup: () => void } {
@@ -82,7 +82,7 @@ describe('FileWatcher — file_exists condition triggers on file creation', () =
     const workerId = randomUUID();
     const filename = `signal-${randomUUID()}.txt`;
 
-    watcher.subscribe(workerId, watchDir, [
+    watcher.subscribe(workerId, 'test-session', watchDir, [
       { type: 'file_exists', path: filename, event_label: 'done' },
     ]);
 
@@ -101,7 +101,7 @@ describe('FileWatcher — file_exists condition triggers on file creation', () =
     }
 
     expect(events.length).toBeGreaterThanOrEqual(1);
-    const evt = events[0]!;
+    const evt = events[0]! as WatchEvent;
     expect(evt.worker_id).toBe(workerId);
     expect(evt.event_label).toBe('done');
     expect(evt.condition.type).toBe('file_exists');
@@ -111,7 +111,7 @@ describe('FileWatcher — file_exists condition triggers on file creation', () =
     const workerId = randomUUID();
     const filename = `signal-${randomUUID()}.txt`;
 
-    watcher.subscribe(workerId, watchDir, [
+    watcher.subscribe(workerId, 'test-session', watchDir, [
       { type: 'file_exists', path: filename, event_label: 'done' },
     ]);
 
@@ -145,7 +145,7 @@ describe('FileWatcher — subscribe path boundary enforcement', () => {
     const workerId = randomUUID();
     try {
       expect(() => {
-        watcher.subscribe(workerId, '/tmp/safe-dir', [
+        watcher.subscribe(workerId, 'test-session', '/tmp/safe-dir', [
           { type: 'file_exists', path: '../../etc/passwd', event_label: 'escape' },
         ]);
       }).toThrow(/escapes working_directory boundary/);
@@ -164,7 +164,7 @@ describe('FileWatcher — subscribe path boundary enforcement', () => {
     }));
     try {
       expect(() => {
-        watcher.subscribe(workerId, '/tmp', conditions);
+        watcher.subscribe(workerId, 'test-session', '/tmp', conditions);
       }).toThrow(/Too many conditions/);
     } finally {
       watcher.closeAll();

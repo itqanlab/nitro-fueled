@@ -1,11 +1,11 @@
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
-import type { WorkerTokenStats, WorkerCost, WorkerProgress, HealthStatus } from '../db/schema.js';
+import { resolve } from 'node:path';
+import type { WorkerTokenStats, WorkerCost, WorkerProgress, HealthStatus, WorkerStatus, WorkerType, ProviderType, LauncherMode } from '../db/schema.js';
 import { emptyTokenStats, emptyCost, emptyProgress } from '../db/schema.js';
 import { spawnWorkerProcess, killWorkerProcess, isProcessAlive, resolveGlmApiKey } from '../process/spawn.js';
 import type { JsonlWatcher } from '../process/jsonl-watcher.js';
-
-type ToolResult = { content: Array<{ type: 'text'; text: string }> };
+import type { ToolResult } from './types.js';
 
 const DEFAULT_MODEL = process.env['DEFAULT_MODEL'] ?? 'claude-sonnet-4-6';
 const STARTUP_GRACE_MS = 300_000;
@@ -14,14 +14,15 @@ interface WorkerRow {
   id: string;
   session_id: string;
   task_id: string | null;
-  worker_type: string;
+  // M7: use typed unions instead of plain string
+  worker_type: WorkerType;
   label: string;
-  status: string;
+  status: WorkerStatus;
   pid: number | null;
   working_directory: string | null;
   model: string | null;
-  provider: string | null;
-  launcher: string | null;
+  provider: ProviderType | null;
+  launcher: LauncherMode | null;
   log_path: string | null;
   auto_close: number;
   spawn_time: string;
@@ -70,13 +71,21 @@ export function handleSpawnWorker(
     auto_close?: boolean;
   },
 ): ToolResult {
+  // H8: Validate that working_directory is an absolute path to prevent traversal attacks.
+  const resolvedDir = resolve(args.working_directory);
+  if (!resolve(args.working_directory).startsWith('/')) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({
+      ok: false, reason: 'working_directory must be an absolute path',
+    }) }] };
+  }
+
   const model = args.model ?? DEFAULT_MODEL;
   const provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode';
   const workerId = randomUUID();
 
   let glmApiKey: string | undefined;
   if (provider === 'glm') {
-    glmApiKey = resolveGlmApiKey(args.working_directory);
+    glmApiKey = resolveGlmApiKey(resolvedDir);
     if (!glmApiKey) {
       return { content: [{ type: 'text' as const, text: JSON.stringify({
         ok: false, reason: 'GLM API key not found. Set ZAI_API_KEY or configure .nitro-fueled/config.json',
@@ -84,9 +93,28 @@ export function handleSpawnWorker(
     }
   }
 
+  // M5: Verify the session exists before inserting the worker row.
+  const sessionExists = db.prepare('SELECT id FROM sessions WHERE id = ?').get(args.session_id);
+  if (!sessionExists) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
+  }
+
+  // H2: INSERT the worker row BEFORE spawning the process so that if the process
+  // exits immediately (onExit fires), the DB row already exists for the UPDATE.
+  // T1: Use JSON.stringify(empty*()) instead of '{}' so parsed structs have correct fields.
+  db.prepare(`
+    INSERT INTO workers (id, session_id, task_id, worker_type, label, status, working_directory, model, provider, launcher, auto_close, tokens_json, cost_json, progress_json)
+    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, 'print', ?, ?, ?, ?)
+  `).run(
+    workerId, args.session_id, args.task_id ?? null,
+    args.worker_type, args.label, resolvedDir,
+    model, provider, args.auto_close ? 1 : 0,
+    JSON.stringify(emptyTokenStats()), JSON.stringify(emptyCost()), JSON.stringify(emptyProgress()),
+  );
+
   const { pid, logPath } = spawnWorkerProcess({
     prompt: args.prompt,
-    workingDirectory: args.working_directory,
+    workingDirectory: resolvedDir,
     label: args.label,
     model,
     provider,
@@ -95,19 +123,17 @@ export function handleSpawnWorker(
       watcher.feedMessage(workerId, model, msg);
     },
     onExit: (code) => {
+      // H1 + M4: Check current DB status before writing. If the worker was already
+      // set to 'killed' by kill_worker, do not overwrite that status.
+      const current = db.prepare('SELECT status FROM workers WHERE id = ?').get(workerId) as { status: WorkerStatus } | undefined;
+      if (current && current.status === 'killed') return;
       const newStatus = code === 0 ? 'completed' : 'failed';
       db.prepare('UPDATE workers SET status = ? WHERE id = ?').run(newStatus, workerId);
     },
   });
 
-  db.prepare(`
-    INSERT INTO workers (id, session_id, task_id, worker_type, label, status, pid, working_directory, model, provider, launcher, log_path, auto_close, tokens_json, cost_json, progress_json)
-    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 'print', ?, ?, '{}', '{}', '{}')
-  `).run(
-    workerId, args.session_id, args.task_id ?? null,
-    args.worker_type, args.label, pid, args.working_directory,
-    model, provider, logPath, args.auto_close ? 1 : 0,
-  );
+  // Update the row with the PID now that we have it.
+  db.prepare('UPDATE workers SET pid = ?, log_path = ? WHERE id = ?').run(pid, logPath, workerId);
 
   return { content: [{ type: 'text' as const, text: JSON.stringify({
     ok: true, worker_id: workerId, pid, label: args.label, provider, model, log_path: logPath,
@@ -130,27 +156,44 @@ export function handleListWorkers(
   }
 
   if (rows.length === 0) {
-    return { content: [{ type: 'text' as const, text: 'No workers found.' }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify([]) }] };
   }
 
-  const lines = rows.map((w) => {
+  // L1: Return a JSON array of structured worker objects (not formatted text strings).
+  const workers = rows.map((w) => {
     const tokens = parseTokens(w.tokens_json);
     const cost = parseCost(w.cost_json);
     const progress = parseProgress(w.progress_json);
+    const health = getHealth(w);
     const elapsed = Math.round((Date.now() - new Date(w.spawn_time).getTime()) / 60000);
     const totalStr = tokens.total_combined >= 1_000_000
       ? `${(tokens.total_combined / 1_000_000).toFixed(1)}M`
       : `${Math.round(tokens.total_combined / 1000)}k`;
-    return [
-      `[${w.status.toUpperCase()}] ${w.label}`,
-      `  ID: ${w.id} | PID: ${w.pid ?? 'n/a'} | ${elapsed}m`,
-      `  Provider: ${w.provider ?? 'claude'} | Model: ${w.model ?? 'unknown'}`,
-      `  Tokens: ${totalStr} | Ctx: ${tokens.context_percent}% | Compactions: ${tokens.compaction_count}`,
-      `  Cost: $${cost.total_usd} | Last: ${progress.last_action}`,
-    ].join('\n');
+
+    return {
+      id: w.id,
+      label: w.label,
+      status: w.status,
+      worker_type: w.worker_type,
+      provider: w.provider,
+      model: w.model,
+      spawn_time: w.spawn_time,
+      token_summary: {
+        total: totalStr,
+        context_percent: tokens.context_percent,
+        compaction_count: tokens.compaction_count,
+      },
+      cost_summary: {
+        total_usd: cost.total_usd,
+      },
+      health,
+      pid: w.pid,
+      elapsed_minutes: elapsed,
+      last_action: progress.last_action,
+    };
   });
 
-  return { content: [{ type: 'text' as const, text: lines.join('\n\n') }] };
+  return { content: [{ type: 'text' as const, text: JSON.stringify(workers, null, 2) }] };
 }
 
 export function handleGetWorkerStats(
@@ -158,7 +201,7 @@ export function handleGetWorkerStats(
   args: { worker_id: string },
 ): ToolResult {
   const w = db.prepare('SELECT * FROM workers WHERE id = ?').get(args.worker_id) as WorkerRow | undefined;
-  if (!w) return { content: [{ type: 'text' as const, text: `Worker ${args.worker_id} not found.` }] };
+  if (!w) return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'worker_not_found' }) }] };
 
   const tokens = parseTokens(w.tokens_json);
   const cost = parseCost(w.cost_json);
@@ -190,7 +233,7 @@ export function handleGetWorkerActivity(
   args: { worker_id: string },
 ): ToolResult {
   const w = db.prepare('SELECT * FROM workers WHERE id = ?').get(args.worker_id) as WorkerRow | undefined;
-  if (!w) return { content: [{ type: 'text' as const, text: `Worker ${args.worker_id} not found.` }] };
+  if (!w) return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'worker_not_found' }) }] };
 
   const tokens = parseTokens(w.tokens_json);
   const cost = parseCost(w.cost_json);
@@ -219,7 +262,16 @@ export function handleKillWorker(
   args: { worker_id: string; reason?: string },
 ): ToolResult {
   const w = db.prepare('SELECT * FROM workers WHERE id = ?').get(args.worker_id) as WorkerRow | undefined;
-  if (!w) return { content: [{ type: 'text' as const, text: `Worker ${args.worker_id} not found.` }] };
+  if (!w) return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'worker_not_found' }) }] };
+
+  // H6: Only attempt to kill processes whose status is 'active'.
+  // Sending signals to a PID that may have been reused by the OS (after the worker
+  // finished) could terminate an unrelated process.
+  if (w.status !== 'active') {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({
+      ok: false, reason: 'worker_not_active', current_status: w.status,
+    }) }] };
+  }
 
   let killed = false;
   if (w.pid) {

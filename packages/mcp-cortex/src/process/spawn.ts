@@ -1,7 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 export type Provider = 'claude' | 'glm' | 'opencode';
 
@@ -42,7 +41,7 @@ export function spawnWorkerProcess(opts: SpawnOptions): SpawnResult {
 
   const env = opts.provider === 'glm'
     ? buildGlmEnv(opts.glmApiKey ?? '')
-    : process.env;
+    : buildMinimalEnv();
 
   let stdoutBuffer = '';
 
@@ -114,11 +113,10 @@ export function killWorkerProcess(pid: number): boolean {
       childProcesses.delete(pid);
       return true;
     }
-    process.kill(pid, 'SIGTERM');
-    setTimeout(() => {
-      try { process.kill(pid, 0); process.kill(pid, 'SIGKILL'); } catch { /* dead */ }
-    }, 5000);
-    return true;
+    // PID is not in our managed process map — do NOT send OS-level signals to
+    // unregistered PIDs. The process is already gone or was not spawned by this
+    // server instance. Return false to indicate we did not kill anything.
+    return false;
   } catch {
     return false;
   }
@@ -157,6 +155,21 @@ export function resolveGlmApiKey(workingDirectory: string): string | undefined {
     console.error(`[nitro-cortex] failed to parse ${configPath} for GLM key`);
     return undefined;
   }
+}
+
+/**
+ * Builds a minimal environment for non-GLM providers (e.g., claude).
+ * Only forwards essential vars to avoid leaking sensitive environment variables
+ * to child processes. Do NOT pass process.env wholesale.
+ */
+function buildMinimalEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  // Allowlisted vars necessary for the claude CLI to function
+  const allow = ['PATH', 'HOME', 'USER', 'SHELL', 'TERM', 'ANTHROPIC_API_KEY'];
+  for (const key of allow) {
+    if (process.env[key] !== undefined) env[key] = process.env[key];
+  }
+  return env;
 }
 
 function buildGlmEnv(apiKey: string): NodeJS.ProcessEnv {

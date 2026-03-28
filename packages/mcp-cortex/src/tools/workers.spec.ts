@@ -101,43 +101,48 @@ describe('handleListWorkers', () => {
     cleanup();
   });
 
-  it('returns "No workers found" message when empty', () => {
+  it('returns empty JSON array when no workers found', () => {
     const result = handleListWorkers(db, {});
-    expect(getRawText(result)).toBe('No workers found.');
+    const data = parseText(result);
+    expect(Array.isArray(data)).toBe(true);
+    expect((data as unknown[]).length).toBe(0);
   });
 
-  it('returns "No workers found" for empty session', () => {
+  it('returns empty JSON array for empty session', () => {
     const result = handleListWorkers(db, { session_id: sessionId });
-    expect(getRawText(result)).toBe('No workers found.');
+    const data = parseText(result);
+    expect(Array.isArray(data)).toBe(true);
+    expect((data as unknown[]).length).toBe(0);
   });
 
-  it('returns worker info when workers exist', () => {
+  it('returns JSON array with worker info when workers exist', () => {
     insertWorkerRow(db, sessionId, { label: 'build-worker-1' });
     const result = handleListWorkers(db, { session_id: sessionId });
-    const text = getRawText(result);
-    expect(text).toContain('build-worker-1');
-    expect(text).toContain('[ACTIVE]');
+    const data = parseText(result) as Array<{ label: string; status: string }>;
+    expect(Array.isArray(data)).toBe(true);
+    expect(data).toHaveLength(1);
+    expect(data[0]!.label).toBe('build-worker-1');
+    expect(data[0]!.status).toBe('active');
   });
 
   it('filters by status_filter', () => {
     insertWorkerRow(db, sessionId, { label: 'active-worker', status: 'active' });
     insertWorkerRow(db, sessionId, { label: 'completed-worker', status: 'completed' });
 
-    const activeResult = handleListWorkers(db, { session_id: sessionId, status_filter: 'active' });
-    expect(getRawText(activeResult)).toContain('active-worker');
-    expect(getRawText(activeResult)).not.toContain('completed-worker');
+    const activeResult = parseText(handleListWorkers(db, { session_id: sessionId, status_filter: 'active' })) as Array<{ label: string }>;
+    expect(activeResult.map((w) => w.label)).toContain('active-worker');
+    expect(activeResult.map((w) => w.label)).not.toContain('completed-worker');
 
-    const completedResult = handleListWorkers(db, { session_id: sessionId, status_filter: 'completed' });
-    expect(getRawText(completedResult)).toContain('completed-worker');
-    expect(getRawText(completedResult)).not.toContain('active-worker');
+    const completedResult = parseText(handleListWorkers(db, { session_id: sessionId, status_filter: 'completed' })) as Array<{ label: string }>;
+    expect(completedResult.map((w) => w.label)).toContain('completed-worker');
+    expect(completedResult.map((w) => w.label)).not.toContain('active-worker');
   });
 
-  it('includes provider and model in worker output', () => {
+  it('includes provider and model in worker JSON output', () => {
     insertWorkerRow(db, sessionId, { label: 'my-worker', model: 'claude-sonnet-4-6', provider: 'claude' });
-    const result = handleListWorkers(db, { session_id: sessionId });
-    const text = getRawText(result);
-    expect(text).toContain('claude');
-    expect(text).toContain('claude-sonnet-4-6');
+    const result = parseText(handleListWorkers(db, { session_id: sessionId })) as Array<{ provider: string; model: string }>;
+    expect(result[0]!.provider).toBe('claude');
+    expect(result[0]!.model).toBe('claude-sonnet-4-6');
   });
 });
 
@@ -157,7 +162,7 @@ describe('handleGetWorkerStats', () => {
 
   it('returns not found message for unknown worker_id', () => {
     const result = handleGetWorkerStats(db, { worker_id: 'nonexistent-id' });
-    expect(getRawText(result)).toContain('not found');
+    expect(getRawText(result)).toContain('not_found');
   });
 
   it('returns stats report for existing worker', () => {
@@ -187,7 +192,7 @@ describe('handleGetWorkerActivity', () => {
 
   it('returns not found message for unknown worker_id', () => {
     const result = handleGetWorkerActivity(db, { worker_id: 'nonexistent-id' });
-    expect(getRawText(result)).toContain('not found');
+    expect(getRawText(result)).toContain('not_found');
   });
 
   it('returns activity summary for existing worker', () => {
@@ -215,7 +220,7 @@ describe('handleKillWorker', () => {
 
   it('returns not found message for unknown worker_id', () => {
     const result = handleKillWorker(db, { worker_id: 'nonexistent-id' });
-    expect(getRawText(result)).toContain('not found');
+    expect(getRawText(result)).toContain('not_found');
   });
 
   it('marks worker status as killed in DB', () => {
