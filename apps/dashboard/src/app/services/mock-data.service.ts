@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { AgentEditorData } from '../models/agent-editor.model';
 import { Project } from '../models/project.model';
 import { Task } from '../models/task.model';
 import { Agent } from '../models/agent.model';
@@ -9,6 +10,7 @@ import { SidebarSection } from '../models/sidebar.model';
 import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
 import { AnalyticsData } from '../models/analytics.model';
 import {
+  MOCK_AGENT_EDITOR_LIST,
   MOCK_PROJECTS,
   MOCK_ACTIVE_TASKS,
   MOCK_COMPLETED_TASKS,
@@ -83,5 +85,13 @@ export class MockDataService {
 
   public getAnalyticsPageData(): AnalyticsData {
     return MOCK_ANALYTICS_PAGE_DATA;
+  }
+
+  public getAgentEditorList(): readonly AgentEditorData[] {
+    return MOCK_AGENT_EDITOR_LIST;
+  }
+
+  public getAgentEditorData(id: string): AgentEditorData | undefined {
+    return MOCK_AGENT_EDITOR_LIST.find((a) => a.id === id);
   }
 }

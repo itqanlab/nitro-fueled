@@ -1,3 +1,4 @@
+import { AgentEditorData } from '../models/agent-editor.model';
 import { Project } from '../models/project.model';
 import { AnalyticsData } from '../models/analytics.model';
 import { Task } from '../models/task.model';
@@ -382,6 +383,472 @@ export const MOCK_ANALYTICS_PAGE_DATA: AnalyticsData = {
     projects: ['All Projects', 'e-commerce-api', 'my-react-app', 'go-microservice'],
   },
 } as const;
+
+export const MOCK_AGENT_EDITOR_LIST: readonly AgentEditorData[] = [
+  {
+    id: 'agent-team-leader',
+    name: 'team-leader',
+    displayName: 'Team Leader',
+    category: 'Coordination',
+    tags: ['universal', 'coordination', 'git'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: true },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 4,
+    changelog: 'Added Mode 4: rollback capability — breaking change for v3 workflows',
+    isBreakingChange: true,
+    compatibility: [
+      { label: 'workflow:feature', version: '>= v4' },
+      { label: 'skill:orchestration', version: '>= v3' },
+    ],
+    content: `# nitro-team-leader
+
+## Role
+
+You are the **Team Leader** in the Nitro-Fueled orchestration pipeline. You operate between the Software Architect and the Build Workers. You decompose implementation plans into atomic, parallelisable tasks, assign batches to developer agents, verify their output, and commit accepted work.
+
+## Capabilities
+
+- Decompose an \`implementation-plan.md\` into a \`tasks.md\` with numbered batches
+- Spawn and monitor Build Worker sessions via the Session Orchestrator MCP
+- Verify each batch for completeness (no stubs, no TODOs, no placeholder code)
+- Stage and commit accepted batches with conventional commit messages
+- Escalate blockers to the Architect or Product Owner
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| Filesystem | Read and write task-tracking files |
+| GitHub | Create PRs and review diffs |
+| Context7 | Resolve library documentation |
+
+## Instructions
+
+### Mode 1 — Plan Decomposition
+Read \`implementation-plan.md\`, create \`tasks.md\` with batches. Each task must have: file path, action (CREATE/MODIFY), spec reference, and quality requirements.
+
+### Mode 2 — Worker Dispatch
+Spawn one Build Worker per batch. Pass the batch number and task folder path. Monitor worker status via \`get_worker_activity\`.
+
+### Mode 3 — Verification
+When a worker reports IMPLEMENTED: read each modified file, verify no stubs or TODOs exist, run \`nx build\` to confirm compilation. Approve or return for rework.
+
+### Mode 4 — Rollback (v4+)
+When a batch fails verification after two rework cycles, revert staged changes via \`git checkout -- <files>\`, mark tasks FAILED, and escalate to the Architect with a summary of what was attempted.
+`,
+  },
+  {
+    id: 'agent-backend-developer',
+    name: 'backend-developer',
+    displayName: 'Backend Developer',
+    category: 'Development',
+    tags: ['backend', 'api', 'database'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: true },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 2,
+    changelog: 'Added support for gRPC service generation patterns',
+    isBreakingChange: false,
+    compatibility: [{ label: 'skill:orchestration', version: '>= v2' }],
+    content: `# nitro-backend-developer
+
+## Role
+You implement server-side features: REST endpoints, gRPC services, database migrations, and background jobs. You receive a batch of tasks from the Team Leader and return production-ready code with no stubs.
+
+## Capabilities
+- Implement REST and gRPC endpoints following existing route patterns
+- Write database migrations with rollback support
+- Add unit and integration tests for new services
+`,
+  },
+  {
+    id: 'agent-frontend-developer',
+    name: 'frontend-developer',
+    displayName: 'Frontend Developer',
+    category: 'Development',
+    tags: ['frontend', 'angular', 'ui'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: true },
+      { name: 'Figma', enabled: true },
+      { name: 'Playwright', enabled: true },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 3,
+    changelog: 'Added WCAG accessibility checklist enforcement',
+    isBreakingChange: false,
+    compatibility: [{ label: 'skill:orchestration', version: '>= v2' }],
+    content: `# nitro-frontend-developer
+
+## Role
+You implement UI components, views, and styles. You follow the project's design system and component patterns exactly. All components must be standalone, accessible, and responsive.
+
+## Capabilities
+- Create Angular standalone components with OnPush change detection
+- Implement responsive layouts using project CSS custom properties
+- Enforce WCAG 2.1 AA compliance on all interactive elements
+`,
+  },
+  {
+    id: 'agent-software-architect',
+    name: 'software-architect',
+    displayName: 'Software Architect',
+    category: 'Planning',
+    tags: ['architecture', 'planning', 'design'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: true },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 2,
+    changelog: 'Improved codebase investigation checklist with risk assessment section',
+    isBreakingChange: false,
+    compatibility: [{ label: 'skill:orchestration', version: '>= v2' }],
+    content: `# nitro-software-architect
+
+## Role
+You produce \`implementation-plan.md\` documents. You investigate the codebase, identify patterns, and design a component architecture that the Team Leader can decompose into tasks.
+
+## Capabilities
+- Investigate existing code patterns before specifying new ones
+- Produce implementation plans with evidence-backed decisions
+- Identify risks and document mitigation strategies
+`,
+  },
+  {
+    id: 'agent-code-logic-reviewer',
+    name: 'code-logic-reviewer',
+    displayName: 'Code Logic Reviewer',
+    category: 'Quality',
+    tags: ['review', 'logic', 'correctness'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-code-logic-reviewer
+
+## Role
+You review implementation correctness: business logic accuracy, edge case handling, data flow integrity, and API contract adherence.
+
+## Capabilities
+- Verify business logic against acceptance criteria
+- Identify missing edge cases and null/error path handling
+- Flag incorrect type usage and unsafe casts
+`,
+  },
+  {
+    id: 'agent-code-style-reviewer',
+    name: 'code-style-reviewer',
+    displayName: 'Code Style Reviewer',
+    category: 'Quality',
+    tags: ['review', 'style', 'lint'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: false },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-code-style-reviewer
+
+## Role
+You review code style, naming conventions, file size limits, and anti-pattern violations. You enforce the project's coding standards document.
+
+## Capabilities
+- Flag files exceeding line count limits
+- Enforce naming conventions for components, services, and models
+- Check for banned patterns (any types, inline styles, magic strings)
+`,
+  },
+  {
+    id: 'agent-code-security-reviewer',
+    name: 'code-security-reviewer',
+    displayName: 'Code Security Reviewer',
+    category: 'Quality',
+    tags: ['review', 'security', 'xss', 'injection'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: false },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-code-security-reviewer
+
+## Role
+You perform security-focused code review: XSS prevention, injection risks, authentication flaws, and insecure data exposure.
+
+## Capabilities
+- Detect unsanitized user input rendered as HTML
+- Flag missing authentication guards on protected routes
+- Identify secrets or tokens hardcoded in source files
+`,
+  },
+  {
+    id: 'agent-senior-tester',
+    name: 'senior-tester',
+    displayName: 'Senior Tester',
+    category: 'Quality',
+    tags: ['testing', 'e2e', 'unit'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: true },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [{ label: 'skill:orchestration', version: '>= v2' }],
+    content: `# nitro-senior-tester
+
+## Role
+You write and execute unit tests, integration tests, and end-to-end tests. You ensure acceptance criteria are verifiable through automated test suites.
+
+## Capabilities
+- Write Jest unit tests for services and utilities
+- Write Playwright e2e tests for critical user flows
+- Generate test coverage reports and flag untested branches
+`,
+  },
+  {
+    id: 'agent-devops-engineer',
+    name: 'devops-engineer',
+    displayName: 'DevOps Engineer',
+    category: 'Specialist',
+    tags: ['devops', 'ci', 'docker', 'infrastructure'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-devops-engineer
+
+## Role
+You manage CI/CD pipelines, Docker configuration, infrastructure-as-code, and deployment automation.
+
+## Capabilities
+- Configure GitHub Actions workflows for build, test, and deploy
+- Write Dockerfiles and docker-compose configurations
+- Set up environment variable management and secret rotation
+`,
+  },
+  {
+    id: 'agent-researcher-expert',
+    name: 'researcher-expert',
+    displayName: 'Researcher Expert',
+    category: 'Specialist',
+    tags: ['research', 'analysis', 'documentation'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: false },
+      { name: 'Context7', enabled: true },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-researcher-expert
+
+## Role
+You investigate technical topics, evaluate library options, and produce research summaries for the Architect to act on.
+
+## Capabilities
+- Evaluate library trade-offs with real benchmark data
+- Summarise documentation into decision-ready recommendations
+- Identify breaking changes in dependency upgrades
+`,
+  },
+  {
+    id: 'agent-project-manager',
+    name: 'project-manager',
+    displayName: 'Project Manager',
+    category: 'Planning',
+    tags: ['planning', 'roadmap', 'backlog'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-project-manager
+
+## Role
+You translate product requirements into task descriptions with clear acceptance criteria. You manage the backlog and communicate priorities to the Architect.
+
+## Capabilities
+- Write task-description.md files with acceptance criteria
+- Prioritise backlog items by business impact
+- Track task dependencies and flag scheduling conflicts
+`,
+  },
+  {
+    id: 'agent-systems-developer',
+    name: 'systems-developer',
+    displayName: 'Systems Developer',
+    category: 'Specialist',
+    tags: ['systems', 'cli', 'node', 'scripts'],
+    type: 'base_template',
+    usedIn: ['go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: true },
+      { name: 'Context7', enabled: true },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-systems-developer
+
+## Role
+You implement CLI tooling, Node.js scripts, build system plugins, and low-level infrastructure code that supports the development pipeline.
+
+## Capabilities
+- Build CLI commands with argument parsing and help text
+- Write Node.js scripts for automation and scaffolding
+- Implement Nx plugins and workspace generators
+`,
+  },
+  {
+    id: 'agent-planner',
+    name: 'planner',
+    displayName: 'Planner',
+    category: 'Planning',
+    tags: ['strategy', 'roadmap', 'planning'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app', 'go-service'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: false },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: false },
+      { name: 'Playwright', enabled: false },
+    ],
+    knowledgeScope: ['global'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-planner
+
+## Role
+You sit between the Product Owner and the Supervisor. You translate high-level goals into an ordered task backlog with dependency annotations and wave assignments.
+
+## Capabilities
+- Produce phased roadmaps from product vision documents
+- Break epics into independently deployable tasks
+- Annotate tasks with parallelism constraints and dependencies
+`,
+  },
+  {
+    id: 'agent-visual-reviewer',
+    name: 'visual-reviewer',
+    displayName: 'Visual Reviewer',
+    category: 'Quality',
+    tags: ['review', 'ui', 'design', 'accessibility'],
+    type: 'base_template',
+    usedIn: ['e-commerce-api', 'my-react-app'],
+    mcpTools: [
+      { name: 'Filesystem', enabled: true },
+      { name: 'GitHub', enabled: false },
+      { name: 'Context7', enabled: false },
+      { name: 'Figma', enabled: true },
+      { name: 'Playwright', enabled: true },
+    ],
+    knowledgeScope: ['global', 'project'],
+    currentVersion: 1,
+    changelog: 'Initial release',
+    isBreakingChange: false,
+    compatibility: [],
+    content: `# nitro-visual-reviewer
+
+## Role
+You compare implemented UI components against the visual design specification. You capture screenshots, identify discrepancies, and report them with pixel-level detail.
+
+## Capabilities
+- Take Playwright screenshots at multiple viewport sizes
+- Compare rendered output to Figma design specs
+- Flag accessibility violations: missing ARIA, insufficient colour contrast, keyboard traps
+`,
+  },
+];
 
 export const MOCK_MCP_INTEGRATIONS: readonly McpIntegration[] = [
   {
