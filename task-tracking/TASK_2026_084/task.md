@@ -39,9 +39,14 @@ Implement the Project Onboarding view at route `/onboarding` matching the N.Gine
 
 ## File Scope
 
-- apps/dashboard/src/app/views/onboarding/onboarding.component.ts
-- apps/dashboard/src/app/views/onboarding/onboarding.component.html
-- apps/dashboard/src/app/views/onboarding/onboarding.component.scss
-- apps/dashboard/src/app/views/onboarding/wizard/wizard-step.component.ts
-- apps/dashboard/src/app/views/onboarding/chat-panel/chat-panel.component.ts
-- apps/dashboard/src/app/views/onboarding/folder-tree/folder-tree.component.ts
+- apps/dashboard/src/app/models/onboarding.model.ts (created)
+- apps/dashboard/src/app/views/onboarding/onboarding.component.ts (created)
+- apps/dashboard/src/app/views/onboarding/onboarding.component.html (created)
+- apps/dashboard/src/app/views/onboarding/onboarding.component.scss (created)
+- apps/dashboard/src/app/views/onboarding/wizard/wizard-step.component.ts (created)
+- apps/dashboard/src/app/views/onboarding/chat-panel/chat-panel.component.ts (created)
+- apps/dashboard/src/app/views/onboarding/chat-panel/chat-panel.component.html (created)
+- apps/dashboard/src/app/views/onboarding/chat-panel/chat-panel.component.scss (created)
+- apps/dashboard/src/app/views/onboarding/folder-tree/folder-tree.component.ts (created)
+- apps/dashboard/src/app/app.routes.ts (modified)
+- apps/dashboard/src/styles.scss (modified — added purple tokens)
