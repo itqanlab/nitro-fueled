@@ -3,7 +3,7 @@
   <!-- Page Header -->
   <div class="page-header">
     <div class="breadcrumb">
-      <a href="#">e-commerce-api</a>
+      <a [routerLink]="['/dashboard']">e-commerce-api</a>
       <span class="breadcrumb-sep">&#x2192;</span>
       <span>New Task</span>
     </div>
@@ -22,8 +22,8 @@
           class="input"
           type="text"
           placeholder="Brief title for this task..."
-          [value]="title"
-          (input)="onTitleInput($event)"
+          [(ngModel)]="title"
+          name="task-title"
         />
       </div>
       <div class="form-group">
@@ -32,15 +32,40 @@
           id="task-desc"
           class="input textarea"
           placeholder="Describe what you want to achieve. Be specific about requirements, constraints, and expected behavior..."
-          [value]="description"
-          (input)="onDescriptionInput($event)"
+          [(ngModel)]="description"
+          name="task-desc"
         ></textarea>
         <p class="form-hint">The more detail you provide, the better the PM agent can create accurate requirements.</p>
       </div>
       <div class="form-group">
         <label class="form-label">Attachments</label>
-        <div class="attachment-zone">
-          &#x1F4CE; Drop files here or click to browse &mdash; screenshots, specs, diagrams
+        <input
+          #fileInput
+          type="file"
+          multiple
+          style="display: none"
+          (change)="onAttachmentFileSelect($event)"
+        />
+        <div
+          class="attachment-zone"
+          [ngClass]="{ dragging: isDragging }"
+          role="button"
+          tabindex="0"
+          aria-label="Drop files here or click to browse"
+          (click)="onAttachmentZoneClick(fileInput)"
+          (keydown.enter)="onAttachmentZoneClick(fileInput)"
+          (keydown.space)="onAttachmentZoneClick(fileInput)"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave()"
+          (drop)="onDrop($event)"
+        >
+          @if (attachedFiles.length === 0) {
+            &#x1F4CE; Drop files here or click to browse &mdash; screenshots, specs, diagrams
+          } @else {
+            @for (file of attachedFiles; track file.name) {
+              <span class="attachment-chip">&#x1F4CE; {{ file.name }}</span>
+            }
+          }
         </div>
       </div>
     </section>
@@ -107,7 +132,7 @@
                       [attr.aria-label]="'Model override for ' + role.role"
                       (change)="onModelOverrideChange(role.role, $event)"
                     >
-                      <option>{{ getDefaultLabel(role) }}</option>
+                      <option value="">{{ getDefaultLabel(role) }}</option>
                       @for (group of providerGroups; track group.provider) {
                         <optgroup [label]="group.provider">
                           @for (model of group.models; track model) {
@@ -133,10 +158,10 @@
 
     <!-- Form Actions -->
     <div class="form-actions">
-      <button type="button" class="btn btn-ghost">Cancel</button>
+      <button type="button" class="btn btn-ghost" (click)="onCancel()">Cancel</button>
       <div class="form-actions-right">
-        <button type="button" class="btn btn-secondary">Save as Draft</button>
-        <button type="button" class="btn btn-primary btn-lg">&#x25B6; Start Task</button>
+        <button type="button" class="btn btn-secondary" (click)="onSaveDraft()">Save as Draft</button>
+        <button type="button" class="btn btn-primary btn-lg" (click)="onStartTask()">&#x25B6; Start Task</button>
       </div>
     </div>
   </div>

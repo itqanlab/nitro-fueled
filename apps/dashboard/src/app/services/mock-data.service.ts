@@ -29,6 +29,7 @@ import {
   MOCK_ANALYTICS_PAGE_DATA,
 } from './mock-data.constants';
 import { MOCK_MODEL_ASSIGNMENTS_DATA } from './model-assignment.constants';
+import { MOCK_PROVIDER_GROUPS } from './new-task.constants';
 
 @Injectable({ providedIn: 'root' })
 export class MockDataService {
@@ -109,9 +110,6 @@ export class MockDataService {
   }
 
   public getProviderGroups(): readonly ProviderGroup[] {
-    return [
-      { provider: 'Anthropic', models: ['Claude Opus 4', 'Claude Sonnet 4', 'Claude Haiku 4'] },
-      { provider: 'OpenAI', models: ['GPT-4o', 'Codex Mini'] },
-    ];
+    return MOCK_PROVIDER_GROUPS;
   }
 }
