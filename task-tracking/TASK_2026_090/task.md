@@ -34,6 +34,10 @@ Migrate the `init`, `run`, and `status` commands from the Commander.js pattern (
 
 ## File Scope
 
-- apps/cli/src/commands/init.ts
-- apps/cli/src/commands/run.ts
-- apps/cli/src/commands/status.ts
+**Verified (no changes needed)**: Commands already migrated to Oclif:
+- `apps/cli/src/commands/init.ts` - `export default class Init extends BaseCommand`
+- `apps/cli/src/commands/run.ts` - `export default class Run extends BaseCommand`
+- `apps/cli/src/commands/status.ts` - `export default class Status extends BaseCommand`
+- `apps/cli/src/base-command.ts` - Base class extending `@oclif/core` Command
+
+All files use Oclif patterns (Flags, Args from `@oclif/core`), no Commander.js imports remain.
