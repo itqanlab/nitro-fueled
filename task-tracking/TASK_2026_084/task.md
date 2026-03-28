@@ -14,6 +14,12 @@
 
 Implement the Project Onboarding view at route `/onboarding` matching the N.Gine mockup. Split layout: wizard panel (left ~60%) and AI chat panel (right ~40%). Left — 7-step wizard: step indicator bar showing completed steps (✓ checkmark, green), current step (number, blue), pending steps (number, grey). Step content: Step 1 — Select Client: client dropdown + info card (Acme Corp, 3 active projects, $2,400/$5,000 budget). Step 2 — Project Folder: path input with Browse button. Step 3 — External References: list of URL/file entries with Add button. Step 4 — AI Analysis (current): 4 recommendation cards with animated spinner for loading state (Stack Detection ✓, Team Composition ✓, Workflow Patterns spinner, Folder Organization pending-grey). Step 5 — Team Assembly: placeholder. Step 6 — Review & Folder Organization: side-by-side folder tree comparison (Before: mixed unorganized files, After: colored nodes indicating moved/new files). Step 7 — Summary: placeholder. Navigation: Back button (disabled on step 1), Save & Exit, Next button showing next step label. Step counter "Step 4 of 7" at bottom left. Right — AI chat panel: header with robot icon, "Chat with AI Analyst" title, green online dot; scrollable message thread with AI messages (purple avatar, rounded left-aligned bubbles with border) and user messages (blue avatar, right-aligned darker bubbles) and timestamps; sticky input area with placeholder text and Send button.
 
+### Architectural Constraints
+
+- **UI is a client, not the core** — this view is a presentation layer. Onboarding logic (stack detection, team assembly, folder analysis) lives in the API. The frontend renders wizard steps and sends user choices to the API.
+- **Dynamic providers** — render whatever providers the user has configured. Do not hardcode provider names — read from API.
+- **Production-grade Angular** — lazy-loaded feature module, smart/dumb component split, Angular 19 best practices, NG-ZORRO components used correctly.
+
 ## Dependencies
 
 - TASK_2026_077 — provides the shell layout and MockDataService

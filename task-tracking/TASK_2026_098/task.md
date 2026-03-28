@@ -60,7 +60,7 @@ Traces are local to the machine. No data is sent anywhere. The `project` field c
 
 ## Dependencies
 
-- **TASK_2026_096** — provider/model resolution must be in place so we know which model was actually used (including fallback). Can start implementation in parallel but final wiring requires 096.
+- TASK_2026_111 — provider resolver engine must be in place so we know which model was actually used (including fallback). Supersedes cancelled TASK_2026_096.
 
 ## Acceptance Criteria
 
@@ -73,7 +73,7 @@ Traces are local to the machine. No data is sent anywhere. The `project` field c
 
 ## Parallelism
 
-**Wave**: 2 (depends on TASK_2026_096 for full fidelity, but can be implemented in parallel)
+**Wave**: 2 (depends on new provider resolver architecture for full fidelity)
 **Can run in parallel with**: TASK_2026_097
 **Conflicts with**: None
 
