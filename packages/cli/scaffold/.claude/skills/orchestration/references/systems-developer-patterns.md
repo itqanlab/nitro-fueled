@@ -1,6 +1,6 @@
 # Systems Developer Domain Expertise
 
-Reference for the nitro-systems-developer agent covering structure requirements and key patterns for each file type in the orchestration system.
+Reference for the systems-developer agent covering structure requirements and key patterns for each file type in the orchestration system.
 
 ---
 
@@ -24,7 +24,7 @@ Reference for the nitro-systems-developer agent covering structure requirements 
 - Team-leader assigns work via tasks.md batches
 - Agents read review-lessons before coding
 - Agents verify imports/patterns before implementing
-- Agents report back to nitro-team-leader, never directly commit
+- Agents report back to team-leader, never directly commit
 
 ---
 

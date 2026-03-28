@@ -13,20 +13,26 @@ echo "Preparing scaffold from $REPO_ROOT"
 
 # Core agents (exclude developer agents — those are generated at init time)
 CORE_AGENTS=(
-  planner.md
-  project-manager.md
-  software-architect.md
-  team-leader.md
-  systems-developer.md
-  code-style-reviewer.md
-  code-logic-reviewer.md
-  visual-reviewer.md
-  senior-tester.md
-  researcher-expert.md
-  modernization-detector.md
-  devops-engineer.md
-  technical-content-writer.md
-  ui-ux-designer.md
+  nitro-planner.md
+  nitro-project-manager.md
+  nitro-software-architect.md
+  nitro-team-leader.md
+  nitro-systems-developer.md
+  nitro-code-style-reviewer.md
+  nitro-code-logic-reviewer.md
+  nitro-code-security-reviewer.md
+  nitro-visual-reviewer.md
+  nitro-senior-tester.md
+  nitro-test-lead.md
+  nitro-review-lead.md
+  nitro-researcher-expert.md
+  nitro-modernization-detector.md
+  nitro-devops-engineer.md
+  nitro-technical-content-writer.md
+  nitro-ui-ux-designer.md
+  nitro-integration-tester.md
+  nitro-e2e-tester.md
+  nitro-unit-tester.md
 )
 
 mkdir -p "$SCAFFOLD/.claude/agents"

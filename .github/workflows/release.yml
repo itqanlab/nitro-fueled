@@ -1,0 +1,61 @@
+name: Release & Publish
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/cli/package.json'
+
+jobs:
+  release:
+    name: Release & Publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: version_check
+        run: |
+          CURRENT=$(node -p "require('./packages/cli/package.json').version")
+          PREV=$(git show HEAD~1:packages/cli/package.json 2>/dev/null | node -p "require('/dev/stdin').version" || echo "none")
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "previous=$PREV" >> $GITHUB_OUTPUT
+          if [ "$CURRENT" != "$PREV" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: steps.version_check.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        if: steps.version_check.outputs.changed == 'true'
+        run: npm install
+        working-directory: packages/cli
+
+      - name: Publish to npm
+        if: steps.version_check.outputs.changed == 'true'
+        run: npm publish
+        working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.version_check.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version_check.outputs.current }}
+          name: v${{ steps.version_check.outputs.current }}
+          generate_release_notes: true
