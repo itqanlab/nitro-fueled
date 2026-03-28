@@ -96,3 +96,7 @@
 | TASK_2026_091 | CREATED     | REFACTORING | Migrate create + dashboard + config + update commands to Oclif | 2026-03-28 | default |
 | TASK_2026_092 | CREATED     | FEATURE | Angular ↔ NestJS integration + CLI build pipeline update | 2026-03-28 | default |
 | TASK_2026_093 | CREATED     | REFACTORING | Deprecate old packages — remove packages/ after cutover | 2026-03-28 | default |
+| TASK_2026_095 | CREATED     | REFACTORING | Global config infrastructure — migrate provider config to user workspace scope | 2026-03-28 | default |
+| TASK_2026_096 | CREATED     | FEATURE     | Dynamic model fetching, auto-refresh, and auto-fallback | 2026-03-28 | default |
+| TASK_2026_097 | CREATED     | FEATURE     | Auto-complexity estimation at task creation | 2026-03-28 | default |
+| TASK_2026_098 | CREATED     | FEATURE     | Provider/model tracing — per-task run telemetry | 2026-03-28 | default |
