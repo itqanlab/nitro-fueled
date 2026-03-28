@@ -19,7 +19,7 @@ import {
 
 async function runCheckMode(cwd: string): Promise<void> {
   console.log('\nLaunchers:');
-  const statuses = await getProviderStatus(cwd);
+  const statuses = getProviderStatus(cwd);
   printProviderStatusTable(statuses);
 
   const config = readConfig(cwd) ?? readGlobalConfig();
@@ -36,7 +36,7 @@ async function runCheckMode(cwd: string): Promise<void> {
 
 async function runTestMode(cwd: string): Promise<void> {
   console.log('\nLaunchers:');
-  const statuses = await getProviderStatus(cwd);
+  const statuses = getProviderStatus(cwd);
   printProviderStatusTable(statuses);
 
   const hasFailed = statuses.some((s) => s.status === 'failed');
@@ -60,8 +60,8 @@ function runUnloadMode(providerArg: string): void {
     }
   }
 
-  // Remove from providers if it exists
-  if (providerArg in config.providers) {
+  // Remove from providers if it exists (Object.hasOwn avoids prototype chain traversal)
+  if (Object.hasOwn(config.providers, providerArg)) {
     delete config.providers[providerArg];
     changed = true;
   }
@@ -89,8 +89,8 @@ async function runDetectionWizard(cwd: string): Promise<void> {
   // Step 2: Derive available providers
   const availableProviders = deriveAvailableProviders(launchers);
 
-  // Load existing routing or use defaults
-  const existing = readGlobalConfig();
+  // Load existing routing — project config wins over global when present
+  const existing = readConfig(cwd) ?? readGlobalConfig();
   const existingRouting = existing?.routing ?? { ...DEFAULT_ROUTING };
 
   // Step 3: Show derived tiers

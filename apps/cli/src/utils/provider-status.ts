@@ -13,7 +13,7 @@ export interface ProviderStatusResult {
  * Build the current provider status table from the launchers section.
  * No live connection tests — status is derived from stored launcher state.
  */
-export async function getProviderStatus(cwd: string): Promise<ProviderStatusResult[]> {
+export function getProviderStatus(cwd: string): ProviderStatusResult[] {
   const config = readConfig(cwd) ?? readGlobalConfig();
 
   if (config === null) {
