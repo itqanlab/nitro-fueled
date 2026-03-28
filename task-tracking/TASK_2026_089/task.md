@@ -33,9 +33,15 @@ Generate a new Oclif CLI project at `apps/cli` using `@oclif/core`. Configure th
 
 ## File Scope
 
-- apps/cli/project.json
-- apps/cli/package.json
-- apps/cli/tsconfig.json
-- apps/cli/src/index.ts
-- apps/cli/src/base-command.ts
-- apps/cli/src/utils/ (all 23 utility files copied)
+- apps/cli/package.json (added @oclif/core, removed commander, added oclif config block)
+- apps/cli/project.json (added run-cli target)
+- apps/cli/src/index.ts (replaced Commander parseAsync with Oclif run())
+- apps/cli/src/base-command.ts (created — BaseCommand extending @oclif/core Command)
+- apps/cli/src/commands/init.ts (converted to Oclif class)
+- apps/cli/src/commands/run.ts (converted to Oclif class)
+- apps/cli/src/commands/status.ts (converted to Oclif class)
+- apps/cli/src/commands/create.ts (converted to Oclif class)
+- apps/cli/src/commands/config.ts (converted to Oclif class)
+- apps/cli/src/commands/dashboard.ts (converted to Oclif class)
+- apps/cli/src/commands/update.ts (converted to Oclif class)
+- apps/cli/src/utils/ (all 23 utility files unchanged)
