@@ -5,8 +5,8 @@ Invoke the orchestration skill for development workflows.
 ## Usage
 
 ```
-/orchestrate [task description]     # New task
-/orchestrate TASK_2025_XXX          # Continue existing task
+/nitro-orchestrate [task description]     # New task
+/nitro-orchestrate TASK_2025_XXX          # Continue existing task
 ```
 
 ## Execution

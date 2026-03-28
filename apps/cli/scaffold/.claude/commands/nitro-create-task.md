@@ -5,8 +5,8 @@ Scaffold a new task folder with a pre-filled `task.md` from the canonical templa
 ## Usage
 
 ```
-/create-task                        # Interactive — prompts for all fields
-/create-task [brief description]    # Pre-fills description, prompts for the rest
+/nitro-create-task                        # Interactive — prompts for all fields
+/nitro-create-task [brief description]    # Pre-fills description, prompts for the rest
 ```
 
 ## Execution Steps
@@ -72,6 +72,38 @@ Output a `## Parallelism` section in the task.md with:
 
 This analysis is **mandatory** — every task must have a Parallelism section.
 
+### Step 3c: Pre-Write Sizing Validation
+
+**Before writing any files**, validate the gathered task information against sizing rules. Read `task-tracking/sizing-rules.md` and check:
+
+| Check | Condition |
+|-------|-----------|
+| Description length | > 150 lines |
+| Acceptance criteria | > 5 groups |
+| File scope | > 7 files listed in File Scope |
+| Complexity + layers | Complexity is "Complex" AND description mentions multiple architectural layers |
+| Unrelated areas | Multiple unrelated functional areas detected (use judgment) |
+
+When a count is indeterminate (e.g., ambiguous description structure), skip that check — do not block based on uncertainty alone.
+
+**If any check fails — auto-split:**
+
+Do NOT ask the user whether to split. Do NOT create the oversized task. Instead, **automatically split** the work into properly-sized tasks:
+
+1. Analyze the task and determine the natural split boundaries (by functional area, by type, by layer, etc.)
+2. Log: `[AUTO-SPLIT] — Task too large for a single worker. Splitting into N tasks.`
+3. Create N separate task folders and task.md files, each within sizing limits
+4. Each split task gets:
+   - Its own sequential Task ID (TASK_YYYY_NNN, NNN+1, NNN+2, ...)
+   - Dependencies on prior split tasks where order matters
+   - Parallelism analysis reflecting the split
+   - A reference back to the original intent (e.g., "Part 1 of N — original request: [title]")
+5. Display a summary of all created tasks
+
+**Only skip auto-split if the user explicitly says** words like "force", "create as-is", "don't split", or "single task". In that case, create it with a sizing warning.
+
+**If all checks pass:** proceed to Step 4.
+
 ### Step 4: Create Task Folder and File
 
 1. Create directory: `task-tracking/TASK_YYYY_NNN/`
@@ -83,13 +115,26 @@ This analysis is **mandatory** — every task must have a Parallelism section.
 
 Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no trailing newline, no extra whitespace).
 
-> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
+> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/nitro-project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
 >
 > **Canonical registry row format** (for reference when regenerating): `Task ID | Status | Type | Description | Priority | Dependencies | Created | Model`
 > - Priority: the task's Priority field value (e.g., `P1-High`)
 > - Dependencies: comma-separated Task IDs (e.g., `TASK_2026_052, TASK_2026_051`), or `None`
 > - COMPLETE/CANCELLED rows use `—` for both Priority and Dependencies
 > - Legacy rows (pre-TASK_2026_064) missing Priority/Dependencies columns are handled by the Supervisor's Step 2 fallback (treated as P2-Medium, no deps).
+
+### Step 5b: Commit Task Creation
+
+After writing the status file, commit the new task folder:
+
+```bash
+git add task-tracking/TASK_YYYY_NNN/
+git commit -m "$(cat <<'EOF'
+docs(tasks): create TASK_YYYY_NNN — {title from Description field}
+EOF
+)"
+# Note: pass the commit message via HEREDOC to prevent shell expansion of title metacharacters
+```
 
 ### Step 6: Post-Creation Validation
 
@@ -108,30 +153,7 @@ Verify the task is ready for auto-pilot pickup:
 
 These checks ensure the task won't be skipped by auto-pilot's Step 2b validation.
 
-**6b. Validate Task Sizing**
-
-Read `task-tracking/sizing-rules.md` and validate the task against the hard limits. If any limit is exceeded, display a non-blocking warning:
-
-```
-[SIZING WARNING] — This task may be too large for a single worker session:
-  - [specific violation 1]
-  - [specific violation 2]
-
-  See task-tracking/sizing-rules.md for guidance on splitting.
-  You can proceed as-is or split the task into smaller pieces.
-```
-
-Checks to run against the written task.md:
-
-| Check | Condition | Warning Message |
-|-------|-----------|-----------------|
-| Description length | > 150 lines | "Description exceeds 150 lines (actual: N lines)" |
-| Acceptance criteria | > 5 groups | "More than 5 acceptance criteria groups (actual: N)" |
-| File scope | > 7 files listed in File Scope | "File Scope lists more than 7 files (actual: N)" |
-| Complexity + layers | Complexity is "Complex" AND description mentions multiple architectural layers | "Complex task spanning multiple architectural layers — consider splitting" |
-| Unrelated areas | Multiple unrelated functional areas detected (use judgment) | "Task appears to span multiple unrelated functional areas" |
-
-When a count is indeterminate (e.g., ambiguous description structure), skip that check — do not warn based on uncertainty alone.
+**6b.** *(Removed — sizing validation now runs in Step 3c before writing any files.)*
 
 ### Step 7: Display Summary
 
@@ -145,9 +167,9 @@ Task created successfully.
   Status:   CREATED (ready for auto-pilot or /orchestrate)
 
   Next steps:
-  - Run /orchestrate TASK_YYYY_NNN to start this task manually
-  - Or add more tasks and run /auto-pilot to process the backlog
-  - Or run /auto-pilot --dry-run to see the execution plan
+  - Run /nitro-orchestrate TASK_YYYY_NNN to start this task manually
+  - Or add more tasks and run /nitro-auto-pilot to process the backlog
+  - Or run /nitro-auto-pilot --dry-run to see the execution plan
 ```
 
 ## Important Rules
@@ -156,7 +178,7 @@ Task created successfully.
 2. **ALWAYS scan task folders to determine the next ID** — never read registry.md for this, it may be stale
 3. **Write status file immediately after creating the task folder**: `task-tracking/TASK_YYYY_NNN/status` containing `CREATED` (no trailing newline)
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
-5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
+5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/nitro-initialize-workspace` first
 6. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs
 
 ## References

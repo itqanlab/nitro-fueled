@@ -5,7 +5,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 ## Command Usage
 
 ```bash
-/orchestrate [argument]
+/nitro-orchestrate [argument]
 ```
 
 ### Arguments

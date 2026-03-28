@@ -6,17 +6,17 @@ create well-scoped tasks, manage the roadmap, and track progress.
 ## Usage
 
 ```
-/plan [what you want]          # Start planning a new feature or body of work
-/plan status                   # Get a progress assessment of the current plan
-/plan reprioritize             # Review and reorder the backlog
-/plan                          # Resume current planning context or start fresh
+/nitro-plan [what you want]          # Start planning a new feature or body of work
+/nitro-plan status                   # Get a progress assessment of the current plan
+/nitro-plan reprioritize             # Review and reorder the backlog
+/nitro-plan                    # Resume current planning context or start fresh
 ```
 
 ## Execution Steps
 
 ### Step 1: Load Planner Agent
 
-Read `.claude/agents/nitro-nitro-planner.md` -- this contains the full Planner agent
+Read `.claude/agents/nitro-planner.md` -- this contains the full Planner agent
 definition, interaction protocols, task creation rules, and plan management rules.
 
 ### Step 2: Parse Arguments
@@ -30,13 +30,13 @@ Parse $ARGUMENTS using exact full-string matching:
 ### Step 3: Pre-Flight Checks
 
 3a. Verify `task-tracking/` directory exists.
-    If missing: ERROR -- "Workspace not initialized. Run /initialize-workspace first."
+    If missing: ERROR -- "Workspace not initialized. Run /nitro-initialize-workspace first."
 
 3b. Verify `task-tracking/registry.md` exists.
-    If missing: ERROR -- "Registry not found. Run /initialize-workspace first."
+    If missing: ERROR -- "Registry not found. Run /nitro-initialize-workspace first."
 
 3c. Verify `task-tracking/task-template.md` exists.
-    If missing: ERROR -- "Task template not found. Run /initialize-workspace first."
+    If missing: ERROR -- "Task template not found. Run /nitro-initialize-workspace first."
 
 ### Step 4: Detect Mode
 

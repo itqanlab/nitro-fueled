@@ -5,15 +5,15 @@ Scaffold a new skill directory with a pre-filled `SKILL.md` derived from the exi
 ## Usage
 
 ```
-/create-skill              # Interactive — prompts for all fields
-/create-skill [name]       # Pre-fills name, prompts for the rest
+/nitro-create-skill              # Interactive — prompts for all fields
+/nitro-create-skill [name]       # Pre-fills name, prompts for the rest
 ```
 
 ## Execution Steps
 
 ### Step 1: Pre-Flight Checks
 
-1. Verify `.claude/skills/` directory exists. If missing, tell the user to run `/initialize-workspace` first.
+1. Verify `.claude/skills/` directory exists. If missing, tell the user to run `/nitro-initialize-workspace` first.
 2. If a `name` argument was provided, normalize it to kebab-case (lowercase, hyphens for spaces/underscores). **Reject** (do not normalize) names containing `.`, `/`, `\`, or `..` — these indicate malformed input, not a formatting issue.
 3. Validate the name matches the regex `^[a-z0-9]+(-[a-z0-9]+)*$`. Reject names that:
    - Contain uppercase, spaces, or special characters
@@ -108,4 +108,4 @@ Skill created successfully.
 
 - Skill pattern: `.claude/skills/ui-ux-designer/SKILL.md`
 - Skill pattern: `.claude/skills/orchestration/SKILL.md`
-- Command pattern: `.claude/commands/create-task.md`
+- Command pattern: `.claude/commands/nitro-create-task.md`
