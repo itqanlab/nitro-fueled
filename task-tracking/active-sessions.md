@@ -28,6 +28,5 @@
 | SESSION_2026-03-28_12-59-08 | orchestrate | 12:59 | 1 | task-tracking/sessions/SESSION_2026-03-28_12-59-08/ |
 | SESSION_2026-03-28_13-26-41 | orchestrate | 13:26 | 1 | task-tracking/sessions/SESSION_2026-03-28_13-26-41/ |
 | SESSION_2026-03-28_13-27-45 | orchestrate | 13:27 | 1 | task-tracking/sessions/SESSION_2026-03-28_13-27-45/ |
-| SESSION_2026-03-28_13-56-15 | orchestrate | 13:56 | 1 | task-tracking/sessions/SESSION_2026-03-28_13-56-15/ |
-| SESSION_2026-03-28_13-58-21 | auto-pilot | 13:58 | 31 | task-tracking/sessions/SESSION_2026-03-28_13-58-21/ |
+| SESSION_2026-03-28_13-58-21 | auto-pilot | 13:58 | 31 | task-tracking/sessions/SESSION_2026-03-28_13-58-21/ | PAUSED |
 | SESSION_2026-03-28_14-08-46 | orchestrate | 14:08 | 1 | task-tracking/sessions/SESSION_2026-03-28_14-08-46/ |
