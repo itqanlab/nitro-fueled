@@ -66,14 +66,17 @@ Create the `nitro-cortex` MCP server as a new Nx package at `packages/mcp-cortex
 
 ## File Scope
 
-- `packages/mcp-cortex/package.json`
-- `packages/mcp-cortex/tsconfig.json`
-- `packages/mcp-cortex/project.json`
-- `packages/mcp-cortex/src/index.ts`
-- `packages/mcp-cortex/src/db/schema.ts`
-- `packages/mcp-cortex/src/tools/tasks.ts`
-- `.claude/settings.json`
-- `.gitignore`
+- `packages/mcp-cortex/package.json` (created)
+- `packages/mcp-cortex/tsconfig.json` (created)
+- `packages/mcp-cortex/project.json` (created)
+- `packages/mcp-cortex/src/index.ts` (created)
+- `packages/mcp-cortex/src/db/schema.ts` (created)
+- `packages/mcp-cortex/src/tools/tasks.ts` (created)
+- `packages/mcp-cortex/src/tools/wave.ts` (created)
+- `packages/mcp-cortex/src/tools/sync.ts` (created)
+- `.mcp.json` (modified — needs manual update, permission denied during build)
+- `.gitignore` (modified)
+- `package.json` (modified — added packages/* to workspaces)
 
 ## Parallelism
 

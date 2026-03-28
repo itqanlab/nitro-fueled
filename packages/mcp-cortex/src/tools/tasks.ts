@@ -1,28 +1,4 @@
 import type Database from 'better-sqlite3';
-import { z } from 'zod';
-import type { TaskStatus, TaskType, TaskPriority } from '../db/schema.js';
-
-export const getTasksSchema = {
-  status: z.string().optional().describe('Filter by task status (e.g. CREATED, IN_PROGRESS)'),
-  type: z.string().optional().describe('Filter by task type (e.g. FEATURE, BUG)'),
-  priority: z.string().optional().describe('Filter by priority (e.g. P0-Critical)'),
-  unblocked: z.boolean().optional().describe('When true, return only tasks whose dependencies are all COMPLETE'),
-};
-
-export const claimTaskSchema = {
-  task_id: z.string().describe('Task ID to claim (e.g. TASK_2026_120)'),
-  session_id: z.string().describe('Session ID claiming this task'),
-};
-
-export const releaseTaskSchema = {
-  task_id: z.string().describe('Task ID to release'),
-  new_status: z.string().describe('New status to set (e.g. IMPLEMENTED, FAILED)'),
-};
-
-export const updateTaskSchema = {
-  task_id: z.string().describe('Task ID to update'),
-  fields: z.record(z.unknown()).describe('Partial fields to update (e.g. {status: "IN_PROGRESS", title: "..."})'),
-};
 
 const UPDATABLE_COLUMNS = new Set([
   'title', 'type', 'priority', 'status', 'complexity', 'model',
