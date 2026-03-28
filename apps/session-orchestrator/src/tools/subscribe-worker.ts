@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import type { FileWatcher } from '../core/file-watcher.js';
-import type { WorkerRegistry } from '../core/worker-registry.js';
+import type { FileWatcher, WorkerRegistry } from '@nitro-fueled/worker-core';
 
 const watchConditionSchema = z.discriminatedUnion('type', [
   z.object({

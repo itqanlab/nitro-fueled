@@ -1,4 +1,4 @@
-import type { TokenUsage, WorkerCost } from '../types.js';
+import type { WorkerCost } from '../types.js';
 
 interface ModelPricing {
   input_per_mtok: number;

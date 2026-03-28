@@ -1,6 +1,4 @@
-import type { FileWatcher } from '../core/file-watcher.js';
-import type { EventQueue } from '../core/event-queue.js';
-import type { WatchEvent, EmittedEvent } from '../types.js';
+import type { FileWatcher, EventQueue, WatchEvent, EmittedEvent } from '@nitro-fueled/worker-core';
 
 export const getPendingEventsSchema = {};
 

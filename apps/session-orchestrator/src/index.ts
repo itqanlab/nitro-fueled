@@ -6,17 +6,21 @@ import { z } from 'zod';
 import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { WorkerRegistry } from './core/worker-registry.js';
-import { JsonlWatcher } from './core/jsonl-watcher.js';
-import { killProcess, closeItermSession, isProcessAlive } from './core/iterm-launcher.js';
-import { killPrintProcess } from './core/print-launcher.js';
-import { killOpenCodeProcess } from './core/opencode-launcher.js';
+import {
+  WorkerRegistry,
+  JsonlWatcher,
+  killProcess,
+  closeItermSession,
+  isProcessAlive,
+  killPrintProcess,
+  killOpenCodeProcess,
+  FileWatcher,
+  EventQueue,
+} from '@nitro-fueled/worker-core';
 import { handleSpawnWorker, spawnWorkerSchema } from './tools/spawn-worker.js';
 import { handleSubscribeWorker, subscribeWorkerSchema } from './tools/subscribe-worker.js';
 import { handleGetPendingEvents, getPendingEventsSchema } from './tools/get-pending-events.js';
-import { FileWatcher } from './core/file-watcher.js';
-import { EventQueue } from './core/event-queue.js';
-import type { HealthStatus } from './types.js';
+import type { HealthStatus } from '@nitro-fueled/worker-core';
 
 const registryDir = join(homedir(), '.session-orchestrator');
 try {

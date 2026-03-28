@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "chokidar": "^4.0.3",
+    "@nitro-fueled/worker-core": "*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

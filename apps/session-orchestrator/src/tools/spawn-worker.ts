@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import type { WorkerRegistry } from '../core/worker-registry.js';
-import type { JsonlWatcher } from '../core/jsonl-watcher.js';
-import { launchInIterm } from '../core/iterm-launcher.js';
-import { launchWithPrint } from '../core/print-launcher.js';
-import { launchWithOpenCode } from '../core/opencode-launcher.js';
-import { resolveSessionId, resolveJsonlPath } from '../core/jsonl-watcher.js';
-import type { JsonlMessage, Provider } from '../types.js';
+import type { WorkerRegistry, JsonlWatcher, JsonlMessage, Provider } from '@nitro-fueled/worker-core';
+import { launchInIterm, launchWithPrint, launchWithOpenCode, resolveSessionId, resolveJsonlPath } from '@nitro-fueled/worker-core';
 
 const DEFAULT_MODEL = process.env['DEFAULT_MODEL'] ?? 'claude-sonnet-4-6';
 
