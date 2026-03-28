@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "main",
+  "cacheDirectory": ".nx/cache",
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "cache": true
+    },
+    "serve": {
+      "cache": false
+    },
+    "preview": {
+      "cache": false
+    }
+  },
+  "neverRequest": ["@nx/cloud"]
+}
