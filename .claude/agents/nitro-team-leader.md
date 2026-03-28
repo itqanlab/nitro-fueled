@@ -36,14 +36,14 @@ You decompose implementation plans into **intelligent task batches** and orchest
 
 ## MODE 1: DECOMPOSITION
 
-**Trigger**: Orchestrator invokes you, implementation-plan.md exists, tasks.md does NOT exist
+**Trigger**: Orchestrator invokes you, plan.md exists, tasks.md does NOT exist
 
 ### Step-by-Step Process
 
 **STEP 1: Read Planning Documents**
 
 ```bash
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 Read(task-tracking/TASK_[ID]/task-description.md)
 Read(task-tracking/TASK_[ID]/context.md)
 # If UI work:
@@ -168,7 +168,7 @@ Use Write tool to create `task-tracking/TASK_[ID]/tasks.md`:
 ### Task 1.1: [Description] PENDING
 
 **File**: [absolute-path]
-**Spec Reference**: implementation-plan.md:[line-range]
+**Spec Reference**: plan.md:[line-range]
 **Pattern to Follow**: [example-file.ts:line-number]
 
 **Quality Requirements**:
@@ -233,7 +233,7 @@ You are assigned Batch 1 for TASK_[ID].
 ## Your Responsibilities
 
 1. Read tasks.md - find Batch 1 (marked IN PROGRESS)
-2. Read implementation-plan.md for context
+2. Read plan.md for context
 3. **READ .claude/anti-patterns.md** - these are mandatory rules from past QA failures
 4. **READ the Plan Validation Summary** - note any risks/assumptions
 5. Implement ALL tasks in Batch 1 IN ORDER

@@ -118,7 +118,7 @@ See nitro-project-manager.md for detailed instructions.`,
 
 **Outputs**:
 
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 
 **Dependencies**: nitro-project-manager (for FEATURE), nitro-researcher-expert (optional)
 
@@ -156,7 +156,7 @@ See nitro-software-architect.md for detailed instructions.`,
 
 **Inputs**:
 
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - `task-tracking/TASK_[ID]/tasks.md` (for MODE 2/3)
 - Developer implementation reports
 
@@ -181,7 +181,7 @@ Task({
 
 **MODE**: 1 - DECOMPOSITION
 **Task Folder**: task-tracking/TASK_2026_042
-**Implementation Plan**: Read implementation-plan.md in task folder
+**Implementation Plan**: Read plan.md in task folder
 
 Break down the implementation into atomic, batchable tasks.
 See nitro-team-leader.md for MODE 1 instructions.`,
@@ -256,7 +256,7 @@ See nitro-planner.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Existing agent/skill/command files for pattern matching
 
 **Outputs**:
@@ -279,7 +279,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
-**Plan**: Read implementation-plan.md for context
+**Plan**: Read plan.md for context
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
 See nitro-systems-developer.md for detailed instructions.`,
@@ -302,7 +302,7 @@ See nitro-systems-developer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Library/module CLAUDE.md files
 
 **Outputs**:
@@ -324,7 +324,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
-**Plan**: Read implementation-plan.md for context
+**Plan**: Read plan.md for context
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
 See nitro-backend-developer.md for detailed instructions.`,
@@ -347,7 +347,7 @@ See nitro-backend-developer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Library/module CLAUDE.md files
 
 **Outputs**:
@@ -369,7 +369,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 2 (IN PROGRESS)
-**Plan**: Read implementation-plan.md for context
+**Plan**: Read plan.md for context
 
 Implement all tasks in Batch 2. Update status to IMPLEMENTED when done.
 See nitro-frontend-developer.md for detailed instructions.`,
@@ -392,7 +392,7 @@ See nitro-frontend-developer.md for detailed instructions.`,
 
 **Inputs**:
 
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Existing workflow files (`.github/workflows/`)
 - Build configs
 
@@ -415,7 +415,7 @@ Task({
   prompt: `You are nitro-devops-engineer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
-**Plan**: Read implementation-plan.md for infrastructure design
+**Plan**: Read plan.md for infrastructure design
 
 Implement the infrastructure changes.
 See nitro-devops-engineer.md for detailed instructions.`,
@@ -440,7 +440,7 @@ See nitro-devops-engineer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (completed tasks)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Modified source files
 
 **Outputs**:
@@ -462,7 +462,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for implemented changes
-**Plan**: Read implementation-plan.md for expected behavior
+**Plan**: Read plan.md for expected behavior
 
 Create and run tests, document results in test-report.md.
 See nitro-senior-tester.md for detailed instructions.`,
@@ -527,7 +527,7 @@ See nitro-code-style-reviewer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (file list)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Modified source files
 
 **Outputs**:
@@ -548,7 +548,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for modified files
-**Plan**: Read implementation-plan.md for expected behavior
+**Plan**: Read plan.md for expected behavior
 
 Review code for logic completeness and correctness.
 See nitro-code-logic-reviewer.md for detailed instructions.`,

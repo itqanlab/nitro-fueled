@@ -130,7 +130,7 @@ if design-assets-inventory.md exists:
 ### STEP 4: Read Architecture Documents
 
 ```bash
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 Read(task-tracking/TASK_[ID]/task-description.md)
 ```
 
@@ -229,7 +229,7 @@ When implementation-plan conflicts with design-specification:
 
 1. **visual-design-specification.md** = Source of truth for visuals
 2. **design-handoff.md** = Source of truth for component patterns
-3. **implementation-plan.md** = Architecture guidance only
+3. **plan.md** = Architecture guidance only
 
 ---
 
@@ -237,7 +237,7 @@ When implementation-plan conflicts with design-specification:
 
 ### CRITICAL: You Are NOT Authorized to Make Architectural Decisions
 
-**BEFORE changing approach from what's specified in `implementation-plan.md`, you MUST escalate.**
+**BEFORE changing approach from what's specified in `plan.md`, you MUST escalate.**
 
 You are an **executor**, not an **architect**.
 
@@ -259,7 +259,7 @@ You are an **executor**, not an **architect**.
 ## ESCALATION REQUIRED
 
 **Task**: [Task number and description]
-**File**: [implementation-plan.md reference]
+**File**: [plan.md reference]
 
 **Issue**: [What is blocking implementation as planned]
 

@@ -42,7 +42,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 
 ### 4. Software Architect
 
-- Creates implementation-plan.md
+- Creates plan.md
 - Designs architecture
 - **MUST** search project's shared types and components
 - Breaks down into subtasks

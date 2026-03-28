@@ -8,7 +8,7 @@ This reference documents the three operational modes of the nitro-team-leader ag
 
 | Mode       | Name                         | When to Invoke                                        | Purpose                                                 | Output                                               |
 | ---------- | ---------------------------- | ----------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
-| **MODE 1** | DECOMPOSITION                | After architect completes (or immediately for BUGFIX) | Break implementation-plan.md into atomic, batched tasks | Creates `tasks.md` with batched task assignments     |
+| **MODE 1** | DECOMPOSITION                | After architect completes (or immediately for BUGFIX) | Break plan.md into atomic, batched tasks | Creates `tasks.md` with batched task assignments     |
 | **MODE 2** | ASSIGNMENT + VERIFY + COMMIT | After developer returns OR to assign first/next batch | Verify work, commit code, assign next batch             | Git commits, batch status updates, developer prompts |
 | **MODE 3** | COMPLETION                   | All batches show COMPLETE status                      | Final verification and QA handoff                       | Completion summary with all commits and files        |
 
@@ -18,7 +18,7 @@ This reference documents the three operational modes of the nitro-team-leader ag
 
 ### When to Invoke
 
-- **FEATURE workflow**: After architect creates `implementation-plan.md` and user approves
+- **FEATURE workflow**: After architect creates `plan.md` and user approves
 - **BUGFIX workflow**: Immediately after task initialization (skips PM/Architect)
 - **REFACTORING workflow**: After architect approval
 
@@ -33,7 +33,7 @@ Task({
 **Task Folder**: task-tracking/TASK_[ID]
 **User Request**: "[original request from context.md]"
 
-Read implementation-plan.md and create tasks.md with batched tasks.
+Read plan.md and create tasks.md with batched tasks.
 See nitro-team-leader.md for detailed MODE 1 instructions.`,
 });
 ```

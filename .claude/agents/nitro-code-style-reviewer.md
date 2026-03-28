@@ -272,7 +272,7 @@ Read(.claude/anti-patterns.md)
 
 # Read task requirements
 Read(task-tracking/TASK_[ID]/context.md)
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 
 # Find similar patterns in codebase for comparison
 Glob(**/*similar*.ts)

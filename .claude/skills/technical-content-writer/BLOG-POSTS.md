@@ -37,7 +37,7 @@ Educate developers, demonstrate expertise, drive organic traffic through technic
 # Find the story
 Read(task-tracking/TASK_XXXX/context.md)      # The problem
 Read(task-tracking/TASK_XXXX/task-description.md)  # Requirements
-Read(task-tracking/TASK_XXXX/implementation-plan.md)  # Solution approach
+Read(task-tracking/TASK_XXXX/plan.md)  # Solution approach
 
 # Find the code
 Read(libs/<library>/CLAUDE.md)                # Library overview
@@ -67,7 +67,7 @@ Grep("<feature>", task-tracking/registry.md)  # Related tasks
 
 ## Our Approach (2-3 paragraphs)
 
-- High-level solution (from implementation-plan.md)
+- High-level solution (from plan.md)
 - Why we chose this approach
 - Key technical decisions
 

@@ -50,7 +50,7 @@ Exactly 4 failure tags are defined. Every failure entry in a record must use one
 
 **Examples**:
 
-- `software-architect` produced an `implementation-plan.md` with section headers but no content inside them — placeholders accepted as a completed deliverable
+- `software-architect` produced an `plan.md` with section headers but no content inside them — placeholders accepted as a completed deliverable
 - `systems-developer` created a skill file where the Workflow section listed steps as `[TODO: define step logic]` instead of real procedural steps
 
 ---

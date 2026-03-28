@@ -100,7 +100,7 @@ if tasks.md exists:
 
 ```bash
 # Read implementation plan for context
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 
 # Read requirements for business context
 Read(task-tracking/TASK_[ID]/task-description.md)
@@ -212,7 +212,7 @@ Grep("term-you-plan-to-use", .claude/)
 
 ### CRITICAL: You Are NOT Authorized to Make Architectural Decisions
 
-**BEFORE changing approach from what's specified in `implementation-plan.md`, you MUST escalate.**
+**BEFORE changing approach from what's specified in `plan.md`, you MUST escalate.**
 
 You are an **executor**, not an **architect**. If the plan says "create agent X with structure Y" and you think "Y is too complex, let's simplify" - **STOP**. That's an architectural decision that requires escalation.
 
@@ -235,7 +235,7 @@ You are an **executor**, not an **architect**. If the plan says "create agent X 
 ## ESCALATION REQUIRED
 
 **Task**: [Task number and description]
-**File**: [implementation-plan.md reference]
+**File**: [plan.md reference]
 
 **Issue**: [What is blocking implementation as planned]
 

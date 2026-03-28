@@ -46,7 +46,7 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | 2. DEFINE REQUIREMENTS | Scope, acceptance criteria | task-description.md | PM or first planning agent |
 | 3. PLAN THE WORK | Approach, structure, steps | plan.md | Architect (code), Content Writer (outline), Designer (brief) |
 | 4. EXECUTE | Produce the deliverable | Actual output (code, content, designs) | Developer, Content Writer, Designer, DevOps |
-| 5. REVIEW | Quality gate | review-report.md | Code review, style review, accessibility review |
+| 5. REVIEW | Quality gate | review-*.md (style, logic, security) | Code review, style review, accessibility review |
 | 6. COMPLETE | Close the task | Status transition, logging, commit | Completion Worker or Supervisor |
 
 **Invariants across all types:**
@@ -251,7 +251,7 @@ When the checkpoint passes (user replies "APPROVED"):
 - **After Architect checkpoint passes** and plan.md is written, commit:
   ```
   git add task-tracking/TASK_[ID]/plan.md
-  git commit -m "docs(tasks): add implementation plan for TASK_[ID]"
+  git commit -m "docs(tasks): add plan for TASK_[ID]"
   ```
 
 See [checkpoints.md](references/checkpoints.md) for all checkpoint templates.
