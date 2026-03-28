@@ -260,7 +260,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_077 | Angular shell — layout, sidebar, routing, dark theme, mock data service | COMPLETE | P0-Critical |
 | TASK_2026_078 | Dashboard main view | COMPLETE | P1-High |
 | TASK_2026_079 | Analytics & Insights view | COMPLETE | P1-High |
-| TASK_2026_080 | Agent Editor view | CREATED | P1-High |
+| TASK_2026_080 | Agent Editor view | COMPLETE | P1-High |
 | TASK_2026_081 | MCP Integrations view | COMPLETE | P1-High |
 | TASK_2026_082 | Model Assignments view | CREATED | P1-High |
 | TASK_2026_083 | New Task view | CREATED | P1-High |
