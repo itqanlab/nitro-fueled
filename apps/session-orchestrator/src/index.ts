@@ -15,6 +15,7 @@ import { handleSpawnWorker, spawnWorkerSchema } from './tools/spawn-worker.js';
 import { handleSubscribeWorker, subscribeWorkerSchema } from './tools/subscribe-worker.js';
 import { handleGetPendingEvents, getPendingEventsSchema } from './tools/get-pending-events.js';
 import { FileWatcher } from './core/file-watcher.js';
+import { EventQueue } from './core/event-queue.js';
 import type { HealthStatus } from './types.js';
 
 const registryDir = join(homedir(), '.session-orchestrator');
@@ -27,6 +28,7 @@ const registryPath = join(registryDir, 'registry.json');
 const registry = new WorkerRegistry(registryPath);
 const watcher = new JsonlWatcher(registry);
 const fileWatcher = new FileWatcher();
+const eventQueue = new EventQueue();
 
 const server = new McpServer({
   name: 'session-orchestrator',
@@ -138,6 +140,40 @@ server.tool(
   },
 );
 
+// --- emit_event ---
+server.tool(
+  'emit_event',
+  'Emit a phase-transition event from a worker. Enqueued into the supervisor event queue. Retrieve via get_pending_events.',
+  {
+    worker_id: z.string().describe('Worker ID returned by spawn_worker'),
+    label: z.string().max(64).describe('Event label (e.g. IN_PROGRESS, PM_COMPLETE, ARCHITECTURE_COMPLETE, BATCH_COMPLETE, IMPLEMENTED)'),
+    data: z.record(z.string(), z.unknown()).optional().describe('Optional key-value payload attached to the event'),
+  },
+  ({ worker_id, label, data }) => {
+    // Validate worker exists (informational — we still accept the event either way
+    // so fast workers that finish before state is written are not silently dropped)
+    const w = registry.get(worker_id);
+    if (!w) {
+      process.stderr.write(`[emit_event] worker ${worker_id} not found in registry — event queued anyway\n`);
+    }
+
+    eventQueue.enqueue({
+      worker_id,
+      event_label: label,
+      emitted_at: new Date().toISOString(),
+      data: data as Record<string, unknown> | undefined,
+      source: 'emit_event',
+    });
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ ok: true, worker_id, label }),
+      }],
+    };
+  },
+);
+
 // --- subscribe_worker ---
 server.tool(
   'subscribe_worker',
@@ -151,10 +187,10 @@ server.tool(
 // --- get_pending_events ---
 server.tool(
   'get_pending_events',
-  'Drain and return all pending worker completion events. Each call removes returned events from the queue (idempotent drain).',
+  'Drain and return all pending worker events (file-watcher completion events + worker-emitted phase events). Each call removes returned events from the queue.',
   getPendingEventsSchema,
   () => {
-    return handleGetPendingEvents(fileWatcher);
+    return handleGetPendingEvents(fileWatcher, eventQueue);
   },
 );
 

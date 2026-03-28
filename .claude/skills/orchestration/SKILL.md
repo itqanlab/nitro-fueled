@@ -257,6 +257,33 @@ below.
 **Log writes are best-effort**: If a write fails, log a warning to the user and continue.
 Never let log failure interrupt orchestration.
 
+### Phase Event Emission (Supervisor Telemetry)
+
+**In Supervisor mode only** (when the prompt contains a `WORKER_ID:` line): after each
+phase transition, call MCP `emit_event` to push a telemetry event directly to the
+supervisor's event queue. This lets the supervisor detect stuck workers reactively
+rather than via periodic `get_worker_activity` polling.
+
+**How to find your worker_id**: Read the `WORKER_ID:` line from the prompt. It is
+injected by the Supervisor and has the form `WORKER_ID: WID_xxxxxxxx`.
+
+**Emit table** — call `emit_event` at these points:
+
+| Phase | `label` value | `data` |
+|-------|---------------|--------|
+| `status` written as `IN_PROGRESS` | `IN_PROGRESS` | `{ "task_id": "TASK_XXX" }` |
+| PM agent finishes | `PM_COMPLETE` | `{ "task_id": "TASK_XXX" }` |
+| Architect agent finishes | `ARCHITECTURE_COMPLETE` | `{ "task_id": "TASK_XXX" }` |
+| Each dev batch completes | `BATCH_COMPLETE` | `{ "task_id": "TASK_XXX", "batch": N }` |
+| `status` written as `IMPLEMENTED` | `IMPLEMENTED` | `{ "task_id": "TASK_XXX" }` |
+
+**Best-effort**: `emit_event` calls are fire-and-forget. If the MCP tool is unavailable
+or returns an error, log a warning and continue. Never let `emit_event` failure
+interrupt orchestration.
+
+**Do NOT emit** if running in interactive mode (no `WORKER_ID:` in the prompt). The
+`emit_event` tool is a supervisor-to-worker contract, not a user-facing feature.
+
 **In Build Worker / Review Worker sessions** (spawned by auto-pilot): The worker runs
 `/orchestrate TASK_X` which invokes this skill. The skill will create a new `SESSION_ID`
 for the worker's own session. This is intentional — each worker gets its own session

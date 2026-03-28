@@ -12,18 +12,23 @@ and loops until all tasks are complete or blocked.
 /auto-pilot --dry-run                          # Show plan without spawning
 /auto-pilot --concurrency 3 --interval 5m      # Override defaults
 /auto-pilot --force                            # Override stale RUNNING state
+/auto-pilot --pause                            # Run one monitoring cycle then stop cleanly (workers keep running)
+/auto-pilot --continue                         # Resume most recent paused/stopped session
+/auto-pilot --continue SESSION_2026-03-28_14-00-00  # Resume specific session
 ```
 
 ### Parameters
 
-| Parameter       | Format        | Default | Description                   |
-|-----------------|---------------|---------|-------------------------------|
-| [TASK_ID]       | TASK_YYYY_NNN | (all)   | Process single task only      |
-| --dry-run       | flag          | false   | Show execution plan, no spawn |
-| --concurrency   | integer       | 3       | Max simultaneous workers      |
-| --interval      | Nm            | 10m     | Monitoring interval           |
-| --retries       | integer       | 2       | Max retries per task          |
-| --force         | flag          | false   | Override stale RUNNING state  |
+| Parameter       | Format                       | Default | Description                                              |
+|-----------------|------------------------------|---------|----------------------------------------------------------|
+| [TASK_ID]       | TASK_YYYY_NNN                | (all)   | Process single task only                                 |
+| --dry-run       | flag                         | false   | Show execution plan, no spawn                            |
+| --concurrency   | integer                      | 3       | Max simultaneous workers                                 |
+| --interval      | Nm                           | 10m     | Monitoring interval                                      |
+| --retries       | integer                      | 2       | Max retries per task                                     |
+| --force         | flag                         | false   | Override stale RUNNING state                             |
+| --pause         | flag                         | false   | Stop cleanly after current monitoring cycle; workers keep running |
+| --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given)  |
 
 ## Execution Steps
 
@@ -42,6 +47,11 @@ Parse $ARGUMENTS for:
 - `--interval Nm` -> override monitoring interval
 - `--retries N` -> override retry limit
 - `--force` flag -> override stale RUNNING state from a previous session
+- `--pause` flag -> pause after current monitoring cycle (see Pause Mode in SKILL.md)
+- `--continue [SESSION_ID]` -> resume mode: if followed by a `SESSION_{...}` token, use it as
+  the target session; otherwise auto-detect the most recent paused/stopped session
+  (see Continue Mode in SKILL.md). **If `--continue` is present, skip Steps 3 and 4 entirely**
+  and jump directly to the Continue Mode sequence in SKILL.md.
 
 ### Step 3: Pre-Flight Checks
 
@@ -251,9 +261,9 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 ## Quick Reference
 
 **Worker Types**: Build Worker (CREATED -> IMPLEMENTED), Review Worker (IMPLEMENTED -> COMPLETE)
-**Modes**: all-tasks (default), single-task, dry-run
-**MCP Tools**: spawn_worker, list_workers, get_worker_activity,
-              get_worker_stats, kill_worker
+**Modes**: all-tasks (default), single-task, dry-run, pause, continue
+**MCP Tools**: spawn_worker, list_workers, get_worker_activity, get_worker_stats,
+              kill_worker, subscribe_worker, get_pending_events, emit_event
 **State Dir**: task-tracking/sessions/SESSION_{timestamp}/
 **Skill Path**: .claude/skills/auto-pilot/SKILL.md
 

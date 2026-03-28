@@ -104,6 +104,16 @@ export interface SessionMeta {
   startedAt: number;
 }
 
+// --- Emitted events (worker-side phase telemetry) ---
+
+export interface EmittedEvent {
+  worker_id: string;
+  event_label: string;
+  emitted_at: string; // ISO timestamp
+  data?: Record<string, unknown>;
+  source: 'emit_event';
+}
+
 // --- Event-driven worker completion ---
 
 export interface FileValueCondition {

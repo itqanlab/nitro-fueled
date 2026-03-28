@@ -154,7 +154,7 @@ The log lives at `{SESSION_DIR}log.md` and is **append-only** — never trim or 
 
 ## Modes
 
-The supervisor operates in three modes, selected via the `/auto-pilot` command:
+The supervisor operates in these modes, selected via the `/auto-pilot` command:
 
 | Mode | Trigger | Behavior |
 |------|---------|----------|
@@ -162,8 +162,60 @@ The supervisor operates in three modes, selected via the `/auto-pilot` command:
 | **Limited** | `/auto-pilot --limit N` | Same as all-tasks but stops gracefully after N tasks reach a terminal state. Useful for e2e testing and controlled batch runs. |
 | **Single-task** | `/auto-pilot TASK_YYYY_NNN` | Spawn appropriate worker type based on current state. If CREATED or IN_PROGRESS, spawn Build Worker. If IMPLEMENTED, spawn Review Lead + Test Lead simultaneously (or Review Lead only if `Testing: skip`). If IN_REVIEW, spawn Review Lead (if reviews not done) and/or Test Lead (if test-report.md missing). Monitor until both leads complete. After both done, evaluate findings and spawn Fix Worker (→ FIXING) or Completion Worker (→ COMPLETE). If FIXING, spawn Fix Worker and monitor until COMPLETE. Stop after final state reached or failure. |
 | **Dry-run** | `/auto-pilot --dry-run` | Display dependency graph and wave-based execution plan. No workers spawned. |
+| **Pause** | `/auto-pilot --pause` | Run until current monitoring interval ends, then stop cleanly. Writes `Loop Status: PAUSED` to state.md and exits. Active workers continue running — they are NOT killed. Session can be resumed later with `--continue`. |
+| **Continue** | `/auto-pilot --continue [SESSION_ID]` | Resume a previously paused or stopped session. Reads state.md from the specified session (or the most recent non-active session if SESSION_ID is omitted), reconciles with MCP, and enters the Core Loop. Skips pre-flight and session-directory creation — reuses existing SESSION_DIR. |
 
 Single-task and dry-run modes are handled by the command entry point (`.claude/commands/auto-pilot.md`). The Core Loop below describes the all-tasks mode.
+
+---
+
+## Pause Mode
+
+When `--pause` is passed, the supervisor sets a `pause_requested = true` flag in memory at startup. The loop proceeds normally — the supervisor spawns and monitors workers as usual. At the END of each monitoring cycle (after Step 6 completes), check `pause_requested`:
+
+**IF `pause_requested` is true:**
+
+1. Write `Loop Status: PAUSED` to `{SESSION_DIR}state.md` (keep all other state intact).
+2. Append to `{SESSION_DIR}log.md`:
+   `| {HH:MM:SS} | auto-pilot | SUPERVISOR PAUSED — {N} active workers still running, session preserved |`
+3. Remove this session's row from `task-tracking/active-sessions.md`.
+4. Display:
+   ```
+   SUPERVISOR PAUSED
+   -----------------
+   Active workers: {N} (still running — NOT killed)
+   Session: {SESSION_ID}
+   Resume with: /auto-pilot --continue {SESSION_ID}
+   ```
+5. **Do NOT run Step 8** (session stop). Exit the loop without committing session artifacts — they will be committed by `--continue` or the stale archive check.
+
+> **Note**: Pause preserves all active workers. When you resume with `--continue`, the supervisor reconciles worker state — workers that completed while paused are handled by the normal completion handler.
+
+---
+
+## Continue Mode
+
+When `--continue [SESSION_ID]` is passed:
+
+### Finding the Session to Resume
+
+1. **If SESSION_ID is provided**: look for `task-tracking/sessions/{SESSION_ID}/state.md`. If not found, print error and exit.
+2. **If SESSION_ID is omitted**: scan `task-tracking/sessions/` for all directories matching `SESSION_{YYYY-MM-DD}_{HH-MM-SS}`. Read each `state.md` and look for any `Loop Status` that is NOT `COMPLETE`, `ABORTED`, or `CANCELLED` (i.e. `PAUSED`, `STOPPED`, `RUNNING`, or missing). Select the most recently created one. `RUNNING` is valid here — it means the session was killed before it could write a clean stop. If none found, print error and exit.
+
+### Resume Sequence
+
+1. **MCP validation** (same as normal startup — HARD FAIL if MCP unavailable).
+2. **Concurrent Session Guard** (same check — warn if another supervisor is active).
+3. **Read state.md** from the located session. Restore all state:
+   - Active workers, completed/failed task lists, retry counters, config
+   - `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/`
+4. **Re-register in `task-tracking/active-sessions.md`** (append a new row for this resumed session, same SESSION_ID).
+5. Append to `{SESSION_DIR}log.md`:
+   `| {HH:MM:SS} | auto-pilot | SUPERVISOR RESUMED — {N} active workers, {N} completed, {N} failed |`
+6. Write `Loop Status: RUNNING` to `{SESSION_DIR}state.md`.
+7. **Skip Steps 1-4 of the Core Loop** (no fresh pre-flight, no new session dir). Go directly to **Step 1: Read State** (reconciliation) to sync with MCP, then continue normally.
+
+> **Continue skips pre-flight**: The session was already validated when it started. Tasks that were valid then are assumed still valid (or will fail the JIT gate if they changed).
 
 ---
 
@@ -1151,12 +1203,14 @@ These templates are used by Step 5b to generate the prompt for each worker type.
 Run /orchestrate TASK_YYYY_NNN
 
 BUILD WORKER — AUTONOMOUS MODE
+WORKER_ID: {worker_id}
 
 You are a Build Worker. Your job is to take this task from CREATED
 through implementation. Follow these rules strictly:
 
 1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
    IN_PROGRESS (no trailing newline). This signals the Supervisor that work has begun.
+   Then call MCP emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
 
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints (Scope, Requirements, Architecture, QA Choice)
@@ -1736,8 +1790,15 @@ subscribe_worker(worker_id: string, conditions: WatchCondition[])
   -> { subscribed: boolean, watched_paths: string[] }
   // working_directory is taken from the worker's registry entry — not a parameter
 
+emit_event(worker_id: string, label: string, data?: Record<string, unknown>)
+  -> { ok: boolean, worker_id: string, label: string }
+  // Called by workers (orchestration skill) to push phase-transition events to the supervisor queue.
+  // The supervisor never calls emit_event — only workers do.
+
 get_pending_events()
-  -> { events: Array<{ worker_id, event_label, triggered_at, condition }> }
+  -> { events: Array<{ worker_id, event_label, triggered_at, condition? }> }
+  // Returns merged events from both file-watcher (subscribe_worker) and emit_event sources.
+  // EmittedEvents have source: 'emit_event'; WatchEvents have a condition field.
 
 list_workers(status_filter?: 'active' | 'completed' | 'failed' | 'all')
   -> { workers: [{ worker_id, label, status, pid, started_at, duration_minutes, total_tokens, context_percent, cost_estimate_usd }] }
