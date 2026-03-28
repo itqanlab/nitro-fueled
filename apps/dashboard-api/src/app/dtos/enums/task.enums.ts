@@ -1,12 +1,13 @@
 /**
  * Task-related enum DTOs for OpenAPI documentation.
  * Values match dashboard.types.ts exactly.
+ * Note: Using regular enums (not const) for Swagger decorator compatibility.
  */
 
 /**
  * Task status values representing the lifecycle of a task.
  */
-export const enum TaskStatus {
+export enum TaskStatus {
   CREATED = 'CREATED',
   IN_PROGRESS = 'IN_PROGRESS',
   IMPLEMENTED = 'IMPLEMENTED',
@@ -21,7 +22,7 @@ export const enum TaskStatus {
 /**
  * Task type values categorizing the nature of work.
  */
-export const enum TaskType {
+export enum TaskType {
   FEATURE = 'FEATURE',
   BUGFIX = 'BUGFIX',
   REFACTORING = 'REFACTORING',
@@ -34,7 +35,7 @@ export const enum TaskType {
 /**
  * Task priority values for scheduling and triage.
  */
-export const enum TaskPriority {
+export enum TaskPriority {
   P0_CRITICAL = 'P0-Critical',
   P1_HIGH = 'P1-High',
   P2_MEDIUM = 'P2-Medium',
@@ -44,7 +45,7 @@ export const enum TaskPriority {
 /**
  * Task complexity assessment values.
  */
-export const enum TaskComplexity {
+export enum TaskComplexity {
   Low = 'Low',
   Medium = 'Medium',
   High = 'High',

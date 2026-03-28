@@ -1,12 +1,13 @@
 /**
  * Worker-related enum DTOs for OpenAPI documentation.
  * Values match dashboard.types.ts exactly.
+ * Note: Using regular enums (not const) for Swagger decorator compatibility.
  */
 
 /**
  * Worker type values distinguishing between build and review workers.
  */
-export const enum WorkerType {
+export enum WorkerType {
   Build = 'Build',
   Review = 'Review',
 }
@@ -14,7 +15,7 @@ export const enum WorkerType {
 /**
  * Worker status values representing the execution state.
  */
-export const enum WorkerStatus {
+export enum WorkerStatus {
   running = 'running',
   completed = 'completed',
   failed = 'failed',
@@ -24,7 +25,7 @@ export const enum WorkerStatus {
 /**
  * Worker health status for monitoring stuck or degraded workers.
  */
-export const enum WorkerHealth {
+export enum WorkerHealth {
   healthy = 'healthy',
   warning = 'warning',
   stuck = 'stuck',
@@ -33,7 +34,7 @@ export const enum WorkerHealth {
 /**
  * Review finding severity levels.
  */
-export const enum ReviewSeverity {
+export enum ReviewSeverity {
   critical = 'critical',
   serious = 'serious',
   moderate = 'moderate',
@@ -44,7 +45,7 @@ export const enum ReviewSeverity {
 /**
  * Pipeline phase status values.
  */
-export const enum PipelinePhaseStatus {
+export enum PipelinePhaseStatus {
   pending = 'pending',
   active = 'active',
   complete = 'complete',
