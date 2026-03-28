@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -95,7 +95,7 @@
 | TASK_2026_090 | COMPLETE    | REFACTORING | Migrate init + run + status commands to Oclif | 2026-03-28 | default |
 | TASK_2026_091 | COMPLETE    | REFACTORING | Migrate create + dashboard + config + update commands to Oclif | 2026-03-28 | default |
 | TASK_2026_092 | COMPLETE    | FEATURE | Angular ↔ NestJS integration + CLI build pipeline update | 2026-03-28 | default |
-| TASK_2026_093 | IN_REVIEW   | REFACTORING | Deprecate old packages — remove packages/ after cutover | 2026-03-28 | default |
+| TASK_2026_093 | COMPLETE    | REFACTORING | Deprecate old packages — remove packages/ after cutover | 2026-03-28 | default |
 | TASK_2026_094 | COMPLETE    | FEATURE | Worker-Side Phase Event Emission via MCP `emit_event` | 2026-03-28 | default |
 | TASK_2026_095 | CANCELLED   | REFACTORING | Global Config Infrastructure — Migrate Provider Config to User Workspace Scope | 2026-03-28 | default |
 | TASK_2026_096 | CANCELLED   | FEATURE | Dynamic Model Fetching, Auto-Refresh, and Auto-Fallback | 2026-03-28 | default |
@@ -108,27 +108,30 @@
 | TASK_2026_103 | CREATED     | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
 | TASK_2026_104 | CREATED     | FEATURE | Enhance RESEARCH Orchestration Flow (Market, Competitive, Feasibility) | 2026-03-28 | default |
 | TASK_2026_105 | CREATED     | FEATURE | Add OPS Orchestration Flow (Project Setup, CI/CD, Infrastructure) | 2026-03-28 | default |
-| TASK_2026_106 | BLOCKED     | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_106 | COMPLETE    | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_107 | CREATED     | REFACTORING | Update Orchestration Examples and Agent References to Generalized Artifact Names | 2026-03-28 | default |
 | TASK_2026_108 | CANCELLED   | REFACTORING | Remove OpenAI/OpenCode Provider Support (Temporary) | 2026-03-28 | default |
 | TASK_2026_109 | COMPLETE    | FEATURE | API Contract Layer — OpenAPI Spec, Typed DTOs, Versioned Endpoints | 2026-03-28 | default |
-| TASK_2026_110 | CREATED     | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_110 | IN_REVIEW   | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_111 | CREATED     | FEATURE | Two-Phase Provider Resolver Engine (Part 2/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_112 | CREATED     | REFACTORING | Auto-Pilot Routing Update — Config-Driven with Codex Support (Part 3/3 — Provider Resolver Engine) | 2026-03-28 | default |
 | TASK_2026_113 | COMPLETE    | BUGFIX  | Add Phase-Boundary Git Commits to Orchestration Pipeline | 2026-03-28 | default |
-| TASK_2026_114 | IN_REVIEW   | BUGFIX  | Enforce Review-Lessons Pre-Read in Build Worker Prompt | 2026-03-28 | default |
+| TASK_2026_114 | COMPLETE    | BUGFIX  | Enforce Review-Lessons Pre-Read in Build Worker Prompt | 2026-03-28 | default |
 | TASK_2026_115 | CREATED     | REFACTORING | Extract Inline Template/Styles in Agent Editor Sub-Components | 2026-03-28 | default |
 | TASK_2026_116 | COMPLETE    | REFACTORING | Rename Commands to nitro-* Prefix — Source (.claude/commands/) — Part 1 of 2 | 2026-03-28 | default |
 | TASK_2026_117 | COMPLETE    | REFACTORING | Rename Commands to nitro-* Prefix — Scaffold Sync — Part 2 of 2 | 2026-03-28 | default |
-| TASK_2026_118 | IN_REVIEW   | FEATURE | /nitro-status Command — Registry-Only Project Status | 2026-03-28 | default |
+| TASK_2026_118 | COMPLETE    | FEATURE | /nitro-status Command — Registry-Only Project Status | 2026-03-28 | default |
 | TASK_2026_119 | CREATED     | FEATURE | /nitro-burn Command — Token and Cost Analytics | 2026-03-28 | default |
-| TASK_2026_120 | IN_PROGRESS | FEATURE | nitro-cortex — Package Scaffold + SQLite Schema + Task Tools (Part 1 of 3) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_121 | CREATED     | FEATURE | nitro-cortex — Session + Worker Tools (Part 2 of 3) | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_120 | COMPLETE    | FEATURE | nitro-cortex — Package Scaffold + SQLite Schema + Task Tools (Part 1 of 3) | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_121 | IN_REVIEW   | FEATURE | nitro-cortex — Session + Worker Tools (Part 2 of 3) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_122 | CREATED     | REFACTORING | nitro-cortex — Skill Integration (Part 3 of 3) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_123 | COMPLETE    | FEATURE | Benchmark Suite — Generic Reusable Evaluation Tasks | 2026-03-28 | default |
-| TASK_2026_124 | IN_REVIEW   | FEATURE | Evaluation Supervisor — Single Model Mode | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_125 | CREATED     | FEATURE | Evaluation Supervisor — A/B Comparison and Role Testing | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_126 | CREATED     | FEATURE | Evaluation Review Scoring and Report Generation | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_124 | COMPLETE    | FEATURE | Evaluation Supervisor — Single Model Mode | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_125 | IN_REVIEW   | FEATURE | Evaluation Supervisor — A/B Comparison and Role Testing | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_126 | IMPLEMENTED | FEATURE | Evaluation Review Scoring and Report Generation | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_127 | CREATED     | REFACTORING | Extract inline constants from new-task.component.ts to new-task.constants.ts | 2026-03-28 | default |
 | TASK_2026_128 | CREATED     | REFACTORING | Extract inline interfaces from dashboard/analytics/agent-editor components to model files | 2026-03-28 | default |
 | TASK_2026_129 | CREATED     | REFACTORING | Add SESSION_ID Validation to nitro-auto-pilot --continue Flag | 2026-03-28 | default |
+| TASK_2026_130 | CREATED     | BUGFIX  | Fix Retrospective Commit Step Ordering | 2026-03-28 | default |
+| TASK_2026_131 | CREATED     | BUGFIX  | Add Authentication Guard to NestJS WebSocket Gateway | 2026-03-28 | default |
+| TASK_2026_132 | CREATED     | BUGFIX  | Resolve Deferred TASK_2026_109 Findings — DTO Validation, File Split, ValidationPipe | 2026-03-28 | default |
