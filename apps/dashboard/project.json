@@ -1,0 +1,65 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "dashboard",
+  "projectType": "application",
+  "sourceRoot": "apps/dashboard/src",
+  "prefix": "app",
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "options": {
+        "outputPath": "apps/dashboard/dist",
+        "index": "apps/dashboard/src/index.html",
+        "browser": "apps/dashboard/src/main.ts",
+        "tsConfig": "apps/dashboard/tsconfig.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/dashboard/public"
+          }
+        ],
+        "styles": [
+          "node_modules/ng-zorro-antd/ng-zorro-antd.dark.css",
+          "apps/dashboard/src/styles.scss"
+        ],
+        "scripts": []
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "dashboard:build:production"
+        },
+        "development": {
+          "buildTarget": "dashboard:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/dashboard/jest.config.ts"
+      }
+    }
+  }
+}

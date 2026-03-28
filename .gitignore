@@ -6,6 +6,9 @@ dist/
 package-lock.json
 .nx/
 
+# Angular cache
+.angular/
+
 # Supervisor ephemeral state
 task-tracking/orchestrator-state.md
 
