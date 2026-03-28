@@ -16,6 +16,10 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --continue                         # Resume most recent paused/stopped session
 /nitro-auto-pilot --continue SESSION_2026-03-28_14-00-00  # Resume specific session
 /nitro-auto-pilot --evaluate claude-opus-4-6          # Evaluate a model against the benchmark suite
+/nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6  # A/B comparison
+/nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role reviewer  # Test as reviewer
+/nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role both      # Test both roles
+/nitro-auto-pilot --evaluate claude-opus-4-6 --reviewer claude-sonnet-4-6  # Override reviewer model
 ```
 
 ### Parameters
@@ -31,6 +35,9 @@ and loops until all tasks are complete or blocked.
 | --pause         | flag                         | false   | Stop cleanly after current monitoring cycle; workers keep running |
 | --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given)  |
 | --evaluate      | model-id string              | —       | Enter evaluation mode: run benchmark suite against specified model |
+| --compare       | model-id string              | —       | A/B comparison: run same benchmarks on both models in parallel worktrees |
+| --role          | builder\|reviewer\|both       | builder | Which role to test the model in. `reviewer` and `both` require `--compare` |
+| --reviewer      | model-id string              | —       | Override the reviewer model for evaluation (defaults to baseline or system default) |
 
 ## Execution Steps
 
@@ -58,6 +65,15 @@ Parse $ARGUMENTS for:
   benchmark suite. The `<model-id>` is required (e.g., `claude-opus-4-6`, `claude-sonnet-4-6`,
   `glm-5`). **If `--evaluate` is present, skip Steps 3, 4, 5, and 6 entirely** and jump
   directly to the Evaluation Mode sequence in SKILL.md.
+- `--compare <baseline-model>` -> A/B comparison mode (requires `--evaluate`). Runs same
+  benchmarks on both models in separate worktrees. Results stored in
+  `evaluations/<date>-<modelA>_vs_<modelB>/`.
+- `--role builder|reviewer|both` -> controls which role the model under test plays in
+  evaluation. `builder` (default): model builds, baseline reviews. `reviewer`: baseline
+  builds, model reviews. `both`: two full passes. Requires `--compare` when `reviewer`
+  or `both`.
+- `--reviewer <model-id>` -> overrides the model used for Review Workers in evaluation.
+  Defaults to `--compare` model if A/B mode, or no review phase if single-model builder.
 
 ### Step 3: Pre-Flight Checks
 
@@ -278,7 +294,7 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 ## Quick Reference
 
 **Worker Types**: Build Worker (CREATED -> IMPLEMENTED), Review Worker (IMPLEMENTED -> COMPLETE)
-**Modes**: all-tasks (default), single-task, dry-run, pause, continue, evaluate
+**Modes**: all-tasks (default), single-task, dry-run, pause, continue, evaluate, evaluate-ab, evaluate-role
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity, get_worker_stats,
               kill_worker, subscribe_worker, get_pending_events, emit_event
 **State Dir**: task-tracking/sessions/SESSION_{timestamp}/

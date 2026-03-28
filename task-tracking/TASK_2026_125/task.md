@@ -63,8 +63,8 @@ This is Part 3 of 4 of the Model Evaluation Pipeline feature.
 
 ## File Scope
 
-- .claude/skills/auto-pilot/SKILL.md
-- .claude/commands/nitro-auto-pilot.md
+- .claude/skills/auto-pilot/SKILL.md (modified — evaluation mode sections E1-E7, modes table, review worker prompt template)
+- .claude/commands/nitro-auto-pilot.md (modified — usage examples, parameters table, argument parsing, quick reference)
 
 ## Parallelism
 
