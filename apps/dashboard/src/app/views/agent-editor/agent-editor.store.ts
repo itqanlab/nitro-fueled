@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import {
   AgentEditorData,
   AgentCategory,
@@ -8,7 +8,7 @@ import {
   McpToolAccess,
   CursorPosition,
 } from '../../models/agent-editor.model';
-import { MockDataService } from '../../services/mock-data.service';
+import { MOCK_AGENT_EDITOR_LIST } from '../../services/mock-data.constants';
 
 interface AgentMetadata {
   readonly name: string;
@@ -38,10 +38,7 @@ function extractMetadata(agent: AgentEditorData): AgentMetadata {
 
 @Injectable({ providedIn: 'root' })
 export class AgentEditorStore {
-  private readonly mockData = inject(MockDataService);
-
-  public readonly agentList: readonly AgentEditorData[] =
-    this.mockData.getAgentEditorList();
+  public readonly agentList: readonly AgentEditorData[] = MOCK_AGENT_EDITOR_LIST;
 
   public readonly selectedAgent = signal<AgentEditorData | null>(null);
   public readonly editorContent = signal<string>('');
@@ -87,9 +84,8 @@ export class AgentEditorStore {
   });
 
   constructor() {
-    const list = this.mockData.getAgentEditorList();
-    if (list.length > 0) {
-      this.selectAgent(list[0].id);
+    if (this.agentList.length > 0) {
+      this.selectAgent(this.agentList[0].id);
     }
   }
 
@@ -97,7 +93,7 @@ export class AgentEditorStore {
     if (this.isDirty()) {
       this.saveDraft();
     }
-    const agent = this.mockData.getAgentEditorData(id);
+    const agent = this.agentList.find((a) => a.id === id);
     if (!agent) return;
 
     const meta = extractMetadata(agent);

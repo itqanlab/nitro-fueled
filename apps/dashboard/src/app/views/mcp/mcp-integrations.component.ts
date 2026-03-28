@@ -1,6 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { MockDataService } from '../../services/mock-data.service';
+import {
+  MOCK_MCP_SERVERS,
+  MOCK_MCP_TOOL_ACCESS,
+  MOCK_MCP_INTEGRATIONS,
+} from '../../services/mock-data.constants';
 import { CompatibilityMatrixComponent } from './compatibility-matrix/compatibility-matrix.component';
 import { IntegrationsTabComponent } from './integrations-tab/integrations-tab.component';
 
@@ -12,11 +16,9 @@ import { IntegrationsTabComponent } from './integrations-tab/integrations-tab.co
   styleUrl: './mcp-integrations.component.scss',
 })
 export class McpIntegrationsComponent {
-  private readonly mockData = inject(MockDataService);
-
-  public readonly servers = this.mockData.getMcpServers();
-  public readonly toolAccess = this.mockData.getMcpToolAccess();
-  public readonly integrations = this.mockData.getMcpIntegrations();
+  public readonly servers = MOCK_MCP_SERVERS;
+  public readonly toolAccess = MOCK_MCP_TOOL_ACCESS;
+  public readonly integrations = MOCK_MCP_INTEGRATIONS;
 
   public activeTab: 'servers' | 'integrations' = 'servers';
 

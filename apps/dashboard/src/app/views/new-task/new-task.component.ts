@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgClass, UpperCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MockDataService } from '../../services/mock-data.service';
+import { MOCK_PROVIDER_GROUPS } from '../../services/new-task.constants';
 import { StrategySelectorComponent } from './strategy-selector/strategy-selector.component';
 import { WorkflowPreviewComponent } from './workflow-preview/workflow-preview.component';
 import {
@@ -73,13 +73,12 @@ const KEYWORD_STRATEGY_MAP: ReadonlyArray<{ pattern: RegExp; type: StrategyType 
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewTaskComponent {
-  private readonly mockData = inject(MockDataService);
   private readonly router = inject(Router);
 
   public readonly strategies = STRATEGY_CARDS;
   public readonly workflowSteps = WORKFLOW_STEPS;
   public readonly agentRoles = AGENT_ROLES;
-  public readonly providerGroups: readonly ProviderGroup[] = this.mockData.getProviderGroups();
+  public readonly providerGroups: readonly ProviderGroup[] = MOCK_PROVIDER_GROUPS;
 
   public title = '';
   public description = '';

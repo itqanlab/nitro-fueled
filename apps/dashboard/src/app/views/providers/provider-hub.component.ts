@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { DecimalPipe, PercentPipe } from '@angular/common';
-import { MockDataService } from '../../services/mock-data.service';
+import { MOCK_PROVIDER_HUB_DATA } from '../../services/provider-hub.constants';
 import { ProviderHubData } from '../../models/provider-hub.model';
 import { ProviderCardComponent } from './provider-card/provider-card.component';
 
@@ -13,9 +13,7 @@ import { ProviderCardComponent } from './provider-card/provider-card.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProviderHubComponent {
-  private readonly mockData = inject(MockDataService);
-
-  public readonly data: ProviderHubData = this.mockData.getProviderHubData();
+  public readonly data: ProviderHubData = MOCK_PROVIDER_HUB_DATA;
 
   public readonly budgetPercent =
     this.data.costSummary.totalCost / this.data.costSummary.budget;

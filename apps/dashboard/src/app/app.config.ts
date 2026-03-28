@@ -1,5 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideNzConfig } from 'ng-zorro-antd/core/config';
 import type { NzConfig } from 'ng-zorro-antd/core/config';
@@ -26,5 +27,6 @@ export const appConfig: ApplicationConfig = {
     provideNzI18n(en_US),
     provideNzConfig(nzConfig),
     provideNzIcons([SearchOutline, BellOutline, SettingOutline]),
+    provideHttpClient(),
   ],
 };

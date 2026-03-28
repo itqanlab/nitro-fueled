@@ -15,6 +15,8 @@
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^19.2.23",
+    "@types/socket.io-client": "^3.0.0",
+    "socket.io-client": "^4.8.1",
     "@angular/cli": "^19.2.23",
     "@angular/compiler-cli": "^19.2.20",
     "@nx/angular": "^20.8.4",

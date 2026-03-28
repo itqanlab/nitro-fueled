@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { MockDataService } from '../../services/mock-data.service';
+import { MOCK_SIDEBAR_SECTIONS } from '../../services/mock-data.constants';
 import { SidebarSection, SidebarItem } from '../../models/sidebar.model';
 
 @Component({
@@ -12,8 +12,7 @@ import { SidebarSection, SidebarItem } from '../../models/sidebar.model';
   styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
-  private readonly mockData = inject(MockDataService);
-  public readonly sections: readonly SidebarSection[] = this.mockData.getSidebarSections();
+  public readonly sections: readonly SidebarSection[] = MOCK_SIDEBAR_SECTIONS;
 
   public trackByLabel(_index: number, item: SidebarItem): string {
     return item.label;

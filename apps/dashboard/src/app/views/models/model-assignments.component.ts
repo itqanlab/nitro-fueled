@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { MockDataService } from '../../services/mock-data.service';
+import { MOCK_MODEL_ASSIGNMENTS_DATA } from '../../services/model-assignment.constants';
 import { AssignmentsTableComponent } from './assignments-table/assignments-table.component';
 import { PresetCardsComponent } from './preset-cards/preset-cards.component';
 
@@ -12,9 +12,7 @@ import { PresetCardsComponent } from './preset-cards/preset-cards.component';
   styleUrl: './model-assignments.component.scss',
 })
 export class ModelAssignmentsComponent {
-  private readonly mockData = inject(MockDataService);
-
-  public readonly data = this.mockData.getModelAssignmentsData();
+  public readonly data = MOCK_MODEL_ASSIGNMENTS_DATA;
   public activeScope = 'Global Defaults';
 
   public setActiveScope(label: string): void {
