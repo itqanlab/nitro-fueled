@@ -19,3 +19,7 @@ task-tracking/active-sessions.md
 # Worker logs from print-mode sessions
 .worker-logs/
 .nitro-fueled/
+.nitro/
+
+# Agent worktrees (ephemeral, created by MCP session-orchestrator)
+.claude/worktrees/

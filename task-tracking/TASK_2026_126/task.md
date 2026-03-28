@@ -34,11 +34,16 @@ This is Part 4 of 4 of the Model Evaluation Pipeline feature.
    - **Cost summary**: tokens and estimated dollars per task (if available)
    - **Speed summary**: average time per task, per difficulty tier
    - **Retry/failure analysis**: which tasks needed retries, which failed outright
-   - **Recommendation**: adopt / don't adopt / use for specific role (derived from scores)
+   - **Speed vs Quality vs Cost tradeoff table**: a single comparison table that shows each model's average speed, quality score, cost per task, and a computed Value Score (quality/cost ratio). This is the primary decision-making artifact — it answers "which model gives the best results for the money?" Include:
+     - Per-difficulty-tier breakdown (a model might be cost-effective for easy tasks but wasteful for hard ones)
+     - Per-role breakdown (builder value vs reviewer value)
+     - Explicit tradeoff callouts (e.g., "Model X is 30% cheaper but 15% lower quality")
+   - **Recommendation**: adopt / don't adopt / use for specific role — derived from the tradeoff analysis, not just raw scores. Should include role-specific recommendations (e.g., "use as reviewer but not builder") and tier-specific recommendations (e.g., "use for easy/medium tasks only")
 
 3. **Machine-readable output** (`metrics.json`):
    - All metrics in JSON format for future cross-evaluation comparison
    - Schema designed for diffing two evaluation runs
+   - Must include computed tradeoff scores (value ratio, per-tier averages) so external tools can consume them without re-computing
 
 4. **History support**:
    - Results persist in `evaluations/` directory (never auto-cleaned)
