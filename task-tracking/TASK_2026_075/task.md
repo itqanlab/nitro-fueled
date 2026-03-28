@@ -33,8 +33,9 @@ Update `apps/session-orchestrator` to import from `@nitro-fueled/worker-core` in
 
 ## File Scope
 
-- apps/session-orchestrator/src/index.ts
-- apps/session-orchestrator/src/tools/get-pending-events.ts
-- apps/session-orchestrator/src/tools/spawn-worker.ts
-- apps/session-orchestrator/src/tools/subscribe-worker.ts
-- apps/session-orchestrator/package.json
+(N/A - refactor was already complete; no changes needed)
+- apps/session-orchestrator/src/index.ts — already using @nitro-fueled/worker-core imports
+- apps/session-orchestrator/src/tools/get-pending-events.ts — already using @nitro-fueled/worker-core imports
+- apps/session-orchestrator/src/tools/spawn-worker.ts — already using @nitro-fueled/worker-core imports
+- apps/session-orchestrator/src/tools/subscribe-worker.ts — already using @nitro-fueled/worker-core imports
+- apps/session-orchestrator/package.json — already has @nitro-fueled/worker-core dependency
