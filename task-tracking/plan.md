@@ -276,6 +276,22 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_092 | Angular ↔ NestJS integration + CLI build pipeline update | COMPLETE | P1-High |
 | TASK_2026_093 | Deprecate old packages — remove packages/ after cutover | CREATED | P2-Medium |
 
+### Phase 15: nitro-cortex — Shared Intelligence Layer
+**Status**: IN_PROGRESS
+**Description**: Build the `nitro-cortex` MCP server — a SQLite-backed shared intelligence layer that gives agents queryable tools for task state, session coordination, and worker management instead of reading markdown files.
+
+#### Milestones
+- [x] Package scaffold + SQLite schema + task tools (TASK_2026_120)
+- [ ] Session and worker management tools (TASK_2026_121)
+- [ ] Supervisor integration — replace markdown reads with cortex calls (TASK_2026_122)
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_120 | nitro-cortex — Package Scaffold + SQLite Schema + Task Tools (Part 1 of 3) | COMPLETE | P0-Critical |
+| TASK_2026_121 | nitro-cortex — Session and Worker Management Tools (Part 2 of 3) | CREATED | P0-Critical |
+| TASK_2026_122 | nitro-cortex — Supervisor Integration (Part 3 of 3) | CREATED | P0-Critical |
+
 ## Current Focus
 
 **Active Phase**: Phase 14 — Nx Workspace Migration
