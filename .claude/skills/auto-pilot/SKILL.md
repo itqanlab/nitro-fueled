@@ -213,7 +213,7 @@ When `--continue [SESSION_ID]` is passed:
 5. Append to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR RESUMED — {N} active workers, {N} completed, {N} failed |`
 6. Write `Loop Status: RUNNING` to `{SESSION_DIR}state.md`.
-7. **Skip Steps 1-4 of the Core Loop** (no fresh pre-flight, no new session dir). Go directly to **Step 1: Read State** (reconciliation) to sync with MCP, then continue normally.
+7. **Skip Startup Sequence steps 1–4** (no fresh pre-flight, no stale-archive check, no new session dir, no log-stale-results). Go directly to **Core Loop Step 1: Read State** (worker reconciliation) to sync with MCP, then continue normally.
 
 > **Continue skips pre-flight**: The session was already validated when it started. Tasks that were valid then are assumed still valid (or will fail the JIT gate if they changed).
 
@@ -1796,9 +1796,11 @@ emit_event(worker_id: string, label: string, data?: Record<string, unknown>)
   // The supervisor never calls emit_event — only workers do.
 
 get_pending_events()
-  -> { events: Array<{ worker_id, event_label, triggered_at, condition? }> }
+  -> { events: Array<WatchEvent | EmittedEvent> }
+  // WatchEvent shape:    { worker_id, event_label, triggered_at, condition }
+  // EmittedEvent shape:  { worker_id, event_label, emitted_at, data?, source: 'emit_event' }
   // Returns merged events from both file-watcher (subscribe_worker) and emit_event sources.
-  // EmittedEvents have source: 'emit_event'; WatchEvents have a condition field.
+  // Distinguish by checking source field: present and 'emit_event' for emitted events, absent for watch events.
 
 list_workers(status_filter?: 'active' | 'completed' | 'failed' | 'all')
   -> { workers: [{ worker_id, label, status, pid, started_at, duration_minutes, total_tokens, context_percent, cost_estimate_usd }] }
