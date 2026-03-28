@@ -34,7 +34,7 @@ All 17 scaffold command files in `apps/cli/scaffold/.claude/commands/` were succ
 |----|---------|-------------|
 | M-2 | `!cat` Jupyter syntax in `nitro-orchestrate-help.md` code blocks | Replaced with standard shell syntax; updated legacy task ID placeholder |
 | M-3 | `Step 4b` top-level numbering in `nitro-create-agent.md` | Addressed implicitly by S-5 renumbering |
-| M-1 | `nitro-initialize-workspace.md` lacks H1/Usage section | Deferred — pre-existing structural difference, risk of regression in unrelated file |
+| M-1 | `nitro-initialize-workspace.md` lacks H1/Usage section | Fixed — prepended H1 title and Usage line |
 
 ### Security Findings
 | ID | Severity | Disposition |
