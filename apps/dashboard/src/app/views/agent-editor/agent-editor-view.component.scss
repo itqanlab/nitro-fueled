@@ -13,15 +13,3 @@
   overflow: hidden;
 }
 
-.editor-panel-placeholder {
-  flex: 1;
-  overflow: hidden;
-  background-color: var(--bg-primary);
-}
-
-.editor-status-bar-placeholder {
-  height: 40px;
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
-  background-color: var(--bg-secondary);
-}
