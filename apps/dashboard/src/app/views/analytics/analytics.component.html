@@ -1,0 +1,251 @@
+<div class="analytics-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-title-block">
+      <h1 class="page-title">Analytics &amp; Insights</h1>
+      <p class="page-subtitle">AI cost analytics and performance insights across all projects</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary">Export</button>
+      <button type="button" class="btn btn-primary">Schedule Report</button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="period-group" role="group" aria-label="Time period filter">
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod === '7d'"
+        (click)="selectPeriod('7d')"
+      >7d</button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod === '30d'"
+        (click)="selectPeriod('30d')"
+      >30d</button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod === 'month'"
+        (click)="selectPeriod('month')"
+      >This Month</button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod === 'custom'"
+        (click)="selectPeriod('custom')"
+      >Custom</button>
+    </div>
+    <div class="filter-selects">
+      <select
+        class="filter-select"
+        aria-label="Filter by client"
+        [value]="selectedClient"
+        (change)="selectedClient = $any($event.target).value"
+      >
+        <option *ngFor="let c of data.filterOptions.clients" [value]="c">{{ c }}</option>
+      </select>
+      <select
+        class="filter-select"
+        aria-label="Filter by team"
+        [value]="selectedTeam"
+        (change)="selectedTeam = $any($event.target).value"
+      >
+        <option *ngFor="let t of data.filterOptions.teams" [value]="t">{{ t }}</option>
+      </select>
+      <select
+        class="filter-select"
+        aria-label="Filter by project"
+        [value]="selectedProject"
+        (change)="selectedProject = $any($event.target).value"
+      >
+        <option *ngFor="let p of data.filterOptions.projects" [value]="p">{{ p }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Stat Cards Row -->
+  <div class="stat-cards">
+    <div class="stat-card" *ngFor="let card of data.statCards">
+      <div class="stat-label">{{ card.label }}</div>
+      <div class="stat-value" [style.color]="'var(' + card.colorVar + ')'">
+        {{ card.value }}<span *ngIf="card.unit" class="stat-unit"> {{ card.unit }}</span>
+      </div>
+      <div class="stat-trend" *ngIf="card.trend">
+        <span
+          [ngClass]="card.trend.direction === 'up' ? 'trend-up' : 'trend-down'"
+        >
+          {{ card.trend.direction === 'up' ? '▲' : '▼' }} {{ card.trend.percent }}%
+        </span>
+      </div>
+      <div class="stat-sub">{{ card.sub }}</div>
+    </div>
+  </div>
+
+  <!-- Chart Grid -->
+  <div class="chart-grid">
+
+    <!-- Cost by Provider -->
+    <div class="chart-card">
+      <div class="chart-title">Cost by Provider</div>
+      <div class="provider-bars">
+        <div class="provider-bar-row" *ngFor="let provider of data.providerCosts">
+          <span class="provider-label">{{ provider.name }}</span>
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              [ngClass]="'fill-' + provider.colorClass"
+              [style.width.%]="provider.percent"
+            ></div>
+          </div>
+          <span class="provider-value">${{ provider.amount | number:'1.2-2' }}</span>
+          <span class="provider-percent">{{ provider.percent }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost by Client -->
+    <div class="chart-card">
+      <div class="chart-title">Cost by Client</div>
+      <div class="client-bars">
+        <div class="client-bar-row" *ngFor="let client of data.clientCosts">
+          <div class="client-bar-header">
+            <span class="client-name">{{ client.name }}</span>
+            <span class="client-amounts">${{ client.amount | number:'1.2-2' }} / ${{ client.budget | number:'1.0-0' }}</span>
+          </div>
+          <div class="client-bar-track">
+            <div
+              class="client-bar-fill"
+              [style.width.%]="getBudgetPercent(client.amount, client.budget)"
+              [style.background]="'var(' + client.barColorVar + ')'"
+            ></div>
+            <div
+              class="budget-line"
+              [style.left.%]="100"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Agent Performance Table -->
+  <div class="chart-card agent-card">
+    <div class="chart-title">Agent Performance</div>
+    <table class="agent-table">
+      <thead>
+        <tr>
+          <th scope="col">Agent</th>
+          <th scope="col">Tasks</th>
+          <th scope="col">Avg Duration</th>
+          <th scope="col">Tokens/Task</th>
+          <th scope="col">Cost/Task</th>
+          <th scope="col">Success Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let agent of data.agentPerformance">
+          <td class="agent-name-cell">
+            <span
+              class="status-dot"
+              [ngClass]="agent.online ? 'dot-online' : 'dot-offline'"
+              [attr.aria-label]="agent.online ? 'Online' : 'Offline'"
+            ></span>
+            {{ agent.name }}
+          </td>
+          <td>{{ agent.tasks }}</td>
+          <td>{{ agent.avgDuration }}</td>
+          <td>{{ agent.tokensPerTask }}</td>
+          <td>${{ agent.costPerTask | number:'1.2-2' }}</td>
+          <td>
+            <span [ngClass]="['badge', getSuccessRateClass(agent.successRate)]">
+              {{ agent.successRate }}%
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Daily Cost Trend -->
+  <div class="chart-card">
+    <div class="chart-title">Daily Cost Trend</div>
+    <div class="daily-trend-chart">
+      <div class="y-axis" aria-hidden="true">
+        <span>$50</span>
+        <span>$40</span>
+        <span>$30</span>
+        <span>$20</span>
+        <span>$10</span>
+        <span>$0</span>
+      </div>
+      <div class="bar-area">
+        <div
+          class="trend-bar"
+          *ngFor="let entry of data.dailyCosts"
+          [ngClass]="getBarColor(entry.amount, data.dailyBudgetLimit)"
+          [style.height.%]="getBarHeightPercent(entry.amount)"
+          [attr.aria-label]="'Day ' + entry.day + ': $' + entry.amount"
+        ></div>
+        <div
+          class="budget-line-h"
+          [style.bottom.%]="(data.dailyBudgetLimit / maxDailyCost) * 100"
+          aria-label="Budget limit line"
+        ></div>
+      </div>
+      <div class="x-axis" aria-hidden="true">
+        <span>1</span>
+        <span>5</span>
+        <span>10</span>
+        <span>15</span>
+        <span>20</span>
+        <span>25</span>
+        <span>30</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team Breakdown -->
+  <div class="team-grid">
+    <div class="team-card" *ngFor="let team of data.teamBreakdowns">
+      <div class="team-card-header">
+        <span class="team-name">{{ team.name }}</span>
+        <span class="team-cost">${{ team.cost | number:'1.0-0' }}</span>
+      </div>
+      <div class="team-stats">
+        <div class="team-stat">
+          <span class="team-stat-value">{{ team.tasks }}</span>
+          <span class="team-stat-label">Tasks</span>
+        </div>
+        <div class="team-stat">
+          <span class="team-stat-value">{{ team.agents }}</span>
+          <span class="team-stat-label">Agents</span>
+        </div>
+        <div class="team-stat">
+          <span class="team-stat-value">${{ team.avgCost | number:'1.2-2' }}</span>
+          <span class="team-stat-label">Avg Cost/Task</span>
+        </div>
+      </div>
+      <div class="team-budget">
+        <div class="team-budget-label">
+          <span>Budget</span>
+          <span>${{ team.budgetUsed | number:'1.0-0' }} / ${{ team.budgetTotal | number:'1.0-0' }}</span>
+        </div>
+        <div class="budget-track">
+          <div
+            class="budget-fill"
+            [ngClass]="getBudgetClass(team.budgetUsed, team.budgetTotal)"
+            [style.width.%]="getBudgetPercent(team.budgetUsed, team.budgetTotal)"
+          ></div>
+        </div>
+        <div class="budget-percent">{{ getBudgetPercent(team.budgetUsed, team.budgetTotal) | number:'1.0-0' }}%</div>
+      </div>
+    </div>
+  </div>
+
+</div>

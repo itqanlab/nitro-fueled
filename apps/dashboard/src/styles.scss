@@ -28,6 +28,20 @@
   // Radius
   --radius:    6px;
   --radius-lg: 8px;
+
+  // Semantic aliases & status backgrounds
+  --text-tertiary: #595959;
+  --success:       #49aa19;
+  --success-bg:    #162312;
+  --warning:       #d89614;
+  --warning-bg:    #2b2111;
+  --error:         #d32029;
+  --error-bg:      #2a1215;
+  --running:       #177ddc;
+  --completed:     #49aa19;
+  --info:          #177ddc;
+  --paused:        #d89614;
+  --failed:        #d32029;
 }
 
 // Global reset

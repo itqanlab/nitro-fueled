@@ -7,6 +7,7 @@ import { AnalyticsSummary } from '../models/analytics-summary.model';
 import { StatusIndicator } from '../models/provider.model';
 import { SidebarSection } from '../models/sidebar.model';
 import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
+import { AnalyticsData } from '../models/analytics.model';
 import {
   MOCK_PROJECTS,
   MOCK_ACTIVE_TASKS,
@@ -19,6 +20,7 @@ import {
   MOCK_MCP_SERVERS,
   MOCK_MCP_TOOL_ACCESS,
   MOCK_MCP_INTEGRATIONS,
+  MOCK_ANALYTICS_PAGE_DATA,
 } from './mock-data.constants';
 
 @Injectable({ providedIn: 'root' })
@@ -78,4 +80,6 @@ export class MockDataService {
   public getMonthlyBudget(): { readonly used: number; readonly total: number } {
     return { used: 47.30, total: 100 };
   }
+
+  public getAnalyticsPageData(): AnalyticsData { return MOCK_ANALYTICS_PAGE_DATA; }
 }

@@ -3,6 +3,7 @@ import { LayoutComponent } from './layout/layout.component';
 import { PlaceholderViewComponent } from './views/placeholder-view.component';
 import { DashboardComponent } from './views/dashboard/dashboard.component';
 import { McpIntegrationsComponent } from './views/mcp/mcp-integrations.component';
+import { AnalyticsComponent } from './views/analytics/analytics.component';
 
 export const APP_ROUTES: Routes = [
   {
@@ -11,7 +12,7 @@ export const APP_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'analytics', component: PlaceholderViewComponent, data: { title: 'Analytics' } },
+      { path: 'analytics', component: AnalyticsComponent },
       { path: 'agents', component: PlaceholderViewComponent, data: { title: 'Agents' } },
       { path: 'mcp', component: McpIntegrationsComponent },
       { path: 'models', component: PlaceholderViewComponent, data: { title: 'Models' } },

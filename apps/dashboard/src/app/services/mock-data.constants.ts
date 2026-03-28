@@ -1,4 +1,5 @@
 import { Project } from '../models/project.model';
+import { AnalyticsData } from '../models/analytics.model';
 import { Task } from '../models/task.model';
 import { Agent } from '../models/agent.model';
 import { ActivityEntry } from '../models/session.model';
@@ -329,6 +330,58 @@ export const MOCK_MCP_TOOL_ACCESS: readonly McpToolAccessRow[] = [
     access: { Filesystem: true, GitHub: false, Context7: false, Playwright: true, Figma: true, Sentry: false },
   },
 ];
+
+export const MOCK_ANALYTICS_PAGE_DATA: AnalyticsData = {
+  statCards: [
+    { label: 'Total Cost', value: '$847.32', trend: { direction: 'up', percent: 12 }, sub: 'Last 30 days', colorVar: '--warning' },
+    { label: 'Tasks Completed', value: '48', trend: { direction: 'up', percent: 8 }, sub: 'Last 30 days', colorVar: '--success' },
+    { label: 'Tokens Used', value: '2.4M', trend: { direction: 'down', percent: 5 }, sub: 'Last 30 days', colorVar: '--accent' },
+    { label: 'Avg Task Duration', value: '4.2', unit: 'min', trend: { direction: 'down', percent: 15 }, sub: 'vs prior period', colorVar: '--text-secondary' },
+    { label: 'Active Agents', value: '12', sub: 'Currently online', colorVar: '--accent' },
+  ],
+  providerCosts: [
+    { name: 'Anthropic', percent: 62, amount: 523.40, colorClass: 'blue' },
+    { name: 'OpenAI', percent: 23, amount: 198.50, colorClass: 'green' },
+    { name: 'Google', percent: 11, amount: 89.42, colorClass: 'orange' },
+    { name: 'Local/CLI', percent: 4, amount: 36.00, colorClass: 'gray' },
+  ],
+  clientCosts: [
+    { name: 'Acme Corp', amount: 412.80, budget: 500, barColorVar: '--accent' },
+    { name: 'TechStart', amount: 287.52, budget: 300, barColorVar: '--warning' },
+    { name: 'Internal', amount: 147.00, budget: 300, barColorVar: '--success' },
+  ],
+  agentPerformance: [
+    { name: 'team-leader', online: true, tasks: 48, avgDuration: '3.2 min', tokensPerTask: '18.4K', costPerTask: 6.82, successRate: 98 },
+    { name: 'backend-developer', online: true, tasks: 36, avgDuration: '5.1 min', tokensPerTask: '28.6K', costPerTask: 8.21, successRate: 95 },
+    { name: 'frontend-developer', online: true, tasks: 28, avgDuration: '4.8 min', tokensPerTask: '24.1K', costPerTask: 7.95, successRate: 92 },
+    { name: 'software-architect', online: true, tasks: 22, avgDuration: '8.3 min', tokensPerTask: '42.8K', costPerTask: 12.40, successRate: 97 },
+    { name: 'code-logic-reviewer', online: true, tasks: 41, avgDuration: '2.1 min', tokensPerTask: '12.4K', costPerTask: 4.20, successRate: 99 },
+    { name: 'devops-engineer', online: false, tasks: 15, avgDuration: '6.2 min', tokensPerTask: '31.2K', costPerTask: 9.80, successRate: 88 },
+    { name: 'tester', online: true, tasks: 38, avgDuration: '3.8 min', tokensPerTask: '19.7K', costPerTask: 6.40, successRate: 94 },
+    { name: 'researcher', online: false, tasks: 8, avgDuration: '12.4 min', tokensPerTask: '58.3K', costPerTask: 18.20, successRate: 75 },
+  ],
+  dailyCosts: [
+    { day: 1, amount: 22 }, { day: 2, amount: 18 }, { day: 3, amount: 31 }, { day: 4, amount: 28 },
+    { day: 5, amount: 35 }, { day: 6, amount: 42 }, { day: 7, amount: 38 }, { day: 8, amount: 29 },
+    { day: 9, amount: 33 }, { day: 10, amount: 27 }, { day: 11, amount: 41 }, { day: 12, amount: 45 },
+    { day: 13, amount: 38 }, { day: 14, amount: 32 }, { day: 15, amount: 29 }, { day: 16, amount: 36 },
+    { day: 17, amount: 44 }, { day: 18, amount: 39 }, { day: 19, amount: 28 }, { day: 20, amount: 35 },
+    { day: 21, amount: 48 }, { day: 22, amount: 43 }, { day: 23, amount: 37 }, { day: 24, amount: 31 },
+    { day: 25, amount: 42 }, { day: 26, amount: 38 }, { day: 27, amount: 44 }, { day: 28, amount: 29 },
+    { day: 29, amount: 33 }, { day: 30, amount: 38 },
+  ],
+  dailyBudgetLimit: 35,
+  teamBreakdowns: [
+    { name: 'Engineering', cost: 520, tasks: 32, agents: 8, avgCost: 16.25, budgetUsed: 520, budgetTotal: 600 },
+    { name: 'Design', cost: 210, tasks: 12, agents: 3, avgCost: 17.50, budgetUsed: 210, budgetTotal: 400 },
+    { name: 'Marketing', cost: 117, tasks: 4, agents: 2, avgCost: 29.25, budgetUsed: 117, budgetTotal: 200 },
+  ],
+  filterOptions: {
+    clients: ['All Clients', 'Acme Corp', 'TechStart', 'Internal'],
+    teams: ['All Teams', 'Engineering', 'Design', 'Marketing'],
+    projects: ['All Projects', 'e-commerce-api', 'my-react-app', 'go-microservice'],
+  },
+} as const;
 
 export const MOCK_MCP_INTEGRATIONS: readonly McpIntegration[] = [
   {
