@@ -123,6 +123,15 @@ Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no tr
 > - COMPLETE/CANCELLED rows use `—` for both Priority and Dependencies
 > - Legacy rows (pre-TASK_2026_064) missing Priority/Dependencies columns are handled by the Supervisor's Step 2 fallback (treated as P2-Medium, no deps).
 
+### Step 5b: Commit Task Creation
+
+After writing the status file, commit the new task folder:
+
+```bash
+git add task-tracking/TASK_YYYY_NNN/
+git commit -m "docs(tasks): create TASK_YYYY_NNN — {title from Description field}"
+```
+
 ### Step 6: Post-Creation Validation
 
 Run two sequential checks before displaying the summary. All warnings are **non-blocking** — display them and continue to Step 7.

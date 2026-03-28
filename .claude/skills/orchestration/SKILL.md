@@ -118,6 +118,11 @@ else
 3. **Create Context**: `Write(task-tracking/TASK_[ID]/context.md)` with user intent, strategy
 4. **Announce**: Present task ID, type, complexity, planned agent sequence
 5. **Write Status File**: `Write(task-tracking/TASK_[ID]/status)` with `CREATED` (no trailing newline).
+6. **Commit Phase 0 artifacts**: Stage and commit the new task folder:
+   ```
+   git add task-tracking/TASK_[ID]/context.md task-tracking/TASK_[ID]/status
+   git commit -m "docs(tasks): create TASK_[ID] — {title from context}"
+   ```
 
 ### CONTINUATION: Phase Detection
 
@@ -171,6 +176,20 @@ USER VALIDATION CHECKPOINT - TASK_[ID]
 [Summary of deliverable]
 Reply "APPROVED" to proceed OR provide feedback for revision
 ```
+
+When the checkpoint passes (user replies "APPROVED"):
+
+- **After PM checkpoint passes** and task-description.md is written, commit:
+  ```
+  git add task-tracking/TASK_[ID]/task-description.md
+  git commit -m "docs(tasks): add requirements for TASK_[ID]"
+  ```
+
+- **After Architect checkpoint passes** and implementation-plan.md is written, commit:
+  ```
+  git add task-tracking/TASK_[ID]/implementation-plan.md
+  git commit -m "docs(tasks): add implementation plan for TASK_[ID]"
+  ```
 
 See [checkpoints.md](references/checkpoints.md) for all checkpoint templates.
 

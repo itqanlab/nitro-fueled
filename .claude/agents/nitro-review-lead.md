@@ -237,6 +237,15 @@ Continue polling until all sub-workers reach `finished` or `failed` state.
 3. Do not halt if only one or two reviewers produced reports — the fix phase proceeds with what exists.
 4. Minimum viable: at least style + logic reports must exist. Security report is optional. If both style and logic are missing, write exit-gate-failure.md and exit.
 
+### Commit Review Artifacts
+
+After verifying report files, commit all review artifacts before entering the Fix Phase:
+
+```bash
+git add task-tracking/TASK_{TASK_ID}/review-*.md
+git commit -m "docs(tasks): add review reports for TASK_{TASK_ID}"
+```
+
 ---
 
 ## Phase 4: Fix Phase
