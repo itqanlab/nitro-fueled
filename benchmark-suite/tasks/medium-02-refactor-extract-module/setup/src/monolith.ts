@@ -54,7 +54,7 @@ function parseTasks(config: TaskConfig): Task[] {
     name: entry.name,
     dependencies: entry.dependencies ?? [],
     execute: entry.handler,
-    status: 'pending' as TaskStatus,
+    status: 'pending',
   }));
 }
 

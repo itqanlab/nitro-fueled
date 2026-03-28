@@ -19,7 +19,7 @@ The three bugs:
 
 2. **`capitalize(str)`** -- Fails on multiple consecutive spaces. The function splits on a single space character, which produces empty strings for consecutive spaces. The `map` and `join(' ')` pipeline collapses multiple spaces into a single space. For example, `capitalize("hello  world")` returns `"Hello World"` instead of `"Hello  World"`.
 
-3. **`slugify(str)`** -- Does not handle accented or special characters correctly. The regex `[^a-z0-9\s-]` replaces accented characters (like e with acute accent) with `"-"` instead of stripping or transliterating them. For example, `slugify("Cafe Latte")` (where the e in Cafe has an acute accent) produces `"caf--latte"` or `"caf-latte"` instead of `"cafe-latte"`.
+3. **`slugify(str)`** -- Does not handle accented or special characters correctly. The regex `[^a-z0-9\s-]` replaces accented characters (like é) with `"-"`. For example, `slugify("Café Latté")` (both e's have acute accents) produces `"caf-latt"` instead of `"cafe-latte"` — each accented character becomes a hyphen, and trailing hyphens are stripped by the cleanup pass.
 
 ## Setup Instructions
 
@@ -31,7 +31,7 @@ The three bugs:
 
 ### Correctness
 
-- [ ] `truncate("Hello World", 8)` returns `"Hell..."` (length exactly 8)
+- [ ] `truncate("Hello World", 8)` returns `"Hello..."` (length exactly 8)
 - [ ] `truncate("Hi", 10)` returns `"Hi"` (no truncation when under limit)
 - [ ] `truncate("Hello", 5)` returns `"Hello"` (no truncation at exact limit)
 - [ ] `capitalize("hello  world")` returns `"Hello  World"` (preserves multiple spaces)
@@ -53,8 +53,8 @@ The three bugs:
 
 ### Error Handling
 
-- [ ] Functions handle `null`/`undefined` input without throwing (if TypeScript strict mode allows)
-- [ ] `truncate` handles `maxLength <= 3` gracefully (returns truncated without "...")
+- [ ] Functions handle `null`/`undefined` input without throwing
+- [ ] `truncate` handles `maxLength <= 3` gracefully (returns truncated string without "...")
 
 ## Scoring Guide
 
@@ -63,4 +63,4 @@ The three bugs:
 | Correctness    | 0-1 of 7 test assertions pass; bugs remain unfixed or new bugs introduced     | 3-4 of 7 test assertions pass; at least one bug correctly fixed                | 5-6 of 7 test assertions pass; two bugs fixed correctly                        | All 7 test assertions pass; all three bugs fixed with correct output            |
 | Code Quality   | Wholesale rewrite of functions; `any` types added; function signatures changed | Fixes are functional but include unnecessary changes beyond the bug            | Fixes are targeted with minor unnecessary modifications                        | Fixes change only the broken logic; no `any` types; signatures preserved exactly |
 | Completeness   | 0-1 of 3 bugs identified; failing tests still fail                            | 2 of 3 bugs fixed; some previously failing tests now pass                      | All 3 bugs fixed; most tests pass but one edge case missed                     | All 3 bugs fixed; all previously passing tests still pass; all failing tests now pass |
-| Error Handling | Functions throw on `null`/`undefined`; `truncate` crashes on small maxLength  | Some edge cases handled but not all; `truncate` with maxLength <= 3 not addressed | Most edge cases handled; `truncate` with maxLength <= 3 returns reasonable result | All edge cases handled gracefully; `truncate` with maxLength <= 3 returns truncated string without "..." |
+| Error Handling | All functions throw on `null`/`undefined`; `truncate` crashes on `maxLength <= 3` | Some null/undefined cases handled; `truncate` with `maxLength <= 3` not addressed | null/undefined handled; `truncate` with `maxLength <= 3` returns reasonable result | null/undefined handled without throwing; `truncate` with `maxLength <= 3` returns truncated string without "..." |

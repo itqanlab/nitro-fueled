@@ -7,7 +7,7 @@
 | Difficulty     | easy    |
 | Type           | feature |
 | Estimated Time | 8m      |
-| Setup Required | no      |
+| Setup Required | yes     |
 
 ## Description
 
@@ -23,7 +23,7 @@ All three functions must use proper TypeScript generics, be exported as named ex
 
 ## Setup Instructions
 
-1. Initialize a minimal TypeScript project (`tsconfig.json` + `package.json`)
+1. Copy `setup/` contents into the worktree root (provides `tsconfig.json` and `package.json`)
 2. Create `src/array-utils.ts` from scratch -- the file does not exist yet
 
 ## Requirements Checklist

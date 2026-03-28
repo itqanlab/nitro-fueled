@@ -25,11 +25,12 @@ assertEqual(truncate('Hi', 10), 'Hi', 'truncate: no truncation when under limit'
 assertEqual(truncate('Hello', 5), 'Hello', 'truncate: no truncation at exact limit');
 
 // This FAILS with buggy code:
-// Buggy code returns "Hello Wo..." (length 11) instead of "Hell..." (length 8)
-// because it slices at maxLength then appends "..." instead of slicing at maxLength - 3
+// Buggy code returns "Hello Wo..." (length 11) instead of "Hello..." (length 8)
+// because it slices at maxLength (8) then appends "...", giving length 11.
+// Correct: slice at maxLength - 3 (= 5) -> "Hello" + "..." = "Hello..." (exactly 8 chars)
 assertEqual(
   truncate('Hello World', 8),
-  'Hell...',
+  'Hello...',
   'truncate: truncated output length should be exactly maxLength'
 );
 

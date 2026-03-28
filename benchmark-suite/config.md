@@ -14,11 +14,12 @@
 
 Weights for aggregate scoring. Hard tasks count more because they test deeper competencies (cross-file coordination, architecture decisions).
 
-| Difficulty | Weight |
-|------------|--------|
-| easy       | 1.0    |
-| medium     | 1.5    |
-| hard       | 2.0    |
+| Difficulty | Weight                        |
+|------------|-------------------------------|
+| easy       | 1.0                           |
+| medium     | 1.5                           |
+| hard       | 2.0                           |
+| custom     | Read from task.md Metadata    |
 
 ## Scoring Dimensions
 

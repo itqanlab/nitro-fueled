@@ -1,4 +1,5 @@
 import { log, error } from './logger';
+import { randomUUID } from 'crypto';
 
 interface User {
   id: string;
@@ -10,10 +11,10 @@ interface User {
 const users = new Map<string, User>();
 
 export function createUser(name: string, email: string): User {
-  const id = Math.random().toString(36).substring(2, 10);
+  const id = randomUUID();
   const user: User = { id, name, email, createdAt: new Date() };
   users.set(id, user);
-  log(`User created: ${id} - ${name} <${email}>`);            // console call 1 (via imported log)
+  log(`User created: ${id} - ${name}`);                       // console call 1 (via imported log)
   return user;
 }
 
