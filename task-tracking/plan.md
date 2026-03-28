@@ -253,7 +253,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
 | TASK_2026_072 | Nx Workspace Initialization | COMPLETE | P0-Critical |
-| TASK_2026_073 | Workspace Folder Restructure (packages → apps + libs) | CREATED | P0-Critical |
+| TASK_2026_073 | Workspace Folder Restructure (packages → apps + libs) | COMPLETE | P0-Critical |
 | TASK_2026_074 | Extract libs/worker-core from session-orchestrator | CREATED | P1-High |
 | TASK_2026_075 | Refactor session-orchestrator app to consume worker-core | CREATED | P1-High |
 | TASK_2026_076 | Scaffold Angular 19 + NG-ZORRO app (apps/dashboard) | CREATED | P0-Critical |
@@ -278,11 +278,9 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 ## Current Focus
 
 **Active Phase**: Phase 14 — Nx Workspace Migration
-**Active Milestone**: Nx initialization (TASK_2026_072) must complete first; then Wave 2 (073) unblocks everything
+**Active Milestone**: Wave 2 (073) complete — Wave 3 is now unblocked
 **Next Priorities**:
-1. TASK_2026_072 — Nx workspace initialization (no code changes, pure infrastructure)
-2. TASK_2026_073 — folder restructure (depends on 072)
-3. Wave 3 in parallel: TASK_2026_074 + TASK_2026_076 + TASK_2026_086 + TASK_2026_089 (all unblocked after 073)
+1. Wave 3 in parallel: TASK_2026_074 + TASK_2026_076 + TASK_2026_086 + TASK_2026_089 (all unblocked after 073)
 
 **Supervisor Guidance**: PROCEED
 **Guidance Note**: Phase 14 is the new active focus. Run strictly in wave order — 072 → 073 → parallel Wave 3 (074, 076, 086, 089) → parallel Wave 4 (075, 077, 087, 090) → parallel Wave 5 (078-085, 088, 091) → 092 → 093. Angular views 078-085 can all run in parallel after 077. Never start 092 before 077+088+091 are all COMPLETE.
