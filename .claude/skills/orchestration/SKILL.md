@@ -36,6 +36,29 @@ See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
 ---
 
+## Universal Lifecycle Flow
+
+Every task type follows the same 6-step lifecycle. The agents and review criteria vary, but the surrounding process — artifacts, status transitions, logging, commits — is identical.
+
+| Step | Purpose | Artifact | What Varies |
+|------|---------|----------|-------------|
+| 1. GATHER CONTEXT | Collect codebase state, constraints | context.md | First agent (PM, Researcher, etc.) |
+| 2. DEFINE REQUIREMENTS | Scope, acceptance criteria | task-description.md | PM or first planning agent |
+| 3. PLAN THE WORK | Approach, structure, steps | plan.md | Architect (code), Content Writer (outline), Designer (brief) |
+| 4. EXECUTE | Produce the deliverable | Actual output (code, content, designs) | Developer, Content Writer, Designer, DevOps |
+| 5. REVIEW | Quality gate | review-report.md | Code review, style review, accessibility review |
+| 6. COMPLETE | Close the task | Status transition, logging, commit | Completion Worker or Supervisor |
+
+**Invariants across all types:**
+- Artifact filenames at each step
+- Status transitions: CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE
+- Logging format and session analytics
+- Commit conventions and traceability
+- Checkpoint handling
+- Supervisor monitoring protocol
+
+---
+
 ## Your Role: Orchestrator
 
 **CRITICAL**: You are the **orchestrator**, NOT the implementer.
@@ -177,7 +200,7 @@ If no blocked dependencies are found, continue to Phase Detection.
 | ----------------------- | ----------------------------------- |
 | context.md only         | Invoke nitro-project-manager              |
 | task-description.md     | User validate OR invoke architect   |
-| implementation-plan.md  | User validate OR nitro-team-leader MODE 1 |
+| plan.md (or legacy: implementation-plan.md) | User validate OR nitro-team-leader MODE 1 |
 | tasks.md (PENDING)      | Team-leader MODE 2 (assign batch)   |
 | tasks.md (IN PROGRESS)  | Team-leader MODE 2 (verify)         |
 | tasks.md (IMPLEMENTED)  | Team-leader MODE 2 (commit)         |
@@ -225,9 +248,9 @@ When the checkpoint passes (user replies "APPROVED"):
   git commit -m "docs(tasks): add requirements for TASK_[ID]"
   ```
 
-- **After Architect checkpoint passes** and implementation-plan.md is written, commit:
+- **After Architect checkpoint passes** and plan.md is written, commit:
   ```
-  git add task-tracking/TASK_[ID]/implementation-plan.md
+  git add task-tracking/TASK_[ID]/plan.md
   git commit -m "docs(tasks): add implementation plan for TASK_[ID]"
   ```
 

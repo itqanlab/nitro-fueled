@@ -37,7 +37,7 @@ Phase 1: nitro-project-manager --> Creates task-description.md
 Phase 2: [IF technical unknowns] nitro-researcher-expert --> Creates research-report.md
          |
          v
-Phase 3: [IF UI/UX work] nitro-ui-ux-designer --> Creates visual-design-specification.md
+Phase 3: [IF UI/UX work] nitro-ui-ux-designer --> Creates design-spec.md
          |
          v
 Phase 3.5: [IF multiple valid approaches] TECHNICAL CLARIFICATION
@@ -46,7 +46,7 @@ Phase 3.5: [IF multiple valid approaches] TECHNICAL CLARIFICATION
            USER ANSWERS (clarifies technical preferences)
            |
            v
-Phase 4: nitro-software-architect --> Creates implementation-plan.md
+Phase 4: nitro-software-architect --> Creates plan.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
@@ -103,7 +103,7 @@ nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
 **When to use**: Code restructuring, optimization, technical debt reduction
 
 ```
-nitro-software-architect --> Creates implementation-plan.md
+nitro-software-architect --> Creates plan.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
@@ -191,7 +191,7 @@ Phase 1: nitro-project-manager --> Creates task-description.md
          USER VALIDATES ("APPROVED" or feedback)
          |
          v
-Phase 2: nitro-software-architect --> Creates implementation-plan.md
+Phase 2: nitro-software-architect --> Creates plan.md
          |
          USER VALIDATES ("APPROVED" or feedback)
          |
@@ -418,7 +418,7 @@ nitro-ui-ux-designer --> nitro-technical-content-writer --> nitro-frontend-devel
 | Agent                    | Output File                                                | Purpose                           |
 | ------------------------ | ---------------------------------------------------------- | --------------------------------- |
 | nitro-ui-ux-designer           | `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md` | Design tokens, colors, typography |
-| nitro-ui-ux-designer           | `task-tracking/TASK_[ID]/visual-design-specification.md`   | Page-specific visual specs        |
+| nitro-ui-ux-designer           | `task-tracking/TASK_[ID]/design-spec.md`                   | Page-specific visual specs        |
 | nitro-technical-content-writer | `task-tracking/TASK_[ID]/content-specification.md`         | Content with design integration   |
 | nitro-technical-content-writer | `docs/content/*.md`                                        | Final content files               |
 

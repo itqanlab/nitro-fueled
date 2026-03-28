@@ -17,7 +17,7 @@ This reference documents all user validation checkpoints in the orchestration wo
 | **0**  | Scope Clarification         | Before PM         | Clarify ambiguous requests     | Answers or "use your judgment"        |
 | **1**  | Requirements Validation     | After PM          | Approve task-description.md    | "APPROVED" or feedback                |
 | **1.5**| Technical Clarification     | Before Architect  | Technical preferences          | Answers or "use your judgment"        |
-| **2**  | Architecture Validation     | After Architect   | Approve implementation-plan.md | "APPROVED" or feedback                |
+| **2**  | Architecture Validation     | After Architect   | Approve plan.md                | "APPROVED" or feedback                |
 | **3**  | QA Choice                   | After Development | Select QA agents               | tester/style/logic/reviewers/all/skip |
 | **4**  | Blocker Report              | Any phase         | Report impediment              | Resolution choice                     |
 | **5**  | Completion Confirmation     | Final phase       | Mark task COMPLETED            | "Complete" or "Adjust"                |
@@ -178,7 +178,7 @@ Before I create the architecture, I have a few technical questions:
 
 ### When to Present
 
-After nitro-software-architect completes and creates `implementation-plan.md`
+After nitro-software-architect completes and creates `plan.md`
 
 ### Template
 
@@ -186,7 +186,7 @@ After nitro-software-architect completes and creates `implementation-plan.md`
 ## Checkpoint: Architecture
 
 **Status**: Software architect completed implementation plan
-**Deliverable**: task-tracking/TASK_[ID]/implementation-plan.md
+**Deliverable**: task-tracking/TASK_[ID]/plan.md
 
 ### Summary
 - [Component/service design summary]

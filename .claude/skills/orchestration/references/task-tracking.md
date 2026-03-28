@@ -31,7 +31,7 @@ task-tracking/
     task.md                      # Task definition (user-created or /create-task output)
     context.md                   # User intent, conversation summary
     task-description.md          # Requirements (PM output)
-    implementation-plan.md       # Architecture design (Architect output)
+    plan.md                      # Plan (Architect output — architecture, content outline, design brief)
     tasks.md                     # Atomic task breakdown (Team-leader output)
     test-report.md               # Testing results (Tester output)
     code-style-review.md         # Style review (Code-style-reviewer output)
@@ -46,7 +46,7 @@ task-tracking/
       desktop.png                # Desktop viewport
       *.png                      # Additional state screenshots
     future-enhancements.md       # Future work (Modernization-detector output)
-    visual-design-specification.md # Visual design (UI/UX Designer output, optional)
+    design-spec.md               # Design specification (UI/UX Designer output, optional)
 ```
 
 ---
@@ -147,7 +147,7 @@ Created during Phase 0 initialization:
 | ---------------------- | ---------------------- | --------------------------------- |
 | context.md             | Orchestrator (Phase 0) | User intent, task metadata        |
 | task-description.md    | project-manager        | Requirements, acceptance criteria |
-| implementation-plan.md | software-architect     | Architecture, file specifications |
+| plan.md | software-architect     | Plan — architecture, outline, or brief |
 | tasks.md               | team-leader (MODE 1)   | Batched atomic tasks              |
 | test-report.md         | senior-tester          | Test results, coverage            |
 | code-style-review.md   | code-style-reviewer    | Pattern compliance findings       |
@@ -188,7 +188,7 @@ Glob(task-tracking/TASK_[ID]/*.md)
 | context.md only                  | Initialized            | Invoke project-manager                |
 | + task-description.md            | PM done                | User validate OR next agent           |
 | + visual-design-specification.md | Designer done          | Invoke software-architect             |
-| + implementation-plan.md         | Architect done         | User validate OR team-leader MODE 1   |
+| + plan.md (or legacy: implementation-plan.md) | Architect done         | User validate OR team-leader MODE 1   |
 | + tasks.md (all PENDING)         | Decomposition done     | team-leader MODE 2 (first assignment) |
 | + tasks.md (has IN PROGRESS)     | Dev in progress        | team-leader MODE 2 (verify + next)    |
 | + tasks.md (has IMPLEMENTED)     | Dev done, await verify | team-leader MODE 2 (verify + commit)  |
@@ -217,7 +217,7 @@ User: /nitro-orchestrate TASK_2026_008
 Orchestrator:
 1. Read registry -> TASK_2026_008 exists, status IN_PROGRESS
 2. Glob task-tracking/TASK_2026_008/*.md
-3. Found: context.md, task-description.md, implementation-plan.md, tasks.md
+3. Found: context.md, task-description.md, plan.md, tasks.md
 4. Check tasks.md -> has IN PROGRESS tasks
 5. Detected phase: "Dev in progress"
 6. Action: Invoke team-leader MODE 2 (verify + next)

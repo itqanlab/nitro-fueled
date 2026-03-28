@@ -1960,7 +1960,7 @@ When a worker stops, crashes, or gets killed for ANY reason without the registry
 3. **Log the event** with the reason (stuck, crashed, MCP reported failure, etc.).
 4. **On next loop iteration**, the task is picked up again based on its current state: IN_PROGRESS spawns a Build Worker, IN_REVIEW spawns a Review Worker (via Step 5a worker type determination).
 5. **The replacement worker's prompt includes RETRY CONTEXT** (see Step 5b), which instructs it to read existing task folder deliverables to resume, not restart.
-6. **The task folder preserves all partial work** — context.md, task-description.md, implementation-plan.md, tasks.md, partial code, review files. The replacement worker uses phase detection to determine where to resume.
+6. **The task folder preserves all partial work** — context.md, task-description.md, plan.md, tasks.md, partial code, review files. The replacement worker uses phase detection to determine where to resume.
 
 This means any worker can be replaced at any time — the supervisor never depends on a specific worker session surviving. The Cleanup Worker ensures no work is lost, and the task folder contains all the context needed for a new worker to pick up where the previous one left off.
 
@@ -2218,7 +2218,7 @@ AUTONOMOUS MODE — follow these rules strictly:
 3. Check the task folder for existing deliverables:
    - context.md exists? -> PM phase already done
    - task-description.md exists? -> Requirements already done
-   - implementation-plan.md exists? -> Architecture already done
+   - plan.md (or legacy: implementation-plan.md) exists? -> Architecture already done
    - tasks.md exists? -> Check task statuses to see dev progress
    The orchestration skill's phase detection will automatically
    determine where to resume based on which files exist.
@@ -2598,7 +2598,7 @@ Follow these steps IN ORDER, then EXIT:
 4. Assess task progress by checking the task folder:
    - context.md exists? -> PM phase done
    - task-description.md exists? -> Requirements done
-   - implementation-plan.md exists? -> Architecture done
+   - plan.md (or legacy: implementation-plan.md) exists? -> Architecture done
    - tasks.md exists? -> Check how many batches are COMPLETE
    - Review files exist? -> Check if reviews are complete
    - completion-report.md exists? -> Task is done
