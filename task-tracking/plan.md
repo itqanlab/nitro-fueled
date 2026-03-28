@@ -269,7 +269,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_086 | Scaffold NestJS app (apps/dashboard-api) | COMPLETE | P1-High |
 | TASK_2026_087 | Migrate state services + REST controllers to NestJS | CREATED | P1-High |
 | TASK_2026_088 | Migrate WebSocket server to NestJS gateway | CREATED | P1-High |
-| TASK_2026_089 | Scaffold Oclif CLI app (apps/cli) | CREATED | P1-High |
+| TASK_2026_089 | Scaffold Oclif CLI app (apps/cli) | COMPLETE | P1-High |
 | TASK_2026_090 | Migrate init + run + status to Oclif commands | CREATED | P1-High |
 | TASK_2026_091 | Migrate create + dashboard + config + update to Oclif commands | CREATED | P1-High |
 | TASK_2026_092 | Angular ↔ NestJS integration + CLI build pipeline update | CREATED | P1-High |
