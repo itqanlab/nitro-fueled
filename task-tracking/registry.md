@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -99,10 +99,10 @@
 | TASK_2026_094 | COMPLETE    | FEATURE | Worker-Side Phase Event Emission via MCP `emit_event` | 2026-03-28 | default |
 | TASK_2026_095 | CANCELLED   | REFACTORING | Global Config Infrastructure — Migrate Provider Config to User Workspace Scope | 2026-03-28 | default |
 | TASK_2026_096 | CANCELLED   | FEATURE | Dynamic Model Fetching, Auto-Refresh, and Auto-Fallback | 2026-03-28 | default |
-| TASK_2026_097 | IN_PROGRESS | FEATURE | Auto-Complexity Estimation at Task Creation | 2026-03-28 | default |
+| TASK_2026_097 | COMPLETE    | FEATURE | Auto-Complexity Estimation at Task Creation | 2026-03-28 | default |
 | TASK_2026_098 | CREATED     | FEATURE | Provider/Model Tracing — Per-Task Run Telemetry | 2026-03-28 | default |
 | TASK_2026_099 | COMPLETE    | FEATURE | Per-Task Supervisor Config + Blocked Dependency Guardrail | 2026-03-28 | default |
-| TASK_2026_100 | IN_PROGRESS | REFACTORING | Nitro Commit Traceability Standard | 2026-03-28 | default |
+| TASK_2026_100 | COMPLETE    | REFACTORING | Nitro Commit Traceability Standard | 2026-03-28 | default |
 | TASK_2026_101 | CREATED     | FEATURE | Add CONTENT Orchestration Flow (Blog, Email, Newsletter, Ad Copy) | 2026-03-28 | default |
 | TASK_2026_102 | CREATED     | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-28 | default |
 | TASK_2026_103 | CREATED     | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
@@ -112,7 +112,7 @@
 | TASK_2026_107 | CREATED     | REFACTORING | Update Orchestration Examples and Agent References to Generalized Artifact Names | 2026-03-28 | default |
 | TASK_2026_108 | CANCELLED   | REFACTORING | Remove OpenAI/OpenCode Provider Support (Temporary) | 2026-03-28 | default |
 | TASK_2026_109 | COMPLETE    | FEATURE | API Contract Layer — OpenAPI Spec, Typed DTOs, Versioned Endpoints | 2026-03-28 | default |
-| TASK_2026_110 | IN_REVIEW   | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_110 | COMPLETE    | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_111 | CREATED     | FEATURE | Two-Phase Provider Resolver Engine (Part 2/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_112 | CREATED     | REFACTORING | Auto-Pilot Routing Update — Config-Driven with Codex Support (Part 3/3 — Provider Resolver Engine) | 2026-03-28 | default |
 | TASK_2026_113 | COMPLETE    | BUGFIX  | Add Phase-Boundary Git Commits to Orchestration Pipeline | 2026-03-28 | default |
