@@ -99,6 +99,57 @@ Relevant rules from review-general.md for Angular TypeScript:
 9. **Enum/union types synchronized across all consumers** — `ProviderType` uses `'CLI' | 'API' | 'OAuth'` — check all usages match.
 10. **Frontend interaction correctness** — verify `(click)` bindings, `@for` track expressions, and signal usage patterns.
 
+## Findings Summary
+
+All three sub-workers completed successfully.
+
+### Review Scores
+
+| Review        | Verdict               | Score  |
+|---------------|-----------------------|--------|
+| Code Style    | CHANGES REQUIRED      | 6/10   |
+| Code Logic    | PASS (with observations) | 8/10 |
+| Security      | PASS (minor findings) | 9/10   |
+
+### Critical / Blocking
+
+| ID | Source | File | Description |
+|----|--------|------|-------------|
+| C1 | Style  | assignments-table.component.scss | 466 lines — 3× over 150-line component SCSS limit |
+
+### Major
+
+| ID | Source | File | Description |
+|----|--------|------|-------------|
+| M1 | Style  | app.routes.ts | Eager loading instead of lazy `loadComponent` (task architectural constraint) |
+| M2 | Style  | assignments-table.component.ts:48 | `getProviderBadgeClass(type: string)` should use `ProviderType` union |
+| M3 | Style  | assignments-table.component.html | 151 lines — 1 over limit (fix resolves with C1 split) |
+
+### Minor
+
+| ID | Source | File | Description |
+|----|--------|------|-------------|
+| m1 | Style  | model-assignments.component.ts | Unused stub params missing `_` prefix |
+| m2 | Style  | model-assignments.component.ts | `activeScope` should be a signal, not plain field |
+| m3 | Style  | model-assignment.constants.ts | Optgroup constants lack `ModelOptgroup` type annotation |
+| m4 | Style  | Multiple SCSS files | Hardcoded hex colors instead of CSS variables |
+| m5 | Style  | Multiple HTML files | Clickable `<div>` elements lack accessibility attributes |
+| m6 | Style  | preset-cards.component.scss | `.cli`/`.budget` variants have identical styles — can be merged |
+| L1 | Logic  | assignments-table.component.html | `<select>` has no `(change)` handler — model selection is display-only |
+| L2 | Logic  | assignments-table.component.html | Redundant dual-binding: `[value]` on `<select>` + `[selected]` on `<option>` |
+| SEC-01 | Security | Multiple HTML | Server-controlled CSS class names via `[ngClass]` (latent on API transition) |
+| SEC-02 | Security | assignments-table.component.ts | Loose `string` typing in badge/icon class methods |
+| SEC-03 | Security | app.routes.ts | No `canActivate` guard on `/models` route (systemic gap) |
+| SEC-04 | Security | assignments-table.component.html | No length constraint on `overrideNote` display |
+
+### Fix Plan for Next Phase
+
+Priority 1 (Critical/Blocking): C1 — split `assignments-table.component.scss`
+Priority 2 (Major): M1 — lazy load `ModelAssignmentsComponent` in `app.routes.ts`; M2 — fix `getProviderBadgeClass` type param; M3 — resolves with C1 split
+Priority 3 (Minor): Apply all minor fixes in order
+
+---
+
 ## Scope Boundary (CRITICAL)
 Reviewers MUST only flag and fix issues in these files:
 - apps/dashboard/src/app/models/model-assignment.model.ts
