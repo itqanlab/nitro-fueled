@@ -4,13 +4,16 @@
 
 ## Metadata
 
-| Field      | Value                                                                         |
-|------------|-------------------------------------------------------------------------------|
-| Type       | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
-| Priority   | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
-| Complexity | [Simple | Medium | Complex]                                                   |
-| Model      | [claude-opus-4-6 | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | default]    |
-| Testing    | [required \| optional \| skip]                                               |
+| Field                 | Value                                                                         |
+|-----------------------|-------------------------------------------------------------------------------|
+| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
+| Priority              | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
+| Complexity            | [Simple | Medium | Complex]                                                   |
+| Model                 | [claude-opus-4-6 | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | default]    |
+| Testing               | [required \| optional \| skip]                                               |
+| Poll Interval         | [default | 30s | 60s | 2m | ...]                                             |
+| Health Check Interval | [default | 5m | 10m | 15m | ...]                                             |
+| Max Retries           | [default | 0-5]                                                               |
 
 <!-- Type: Determines agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
@@ -39,6 +42,27 @@
        optional — use default decision matrix based on task type (default behavior if field is omitted)
        skip     — suppress test phase entirely (use for tasks that touch no testable code)
      Omit this field to use the default matrix behavior based on task type. -->
+
+<!-- Poll Interval: Optional override for worker monitoring poll frequency.
+       Format: Ns (seconds) or Nm (minutes), e.g., 30s, 2m, 5m
+       Valid range: 10s to 10m (600s)
+       Use "default" or omit to use global --interval setting (typically 30s).
+       Increase for tasks with long-running operations (e.g., complex builds, large test suites)
+       to reduce polling overhead. -->
+
+<!-- Health Check Interval: Optional override for stuck worker detection frequency.
+       Format: Nm (minutes), e.g., 5m, 10m, 15m
+       Valid range: 1m (60s) to 30m (1800s)
+       Use "default" or omit to use global health check interval (typically 5m).
+       Increase for tasks expected to take longer between state changes
+       (e.g., complex refactoring, multi-file changes). -->
+
+<!-- Max Retries: Optional override for retry limit on worker failure.
+       Format: integer 0-5
+       Use "default" or omit to use global --retries setting (typically 2).
+       Values above 5 are clamped to 5 with a warning log.
+       Increase for tasks prone to transient failures (e.g., network-dependent operations);
+       decrease to 0 for tasks that should fail fast. -->
 
 ## Description
 

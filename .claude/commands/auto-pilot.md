@@ -119,6 +119,16 @@ For each CREATED or IMPLEMENTED task in scope, parse the Dependencies section. F
 - If the dependency has status BLOCKED → add to `blocking_issues`: `"TASK_X: dependency TASK_Y is BLOCKED — unsatisfiable"`
 - If the dependency has any unrecognized status value → record warning: `"TASK_X: dependency TASK_Y has unrecognized status '{value}' — verify manually"`
 
+**4c-ii. Validation B-ii: Orphan BLOCKED Task Detection (Warning)**
+
+1. For each task with status BLOCKED:
+   - Check if any other task has it in its Dependencies field (directly or transitively)
+   - If NO dependents found: classify as "orphan blocked"
+2. For each orphan blocked task:
+   - Add to `warnings`: `"ORPHAN BLOCKED: TASK_{ID} — blocked with no dependents, needs manual resolution"`
+3. This detection is informational only — orphan blocked warnings do NOT block the run.
+4. Orphan detection is computed during the dependency graph walk in Validation B — no separate pass needed.
+
 **4d. Validation C: Circular Dependency Detection (Blocking)**
 
 Build a dependency graph of all non-COMPLETE, non-CANCELLED tasks. Run DFS cycle detection:

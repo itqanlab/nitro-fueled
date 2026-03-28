@@ -62,15 +62,18 @@ Completion bookkeeping
 
 Every field in `task.md` has a specific consumer in the pipeline.
 
-| Field             | Consumer(s)                             | How It's Used                                                    |
-|-------------------|-----------------------------------------|------------------------------------------------------------------|
-| **Type**          | Orchestrator (Workflow Selection Matrix) | Selects agent sequence — FEATURE gets full pipeline, BUGFIX skips PM |
-| **Priority**      | Auto-pilot loop                         | Queue ordering — P0 tasks run before P3                          |
-| **Complexity**    | Orchestrator (Strategy Selection)       | Weighting factor in strategy confidence scoring                  |
-| **Description**   | PM Agent                                | Primary input for requirements generation                        |
-| **Dependencies**  | Auto-pilot (dependency graph)           | Determines which tasks are unblocked and ready to run            |
-| **Acceptance Criteria** | PM Agent + QA Reviewers           | PM uses as requirements input; QA uses as verification checklist |
-| **References**    | Architect + Developer                   | Codebase evidence for design decisions and implementation        |
+| Field                     | Consumer(s)                             | How It's Used                                                    |
+|---------------------------|-----------------------------------------|------------------------------------------------------------------|
+| **Type**                  | Orchestrator (Workflow Selection Matrix) | Selects agent sequence — FEATURE gets full pipeline, BUGFIX skips PM |
+| **Priority**              | Auto-pilot loop                         | Queue ordering — P0 tasks run before P3                          |
+| **Complexity**            | Orchestrator (Strategy Selection)       | Weighting factor in strategy confidence scoring                  |
+| **Description**           | PM Agent                                | Primary input for requirements generation                        |
+| **Dependencies**          | Auto-pilot (dependency graph)           | Determines which tasks are unblocked and ready to run            |
+| **Acceptance Criteria**   | PM Agent + QA Reviewers                 | PM uses as requirements input; QA uses as verification checklist |
+| **References**            | Architect + Developer                   | Codebase evidence for design decisions and implementation        |
+| **Poll Interval**         | Auto-pilot (Step 5a-jit)                | Event poll interval for this task's worker (default 30s)         |
+| **Health Check Interval** | Auto-pilot (Step 5a-jit)                | Stuck/health check interval for this task's worker (default 5m)  |
+| **Max Retries**           | Auto-pilot (Step 5a-jit)                | Retry limit for this task (default 2, max 5)                     |
 
 ### Type → Agent Sequence Mapping
 
@@ -83,6 +86,62 @@ Every field in `task.md` has a specific consumer in the pipeline.
 | RESEARCH      | Researcher → [conditional implementation]                |
 | DEVOPS        | PM → Architect → DevOps Engineer → QA                   |
 | CREATIVE      | [ui-ux-designer] → content-writer → frontend             |
+
+---
+
+## When to Use Custom Timing Values
+
+The timing fields (Poll Interval, Health Check Interval, Max Retries) are optional overrides for the auto-pilot's monitoring behavior. Use them when a task has characteristics that differ significantly from typical tasks.
+
+### Poll Interval
+
+Override the poll interval when a task's worker is expected to produce events at a different rate:
+
+- **Increase** (e.g., `2m`, `5m`) for tasks with long-running operations such as:
+  - Complex builds that take several minutes
+  - Large test suites that run sequentially
+  - Tasks that process large datasets
+
+- **Keep default** (`30s`) for typical development tasks that make incremental progress
+
+Increasing the poll interval reduces overhead when frequent status checks are unnecessary.
+
+### Health Check Interval
+
+Override the health check interval when a task's worker is expected to go longer periods without state changes:
+
+- **Increase** (e.g., `10m`, `15m`) for tasks with extended processing phases such as:
+  - Complex refactoring across many files
+  - Multi-step integration work
+  - Tasks involving external service calls with high latency
+
+- **Keep default** (`5m`) for tasks that should show regular progress
+
+Increasing the health check interval prevents false-positive "stuck" detection for tasks that legitimately take longer between state updates.
+
+### Max Retries
+
+Override the retry limit based on task failure characteristics:
+
+- **Increase** (e.g., `3`, `4`, `5`) for tasks prone to transient failures such as:
+  - Network-dependent operations (API calls, external service integrations)
+  - Tasks that interact with flaky external resources
+  - Environment-sensitive operations that may fail on first attempt
+
+- **Decrease** (e.g., `0`, `1`) for tasks that should fail fast such as:
+  - Critical operations where failure indicates a fundamental problem
+  - Tasks with expensive retry costs
+  - Operations where idempotency is a concern
+
+Values above 5 are automatically clamped to 5 with a warning logged.
+
+### Fallback Behavior
+
+All timing fields support a `default` sentinel value (or can be omitted entirely):
+
+- If a field is absent or set to `default`, the auto-pilot uses global configuration values
+- Invalid duration strings (e.g., malformed format, out-of-range values) trigger a warning log and fall back to global defaults — they do NOT block task spawning
+- This ensures backward compatibility with existing tasks that do not specify timing overrides
 
 ---
 
