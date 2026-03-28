@@ -39,8 +39,16 @@ Implement the Model Assignments view at route `/models` matching the N.Gine mock
 
 ## File Scope
 
-- apps/dashboard/src/app/views/models/model-assignments.component.ts
-- apps/dashboard/src/app/views/models/model-assignments.component.html
-- apps/dashboard/src/app/views/models/model-assignments.component.scss
-- apps/dashboard/src/app/views/models/assignments-table/assignments-table.component.ts
-- apps/dashboard/src/app/views/models/preset-cards/preset-cards.component.ts
+- apps/dashboard/src/app/models/model-assignment.model.ts (created)
+- apps/dashboard/src/app/services/model-assignment.constants.ts (created)
+- apps/dashboard/src/app/services/mock-data.service.ts (modified)
+- apps/dashboard/src/app/views/models/model-assignments.component.ts (created)
+- apps/dashboard/src/app/views/models/model-assignments.component.html (created)
+- apps/dashboard/src/app/views/models/model-assignments.component.scss (created)
+- apps/dashboard/src/app/views/models/assignments-table/assignments-table.component.ts (created)
+- apps/dashboard/src/app/views/models/assignments-table/assignments-table.component.html (created)
+- apps/dashboard/src/app/views/models/assignments-table/assignments-table.component.scss (created)
+- apps/dashboard/src/app/views/models/preset-cards/preset-cards.component.ts (created)
+- apps/dashboard/src/app/views/models/preset-cards/preset-cards.component.html (created)
+- apps/dashboard/src/app/views/models/preset-cards/preset-cards.component.scss (created)
+- apps/dashboard/src/app/app.routes.ts (modified)

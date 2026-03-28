@@ -1,0 +1,12 @@
+<div class="presets-section">
+  <div class="presets-title">Quick Presets</div>
+  <div class="presets-grid">
+    @for (preset of presets(); track preset.name) {
+      <div class="preset-card" (click)="onPresetClick(preset.name)">
+        <h4>{{ preset.name }}</h4>
+        <p>{{ preset.description }}</p>
+        <span class="preset-badge" [ngClass]="preset.badgeType">{{ preset.costLabel }}</span>
+      </div>
+    }
+  </div>
+</div>

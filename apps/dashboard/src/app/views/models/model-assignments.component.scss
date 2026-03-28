@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+}
+
+/* Hierarchy Bar */
+.hierarchy-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--accent-bg);
+  border: 1px solid #177ddc40;
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.hierarchy-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.hierarchy-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: 11px;
+
+  &.l1 {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  &.l2 {
+    background: var(--purple-bg);
+    color: var(--purple);
+  }
+
+  &.l3 {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+
+  &.l4 {
+    background: var(--cyan-bg);
+    color: var(--cyan);
+  }
+
+  &.l5 {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+}
+
+.hierarchy-arrow {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.hierarchy-note {
+  margin-left: 4px;
+}
+
+/* Scope Tabs */
+.scope-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+
+.scope-tab {
+  padding: 7px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  &.active {
+    background: var(--accent);
+    color: #fff;
+  }
+}
+
+.count {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.scope-tab.active .count {
+  background: rgba(255, 255, 255, 0.25);
+}

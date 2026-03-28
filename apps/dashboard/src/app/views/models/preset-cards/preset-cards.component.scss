@@ -1,0 +1,79 @@
+:host {
+  display: block;
+}
+
+.presets-section {
+  margin-top: 24px;
+}
+
+.presets-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.preset-card {
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+}
+
+.preset-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+
+  &.budget {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  &.balanced {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+
+  &.quality {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  &.speed {
+    background: var(--cyan-bg);
+    color: var(--cyan);
+  }
+
+  &.cli {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+}

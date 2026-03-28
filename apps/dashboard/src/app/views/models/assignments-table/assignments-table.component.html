@@ -1,0 +1,151 @@
+<!-- Assignment Table -->
+<div class="table-wrapper">
+  <table class="assignment-table">
+    <thead>
+      <tr>
+        <th class="col-role">Agent Role</th>
+        <th class="col-provider">Provider Type</th>
+        <th class="col-model">Assigned Model</th>
+        <th class="col-fallback">Fallback Chain</th>
+        <th class="col-cost">Est. Cost / Task</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (agent of assignments(); track agent.role) {
+        <tr>
+          <td>
+            <div class="role-cell">
+              <div class="role-icon" [ngClass]="agent.iconClass">{{ agent.icon }}</div>
+              <div>
+                <div class="role-name">{{ agent.role }}</div>
+                <div class="role-category">{{ agent.category }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="provider-badge" [ngClass]="getProviderBadgeClass(agent.providerType)">
+              {{ agent.providerType }}
+            </span>
+          </td>
+          <td>
+            <select
+              class="model-select"
+              [class.overridden]="agent.hasOverride"
+              [value]="agent.selectedModel"
+            >
+              @for (group of agent.modelOptgroups; track group.groupLabel) {
+                <optgroup [label]="group.groupLabel">
+                  @for (opt of group.options; track opt.value) {
+                    <option [value]="opt.value" [selected]="opt.value === agent.selectedModel">
+                      {{ opt.label }}
+                    </option>
+                  }
+                </optgroup>
+              }
+            </select>
+            <div
+              class="override-badge"
+              [ngClass]="agent.overrideLevel === 'ROLE OVERRIDE' ? 'role' : 'global'"
+            >
+              {{ agent.overrideLevel }}
+              @if (agent.overrideNote) {
+                <span> — {{ agent.overrideNote }}</span>
+              }
+            </div>
+          </td>
+          <td>
+            <div class="fallback-chain">
+              @for (model of agent.fallbackChain; track model; let i = $index) {
+                @if (i > 0) {
+                  <span class="fallback-arrow">→</span>
+                }
+                <span class="fallback-model">{{ model }}</span>
+              }
+            </div>
+          </td>
+          <td class="cost-cell">
+            <div class="cost-value">{{ agent.costPerTask | number:'1.2-2' }}</div>
+            <div class="cost-per">per avg task</div>
+          </td>
+          <td class="actions-cell">
+            @if (agent.hasOverride) {
+              <button class="reset-btn" type="button" (click)="resetRole.emit(agent.role)">
+                ✕ Reset
+              </button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <!-- Table Footer -->
+  <div class="table-footer">
+    <div class="table-footer-left">
+      <div class="total-cost">
+        Estimated total per task: <strong>${{ totalCost() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="budget-mini">
+        <div class="budget-mini-bar">
+          <div
+            class="budget-mini-fill"
+            [class.ok]="!budgetIsWarning"
+            [class.warn]="budgetIsWarning"
+            [style.width.%]="budgetPercent"
+          ></div>
+        </div>
+        ${{ budgetUsed() | number:'1.2-2' }} / ${{ budgetTotal() }} budget
+      </div>
+    </div>
+    <div class="table-footer-right">
+      <button class="btn btn-default" type="button" (click)="resetAll.emit()">
+        Reset All to Defaults
+      </button>
+      <button class="btn btn-primary" type="button" (click)="save.emit()">
+        Save Assignments
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sub-Agent Assignments -->
+<div class="sub-agent-section">
+  <div class="sub-agent-header" (click)="toggleSubAgents()">
+    <div class="sub-agent-header-left">
+      <span class="sub-agent-chevron" [class.open]="subAgentsExpanded">&#9654;</span>
+      <span>Sub-Agent Assignments</span>
+      <span class="sub-agent-subtitle">— independent provider + model during orchestration</span>
+    </div>
+    <span class="sub-agent-count">{{ subAgents().length }} sub-agents configured</span>
+  </div>
+  @if (subAgentsExpanded) {
+    <div class="sub-agent-body">
+      <div class="sub-agent-note">
+        ℹ Sub-agents can have their own provider and model assignments, independent of their parent agent.
+        During orchestration, each sub-agent uses its own configuration for specialized subtasks.
+      </div>
+      <div class="sub-agent-list">
+        @for (sub of subAgents(); track sub.name) {
+          <div class="sub-agent-row">
+            <div class="sub-agent-info">
+              <div class="sub-agent-icon" [ngClass]="getSubAgentIconClass(sub.iconColor)">
+                {{ sub.icon }}
+              </div>
+              <div>
+                <div class="sub-agent-name">{{ sub.name }}</div>
+                <div class="sub-agent-parent">Parent: {{ sub.parent }}</div>
+              </div>
+            </div>
+            <div class="sub-agent-assignment">
+              <span class="provider-badge" [ngClass]="getProviderBadgeClass(sub.providerType)">
+                {{ sub.providerType }}
+              </span>
+              <span>{{ sub.assignedModel }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
