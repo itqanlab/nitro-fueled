@@ -40,6 +40,10 @@ npx nitro-fueled status          # Show project status
 ### Task States
 CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKED)
 
+## Task Status Queries
+- When asked about project status, remaining tasks, what's next, or any task-related question: **read \`task-tracking/registry.md\` ONLY**. Do NOT read individual \`task.md\` files unless specifically asked about a single task's details.
+- The registry contains all task IDs, statuses, types, and descriptions — that is sufficient for status queries.
+
 ## Conventions
 - Git: conventional commits with scopes
 - Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED | CANCELLED
