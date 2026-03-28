@@ -126,6 +126,6 @@ Reviewers MUST only flag and fix issues in these files:
 Issues found outside this scope: document only, do NOT fix.
 
 ## Findings Summary
-- Blocking: 8 (Style High: 5, Logic Major: 3)
-- Serious: 10 (Style Medium: 7, Security Medium: 3)
-- Minor: 17 (Style Low: 9, Logic Minor: 5, Security Low: 3)
+- Blocking: 7 (Style Critical: 7)
+- Serious: 11 (Style Moderate: 5, Logic Major: 3, Security Medium: 3)
+- Minor: 14 (Style Minor: 3, Logic Minor: 5, Logic Info: 2, Security Low: 4)

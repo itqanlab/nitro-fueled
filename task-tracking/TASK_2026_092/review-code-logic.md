@@ -121,7 +121,7 @@ public readonly events$: Observable<DashboardEvent> = this.eventsSubject.asObser
 
 ---
 
-#### 6. Daily Costs Lose Date Information in analytics.adapters.ts
+#### 5. Daily Costs Lose Date Information in analytics.adapters.ts
 
 **File:** `apps/dashboard/src/app/views/analytics/analytics.adapters.ts`
 **Lines:** 52-54
@@ -138,7 +138,7 @@ const dailyCosts = (cost?.sessions ?? [])
 
 ---
 
-#### 8. Effect Writing to Mutable Properties in dashboard.component.ts
+#### 6. Effect Writing to Mutable Properties in dashboard.component.ts
 
 **File:** `apps/dashboard/src/app/views/dashboard/dashboard.component.ts`
 **Lines:** 112-121
@@ -160,7 +160,7 @@ constructor() {
 
 ---
 
-#### 10. OnPush + Mutable Property Pattern in analytics.component.ts
+#### 7. OnPush + Mutable Property Pattern in analytics.component.ts
 
 **File:** `apps/dashboard/src/app/views/analytics/analytics.component.ts`
 
@@ -170,7 +170,7 @@ constructor() {
 
 ---
 
-#### 11. Assumed Numeric currentVersion in agent-editor.store.ts
+#### 8. Assumed Numeric currentVersion in agent-editor.store.ts
 
 **File:** `apps/dashboard/src/app/views/agent-editor/agent-editor.store.ts`
 **Line:** 139
@@ -187,7 +187,7 @@ this.selectedAgent.set({ ...agent, currentVersion: agent.currentVersion + 1 });
 
 ### Info
 
-#### 12. Stub Methods in Components
+#### 9. Stub Methods in Components
 
 Several components have stub methods with "Mock: would..." comments:
 
@@ -199,7 +199,7 @@ Several components have stub methods with "Mock: would..." comments:
 
 ---
 
-#### 13. Unused Class Properties in dashboard.component.ts
+#### 10. Unused Class Properties in dashboard.component.ts
 
 ```typescript
 public readonly agents: readonly Agent[] = [];
@@ -219,19 +219,19 @@ public teamGroups: readonly TeamGroup[] = [];
 | websocket.service.ts | MINOR | Missing access modifier (Issue #4) |
 | environment.ts | PASS | Dev config |
 | environment.prod.ts | PASS | Empty strings for same-origin |
-| dashboard.adapters.ts | MINOR | Type assertion (Issue #2) |
-| analytics.adapters.ts | MINOR | Date info lost (Issue #3) |
+| dashboard.adapters.ts | MAJOR | Type assertion (Issue #2) |
+| analytics.adapters.ts | MINOR | Date info lost (Issue #5) |
 | app.config.ts | PASS | HttpClient provider added |
 | project.json | PASS | File replacements configured |
-| dashboard.component.ts | MINOR | Effect anti-pattern (Issue #4) |
-| analytics.component.ts | MINOR | OnPush pattern (Issue #5) |
+| dashboard.component.ts | MINOR | Effect anti-pattern (Issue #6) |
+| analytics.component.ts | MINOR | OnPush pattern (Issue #7) |
 | status-bar.component.ts | PASS | Clean implementation |
 | sidebar.component.ts | PASS | Uses constant file |
 | mcp-integrations.component.ts | PASS | Uses constant file |
 | model-assignments.component.ts | INFO | Stub methods |
 | new-task.component.ts | INFO | Stub methods |
 | provider-hub.component.ts | MAJOR | Division by zero (Issue #1) |
-| agent-editor.store.ts | MINOR | Undefined safety (Issue #6) |
+| agent-editor.store.ts | MINOR | Undefined safety (Issue #8) |
 | apps/cli/package.json | PASS | Correct path |
 | package.json | MAJOR | socket.io-client in devDependencies (Issue #3) |
 
@@ -240,5 +240,7 @@ public teamGroups: readonly TeamGroup[] = [];
 ## Recommendations
 
 1. **Fix Issue #1** (division by zero) before production use
-2. **Consider Issue #2** for robustness against API schema changes
-3. Issues #3-6 are acceptable for MVP but should be addressed in future iterations
+2. **Fix Issue #2** (type assertion) for robustness against API schema changes
+3. **Fix Issue #3** (socket.io-client in devDependencies) before production build
+4. **Fix Issue #4** (missing access modifier) per codebase conventions
+5. Issues #5-8 are acceptable for MVP but should be addressed in future iterations
