@@ -20,11 +20,11 @@ Migrate the business logic from `apps/dashboard-service/src/state/` (analytics-h
 
 ## Acceptance Criteria
 
-- [ ] `SessionsService`, `AnalyticsService`, `PipelineService`, `WatcherService` created and registered in `DashboardModule`
-- [ ] All state logic from `dashboard-service/src/state/` migrated with no functional changes to data shapes
-- [ ] `DashboardController` implements all REST routes from `dashboard-service/src/server/http.ts` with identical paths and response shapes
-- [ ] `WatcherService` implements `OnModuleInit` and begins watching the task-tracking directory on startup
-- [ ] `nx build dashboard-api` succeeds with no TypeScript errors
+- [x] `SessionsService`, `AnalyticsService`, `PipelineService`, `WatcherService` created and registered in `DashboardModule`
+- [x] All state logic from `dashboard-service/src/state/` migrated with no functional changes to data shapes
+- [x] `DashboardController` implements all REST routes from `dashboard-service/src/server/http.ts` with identical paths and response shapes
+- [x] `WatcherService` implements `OnModuleInit` and begins watching the task-tracking directory on startup
+- [x] `nx build dashboard-api` succeeds with no TypeScript errors
 
 ## References
 
@@ -36,9 +36,10 @@ Migrate the business logic from `apps/dashboard-service/src/state/` (analytics-h
 
 ## File Scope
 
-- apps/dashboard-api/src/dashboard/sessions.service.ts
-- apps/dashboard-api/src/dashboard/analytics.service.ts
-- apps/dashboard-api/src/dashboard/pipeline.service.ts
-- apps/dashboard-api/src/dashboard/watcher.service.ts
-- apps/dashboard-api/src/dashboard/dashboard.controller.ts
-- apps/dashboard-api/src/dashboard/dashboard.module.ts
+- apps/dashboard-api/src/dashboard/dashboard.types.ts (type definitions migrated from event-types.ts)
+- apps/dashboard-api/src/dashboard/sessions.service.ts (session-store + session-id logic)
+- apps/dashboard-api/src/dashboard/analytics.service.ts (analytics-store + analytics-helpers)
+- apps/dashboard-api/src/dashboard/pipeline.service.ts (store + pipeline-helpers + differ + worker-tree-helpers)
+- apps/dashboard-api/src/dashboard/watcher.service.ts (chokidar watcher with OnModuleInit)
+- apps/dashboard-api/src/dashboard/dashboard.controller.ts (REST routes from http.ts)
+- apps/dashboard-api/src/dashboard/dashboard.module.ts (module registration)
