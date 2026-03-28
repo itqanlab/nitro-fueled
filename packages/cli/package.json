@@ -1,10 +1,10 @@
 {
-  "name": "nitro-fueled",
+  "name": "@itqanlab/nitro-fueled",
   "version": "0.1.0",
   "description": "AI development orchestration — full PM -> Architect -> Dev -> QA pipeline",
   "type": "module",
   "bin": {
-    "nitro-fueled": "./dist/index.js"
+    "nitro-fueled": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -27,6 +27,9 @@
     "dashboard-assets"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },

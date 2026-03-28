@@ -16,7 +16,7 @@ create well-scoped tasks, manage the roadmap, and track progress.
 
 ### Step 1: Load Planner Agent
 
-Read `.claude/agents/nitro-planner.md` -- this contains the full Planner agent
+Read `.claude/agents/nitro-nitro-planner.md` -- this contains the full Planner agent
 definition, interaction protocols, task creation rules, and plan management rules.
 
 ### Step 2: Parse Arguments

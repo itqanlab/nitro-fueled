@@ -104,7 +104,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 ### Validate Specific Phase
 
 ```bash
-/validate-nitro-project-manager TASK_CMD_009
+/validate-project-manager TASK_CMD_009
 /validate-architect TASK_CMD_009
 /validate-developer TASK_CMD_009
 /validate-tester TASK_CMD_009

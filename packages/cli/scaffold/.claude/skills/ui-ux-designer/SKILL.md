@@ -1,5 +1,5 @@
 ---
-name: nitro-ui-ux-designer
+name: ui-ux-designer
 description: Visual design skill for discovering brand aesthetics, building design systems, generating production-ready assets, and creating AI-powered UI screens with Stitch MCP. Use when creating landing pages, brand identity, visual specifications, or rapid UI prototypes.
 ---
 
@@ -162,7 +162,7 @@ When completing design work, deliver:
 
 [Full design system specification]
 
-- Save to: .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
+- Save to: .claude/skills/technical-content-writer/DESIGN-SYSTEM.md
 
 ### 3. Asset Generation Briefs
 
@@ -193,13 +193,13 @@ After creating a design system, update:
 
 ```bash
 # Save design system for content generation
-Write(.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md)
+Write(.claude/skills/technical-content-writer/DESIGN-SYSTEM.md)
 
 # Reference in landing page generation
-Read(.claude/skills/nitro-technical-content-writer/LANDING-PAGES.md)
+Read(.claude/skills/technical-content-writer/LANDING-PAGES.md)
 
 # Use design system with Stitch (if available)
-Read(.claude/skills/nitro-ui-ux-designer/STITCH-INTEGRATION.md)
+Read(.claude/skills/ui-ux-designer/STITCH-INTEGRATION.md)
 ```
 
 This ensures all generated content follows your visual identity.
