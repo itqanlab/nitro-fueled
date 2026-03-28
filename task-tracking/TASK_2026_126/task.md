@@ -71,8 +71,11 @@ This is Part 4 of 4 of the Model Evaluation Pipeline feature.
 
 ## File Scope
 
-- .claude/skills/auto-pilot/SKILL.md
-- evaluations/ (report output directory)
+- .claude/skills/auto-pilot/SKILL.md (modified — added E8/E9/E10 sections, modified E7, added Scoring Worker Prompt template)
+- task-tracking/TASK_2026_126/context.md (created)
+- task-tracking/TASK_2026_126/implementation-plan.md (created)
+- task-tracking/TASK_2026_126/tasks.md (created)
+- evaluations/ (report output directory — runtime artifacts)
 
 ## Parallelism
 
