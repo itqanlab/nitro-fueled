@@ -3,7 +3,7 @@ import starlight from '@astrojs/starlight';
 import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
-  site: 'https://iamb0ody.github.io',
+  site: 'https://itqanlab.github.io',
   base: process.env.GITHUB_ACTIONS === 'true' ? '/nitro-fueled' : '/',
   integrations: [
     starlight({
@@ -14,7 +14,7 @@ export default defineConfig({
         root: { label: 'English', lang: 'en' },
       },
       social: {
-        github: 'https://github.com/iamb0ody/nitro-fueled',
+        github: 'https://github.com/itqanlab/nitro-fueled',
       },
       customCss: ['./src/styles/custom.css'],
       sidebar: [
