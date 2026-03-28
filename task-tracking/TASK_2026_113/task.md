@@ -71,7 +71,8 @@ The fix is to add one git commit instruction at each phase transition boundary i
 
 ## File Scope
 
-- `.claude/skills/orchestration/SKILL.md`
-- `.claude/agents/nitro-review-lead.md`
-- `.claude/commands/create-task.md`
-- `.claude/commands/retrospective.md`
+**Files Modified:**
+- `.claude/skills/orchestration/SKILL.md` — Added Phase 0, Post-PM, Post-Architect commit instructions
+- `.claude/agents/nitro-review-lead.md` — Added review artifacts commit instruction
+- `.claude/commands/nitro-create-task.md` — Added task creation commit instruction
+- `.claude/commands/nitro-retrospective.md` — Added retrospective artifacts commit instruction
