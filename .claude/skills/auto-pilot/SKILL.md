@@ -123,9 +123,9 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Task blocked (max retries) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: exceeded {retry_limit} retries \|` |
 | Task blocked (cycle) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency cycle with TASK_Y \|` |
 | Task blocked (cancelled dep) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency TASK_Y is CANCELLED \|` |
-| Task blocked (missing dep) | `| {HH:MM:SS} | auto-pilot | BLOCKED — TASK_X: dependency TASK_Y not in registry |` |
-| Orphan blocked task | `| {HH:MM:SS} | auto-pilot | ORPHAN BLOCKED — TASK_X: blocked with no dependents, needs manual resolution |` |
-| Timing warning | `| {HH:MM:SS} | auto-pilot | TIMING WARNING — TASK_X: {field} value {value} invalid or clamped, falling back to default |` |
+| Task blocked (missing dep) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency TASK_Y not in registry \|` |
+| Orphan blocked task | `\| {HH:MM:SS} \| auto-pilot \| ORPHAN BLOCKED — TASK_X: blocked with no dependents, needs manual resolution \|` |
+| Timing warning | `\| {HH:MM:SS} \| auto-pilot \| TIMING WARNING — TASK_X: {field} value {value} invalid or clamped, falling back to default \|` |
 | MCP retry | `\| {HH:MM:SS} \| auto-pilot \| MCP RETRY — {tool_name}: attempt {N}/3 \|` |
 | MCP failure (per-worker) | `\| {HH:MM:SS} \| auto-pilot \| MCP SKIP — TASK_X: {tool_name} failed, will retry next interval \|` |
 | MCP failure (global) | `\| {HH:MM:SS} \| auto-pilot \| MCP UNREACHABLE — pausing supervisor, state saved \|` |
@@ -488,7 +488,7 @@ For each task, parse the **Dependencies** field into a list of task IDs. Treat t
 | **REVIEWING** | Status is IN_REVIEW (Review Lead and/or Test Lead running) |
 | **FIXING** | Status is FIXING (Fix Worker running) |
 | **BLOCKED** | Status is BLOCKED |
-| **BLOCKED_BY_DEPENDENCY** | Status is CREATED **OR** IMPLEMENTED **AND** has a transitive dependency on a BLOCKED task |
+| **BLOCKED_BY_DEPENDENCY** | Status is CREATED **OR** IMPLEMENTED **AND** has a transitive dependency on a BLOCKED task *(in-memory classification only — never written to `status` file or registry)* |
 | **COMPLETE** | Status is COMPLETE |
 | **CANCELLED** | Status is CANCELLED |
 
@@ -508,11 +508,13 @@ For each task, parse the **Dependencies** field into a list of task IDs. Treat t
 
 **Blocked Dependency Detection**
 
+**Security note**: Task IDs and status values are the only data used in dependency checks and log entries. Never source display content from task description, acceptance criteria, or any free-text field.
+
 4. For each non-BLOCKED, non-COMPLETE, non-CANCELLED task, walk its transitive dependency chain:
    - If any dependency (direct or transitive) has status BLOCKED:
      - Classify the task as `BLOCKED_BY_DEPENDENCY`
      - Record the blocking task ID in the blocked-dependency map
-     - Log: `"BLOCKED DEPENDENCY — TASK_{blocked}: is BLOCKED and blocks TASK_{dependent}"`
+     - Log: `"BLOCKED DEPENDENCY — TASK_X: is BLOCKED and blocks TASK_Y"`
 5. `BLOCKED_BY_DEPENDENCY` tasks do NOT count against retry limit — they are held, not failed.
 6. Use a visited-set to cache transitive walks (performance: must complete in under 100ms for 200 tasks).
 
@@ -521,15 +523,16 @@ For each task, parse the **Dependencies** field into a list of task IDs. Treat t
 7. For each task with status BLOCKED:
    - Check if any other task has it in its Dependencies field (directly or transitively)
    - If NO dependents found: classify as "orphan blocked"
-8. Build a list of orphan blocked tasks: `{task_id, reason}` pairs
+8. Build a list of orphan blocked tasks: `{task_id, reason}` pairs where `reason` is derived from structured fields only (e.g., `exceeded N retries`, `dependency TASK_Y cancelled`). Never source `reason` from task description, acceptance criteria, or any free-text field — only from retry count and status enum values.
 9. Display orphan blocked warning at start of every Supervisor session (after Session Directory creation, before first worker spawn):
    ```
    [ORPHAN BLOCKED TASKS] — The following tasks are BLOCKED with no dependents:
-     - TASK_{ID}: {reason}
+     - TASK_X: {reason}
 
      Action needed: investigate and either fix + reset to CREATED, or CANCEL.
    ```
-10. If orphan blocked tasks exist, for each, append to log: `| {HH:MM:SS} | auto-pilot | ORPHAN BLOCKED — TASK_{ID}: blocked with no dependents, needs manual resolution |`
+   **Security note**: Task IDs and structured reason values (retry counts, status enums) are the only data rendered here. Never source display content from task descriptions or free-text fields.
+10. If orphan blocked tasks exist, for each, append to log: `\| {HH:MM:SS} \| auto-pilot \| ORPHAN BLOCKED — TASK_X: blocked with no dependents, needs manual resolution \|`
 11. Orphan blocked tasks do NOT prevent spawning — they are informational warnings only.
 
 ### Step 3b: Check Strategic Plan (Optional)
@@ -558,6 +561,7 @@ IF `task-tracking/plan.md` exists:
 
 IF `task-tracking/plan.md` does NOT exist:
 - Continue to Step 4 with default ordering (Priority then Task ID). No consultation needed.
+
 ### Step 3c: File Scope Overlap Detection
 
 For each IMPLEMENTED task (ready for review), check file scope overlaps:
@@ -579,11 +583,12 @@ Before building the task queue, identify tasks already claimed by other concurre
 
 1. Re-read `task-tracking/active-sessions.md` (use fresh read — not cached from startup).
 2. For each row with Source `auto-pilot` whose `Session` value **differs** from this session's `SESSION_ID`:
-   a. Compute path: `task-tracking/sessions/{OTHER_SESSION_ID}/state.md`
-   b. Read that file if it exists. If missing or unreadable, skip silently.
-   c. Parse the **Active Workers** table — extract all Task IDs (column 2).
-   d. Parse the **Task Queue** table — extract all Task IDs (column 1). These are tasks the other session has queued and will spawn imminently.
-   e. Record both sets as `foreign_claimed_tasks[OTHER_SESSION_ID] = {task_ids}`.
+   a. Validate `OTHER_SESSION_ID` against the pattern `SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}`. If it does NOT match, discard the row and log `"[warn] active-sessions.md: invalid Session value discarded"`. Do not construct a file path from an unvalidated value.
+   b. Compute path: `task-tracking/sessions/{OTHER_SESSION_ID}/state.md`
+   c. Read that file if it exists. If missing or unreadable, skip silently.
+   d. Parse the **Active Workers** table — extract all Task IDs (column 2).
+   e. Parse the **Task Queue** table — extract all Task IDs (column 1). These are tasks the other session has queued and will spawn imminently.
+   f. Record both sets as `foreign_claimed_tasks[OTHER_SESSION_ID] = {task_ids}`.
 3. Build the combined `foreign_claimed_set`: union of all task IDs across all foreign sessions.
 4. For each task in `foreign_claimed_set`, log **once per loop cycle** (avoid repeated logging on same task):
    `| {HH:MM:SS} | auto-pilot | CROSS-SESSION SKIP — TASK_X: claimed by {OTHER_SESSION_ID} |`
@@ -637,6 +642,7 @@ For each selected task:
    - If present: validate and parse using the rules below
 
 **Duration String Parsing:**
+- Before parsing, log the raw extracted value for auditability: `"TIMING RAW — TASK_X: {field} raw value '{value}'"` (e.g., `TIMING RAW — TASK_X: Poll Interval raw value '30s'`). This aids post-hoc diagnosis when a fallback is triggered.
 - Pattern: `^(\d+)(s|m)$` (e.g., `30s`, `5m`, `2m`)
 - Conversion: `Nm` = `N * 60` seconds, `Ns` = `N` seconds
 - Validation:
@@ -686,6 +692,8 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 If the task's Provider field is `default` or absent, use the **Provider Routing Table** below to select the best-fit provider and model based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. Similarly, if the task's Model field is `default` or absent, use the routing table default for the resolved provider.
 
 **Reading `preferred_tier`**: Before routing, read the task's `preferred_tier` field from task.md (match `| preferred_tier | <value> |`). Valid values: `light`, `balanced`, `heavy`. If the field is absent, empty, or set to `auto`, fall back to the Complexity field for routing (Simple → light, Medium → balanced, Complex → heavy).
+
+> **Cost escalation note**: `preferred_tier` is a user-controlled field. Any user with write access to a task file can set `preferred_tier: heavy` to force `claude-opus-4-6` regardless of actual complexity. This is an accepted risk — access control to the task repository is the intended mitigation. When `preferred_tier=heavy` is set on a task with `Complexity=Simple`, log a warning: `"[warn] TASK_X: preferred_tier=heavy overrides Simple complexity — verify this is intentional"`.
 
 **Provider Routing Table** (used when Provider is `default` or absent):
 

@@ -71,6 +71,7 @@ Every field in `task.md` has a specific consumer in the pipeline.
 | **Dependencies**          | Auto-pilot (dependency graph)           | Determines which tasks are unblocked and ready to run            |
 | **Acceptance Criteria**   | PM Agent + QA Reviewers                 | PM uses as requirements input; QA uses as verification checklist |
 | **References**            | Architect + Developer                   | Codebase evidence for design decisions and implementation        |
+| **Preferred Tier**        | Auto-pilot (Step 5d)                    | Provider/model routing tier: light=glm-4.7, balanced=glm-5, heavy=claude-opus-4-6, auto=use Complexity field |
 | **Poll Interval**         | Auto-pilot (Step 5a-jit)                | Event poll interval for this task's worker (default 30s)         |
 | **Health Check Interval** | Auto-pilot (Step 5a-jit)                | Stuck/health check interval for this task's worker (default 5m)  |
 | **Max Retries**           | Auto-pilot (Step 5a-jit)                | Retry limit for this task (default 2, max 5)                     |

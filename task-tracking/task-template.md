@@ -9,7 +9,7 @@
 | Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
 | Priority              | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity            | [Simple | Medium | Complex]                                                   |
-| preferred_tier        | [light | balanced | heavy | auto]                                             |
+| Preferred Tier        | [light | balanced | heavy | auto]                                             |
 | Model                 | [claude-opus-4-6 | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | default]    |
 | Testing               | [required \| optional \| skip]                                               |
 | Poll Interval         | [default | 30s | 60s | 2m | ...]                                             |
@@ -38,6 +38,8 @@
        heavy    — maps to Complex complexity (claude-opus-4-6, top reasoning)
        auto     — fallback sentinel; Supervisor uses Complexity field routing if preferred_tier is absent or "auto"
      Omit or set to "auto" to let the Supervisor use the Complexity field for routing.
+     Cost note: setting "heavy" on a Simple task forces the most expensive model. The Supervisor logs a warning
+     when preferred_tier=heavy is set on Complexity=Simple. Use only when top reasoning is genuinely required.
 
      Model: Optional. Controls which Claude model the Supervisor uses when spawning a worker for this task.
        claude-opus-4-6            — Most capable, highest cost. Use for complex/high-risk tasks.
