@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  margin: -24px;
+  height: calc(100vh - 48px - 40px);
+  overflow: hidden;
+}
+
+.editor-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
+.metadata-panel-placeholder {
+  width: 280px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+}
+
+.editor-panel-placeholder {
+  flex: 1;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+.editor-status-bar-placeholder {
+  height: 40px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+}

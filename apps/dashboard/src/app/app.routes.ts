@@ -4,6 +4,7 @@ import { PlaceholderViewComponent } from './views/placeholder-view.component';
 import { DashboardComponent } from './views/dashboard/dashboard.component';
 import { McpIntegrationsComponent } from './views/mcp/mcp-integrations.component';
 import { AnalyticsComponent } from './views/analytics/analytics.component';
+import { AgentEditorViewComponent } from './views/agent-editor/agent-editor-view.component';
 
 export const APP_ROUTES: Routes = [
   {
@@ -13,7 +14,7 @@ export const APP_ROUTES: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'analytics', component: AnalyticsComponent },
-      { path: 'agents', component: PlaceholderViewComponent, data: { title: 'Agents' } },
+      { path: 'agents', component: AgentEditorViewComponent },
       { path: 'mcp', component: McpIntegrationsComponent },
       { path: 'models', component: PlaceholderViewComponent, data: { title: 'Models' } },
       { path: 'new-task', component: PlaceholderViewComponent, data: { title: 'New Task' } },
