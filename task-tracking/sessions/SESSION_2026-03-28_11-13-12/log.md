@@ -95,3 +95,148 @@
 | 11:39:30 | auto-pilot | SUBSCRIBED 78838db4 for TASK_2026_100 — watching 1 condition(s) |
 | 11:39:30 | auto-pilot | WORKER LOG — TASK_2026_083 (Fix): 7m, $0.89, 0 files changed |
 | 11:39:30 | auto-pilot | WORKER LOG — TASK_2026_085 (Completion): 1m, $0.17, 2 files changed |
+| 11:43:06 | auto-pilot | HEALTH CHECK — TASK_2026_088: stuck (strike 1/2) |
+| 11:43:06 | auto-pilot | WARNING — TASK_2026_088: stuck (strike 1/2) |
+| 11:43:06 | auto-pilot | HEALTH CHECK — TASK_2026_091: stuck (strike 1/2) |
+| 11:43:06 | auto-pilot | WARNING — TASK_2026_091: stuck (strike 1/2) |
+| 11:43:06 | auto-pilot | NO TRANSITION — TASK_2026_100: expected IMPLEMENTED, still CREATED (retry 1/2) |
+| 11:43:06 | auto-pilot | CLEANUP — TASK_2026_100: spawning Cleanup Worker to salvage uncommitted work |
+| 11:43:06 | auto-pilot | SPAWNED 8dbeba88 for TASK_2026_100 (Cleanup: REFACTORING) |
+| 11:43:20 | auto-pilot | WORKER LOG — TASK_2026_100 (Build): 4m, $0.00, 1 files changed |
+| 11:46:37 | auto-pilot | HEALTH CHECK — TASK_2026_088: stuck (strike 2/2) |
+| 11:46:37 | auto-pilot | KILLING — TASK_2026_088: stuck for 2 consecutive checks |
+| 11:46:37 | auto-pilot | HEALTH CHECK — TASK_2026_091: healthy |
+| 11:46:37 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 11:46:37 | auto-pilot | CLEANUP DONE — TASK_2026_100: committed 1 files |
+| 11:46:37 | auto-pilot | WORKER LOG — TASK_2026_100 (Cleanup): 3m, $0.07, 1 files changed |
+| 11:46:37 | auto-pilot | WORKER LOG — TASK_2026_088 (Build): 13m, $0.00, 1 files changed |
+| 11:46:37 | auto-pilot | CLEANUP — TASK_2026_088: spawning Cleanup Worker to salvage uncommitted work |
+| 11:46:37 | auto-pilot | SPAWNED 4399846e for TASK_2026_088 (Cleanup: FEATURE) |
+| 11:46:37 | auto-pilot | SUBSCRIBED 4399846e for TASK_2026_088 — watching 1 condition(s) |
+| 11:48:57 | auto-pilot | SPAWNED ada8b330 for TASK_2026_113 (Build: BUGFIX) |
+| 11:48:57 | auto-pilot | SUBSCRIBED ada8b330 for TASK_2026_113 — watching 1 condition(s) |
+| 11:49:48 | auto-pilot | EVENT — TASK_2026_088: CLEANUP_DONE received, triggering completion handler |
+| 11:49:48 | auto-pilot | CLEANUP DONE — TASK_2026_088: no uncommitted changes |
+| 11:49:48 | auto-pilot | WORKER LOG — TASK_2026_088 (Cleanup): 2m, $0.07, 0 files changed |
+| 11:49:48 | auto-pilot | RETRY — TASK_2026_088: attempt 1/2 |
+| 11:50:02 | auto-pilot | REPLACING — TASK_2026_088: spawning new worker (previous stuck x2) |
+| 11:50:02 | auto-pilot | SPAWNED a08f819c for TASK_2026_088 (Build: FEATURE) |
+| 11:50:02 | auto-pilot | SUBSCRIBED a08f819c for TASK_2026_088 — watching 1 condition(s) |
+| 11:51:36 | auto-pilot | HEALTH CHECK — TASK_2026_091: stuck (strike 1/2) |
+| 11:51:36 | auto-pilot | WARNING — TASK_2026_091: stuck (strike 1/2) |
+| 11:51:36 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 11:51:36 | auto-pilot | HEALTH CHECK — TASK_2026_113: healthy |
+| 11:51:36 | auto-pilot | HEALTH CHECK — TASK_2026_088: healthy |
+| 11:52:39 | auto-pilot | HEALTH CHECK — TASK_2026_091: stuck (strike 2/2) |
+| 11:52:39 | auto-pilot | KILLING — TASK_2026_091: stuck for 2 consecutive checks |
+| 11:52:39 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 11:52:39 | auto-pilot | HEALTH CHECK — TASK_2026_113: healthy |
+| 11:52:39 | auto-pilot | HEALTH CHECK — TASK_2026_088: healthy |
+| 11:52:39 | auto-pilot | WORKER LOG — TASK_2026_091 (Build): 17m, $0.00, 1 files changed |
+| 11:52:39 | auto-pilot | CLEANUP — TASK_2026_091: spawning Cleanup Worker to salvage uncommitted work |
+| 11:53:38 | auto-pilot | SPAWNED b13f87bf for TASK_2026_091 (Cleanup: REFACTORING) |
+| 11:53:38 | auto-pilot | SUBSCRIBED b13f87bf for TASK_2026_091 — watching 1 condition(s) |
+| 11:53:55 | auto-pilot | EVENT — TASK_2026_091: CLEANUP_DONE received, triggering completion handler |
+| 11:53:55 | auto-pilot | CLEANUP DONE — TASK_2026_091: no uncommitted changes |
+| 11:53:55 | auto-pilot | WORKER LOG — TASK_2026_091 (Cleanup): 1m, $0.06, 0 files changed |
+| 11:53:55 | auto-pilot | RETRY — TASK_2026_091: attempt 1/2 |
+| 11:54:51 | auto-pilot | SPAWN FALLBACK — TASK_2026_091: glm stuck x2, retrying with claude/sonnet |
+| 11:54:51 | auto-pilot | SPAWNED 0f02518d for TASK_2026_091 (Build: REFACTORING) |
+| 11:54:51 | auto-pilot | SUBSCRIBED 0f02518d for TASK_2026_091 — watching 1 condition(s) |
+| 11:56:34 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 11:56:34 | auto-pilot | HEALTH CHECK — TASK_2026_113: healthy |
+| 11:56:34 | auto-pilot | HEALTH CHECK — TASK_2026_088: healthy |
+| 11:56:34 | auto-pilot | HEALTH CHECK — TASK_2026_091: compacting |
+| 11:57:21 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 11:57:21 | auto-pilot | HEALTH CHECK — TASK_2026_113: healthy |
+| 11:57:21 | auto-pilot | HEALTH CHECK — TASK_2026_088: healthy |
+| 11:57:21 | auto-pilot | HEALTH CHECK — TASK_2026_091: compacting |
+| 11:58:33 | auto-pilot | RECONCILE — worker 0f02518d finished, TASK_2026_091 status=COMPLETE |
+| 11:58:33 | auto-pilot | STATE TRANSITIONED — TASK_2026_091: CREATED -> COMPLETE |
+| 11:58:33 | auto-pilot | COMPLETION DONE — TASK_2026_091: COMPLETE |
+| 11:58:33 | auto-pilot | WORKER LOG — TASK_2026_091 (Build retry): 4m, $0.77, 7 files changed |
+| 11:58:33 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 11:58:33 | auto-pilot | HEALTH CHECK — TASK_2026_113: healthy |
+| 11:58:33 | auto-pilot | HEALTH CHECK — TASK_2026_088: healthy |
+| 11:59:15 | auto-pilot | SPAWNED 7c1ba968 for TASK_2026_110 (Build: FEATURE) |
+| 11:59:15 | auto-pilot | SUBSCRIBED 7c1ba968 for TASK_2026_110 — watching 1 condition(s) |
+| 12:35:46 | auto-pilot | EVENT — TASK_2026_088: BUILD_COMPLETE received, triggering completion handler |
+| 12:35:46 | auto-pilot | RECONCILE — worker a08f819c finished, TASK_2026_088 status=COMPLETE |
+| 12:35:46 | auto-pilot | STATE TRANSITIONED — TASK_2026_088: IN_PROGRESS -> COMPLETE |
+| 12:35:46 | auto-pilot | COMPLETION DONE — TASK_2026_088: COMPLETE |
+| 12:35:46 | auto-pilot | WORKER LOG — TASK_2026_088 (Build retry): 46m, $0.00, 16 files changed |
+| 12:35:46 | auto-pilot | NO TRANSITION — TASK_2026_110: expected IMPLEMENTED, still CREATED (retry 1/2) |
+| 12:35:46 | auto-pilot | WORKER LOG — TASK_2026_110 (Build): 37m, $1.52, 4 files changed |
+| 12:35:46 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 12:35:46 | auto-pilot | HEALTH CHECK — TASK_2026_113: stuck (strike 1/2) |
+| 12:35:46 | auto-pilot | WARNING — TASK_2026_113: stuck (strike 1/2) |
+| 12:37:13 | auto-pilot | SPAWNED c0d13ebe for TASK_2026_109 (Build: FEATURE) |
+| 12:37:13 | auto-pilot | SUBSCRIBED c0d13ebe for TASK_2026_109 — watching 1 condition(s) |
+| 12:37:15 | auto-pilot | RETRY — TASK_2026_110: attempt 1/2 |
+| 12:37:15 | auto-pilot | SPAWNED 31a5f10e for TASK_2026_110 (Build: FEATURE) |
+| 12:37:15 | auto-pilot | SUBSCRIBED 31a5f10e for TASK_2026_110 — watching 1 condition(s) |
+| 12:56:01 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy |
+| 12:56:01 | auto-pilot | HEALTH CHECK — TASK_2026_113: stuck (strike 2/2) |
+| 12:56:01 | auto-pilot | KILLING — TASK_2026_113: stuck for 2 consecutive checks |
+| 12:56:01 | auto-pilot | NO TRANSITION — TASK_2026_109: expected IMPLEMENTED, still CREATED (retry 1/2) |
+| 12:56:01 | auto-pilot | NO TRANSITION — TASK_2026_110: expected IMPLEMENTED, still CREATED (retry 2/2) |
+| 12:56:01 | auto-pilot | BLOCKED — TASK_2026_110: exceeded 2 retries |
+| 12:56:01 | auto-pilot | WORKER LOG — TASK_2026_109 (Build): 19m, $0.00, 3 files changed |
+| 12:56:01 | auto-pilot | WORKER LOG — TASK_2026_110 (Build retry): 19m, $1.00, 2 files changed |
+| 12:56:01 | auto-pilot | WORKER LOG — TASK_2026_113 (Build): 67m, $0.00, 5 files changed |
+| 12:57:18 | auto-pilot | CLEANUP — TASK_2026_113: spawning Cleanup Worker to salvage uncommitted work |
+| 12:57:18 | auto-pilot | SPAWNED 9ffb430c for TASK_2026_113 (Cleanup: BUGFIX) |
+| 12:57:18 | auto-pilot | SUBSCRIBED 9ffb430c for TASK_2026_113 — watching 1 condition(s) |
+| 12:57:19 | auto-pilot | RETRY — TASK_2026_109: attempt 1/2 |
+| 12:57:19 | auto-pilot | SPAWN FALLBACK — TASK_2026_109: glm stopped at planning phase, retrying with claude/opus |
+| 12:57:19 | auto-pilot | SPAWNED 677dbdca for TASK_2026_109 (Build: FEATURE) |
+| 12:57:19 | auto-pilot | SUBSCRIBED 677dbdca for TASK_2026_109 — watching 1 condition(s) |
+| 12:57:20 | auto-pilot | SPAWNED 1c8801b4 for TASK_2026_116 (Build: REFACTORING) |
+| 12:57:20 | auto-pilot | SUBSCRIBED 1c8801b4 for TASK_2026_116 — watching 1 condition(s) |
+| 12:57:36 | auto-pilot | EVENT — TASK_2026_113: CLEANUP_DONE received, triggering completion handler |
+| 12:57:36 | auto-pilot | CLEANUP DONE — TASK_2026_113: reset status to CREATED |
+| 12:57:36 | auto-pilot | RETRY — TASK_2026_113: attempt 1/2 |
+| 12:58:25 | auto-pilot | SPAWN FALLBACK — TASK_2026_113: glm stuck x2, retrying with claude/sonnet |
+| 12:58:25 | auto-pilot | SPAWNED 9abb8b4d for TASK_2026_113 (Build: BUGFIX) |
+| 12:58:25 | auto-pilot | SUBSCRIBED 9abb8b4d for TASK_2026_113 — watching 1 condition(s) |
+| 12:59:15 | auto-pilot | HEALTH CHECK — TASK_2026_099: healthy (80m/475 tools — abnormal, killing) |
+| 12:59:15 | auto-pilot | KILLING — TASK_2026_099: 81m/479 tools with no status transition, likely edit loop |
+| 12:59:15 | auto-pilot | NO TRANSITION — TASK_2026_109: expected IMPLEMENTED, still CREATED (retry 2/2) |
+| 12:59:15 | auto-pilot | BLOCKED — TASK_2026_109: exceeded 2 retries |
+| 12:59:15 | auto-pilot | HEALTH CHECK — TASK_2026_116: healthy |
+| 12:59:15 | auto-pilot | HEALTH CHECK — TASK_2026_113: healthy |
+| 12:59:15 | auto-pilot | WORKER LOG — TASK_2026_099 (Build): 81m, $0.00, 10 files changed |
+| 12:59:15 | auto-pilot | WORKER LOG — TASK_2026_109 (Build retry): 2m, $1.02, 2 files changed |
+| 13:00:30 | auto-pilot | CLEANUP — TASK_2026_099: spawning Cleanup Worker to salvage uncommitted work |
+| 13:00:30 | auto-pilot | SPAWNED 0d214b46 for TASK_2026_099 (Cleanup: FEATURE) |
+| 13:00:30 | auto-pilot | SUBSCRIBED 0d214b46 for TASK_2026_099 — watching 1 condition(s) |
+| 13:00:31 | auto-pilot | SPAWNED 73da25bd for TASK_2026_106 (Build: REFACTORING) |
+| 13:00:31 | auto-pilot | SUBSCRIBED 73da25bd for TASK_2026_106 — watching 1 condition(s) |
+| 13:01:19 | auto-pilot | EVENT — TASK_2026_099: CLEANUP_DONE received |
+| 13:01:19 | auto-pilot | CLEANUP DONE — TASK_2026_099: committed 4 files (coherent partial work) |
+| 13:01:19 | auto-pilot | WORKER LOG — TASK_2026_099 (Cleanup): 3m, $0.15, 4 files changed |
+| 13:01:19 | auto-pilot | RETRY — TASK_2026_099: attempt 1/2 |
+| 13:04:10 | auto-pilot | SPAWN FALLBACK — TASK_2026_099: glm loop 81m/479tools, retrying with claude/sonnet |
+| 13:04:10 | auto-pilot | SPAWNED 89ea77e8 for TASK_2026_099 (Build: FEATURE) |
+| 13:04:10 | auto-pilot | SUBSCRIBED 89ea77e8 for TASK_2026_099 — watching 1 condition(s) |
+| 13:23:26 | auto-pilot | RECONCILE — no active workers, checking all task statuses |
+| 13:23:26 | auto-pilot | RECONCILE — TASK_2026_116: worker 1c8801b4 renamed all commands to nitro-* (work done, not committed) |
+| 13:23:26 | auto-pilot | RECONCILE — TASK_2026_099: worker 89ea77e8 exited immediately ($0) — /orchestrate command missing |
+| 13:23:26 | auto-pilot | RECONCILE — TASK_2026_106: IN_PROGRESS, worker exited early, no code commits |
+| 13:23:26 | auto-pilot | RECONCILE — TASK_2026_113: IN_PROGRESS, worker exited early, no code commits |
+| 13:23:26 | auto-pilot | ROOT CAUSE — TASK_2026_116 deleted old commands before committing new nitro-* ones |
+| 13:23:26 | auto-pilot | FIX — committed nitro-* command renames manually (commit 095bc86) |
+| 13:23:26 | auto-pilot | FIX — reset 099/106/113 to CREATED, set 116 to IMPLEMENTED, 110 to BLOCKED |
+| 13:25:58 | auto-pilot | SPAWNED 917dfb00 for TASK_2026_099 (Build: FEATURE) — using /nitro-orchestrate |
+| 13:25:59 | auto-pilot | SPAWNED 374455e8 for TASK_2026_106 (Build: REFACTORING) — using /nitro-orchestrate |
+| 13:26:00 | auto-pilot | SPAWNED e6c90f96 for TASK_2026_113 (Build: BUGFIX) — using /nitro-orchestrate |
+| 13:26:01 | auto-pilot | SPAWNED 99d8a7ae for TASK_2026_116 (ReviewLead: REFACTORING) — using /nitro-orchestrate |
+| 13:26:01 | auto-pilot | SUBSCRIBED 917dfb00 for TASK_2026_099 — watching 1 condition(s) |
+| 13:26:01 | auto-pilot | SUBSCRIBED 374455e8 for TASK_2026_106 — watching 1 condition(s) |
+| 13:26:01 | auto-pilot | SUBSCRIBED e6c90f96 for TASK_2026_113 — watching 1 condition(s) |
+| 13:26:01 | auto-pilot | SUBSCRIBED 99d8a7ae for TASK_2026_116 — watching 1 condition(s) |
+| 13:31:53 | auto-pilot | NO TRANSITION — TASK_2026_106: expected IMPLEMENTED, still CREATED (retry 2/2) |
+| 13:31:53 | auto-pilot | BLOCKED — TASK_2026_106: exceeded 2 retries |
+| 13:31:53 | auto-pilot | SPAWNED a40b37fd for TASK_2026_097 (Build: FEATURE) |
+| 13:31:53 | auto-pilot | SUBSCRIBED a40b37fd for TASK_2026_097 — watching 2 condition(s) |
+| 13:31:58 | orchestrate | STARTED TASK_2026_097 (FEATURE) |
