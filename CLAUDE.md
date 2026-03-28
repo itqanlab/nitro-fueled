@@ -19,7 +19,7 @@ docs/                      # Design docs and architecture
     auto-pilot/            # Supervisor skill (spawns/monitors workers)
     technical-content-writer/  # Content writing skill
     ui-ux-designer/        # Visual design skill
-  commands/                # /orchestrate, /plan, /auto-pilot, /review-*, /create-task, /initialize-workspace, /project-status, /orchestrate-help
+  commands/                # /nitro-orchestrate, /nitro-plan, /nitro-auto-pilot, /nitro-review-*, /nitro-create-task, /nitro-initialize-workspace, /nitro-project-status, /nitro-orchestrate-help
   anti-patterns.md         # Starter checklist
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure

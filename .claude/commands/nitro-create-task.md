@@ -129,7 +129,11 @@ After writing the status file, commit the new task folder:
 
 ```bash
 git add task-tracking/TASK_YYYY_NNN/
-git commit -m "docs(tasks): create TASK_YYYY_NNN — {title from Description field}"
+git commit -m "$(cat <<'EOF'
+docs(tasks): create TASK_YYYY_NNN — {title from Description field}
+EOF
+)"
+# Note: pass the commit message via HEREDOC to prevent shell expansion of title metacharacters
 ```
 
 ### Step 6: Post-Creation Validation

@@ -164,8 +164,8 @@ Created during Phase 0 initialization:
 ### Detecting Continuation Request
 
 ```
-/orchestrate TASK_2026_XXX    -> Continuation mode
-/orchestrate [description]    -> New task mode
+/nitro-orchestrate TASK_2026_XXX    -> Continuation mode
+/nitro-orchestrate [description]    -> New task mode
 ```
 
 ### Phase Detection
@@ -212,7 +212,7 @@ Glob(task-tracking/TASK_[ID]/*.md)
 ### Example Continuation
 
 ```
-User: /orchestrate TASK_2026_008
+User: /nitro-orchestrate TASK_2026_008
 
 Orchestrator:
 1. Read registry -> TASK_2026_008 exists, status IN_PROGRESS

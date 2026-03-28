@@ -9,14 +9,14 @@ create well-scoped tasks, manage the roadmap, and track progress.
 /nitro-plan [what you want]          # Start planning a new feature or body of work
 /nitro-plan status                   # Get a progress assessment of the current plan
 /nitro-plan reprioritize             # Review and reorder the backlog
-/plan                          # Resume current planning context or start fresh
+/nitro-plan                    # Resume current planning context or start fresh
 ```
 
 ## Execution Steps
 
 ### Step 1: Load Planner Agent
 
-Read `.claude/agents/nitro-nitro-planner.md` -- this contains the full Planner agent
+Read `.claude/agents/nitro-planner.md` -- this contains the full Planner agent
 definition, interaction protocols, task creation rules, and plan management rules.
 
 ### Step 2: Parse Arguments

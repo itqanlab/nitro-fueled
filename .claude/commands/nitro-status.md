@@ -12,4 +12,4 @@ Show the current project status. Alias for `/nitro-project-status`.
 
 Load and execute `/nitro-project-status`.
 
-This generates a verified status report by cross-referencing the codebase, task-tracking folder, and implementation plan. See the `project-status` command for the full report format.
+This generates a verified status report by cross-referencing the codebase, task-tracking folder, and implementation plan. See the `nitro-project-status` command for the full report format.

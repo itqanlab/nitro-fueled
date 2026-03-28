@@ -31,7 +31,7 @@ Load and execute `/nitro-create-task [description]`. This invokes the form-based
 
 ## Notes
 
-- The existing `/plan` and `/nitro-create-task` commands remain available as power-user direct access.
+- The existing `/nitro-plan` and `/nitro-create-task` commands remain available as power-user direct access.
 - This command is a thin router — all logic lives in the underlying commands.
 - Use Planner mode when scope is uncertain or the work needs discussion.
 - Use quick mode when requirements are clear and you want to bypass the planning conversation.
