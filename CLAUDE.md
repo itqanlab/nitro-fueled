@@ -4,9 +4,9 @@ Reusable AI development orchestration package. Install into any project to get a
 
 ## What This Is
 
-An installable CLI toolkit (`npx nitro-fueled init`) that sets up a fully customized AI orchestration pipeline in any project. It includes agents, skills, commands, task tracking, and an autonomous Supervisor loop proven across 55+ tasks.
+An installable CLI toolkit (`npx @itqanlab/nitro-fueled init`) that sets up a fully customized AI orchestration pipeline in any project. It includes agents, skills, commands, task tracking, and an autonomous Supervisor loop proven across 55+ tasks.
 
-**This project IS the library being tested on itself.** The `.claude/` directory here is the scaffold — it is always in sync with what `npx nitro-fueled init` copies into a target project. Changes here ship as the next version of the package.
+**This project IS the library being tested on itself.** The `.claude/` directory here is the scaffold — it is always in sync with what `npx @itqanlab/nitro-fueled init` copies into a target project. Changes here ship as the next version of the package.
 
 ## Project Structure
 ```
@@ -24,7 +24,7 @@ docs/                      # Design docs and architecture
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure
 packages/                  # Nx workspace packages
-  cli/                     # npx nitro-fueled init|run|status|create
+  cli/                     # npx @itqanlab/nitro-fueled init|run|status|create
   cli/scaffold/            # Template files copied into target projects at init
 ```
 
@@ -38,7 +38,7 @@ packages/                  # Nx workspace packages
 - Claude Code CLI
 
 ## Current State
-- CLI package built (`packages/cli/`) — `npx nitro-fueled init|run|status|create` operational
+- CLI package built (`packages/cli/`) — `npx @itqanlab/nitro-fueled init|run|status|create` operational
 - .claude/ is the scaffold — changes here sync to what `init` installs in target projects
 - Supervisor architecture: Build Workers and Review Workers spawned/monitored by auto-pilot
 - Planner agent: strategic planning layer between Product Owner and Supervisor (/plan command)

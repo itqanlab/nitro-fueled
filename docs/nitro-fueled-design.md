@@ -13,7 +13,7 @@ Single Nx workspace containing everything:
 ```
 nitro-fueled/
   packages/
-    cli/                       # npx nitro-fueled init|run|status|create
+    cli/                       # npx @itqanlab/nitro-fueled init|run|status|create
     cli/scaffold/              # Template files copied during init (lives inside cli package)
     .claude/
       agents/
@@ -129,11 +129,11 @@ CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE
 ## CLI Commands
 
 ```bash
-npx nitro-fueled init            # Scaffold .claude/ + task-tracking/ into current project
-npx nitro-fueled create          # Interactive task creation -> writes task.md
-npx nitro-fueled run             # Auto-pilot: Supervisor picks tasks, spawns workers, monitors, loops
-npx nitro-fueled run TASK_001    # Run specific task
-npx nitro-fueled status          # Show task statuses, active workers, costs
+npx @itqanlab/nitro-fueled init            # Scaffold .claude/ + task-tracking/ into current project
+npx @itqanlab/nitro-fueled create          # Interactive task creation -> writes task.md
+npx @itqanlab/nitro-fueled run             # Auto-pilot: Supervisor picks tasks, spawns workers, monitors, loops
+npx @itqanlab/nitro-fueled run TASK_001    # Run specific task
+npx @itqanlab/nitro-fueled status          # Show task statuses, active workers, costs
 ```
 
 ## Supervisor Architecture (Auto-Pilot)
