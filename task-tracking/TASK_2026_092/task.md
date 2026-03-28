@@ -38,8 +38,22 @@ Wire the Angular dashboard to the live NestJS API and update the CLI build pipel
 
 ## File Scope
 
-- apps/dashboard/src/app/services/api.service.ts
-- apps/dashboard/src/app/services/websocket.service.ts
-- apps/dashboard/src/environments/environment.ts
-- apps/dashboard/src/environments/environment.prod.ts
-- apps/cli/package.json
+- apps/dashboard/src/app/services/api.service.ts (CREATED)
+- apps/dashboard/src/app/services/websocket.service.ts (CREATED)
+- apps/dashboard/src/environments/environment.ts (CREATED)
+- apps/dashboard/src/environments/environment.prod.ts (CREATED)
+- apps/dashboard/src/app/views/dashboard/dashboard.adapters.ts (CREATED)
+- apps/dashboard/src/app/views/analytics/analytics.adapters.ts (CREATED)
+- apps/dashboard/src/app/app.config.ts (MODIFIED — provideHttpClient added)
+- apps/dashboard/project.json (MODIFIED — fileReplacements for production)
+- apps/dashboard/src/app/views/dashboard/dashboard.component.ts (MODIFIED — uses ApiService)
+- apps/dashboard/src/app/views/analytics/analytics.component.ts (MODIFIED — uses ApiService)
+- apps/dashboard/src/app/layout/status-bar/status-bar.component.ts (MODIFIED — uses ApiService)
+- apps/dashboard/src/app/layout/sidebar/sidebar.component.ts (MODIFIED — inlined constants)
+- apps/dashboard/src/app/views/mcp/mcp-integrations.component.ts (MODIFIED — inlined constants)
+- apps/dashboard/src/app/views/models/model-assignments.component.ts (MODIFIED — inlined constants)
+- apps/dashboard/src/app/views/new-task/new-task.component.ts (MODIFIED — inlined constants)
+- apps/dashboard/src/app/views/providers/provider-hub.component.ts (MODIFIED — inlined constants)
+- apps/dashboard/src/app/views/agent-editor/agent-editor.store.ts (MODIFIED — inlined constants)
+- apps/cli/package.json (MODIFIED — copy-web-assets points to apps/dashboard/dist)
+- package.json (MODIFIED — socket.io-client added)
