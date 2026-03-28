@@ -9,6 +9,7 @@
 | Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
 | Priority              | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity            | [Simple | Medium | Complex]                                                   |
+| preferred_tier        | [light | balanced | heavy | auto]                                             |
 | Model                 | [claude-opus-4-6 | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | default]    |
 | Testing               | [required \| optional \| skip]                                               |
 | Poll Interval         | [default | 30s | 60s | 2m | ...]                                             |
@@ -30,6 +31,13 @@
        Simple  — single layer, follow established patterns, ≤3 files
        Medium  — 1-2 layers, some architectural decisions needed, 4-7 files
        Complex — cross-cutting concerns, novel architecture, creative problem-solving
+
+     preferred_tier: Auto-estimated at task creation time. Do NOT set manually unless overriding.
+       light    — maps to Simple complexity (glm-4.7, lightweight model)
+       balanced — maps to Medium complexity (glm-5, full orchestration)
+       heavy    — maps to Complex complexity (claude-opus-4-6, top reasoning)
+       auto     — fallback sentinel; Supervisor uses Complexity field routing if preferred_tier is absent or "auto"
+     Omit or set to "auto" to let the Supervisor use the Complexity field for routing.
 
      Model: Optional. Controls which Claude model the Supervisor uses when spawning a worker for this task.
        claude-opus-4-6            — Most capable, highest cost. Use for complex/high-risk tasks.

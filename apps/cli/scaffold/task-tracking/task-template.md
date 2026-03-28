@@ -4,13 +4,14 @@
 
 ## Metadata
 
-| Field      | Value                                                                         |
-|------------|-------------------------------------------------------------------------------|
-| Type       | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
-| Priority   | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
-| Complexity | [Simple | Medium | Complex]                                                   |
-| Provider   | [claude | glm | opencode | default]                                           |
-| Model      | [model name or default]                                                       |
+| Field          | Value                                                                         |
+|----------------|-------------------------------------------------------------------------------|
+| Type           | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE] |
+| Priority       | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
+| Complexity     | [Simple | Medium | Complex]                                                   |
+| preferred_tier | [light | balanced | heavy | auto]                                             |
+| Provider       | [claude | glm | opencode | default]                                           |
+| Model          | [model name or default]                                                       |
 
 <!-- Type: Determines the agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
@@ -27,6 +28,13 @@
        Simple  — single layer, follow established patterns, ≤3 files
        Medium  — 1-2 layers, some architectural decisions needed, 4-7 files
        Complex — cross-cutting concerns, novel architecture, creative problem-solving
+
+     preferred_tier: Auto-estimated at task creation time. Do NOT set manually unless overriding.
+       light    — maps to Simple complexity (glm-4.7, lightweight model)
+       balanced — maps to Medium complexity (glm-5, full orchestration)
+       heavy    — maps to Complex complexity (claude-opus-4-6, top reasoning)
+       auto     — fallback sentinel; Supervisor uses Complexity field routing if preferred_tier is absent or "auto"
+     Omit or set to "auto" to let the Supervisor use the Complexity field for routing.
 
      Provider: Which AI provider to use for this task's worker session
        claude    — Claude subscription (best reasoning, full orchestration)

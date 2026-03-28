@@ -683,7 +683,9 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 
 **5d. Resolve Provider and Model:**
 
-If the task's Provider field is `default` or absent, use the **Provider Routing Table** below to select the best-fit provider and model based on the task's Type, Complexity, and worker type. If explicitly set (not `default`), use it as-is. Similarly, if the task's Model field is `default` or absent, use the routing table default for the resolved provider.
+If the task's Provider field is `default` or absent, use the **Provider Routing Table** below to select the best-fit provider and model based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. Similarly, if the task's Model field is `default` or absent, use the routing table default for the resolved provider.
+
+**Reading `preferred_tier`**: Before routing, read the task's `preferred_tier` field from task.md (match `| preferred_tier | <value> |`). Valid values: `light`, `balanced`, `heavy`. If the field is absent, empty, or set to `auto`, fall back to the Complexity field for routing (Simple → light, Medium → balanced, Complex → heavy).
 
 **Provider Routing Table** (used when Provider is `default` or absent):
 
@@ -692,9 +694,9 @@ If the task's Provider field is `default` or absent, use the **Provider Routing 
 | Review Worker + Type=logic (code-logic-reviewer) | `claude` | `claude-opus-4-6` | Deep reasoning needed for logic review |
 | Review Worker + Type=style (code-style-reviewer) | `glm` | `glm-4.7` | Full tool access, saves Claude quota |
 | Review Worker + Type=simple (checklist, unit test) | `opencode` | `openai/gpt-4.1-mini` | Single-shot, cheapest for simple checks |
-| Build Worker + Complexity=Complex | `claude` | `claude-opus-4-6` | Top quality for critical/novel decisions |
-| Build Worker + Complexity=Medium | `glm` | `glm-5` | Full orchestration, saves Claude quota |
-| Build Worker + Complexity=Simple | `glm` | `glm-4.7` | Good enough, full tool access |
+| Build Worker + preferred_tier=heavy | `claude` | `claude-opus-4-6` | Top quality for critical/novel decisions |
+| Build Worker + preferred_tier=balanced | `glm` | `glm-5` | Full orchestration, saves Claude quota |
+| Build Worker + preferred_tier=light | `glm` | `glm-4.7` | Good enough, full tool access |
 | Build Worker + Type=DOCUMENTATION or RESEARCH | `opencode` | `openai/gpt-4.1-mini` | Single-shot focused tasks |
 | *(unrecognized combination)* | `claude` | `claude-opus-4-6` | Safe fallback |
 
