@@ -333,11 +333,11 @@ export const MOCK_MCP_TOOL_ACCESS: readonly McpToolAccessRow[] = [
 
 export const MOCK_ANALYTICS_PAGE_DATA: AnalyticsData = {
   statCards: [
-    { label: 'Total Cost', value: '$847.32', trend: { direction: 'up', percent: 12 }, sub: 'Last 30 days', colorVar: '--warning' },
-    { label: 'Tasks Completed', value: '48', trend: { direction: 'up', percent: 8 }, sub: 'Last 30 days', colorVar: '--success' },
-    { label: 'Tokens Used', value: '2.4M', trend: { direction: 'down', percent: 5 }, sub: 'Last 30 days', colorVar: '--accent' },
-    { label: 'Avg Task Duration', value: '4.2', unit: 'min', trend: { direction: 'down', percent: 15 }, sub: 'vs prior period', colorVar: '--text-secondary' },
-    { label: 'Active Agents', value: '12', sub: 'Currently online', colorVar: '--accent' },
+    { label: 'Total Cost', value: '$847.32', trend: { direction: 'up', percent: 12 }, sub: 'Last 30 days', colorKey: 'warning' },
+    { label: 'Tasks Completed', value: '48', trend: { direction: 'up', percent: 8 }, sub: 'Last 30 days', colorKey: 'success' },
+    { label: 'Tokens Used', value: '2.4M', trend: { direction: 'down', percent: 5, goodWhenDown: true }, sub: 'Last 30 days', colorKey: 'accent' },
+    { label: 'Avg Task Duration', value: '4.2', unit: 'min', trend: { direction: 'down', percent: 15, goodWhenDown: true }, sub: 'vs prior period', colorKey: 'text-secondary' },
+    { label: 'Active Agents', value: '12', sub: 'Currently online', colorKey: 'accent' },
   ],
   providerCosts: [
     { name: 'Anthropic', percent: 62, amount: 523.40, colorClass: 'blue' },
@@ -346,9 +346,9 @@ export const MOCK_ANALYTICS_PAGE_DATA: AnalyticsData = {
     { name: 'Local/CLI', percent: 4, amount: 36.00, colorClass: 'gray' },
   ],
   clientCosts: [
-    { name: 'Acme Corp', amount: 412.80, budget: 500, barColorVar: '--accent' },
-    { name: 'TechStart', amount: 287.52, budget: 300, barColorVar: '--warning' },
-    { name: 'Internal', amount: 147.00, budget: 300, barColorVar: '--success' },
+    { name: 'Acme Corp', amount: 412.80, budget: 500, colorClass: 'fill-accent' },
+    { name: 'TechStart', amount: 287.52, budget: 300, colorClass: 'fill-warning' },
+    { name: 'Internal', amount: 147.00, budget: 300, colorClass: 'fill-success' },
   ],
   agentPerformance: [
     { name: 'team-leader', online: true, tasks: 48, avgDuration: '3.2 min', tokensPerTask: '18.4K', costPerTask: 6.82, successRate: 98 },

@@ -81,5 +81,7 @@ export class MockDataService {
     return { used: 47.30, total: 100 };
   }
 
-  public getAnalyticsPageData(): AnalyticsData { return MOCK_ANALYTICS_PAGE_DATA; }
+  public getAnalyticsPageData(): AnalyticsData {
+    return MOCK_ANALYTICS_PAGE_DATA;
+  }
 }

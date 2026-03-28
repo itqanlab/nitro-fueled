@@ -3,6 +3,7 @@ export type TrendDirection = 'up' | 'down' | 'neutral';
 export interface AnalyticsTrend {
   readonly direction: TrendDirection;
   readonly percent: number;
+  readonly goodWhenDown?: boolean;
 }
 
 export interface AnalyticsStatCard {
@@ -11,7 +12,7 @@ export interface AnalyticsStatCard {
   readonly unit?: string;
   readonly trend?: AnalyticsTrend;
   readonly sub: string;
-  readonly colorVar: string;
+  readonly colorKey: 'warning' | 'success' | 'accent' | 'text-secondary';
 }
 
 export interface ProviderCost {
@@ -25,7 +26,7 @@ export interface ClientCost {
   readonly name: string;
   readonly amount: number;
   readonly budget: number;
-  readonly barColorVar: string;
+  readonly colorClass: 'fill-accent' | 'fill-warning' | 'fill-success';
 }
 
 export interface AgentPerformance {
