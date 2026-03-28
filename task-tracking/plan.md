@@ -145,6 +145,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_047 | Unified /run, /create, /status Commands + CLI Single-Task Run | COMPLETE | P1-High |
 | TASK_2026_035 | Review Lead — Parallel Reviews with Model Routing | COMPLETE | P1-High |
 | TASK_2026_036 | Test Lead — Parallel Test Writing and Execution with Model Routing | COMPLETE | P1-High |
+| TASK_2026_106 | Generalize Orchestration Lifecycle — Rename implementation-plan.md to plan.md + Universal Lifecycle Flow | COMPLETE | P2-Medium |
 
 ### Phase 9: Learning Loop
 **Status**: COMPLETE
