@@ -6,10 +6,12 @@ import { AnalyticsService } from './analytics.service';
 import { WatcherService } from './watcher.service';
 import { DiffService } from './diff.service';
 import { WorkerTreeService } from './worker-tree.service';
+import { DashboardGateway } from './dashboard.gateway';
 
 /**
- * DashboardModule registers all dashboard-related services and controllers.
+ * DashboardModule registers all dashboard-related services, controllers, and gateways.
  * Migrated from dashboard-service to NestJS architecture (TASK_2026_087).
+ * WebSocket gateway added (TASK_2026_088).
  */
 @Module({
   controllers: [DashboardController],
@@ -23,6 +25,7 @@ import { WorkerTreeService } from './worker-tree.service';
       useFactory: () => new AnalyticsService(process.cwd()),
     },
     WatcherService,
+    DashboardGateway,
   ],
   exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService],
 })

@@ -1,4 +1,136 @@
-import { WebSocketGateway } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { SessionsService } from './sessions.service';
+import { AnalyticsService } from './analytics.service';
+import { WatcherService } from './watcher.service';
+import type { DashboardEvent, FileChangeEvent } from './dashboard.types';
 
-@WebSocketGateway()
-export class DashboardGateway {}
+/**
+ * DashboardGateway provides real-time WebSocket broadcasting of dashboard events.
+ * Migrated from dashboard-service/src/server/websocket.ts to NestJS Socket.IO.
+ * Maintains protocol compatibility with existing clients.
+ */
+@WebSocketGateway({
+  cors: {
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4200'],
+  },
+})
+@Injectable()
+export class DashboardGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleDestroy
+{
+  @WebSocketServer()
+  private server!: Server;
+
+  private readonly logger = new Logger(DashboardGateway.name);
+  private watcherUnsubscribe: (() => void) | null = null;
+
+  constructor(
+    private readonly sessionsService: SessionsService,
+    private readonly analyticsService: AnalyticsService,
+    private readonly watcherService: WatcherService,
+  ) {}
+
+  /**
+   * Called after the gateway is initialized.
+   * Sets up the file watcher subscription to trigger broadcasts on changes.
+   */
+  public afterInit(): void {
+    this.logger.log('WebSocket gateway initialized');
+    this.setupWatcherSubscription();
+  }
+
+  /**
+   * Handle new WebSocket client connections.
+   * Emits a connection acknowledgment matching the existing ws protocol format.
+   */
+  public handleConnection(client: Socket): void {
+    this.logger.debug(`Client connected: ${client.id}`);
+    // Emit connection event matching existing protocol
+    client.emit('dashboard-event', {
+      type: 'connected',
+      timestamp: new Date().toISOString(),
+      payload: {},
+    });
+  }
+
+  /**
+   * Handle client disconnections.
+   */
+  public handleDisconnect(client: Socket): void {
+    this.logger.debug(`Client disconnected: ${client.id}`);
+  }
+
+  /**
+   * Clean up the watcher subscription on module destroy.
+   */
+  public onModuleDestroy(): void {
+    if (this.watcherUnsubscribe) {
+      this.watcherUnsubscribe();
+      this.watcherUnsubscribe = null;
+      this.logger.log('Watcher subscription cleaned up');
+    }
+  }
+
+  /**
+   * Subscribe to WatcherService for file change events.
+   * Triggers broadcasts when files in task-tracking change.
+   */
+  private setupWatcherSubscription(): void {
+    this.watcherUnsubscribe = this.watcherService.subscribe(
+      async (_path: string, _event: FileChangeEvent): Promise<void> => {
+        await this.broadcastChanges();
+      },
+    );
+  }
+
+  /**
+   * Broadcast session and analytics updates to all connected clients.
+   * Wraps service calls in try-catch to prevent broadcast failures from crashing the gateway.
+   */
+  private async broadcastChanges(): Promise<void> {
+    // Broadcast session updates
+    try {
+      const sessions = this.sessionsService.getSessions();
+      this.broadcastEvent({
+        type: 'sessions:changed',
+        timestamp: new Date().toISOString(),
+        payload: { sessions },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to broadcast session updates: ${message}`);
+    }
+
+    // Broadcast analytics updates using state:refreshed event type
+    try {
+      const costData = await this.analyticsService.getCostData();
+      this.broadcastEvent({
+        type: 'state:refreshed',
+        timestamp: new Date().toISOString(),
+        payload: { analytics: costData },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to broadcast analytics updates: ${message}`);
+    }
+  }
+
+  /**
+   * Broadcast a dashboard event to all connected clients.
+   */
+  private broadcastEvent(event: DashboardEvent): void {
+    if (!this.server) {
+      this.logger.warn('Server not initialized, skipping broadcast');
+      return;
+    }
+    this.server.emit('dashboard-event', event);
+  }
+}
