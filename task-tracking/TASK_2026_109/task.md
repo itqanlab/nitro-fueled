@@ -71,11 +71,30 @@ The Angular dashboard is one of potentially many clients. All business logic liv
 
 ## File Scope
 
-- apps/dashboard-api/src/main.ts
-- apps/dashboard-api/src/app/dtos/
-- apps/dashboard-api/src/app/controllers/
-- apps/dashboard-api/src/app/interceptors/
-- apps/dashboard-api/package.json
+### Created
+- apps/dashboard-api/src/app/dtos/index.ts
+- apps/dashboard-api/src/app/dtos/requests/index.ts
+- apps/dashboard-api/src/app/dtos/requests/task-id.param.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/analytics.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/anti-patterns.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/completion-report.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/full-task.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/graph.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/lessons.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/review.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/session.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/stats.dto.ts
+- apps/dashboard-api/src/app/dtos/responses/worker-tree.dto.ts
+- apps/dashboard-api/src/app/filters/error-envelope.filter.ts
+- apps/dashboard-api/src/app/interceptors/response-envelope.interceptor.ts
+- apps/dashboard-api/scripts/generate-spec.ts
+
+### Modified
+- apps/dashboard-api/src/main.ts (versioning, Swagger, global interceptor/filter)
+- apps/dashboard-api/src/dashboard/dashboard.controller.ts (version '1', Swagger decorators)
+- apps/dashboard-api/src/app/health.controller.ts (version '1', Swagger decorators)
+- apps/dashboard-api/src/app/dtos/responses/index.ts (updated barrel exports)
+- apps/dashboard-api/package.json (build:spec script)
 
 ## Parallelism
 
