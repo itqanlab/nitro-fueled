@@ -1,7 +1,8 @@
-import { Task } from '../../models/task.model';
+import { Task, TaskType } from '../../models/task.model';
 import { AnalyticsSummary } from '../../models/analytics-summary.model';
-import type { TaskRecord, DashboardStats } from '../../../../dashboard-api/src/dashboard/dashboard.types';
+import type { TaskRecord, DashboardStats, TaskType as ApiTaskType } from '../../../../dashboard-api/src/dashboard/dashboard.types';
 
+// FIXING is an extension status used during the fix-worker phase (see dashboard.types.ts)
 export const ACTIVE_STATUSES = [
   'IN_PROGRESS',
   'CREATED',
@@ -12,13 +13,25 @@ export const ACTIVE_STATUSES = [
 
 export const COMPLETED_STATUSES = ['COMPLETE', 'CANCELLED'] as const;
 
+function mapTaskType(apiType: ApiTaskType): TaskType {
+  switch (apiType) {
+    case 'FEATURE': return 'FEATURE';
+    case 'BUGFIX': return 'BUGFIX';
+    case 'REFACTORING': return 'REFACTOR';
+    case 'DOCUMENTATION': return 'DOCS';
+    case 'RESEARCH': return 'FEATURE';
+    case 'DEVOPS': return 'FEATURE';
+    case 'CREATIVE': return 'FEATURE';
+  }
+}
+
 export function taskRecordToTask(r: TaskRecord): Task {
   const isActive = (ACTIVE_STATUSES as readonly string[]).includes(r.status);
   return {
     id: r.id,
     title: r.description,
     status: isActive ? 'running' : 'completed',
-    type: r.type === 'REFACTORING' ? 'REFACTOR' : (r.type as Task['type']),
+    type: mapTaskType(r.type),
     priority: 'medium',
     autoRun: false,
     agentLabel: r.model,

@@ -2,6 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+
+interface HealthResponse {
+  status: string;
+  service: string;
+  timestamp: string;
+}
+
 import type {
   TaskRecord,
   FullTaskData,
@@ -27,10 +34,8 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api`;
 
-  public getHealth(): Observable<{ status: string; service: string; timestamp: string }> {
-    return this.http.get<{ status: string; service: string; timestamp: string }>(
-      `${this.base}/health`,
-    );
+  public getHealth(): Observable<HealthResponse> {
+    return this.http.get<HealthResponse>(`${this.base}/health`);
   }
 
   public getRegistry(): Observable<TaskRecord[]> {
@@ -46,15 +51,15 @@ export class ApiService {
   }
 
   public getTask(id: string): Observable<FullTaskData> {
-    return this.http.get<FullTaskData>(`${this.base}/tasks/${id}`);
+    return this.http.get<FullTaskData>(`${this.base}/tasks/${encodeURIComponent(id)}`);
   }
 
   public getTaskReviews(id: string): Observable<ReviewData[]> {
-    return this.http.get<ReviewData[]>(`${this.base}/tasks/${id}/reviews`);
+    return this.http.get<ReviewData[]>(`${this.base}/tasks/${encodeURIComponent(id)}/reviews`);
   }
 
   public getTaskPipeline(id: string): Observable<PipelineData> {
-    return this.http.get<PipelineData>(`${this.base}/tasks/${id}/pipeline`);
+    return this.http.get<PipelineData>(`${this.base}/tasks/${encodeURIComponent(id)}/pipeline`);
   }
 
   public getAntiPatterns(): Observable<AntiPatternRule[]> {
@@ -86,7 +91,7 @@ export class ApiService {
   }
 
   public getSession(id: string): Observable<SessionData> {
-    return this.http.get<SessionData>(`${this.base}/sessions/${id}`);
+    return this.http.get<SessionData>(`${this.base}/sessions/${encodeURIComponent(id)}`);
   }
 
   public getAnalyticsCost(): Observable<AnalyticsCostData> {

@@ -32,11 +32,11 @@ export class StatusBarComponent {
       if (!stats) return;
       this.mcpCount = stats.activeWorkers;
       this.budget = { used: parseFloat(stats.totalCost.toFixed(2)), total: 100 };
-      this.indicators = this._buildIndicators(stats);
+      this.indicators = this.buildIndicators(stats);
     });
   }
 
-  private _buildIndicators(stats: DashboardStats): readonly StatusIndicator[] {
+  private buildIndicators(stats: DashboardStats): readonly StatusIndicator[] {
     return [
       {
         label: 'API',

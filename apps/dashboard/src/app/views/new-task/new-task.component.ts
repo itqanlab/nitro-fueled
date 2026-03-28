@@ -158,11 +158,9 @@ export class NewTaskComponent {
 
   public onSaveDraft(): void {
     // Draft persistence will be implemented when the task API is wired
-    console.log('Save draft', { title: this.title, description: this.description, strategy: this.selectedStrategy });
   }
 
   public onStartTask(): void {
     // Task creation will be implemented when the task API is wired
-    console.log('Start task', { title: this.title, description: this.description, strategy: this.selectedStrategy, modelOverrides: this.modelOverrides });
   }
 }

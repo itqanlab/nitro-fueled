@@ -39,11 +39,8 @@ export class AnalyticsComponent {
 
   // Filter state — visual toggle only; data filtering requires real data integration
   public selectedPeriod: FilterPeriod = '30d';
-  // Filter state — visual toggle only; data filtering requires real data integration
   public selectedClient = 'All Clients';
-  // Filter state — visual toggle only; data filtering requires real data integration
   public selectedTeam = 'All Teams';
-  // Filter state — visual toggle only; data filtering requires real data integration
   public selectedProject = 'All Projects';
 
   public data: AnalyticsData = FALLBACK_ANALYTICS_DATA;
@@ -75,11 +72,11 @@ export class AnalyticsComponent {
   constructor() {
     effect(() => {
       this.data = this.dataSignal();
-      this._recomputeDerived();
+      this.recomputeDerived();
     });
   }
 
-  private _recomputeDerived(): void {
+  private recomputeDerived(): void {
     const maxDaily = this.data.dailyCosts.length
       ? Math.max(...this.data.dailyCosts.map(e => e.amount))
       : 0;

@@ -16,7 +16,9 @@ export class ProviderHubComponent {
   public readonly data: ProviderHubData = MOCK_PROVIDER_HUB_DATA;
 
   public readonly budgetPercent =
-    this.data.costSummary.totalCost / this.data.costSummary.budget;
+    this.data.costSummary.budget > 0
+      ? this.data.costSummary.totalCost / this.data.costSummary.budget
+      : 0;
 
   public readonly budgetBarWidth = Math.min(100, this.budgetPercent * 100);
 

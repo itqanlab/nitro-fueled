@@ -92,7 +92,7 @@ export class DashboardComponent {
 
   public readonly project: Project = STATIC_PROJECT;
   public readonly agents: readonly Agent[] = [];
-  public readonly activity: readonly never[] = [];
+  public readonly activity: readonly unknown[] = [];
 
   public readonly quickActions: readonly QuickAction[] = [
     { icon: '+', label: 'New Task', color: 'blue' },
