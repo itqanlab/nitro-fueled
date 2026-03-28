@@ -56,7 +56,9 @@ packages/                  # Nx workspace packages
 8. Test on a fresh project
 
 ## Task Status Queries
-- When asked about project status, remaining tasks, what's next, or any task-related question: **read `task-tracking/registry.md` ONLY**. Do NOT read individual `task.md` files unless specifically asked about a single task's details.
+- When asked about project status, remaining tasks, what's next, or any task-related question:
+  1. **Run `npx nitro-fueled status`** first — this rebuilds `task-tracking/registry.md` from all status files on disk
+  2. **Then read `task-tracking/registry.md` ONLY** — do NOT read individual `task.md` files
 - The registry contains all task IDs, statuses, types, and descriptions — that is sufficient for status queries.
 
 ## Conventions
