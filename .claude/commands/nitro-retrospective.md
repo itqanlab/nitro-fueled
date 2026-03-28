@@ -5,16 +5,16 @@ Analyze completed tasks for recurring patterns, update review lessons, and propo
 ## Usage
 
 ```
-/retrospective                    # analyze last session
-/retrospective --all              # analyze all completed tasks
-/retrospective --since YYYY-MM-DD # analyze tasks completed since this date
+/nitro-retrospective                    # analyze last session
+/nitro-retrospective --all              # analyze all completed tasks
+/nitro-retrospective --since YYYY-MM-DD # analyze tasks completed since this date
 ```
 
 ## Execution Steps
 
 ### Step 0: Pre-Flight Check
 
-Verify `task-tracking/` and `task-tracking/registry.md` exist. If missing, output: "Workspace not initialized. Run /initialize-workspace first." and stop.
+Verify `task-tracking/` and `task-tracking/registry.md` exist. If missing, output: "Workspace not initialized. Run /nitro-initialize-workspace first." and stop.
 
 If `--since` is provided, validate the date is in `YYYY-MM-DD` format. If invalid, output: "Invalid date format. Use YYYY-MM-DD." and stop.
 

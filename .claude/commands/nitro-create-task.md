@@ -5,8 +5,8 @@ Scaffold a new task folder with a pre-filled `task.md` from the canonical templa
 ## Usage
 
 ```
-/create-task                        # Interactive — prompts for all fields
-/create-task [brief description]    # Pre-fills description, prompts for the rest
+/nitro-create-task                        # Interactive — prompts for all fields
+/nitro-create-task [brief description]    # Pre-fills description, prompts for the rest
 ```
 
 ## Execution Steps
@@ -115,7 +115,7 @@ Do NOT ask the user whether to split. Do NOT create the oversized task. Instead,
 
 Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no trailing newline, no extra whitespace).
 
-> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
+> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/nitro-project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
 >
 > **Canonical registry row format** (for reference when regenerating): `Task ID | Status | Type | Description | Priority | Dependencies | Created | Model`
 > - Priority: the task's Priority field value (e.g., `P1-High`)
@@ -154,9 +154,9 @@ Task created successfully.
   Status:   CREATED (ready for auto-pilot or /orchestrate)
 
   Next steps:
-  - Run /orchestrate TASK_YYYY_NNN to start this task manually
-  - Or add more tasks and run /auto-pilot to process the backlog
-  - Or run /auto-pilot --dry-run to see the execution plan
+  - Run /nitro-orchestrate TASK_YYYY_NNN to start this task manually
+  - Or add more tasks and run /nitro-auto-pilot to process the backlog
+  - Or run /nitro-auto-pilot --dry-run to see the execution plan
 ```
 
 ## Important Rules
@@ -165,7 +165,7 @@ Task created successfully.
 2. **ALWAYS scan task folders to determine the next ID** — never read registry.md for this, it may be stale
 3. **Write status file immediately after creating the task folder**: `task-tracking/TASK_YYYY_NNN/status` containing `CREATED` (no trailing newline)
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
-5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/initialize-workspace` first
+5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/nitro-initialize-workspace` first
 6. **Do NOT create context.md** — that's the orchestrator's job when `/orchestrate` runs
 
 ## References

@@ -1,6 +1,6 @@
 # `/evaluate-agent` — Agent Calibration Loop
 
-**Usage**: `/evaluate-agent <agent-name>`
+**Usage**: `/nitro-evaluate-agent <agent-name>`
 
 Runs the full calibration loop for any agent: reads its record, generates a targeted test task, executes it in single-agent mode, scores the output, updates the agent definition on failure, and records everything. Loops up to 3 iterations before flagging.
 
@@ -11,7 +11,7 @@ Runs the full calibration loop for any agent: reads its record, generates a targ
 Parse `$ARGUMENTS`:
 
 1. Trim whitespace from `$ARGUMENTS`.
-2. If empty or whitespace-only: print `"Usage: /evaluate-agent <agent-name>"` and stop.
+2. If empty or whitespace-only: print `"Usage: /nitro-evaluate-agent <agent-name>"` and stop.
 3. Set `AGENT_NAME` = trimmed value.
 4. Validate format: `AGENT_NAME` must match `^[a-z0-9][a-z0-9-]*[a-z0-9]$` (lowercase letters, digits, hyphens; no leading or trailing hyphens; minimum 2 characters). If it does not match: print `"Invalid agent name '{AGENT_NAME}'. Use the agent's kebab-case name (e.g., backend-developer, team-leader)."` and stop.
 

@@ -5,15 +5,15 @@ Generate a new developer agent from the canonical developer template and update 
 ## Usage
 
 ```
-/create-agent                        # Interactive — prompts for all fields
-/create-agent [name]                 # Pre-fills name, prompts for the rest
+/nitro-create-agent                        # Interactive — prompts for all fields
+/nitro-create-agent [name]                 # Pre-fills name, prompts for the rest
 ```
 
 ## Execution Steps
 
 ### Step 1: Pre-Flight Checks
 
-1. Verify these required files exist. If any are missing, abort with instructions to run `/initialize-workspace`:
+1. Verify these required files exist. If any are missing, abort with instructions to run `/nitro-initialize-workspace`:
    - `.claude/agents/` directory
    - `.claude/skills/orchestration/references/developer-template.md`
    - `.claude/skills/orchestration/references/stack-detection-registry.md`
@@ -93,11 +93,11 @@ Read `.claude/skills/orchestration/references/agent-catalog.md` and update ALL 4
 
 ### Step 5b: Update Orchestrate Command
 
-Read `.claude/commands/orchestrate.md` and update the Quick Reference **Agents** line: increment the count in parentheses and add the new agent name to the comma-separated list.
+Read `.claude/commands/nitro-orchestrate.md` and update the Quick Reference **Agents** line: increment the count in parentheses and add the new agent name to the comma-separated list.
 
 ### Step 5c: Validate Catalog Updates
 
-Verify: Capability Matrix row count matches header count, new agent appears in Development Agents section, Category Summary includes the new agent, `orchestrate.md` Agents count matches catalog header count.
+Verify: Capability Matrix row count matches header count, new agent appears in Development Agents section, Category Summary includes the new agent, `nitro-orchestrate.md` Agents count matches catalog header count.
 
 ### Step 6: Display Summary
 
@@ -115,7 +115,7 @@ Agent created successfully.
   - Development Agents: entry added
   - Category Summary: updated
   - Header count: N -> N+1
-  - orchestrate.md: agent list updated
+  - nitro-orchestrate.md: agent list updated
 
   Next steps:
   - Review .claude/agents/{name}.md for stack accuracy
@@ -132,7 +132,7 @@ Agent created successfully.
 6. **No `{variable}` tokens may remain** in the generated output
 7. **Generated agent must be under 400 lines** — split content if needed
 8. **ALL 4 catalog sections must be updated** — partial updates break downstream tooling
-9. **`orchestrate.md` Quick Reference must be updated** — keeps the agent list in sync
+9. **`nitro-orchestrate.md` Quick Reference must be updated** — keeps the agent list in sync
 10. **Do NOT modify any other files** — only create the agent file and update catalog + orchestrate
 11. **Pre-flight check** — abort if required source files don't exist
 
@@ -141,6 +141,6 @@ Agent created successfully.
 - Developer template: `.claude/skills/orchestration/references/developer-template.md`
 - Stack registry: `.claude/skills/orchestration/references/stack-detection-registry.md`
 - Agent catalog: `.claude/skills/orchestration/references/agent-catalog.md`
-- Orchestrate command: `.claude/commands/orchestrate.md`
-- Command pattern: `.claude/commands/create-task.md`
-- Command pattern: `.claude/commands/create-skill.md`
+- Orchestrate command: `.claude/commands/nitro-orchestrate.md`
+- Command pattern: `.claude/commands/nitro-create-task.md`
+- Command pattern: `.claude/commands/nitro-create-skill.md`

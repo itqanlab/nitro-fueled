@@ -7,14 +7,14 @@ and loops until all tasks are complete or blocked.
 ## Usage
 
 ```
-/auto-pilot                                    # Process all unblocked tasks
-/auto-pilot TASK_YYYY_NNN                      # Process single task only
-/auto-pilot --dry-run                          # Show plan without spawning
-/auto-pilot --concurrency 3 --interval 5m      # Override defaults
-/auto-pilot --force                            # Override stale RUNNING state
-/auto-pilot --pause                            # Run one monitoring cycle then stop cleanly (workers keep running)
-/auto-pilot --continue                         # Resume most recent paused/stopped session
-/auto-pilot --continue SESSION_2026-03-28_14-00-00  # Resume specific session
+/nitro-auto-pilot                                    # Process all unblocked tasks
+/nitro-auto-pilot TASK_YYYY_NNN                      # Process single task only
+/nitro-auto-pilot --dry-run                          # Show plan without spawning
+/nitro-auto-pilot --concurrency 3 --interval 5m      # Override defaults
+/nitro-auto-pilot --force                            # Override stale RUNNING state
+/nitro-auto-pilot --pause                            # Run one monitoring cycle then stop cleanly (workers keep running)
+/nitro-auto-pilot --continue                         # Resume most recent paused/stopped session
+/nitro-auto-pilot --continue SESSION_2026-03-28_14-00-00  # Resume specific session
 ```
 
 ### Parameters
@@ -86,7 +86,7 @@ If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
 
 1. Read `task-tracking/registry.md` (or reuse if already read from Step 3a).
 2. Determine scope based on invocation mode:
-   - **Single-task mode** (`/auto-pilot TASK_YYYY_NNN`): scope = the specified task ID plus its transitive dependencies only. Warnings for out-of-scope tasks are still printed to the user but do NOT trigger an abort.
+   - **Single-task mode** (`/nitro-auto-pilot TASK_YYYY_NNN`): scope = the specified task ID plus its transitive dependencies only. Warnings for out-of-scope tasks are still printed to the user but do NOT trigger an abort.
    - **All-tasks or dry-run mode**: scope = all CREATED and IMPLEMENTED tasks.
 3. For each task in scope, read `task-tracking/TASK_YYYY_NNN/task.md`.
    - If a task.md is missing, record warning: `"TASK_X: task.md not found — skipping"`
