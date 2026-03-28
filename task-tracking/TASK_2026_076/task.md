@@ -33,10 +33,17 @@ Generate a new Angular 19 standalone app at `apps/dashboard` using the `@nx/angu
 
 ## File Scope
 
+### Created
 - apps/dashboard/project.json
 - apps/dashboard/package.json
 - apps/dashboard/tsconfig.json
+- apps/dashboard/src/index.html
+- apps/dashboard/src/main.ts
 - apps/dashboard/src/app/app.config.ts
 - apps/dashboard/src/app/app.component.ts
 - apps/dashboard/src/styles.scss
-- apps/dashboard/src/main.ts
+- apps/dashboard/public/.gitkeep
+
+### Modified
+- package.json (workspace root — added Angular 19, @nx/angular, ng-zorro-antd deps)
+- .gitignore (added .angular/ cache entry)
