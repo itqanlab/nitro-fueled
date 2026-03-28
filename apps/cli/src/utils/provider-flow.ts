@@ -1,251 +1,344 @@
 /**
- * Interactive per-provider configuration menus.
+ * Launcher detection and routing assignment flow.
  *
- * These are called from runProvidersPhase in config.ts to show the
- * [K]eep / [R]econfigure / [T]est / [U]nload menu for each provider.
+ * Replaces the old per-provider menus. Now scans for installed launchers,
+ * derives available models, and prompts for routing slot assignments.
  */
 import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { prompt } from './prompt.js';
 import {
-  testGlmConnection,
-  resolveApiKey,
-  type GlmProviderConfig,
-  type OpenCodeProviderConfig,
+  DEFAULT_PROVIDERS,
+  DEFAULT_ROUTING,
+  type LauncherInfo,
+  type LaunchersConfig,
+  type LauncherName,
+  type NitroFueledConfig,
+  type RoutingConfig,
+  type RoutingSlot,
 } from './provider-config.js';
-import type { ProviderStatus } from './provider-status.js';
 
-export type GlmMenuResult =
-  | { action: 'keep' }
-  | { action: 'skip' }
-  | { action: 'unload' }
-  | { action: 'reconfigure'; config: GlmProviderConfig };
+// ---------------------------------------------------------------------------
+// Launcher detection
+// ---------------------------------------------------------------------------
 
-export type OpenCodeMenuResult =
-  | { action: 'skip' }
-  | { action: 'keep' }
-  | { action: 'unload' }
-  | { action: 'reconfigure'; config: OpenCodeProviderConfig };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
-const MODEL_FORMAT_RE = /^[\w.-]+\/[\w.-]+$/;
+function detectClaude(): LauncherInfo {
+  const result = spawnSync('claude', ['--version'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 10_000,
+  });
 
-/**
- * Per-provider menu for GLM (already configured or failed).
- * Options: [K]eep [R]econfigure [T]est [U]nload
- */
-export async function runGlmMenu(
-  existing: GlmProviderConfig,
-  currentStatus: ProviderStatus,
-): Promise<GlmMenuResult> {
-  console.log(`\n  GLM (currently: ${currentStatus})`);
-  const raw = await prompt('  [K]eep  [R]econfigure  [T]est  [U]nload  (Enter = keep): ');
-  const choice = raw.toLowerCase();
-
-  if (choice === 'u') {
-    console.log('  ↳ GLM unloaded');
-    return { action: 'unload' };
+  if (result.status !== 0) {
+    return { found: false, authenticated: false, models: [] };
   }
 
-  if (choice === 't') {
-    process.stdout.write('  ✓ Testing connection...');
-    const result = await testGlmConnection(existing.apiKey, existing.baseUrl);
-    if (result.ok) {
-      console.log(` OK (${result.modelName ?? 'connected'} available)`);
-    } else {
-      const reason = result.error !== undefined ? ` (${result.error})` : '';
-      console.log(` failed${reason}`);
+  // Check auth
+  for (const args of [['auth', 'status'], ['status']]) {
+    const auth = spawnSync('claude', args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 10_000,
+    });
+
+    if (auth.error !== undefined) break;
+
+    if (auth.status === 0) {
+      return {
+        found: true,
+        authenticated: true,
+        models: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+      };
     }
-    // Test does not change config — treat as keep
-    return { action: 'keep' };
+
+    const stderr = (auth.stderr ?? '').toLowerCase();
+    const unknownCmd = stderr.includes('unknown command') || stderr.includes('unknown subcommand');
+    if (!unknownCmd) break;
   }
 
-  if (choice === 'r') {
-    const newConfig = await reconfigureGlm(existing);
-    if (newConfig === null) return { action: 'keep' };
-    return { action: 'reconfigure', config: newConfig };
-  }
-
-  // 'k' or Enter = keep
-  console.log('  ↳ (kept)');
-  return { action: 'keep' };
+  return { found: true, authenticated: false, models: [] };
 }
 
-/**
- * Menu for GLM when it is not yet configured.
- * Options: [C]onfigure [S]kip
- */
-export async function runGlmFirstTimeMenu(): Promise<GlmMenuResult> {
-  console.log('\n  GLM (currently: not configured)');
-  const raw = await prompt('  [C]onfigure  [S]kip  (Enter = skip): ');
-  const choice = raw.toLowerCase();
-
-  if (choice === 'c') {
-    const newConfig = await reconfigureGlm(undefined);
-    if (newConfig === null) return { action: 'skip' };
-    return { action: 'reconfigure', config: newConfig };
-  }
-
-  console.log('  ↳ (skipped)');
-  return { action: 'skip' };
+interface OpenCodeAuthRow {
+  prefix: string;
+  method: string;
 }
 
-/**
- * Per-provider menu for OpenCode (already configured).
- * Options: [K]eep [R]econfigure [U]nload
- */
-export async function runOpenCodeMenu(
-  existing: OpenCodeProviderConfig,
-  currentStatus: ProviderStatus,
-  opencodeFound: boolean,
-): Promise<OpenCodeMenuResult> {
-  console.log(`\n  OpenCode (currently: ${currentStatus})`);
-  const raw = await prompt('  [K]eep  [R]econfigure  [U]nload  (Enter = keep): ');
-  const choice = raw.toLowerCase();
+function parseOpenCodeAuthList(): OpenCodeAuthRow[] {
+  const result = spawnSync('opencode', ['auth', 'list'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 10_000,
+  });
 
-  if (choice === 'u') {
-    console.log('  ↳ OpenCode unloaded');
-    return { action: 'unload' };
+  if (result.status !== 0) return [];
+
+  const output = (result.stdout ?? '').trim();
+  const rows: OpenCodeAuthRow[] = [];
+
+  for (const line of output.split('\n')) {
+    const lower = line.toLowerCase();
+    if (lower.includes('openai') && (lower.includes('oauth') || lower.includes('authenticated'))) {
+      rows.push({ prefix: 'openai', method: 'oauth' });
+    }
+    if (lower.includes('zai') && (lower.includes('api') || lower.includes('authenticated'))) {
+      rows.push({ prefix: 'zai', method: 'api-key' });
+    }
+    // opencode free-tier is always available if the binary is found
   }
-
-  if (choice === 'r') {
-    const newConfig = await reconfigureOpenCode(opencodeFound, existing);
-    if (newConfig === null) return { action: 'keep' };
-    return { action: 'reconfigure', config: newConfig };
-  }
-
-  console.log('  ↳ (kept)');
-  return { action: 'keep' };
+  return rows;
 }
 
-/**
- * Menu for OpenCode when it is not yet configured.
- * Options: [C]onfigure [S]kip
- */
-export async function runOpenCodeFirstTimeMenu(
-  opencodeFound: boolean,
-): Promise<OpenCodeMenuResult> {
-  console.log('\n  OpenCode (currently: not configured)');
-  const raw = await prompt('  [C]onfigure  [S]kip  (Enter = skip): ');
-  const choice = raw.toLowerCase();
+function detectOpenCode(): LauncherInfo {
+  const versionResult = spawnSync('opencode', ['--version'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 10_000,
+  });
 
-  if (choice === 'c') {
-    const newConfig = await reconfigureOpenCode(opencodeFound, undefined);
-    if (newConfig === null) return { action: 'skip' };
-    return { action: 'reconfigure', config: newConfig };
+  if (versionResult.status !== 0) {
+    return { found: false, authenticated: false, models: [] };
   }
 
-  console.log('  ↳ (skipped)');
-  return { action: 'skip' };
-}
+  const authRows = parseOpenCodeAuthList();
+  const models: string[] = [];
+  const authMethods: Array<'oauth' | 'api-key'> = [];
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-async function promptAuthMethod(existing: OpenCodeProviderConfig | undefined): Promise<'api-key' | 'subscription'> {
-  const existingAuthMethod = existing?.authMethod ?? 'api-key';
-  const authHint = existingAuthMethod === 'subscription' ? 'subscription' : 'api-key';
-  console.log(`  ? OpenCode auth method [${authHint}]:`);
-  console.log('    1) ChatGPT Plus/Pro subscription (OAuth)');
-  console.log('    2) API key');
-  const hasExisting = existing !== undefined;
-  const keepLabel = hasExisting ? 'Enter = keep current' : 'Enter = api-key';
-  const authAnswer = await prompt(`  Choice (${keepLabel}): `);
-
-  if (authAnswer === '1') return 'subscription';
-  if (authAnswer === '2') return 'api-key';
-  return existingAuthMethod;
-}
-
-async function promptApiKey(existing: OpenCodeProviderConfig | undefined): Promise<string> {
-  const defaultKeyHint = existing?.apiKey !== undefined
-    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
-    : '$OPENAI_API_KEY';
-  const keyAnswer = await prompt(`  ? OpenAI API key [${defaultKeyHint}]: `);
-  return keyAnswer !== ''
-    ? keyAnswer
-    : (existing?.apiKey ?? '$OPENAI_API_KEY');
-}
-
-async function reconfigureGlm(existing?: GlmProviderConfig): Promise<GlmProviderConfig | null> {
-  const defaultKeyHint = existing !== undefined
-    ? (existing.apiKey.startsWith('$') ? existing.apiKey : '[keep existing]')
-    : '$ZAI_API_KEY';
-  const keyAnswer = await prompt(`  ? Z.AI API key [${defaultKeyHint}]: `);
-  const apiKey = keyAnswer !== ''
-    ? keyAnswer
-    : (existing?.apiKey ?? '$ZAI_API_KEY');
-  const baseUrl = existing?.baseUrl ?? 'https://api.z.ai/api/anthropic';
-
-  process.stdout.write('  ✓ Testing connection...');
-  const testResult = await testGlmConnection(apiKey, baseUrl);
-
-  if (testResult.ok) {
-    console.log(` OK (${testResult.modelName ?? 'connected'} available)`);
-  } else {
-    const reason = testResult.error !== undefined ? ` (${testResult.error})` : '';
-    console.log(` failed${reason}`);
-    const proceed = await prompt('  ? Save anyway? (y/N) ');
-    if (proceed.toLowerCase() !== 'y') return null;
+  for (const row of authRows) {
+    if (row.prefix === 'openai') {
+      models.push('openai/gpt-5.4', 'openai/gpt-5.4-mini');
+      authMethods.push('oauth');
+    }
+    if (row.prefix === 'zai') {
+      models.push('zai-coding-plan/glm-5', 'zai-coding-plan/glm-4.7');
+      authMethods.push('api-key');
+    }
   }
 
-  console.log('  ✓ GLM reconfigured');
+  // Check ZAI_API_KEY env var as alternative
+  if (!authMethods.includes('api-key') && (process.env['ZAI_API_KEY'] ?? '') !== '') {
+    models.push('zai-coding-plan/glm-5', 'zai-coding-plan/glm-4.7');
+    authMethods.push('api-key');
+  }
+
+  // opencode free tier always available
+  models.push('opencode/big-pickle');
+
+  const authenticated = authMethods.length > 0;
+
   return {
-    enabled: true,
-    apiKey,
-    baseUrl,
-    models: existing?.models ?? { opus: 'glm-5', sonnet: 'glm-4.7', haiku: 'glm-4.5-air' },
+    found: true,
+    authenticated,
+    authMethods: authMethods.length > 0 ? authMethods : undefined,
+    models,
   };
 }
 
-/** Returns true if opencode was successfully installed, false if user declined or install failed. */
-async function installOpenCode(): Promise<boolean> {
-  console.log('  ✗ opencode CLI not found');
-  const install = await prompt('  ? Install opencode globally? (Y/n) ');
-  if (install.toLowerCase() === 'n') return false;
+function detectCodex(): LauncherInfo {
+  const versionResult = spawnSync('codex', ['--version'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 10_000,
+  });
 
-  console.log('  → Running: npm i -g opencode');
-  const result = spawnSync('npm', ['i', '-g', 'opencode'], { stdio: 'inherit' });
-  if (result.status !== 0) {
-    console.log('  Installation failed. Skipping OpenCode configuration.');
-    return false;
+  if (versionResult.status !== 0) {
+    return { found: false, authenticated: false, models: [] };
   }
-  console.log('  ✓ opencode installed');
-  return true;
+
+  // Read ~/.codex/auth.json
+  const authFile = join(homedir(), '.codex', 'auth.json');
+  if (!existsSync(authFile)) {
+    return { found: true, authenticated: false, models: [] };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(authFile, 'utf8'));
+  } catch {
+    return { found: true, authenticated: false, models: [] };
+  }
+
+  if (!isRecord(parsed)) {
+    return { found: true, authenticated: false, models: [] };
+  }
+
+  const authMode = typeof parsed['auth_mode'] === 'string' ? parsed['auth_mode'] : '';
+  if (authMode === 'chatgpt' || authMode === 'api-key') {
+    const method = authMode === 'chatgpt' ? 'oauth' : 'api-key';
+    return {
+      found: true,
+      authenticated: true,
+      authMethods: [method],
+      models: ['openai/codex-mini-latest', 'openai/gpt-5.4'],
+    };
+  }
+
+  // Check OPENAI_API_KEY env var
+  if ((process.env['OPENAI_API_KEY'] ?? '') !== '') {
+    return {
+      found: true,
+      authenticated: true,
+      authMethods: ['api-key'],
+      models: ['openai/codex-mini-latest', 'openai/gpt-5.4'],
+    };
+  }
+
+  return { found: true, authenticated: false, models: [] };
 }
 
-async function reconfigureOpenCode(
-  opencodeFound: boolean,
-  existing?: OpenCodeProviderConfig,
-): Promise<OpenCodeProviderConfig | null> {
-  if (!opencodeFound) {
-    const installed = await installOpenCode();
-    if (!installed) return null;
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/** Detect all launchers. Returns partial LaunchersConfig. */
+export function detectLaunchers(): Partial<LaunchersConfig> {
+  const launchers: Partial<LaunchersConfig> = {};
+
+  console.log('\nDetecting launchers...');
+
+  const claude = detectClaude();
+  launchers.claude = claude;
+  printLauncherResult('claude', claude);
+
+  const opencode = detectOpenCode();
+  launchers.opencode = opencode;
+  printLauncherResult('opencode', opencode);
+
+  const codex = detectCodex();
+  launchers.codex = codex;
+  printLauncherResult('codex', codex);
+
+  return launchers;
+}
+
+function printLauncherResult(name: LauncherName, info: LauncherInfo): void {
+  if (!info.found) {
+    const hints: Record<LauncherName, string> = {
+      claude: 'install: https://docs.anthropic.com/en/docs/claude-code',
+      opencode: 'install: npm i -g opencode',
+      codex: 'install: npm i -g @openai/codex',
+    };
+    console.log(`  ✗ ${name.padEnd(12)} not found — ${hints[name]}`);
+    return;
   }
 
-  const authMethod = await promptAuthMethod(existing);
-
-  const defaultModel = existing?.defaultModel ?? 'openai/gpt-4.1-mini';
-  let modelAnswer = await prompt(`  ? Default model [${defaultModel}]: `);
-  if (modelAnswer === '') modelAnswer = defaultModel;
-
-  if (!MODEL_FORMAT_RE.test(modelAnswer)) {
-    console.log(`  Warning: "${modelAnswer}" does not match the expected format (provider/model). Saved anyway.`);
+  if (!info.authenticated) {
+    const hints: Record<LauncherName, string> = {
+      claude: 'run: claude auth login',
+      opencode: 'run: opencode auth login',
+      codex: 'run: codex --login',
+    };
+    console.log(`  ✗ ${name.padEnd(12)} not authenticated — ${hints[name]}`);
+    return;
   }
 
-  if (authMethod === 'subscription') {
-    console.log('  ✓ OpenCode reconfigured (subscription auth)');
-    console.log('  → Run: opencode auth login');
-    return { enabled: true, authMethod: 'subscription', defaultModel: modelAnswer };
+  const detail = info.authMethods !== undefined
+    ? info.authMethods.join(' + ')
+    : 'connected';
+  console.log(`  ✓ ${name.padEnd(12)} ${detail}`);
+}
+
+/**
+ * Derive which providers are available from launcher state.
+ * Returns a list of provider names that can be used.
+ */
+export function deriveAvailableProviders(launchers: Partial<LaunchersConfig>): string[] {
+  const available: string[] = [];
+  for (const [name, entry] of Object.entries(DEFAULT_PROVIDERS)) {
+    const launcher = launchers[entry.launcher];
+    if (launcher?.found === true && launcher.authenticated) {
+      available.push(name);
+    }
+  }
+  return available;
+}
+
+/**
+ * Print derived tier assignments for available providers.
+ */
+export function printDerivedTiers(
+  availableProviders: string[],
+  routing: RoutingConfig,
+): void {
+  console.log('\nAvailable model tiers (derived from detected launchers):');
+  const tiers: RoutingSlot[] = ['heavy', 'balanced', 'light'];
+
+  for (const tier of tiers) {
+    const providerName = routing[tier] ?? routing['default'] ?? 'anthropic';
+    const provider = DEFAULT_PROVIDERS[providerName];
+    if (provider !== undefined) {
+      const model = provider.models[tier as 'heavy' | 'balanced' | 'light'];
+      console.log(`  ${tier.padEnd(10)} → ${model.padEnd(30)} (${providerName} via ${provider.launcher})`);
+    }
+  }
+}
+
+const ROUTING_SLOTS: RoutingSlot[] = [
+  'heavy',
+  'balanced',
+  'light',
+  'review-logic',
+  'review-style',
+  'review-simple',
+  'documentation',
+];
+
+/**
+ * Interactive routing assignment: prompt for each slot.
+ * Returns updated routing config.
+ */
+export async function promptRoutingAssignment(
+  availableProviders: string[],
+  existingRouting: RoutingConfig,
+): Promise<RoutingConfig> {
+  if (availableProviders.length === 0) {
+    console.log('\n  No authenticated providers available. Using defaults.');
+    return { ...DEFAULT_ROUTING };
   }
 
-  const apiKey = await promptApiKey(existing);
+  console.log('\nRouting assignments — press Enter to accept defaults:');
+  console.log(`  Available providers: ${availableProviders.join(', ')}`);
+  console.log('');
 
-  const resolvedKey = resolveApiKey(apiKey);
-  if (resolvedKey === '') {
-    console.log('  ✗ API key is empty or env var unset — verify before running.');
-  } else {
-    console.log(`  ✓ OpenCode reconfigured (${modelAnswer})`);
+  const routing: RoutingConfig = { ...existingRouting };
+
+  for (const slot of ROUTING_SLOTS) {
+    const current = routing[slot] ?? DEFAULT_ROUTING[slot] ?? 'anthropic';
+    const answer = await prompt(`  ${slot.padEnd(15)} [${current}] > `);
+    if (answer !== '') {
+      if (availableProviders.includes(answer) || Object.keys(DEFAULT_PROVIDERS).includes(answer)) {
+        routing[slot] = answer;
+      } else {
+        console.log(`    Unknown provider "${answer}" — keeping ${current}`);
+        routing[slot] = current;
+      }
+    } else {
+      routing[slot] = current;
+    }
   }
 
-  return { enabled: true, authMethod: 'api-key', apiKey, defaultModel: modelAnswer };
+  // Set default to whatever heavy is
+  routing['default'] = routing['heavy'] ?? 'anthropic';
+
+  return routing;
+}
+
+/**
+ * Build a complete NitroFueledConfig from detected launchers + routing answers.
+ */
+export function buildConfig(
+  launchers: Partial<LaunchersConfig>,
+  routing: RoutingConfig,
+): NitroFueledConfig {
+  return {
+    launchers,
+    providers: { ...DEFAULT_PROVIDERS },
+    routing,
+  };
 }

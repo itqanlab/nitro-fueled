@@ -159,10 +159,10 @@ On first read of an old per-project `{project}/.nitro-fueled/config.json` in the
 
 ## File Scope
 
-- apps/cli/src/utils/provider-config.ts
-- apps/cli/src/commands/config.ts
-- apps/cli/src/utils/provider-flow.ts
-- apps/cli/src/utils/provider-status.ts
+- apps/cli/src/utils/provider-config.ts (rewritten: new schema with launchers/providers/routing, global config path, merge logic, migration)
+- apps/cli/src/commands/config.ts (rewritten: detection-first wizard, removed per-provider menus)
+- apps/cli/src/utils/provider-flow.ts (rewritten: launcher detection for claude/opencode/codex, routing assignment prompts)
+- apps/cli/src/utils/provider-status.ts (rewritten: reads from launchers section instead of per-provider auth)
 
 ## Parallelism
 
