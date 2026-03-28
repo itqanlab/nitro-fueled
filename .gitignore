@@ -4,6 +4,7 @@ dist/
 .DS_Store
 .vscode/
 package-lock.json
+.nx/
 
 # Supervisor ephemeral state
 task-tracking/orchestrator-state.md
