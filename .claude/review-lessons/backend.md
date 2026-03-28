@@ -167,6 +167,11 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 
 - **`Map.keys()` returns strings — never destructure as a tuple in a `for...of` loop** — `for (const [id] of map.keys())` destructures each string key as a char array, so `id` is the first character of the key, not the key itself. Use `for (const id of map.keys())` or `for (const [id, value] of map.entries())`. This bug is silent: the body runs with a truncated ID, `Map.get(oneChar)` returns `undefined`, and cleanup is never performed. (TASK_2026_063)
 
+## NestJS Conventions
+
+- **NestJS `serve`/`nx serve` targets must not embed `npm install`** — `"command": "npm install && npm run build && node dist/main.js"` runs a full install on every `nx serve` invocation. This is slow, unnecessary when dependencies are stable, and introduces silent supply-chain risk (any minor/patch version published between serves is fetched without review). Remove `npm install` from the serve command; installs are an explicit CI/CD or first-setup step. Use a `start:dev` target with `ts-node` for local development. (TASK_2026_086) [RETRO_2026-03-28_session]
+- **NestJS bootstrap code must use `Logger`, not `console.log`** — `console.log(\`[service] Server running at ${url}\`)` and `console.error(...)` in `main.ts` bypass the NestJS logging pipeline, losing structured log levels and format consistency. Use `const logger = new Logger('bootstrap')` from `@nestjs/common` for all bootstrap-phase logging, including startup URL and error reporting. (TASK_2026_086) [RETRO_2026-03-28_session]
+
 ## Supervisor Orchestration Specs (SKILL.md)
 
 - **Every new log event type must be registered in the canonical log event table** — when a new supervisor event is added (e.g., "Spawn fallback"), its pipe-table row must be added to the log table alongside the inline instruction. Omitting it means the event appears in `log.md` but is invisible to anyone reading the table to understand what events exist, and creates a second definition drift risk when the inline description uses a different format than the table. (TASK_2026_069)

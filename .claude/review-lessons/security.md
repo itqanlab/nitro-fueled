@@ -12,6 +12,7 @@ Auto-updated after each security review. Append new findings — do not remove e
 
 - **Localhost-only HTTP APIs must not use `Access-Control-Allow-Origin: *`** — wildcard CORS makes the API reachable by any browser tab on the machine (no credentials required for GET requests). Restrict to the known client origin (e.g., `http://localhost:<port>`) or reject requests with non-localhost `Origin` headers at the handler level. (TASK_2026_022)
 - **WebSocket servers must check the upgrade request's `Origin` header** — `new WebSocketServer({ server })` accepts all connections by default. In the `'connection'` handler, inspect `req.headers.origin` (the second argument) and close connections from non-localhost origins with `ws.close(1008, 'Forbidden origin')`. Failing to do this allows any browser page to subscribe to the event stream. (TASK_2026_022)
+- **NestJS `@WebSocketGateway()` must include explicit CORS options — HTTP CORS config does not protect WebSocket upgrade requests** — `@WebSocketGateway()` without options defaults to allowing all origins on the Socket.IO server, regardless of the `app.enableCors()` call in `main.ts`. The HTTP CORS middleware and the Socket.IO CORS config are independent; the gateway decorator must carry its own: `@WebSocketGateway({ cors: { origin: /^https?:\/\/localhost(:\d+)?$/, credentials: true } })`. Add this before any real handlers are wired. (TASK_2026_086) [RETRO_2026-03-28_session]
 
 ## Input Validation at CLI Boundaries
 

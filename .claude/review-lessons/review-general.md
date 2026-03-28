@@ -14,6 +14,7 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 
 - **Explicit access modifiers on ALL class members** — `public`, `private`, `protected`. Never bare. (T03, T04, T07, T09)
 - **No `any` type ever** — use `unknown` + type guards, or proper generics. (T01)
+- **`tsconfig.json` must not disable `noImplicitAny` or `strictNullChecks`** — explicitly setting `"noImplicitAny": false` or `"strictNullChecks": false` defeats the "No `any` type ever" rule at the compiler level: implicit `any` is silently permitted and null-dereference bugs go undetected. Enable `"strict": true` (or at minimum these two flags) before any business logic is added. Scaffold tasks that defer this must track it as a follow-on acceptance criterion. (TASK_2026_086) [RETRO_2026-03-28_session]
 - **No `as` type assertions** — if the type system fights you, the type is wrong. Use type guards or generics. (T03, T05, T07, T09)
 - **String literal unions for status/type/category fields** — never bare `string`. (T04, T07, T09, T10)
 - **Use `Pick<>`/`Omit<>` for interface subsets** — never duplicate fields manually. (T04, T09)
