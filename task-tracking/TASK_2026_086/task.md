@@ -34,7 +34,12 @@ Generate a new NestJS 11 app at `apps/dashboard-api` using the `@nx/nest` Nx gen
 
 - apps/dashboard-api/project.json
 - apps/dashboard-api/package.json
+- apps/dashboard-api/package-lock.json
 - apps/dashboard-api/tsconfig.json
 - apps/dashboard-api/src/main.ts
 - apps/dashboard-api/src/app/app.module.ts
+- apps/dashboard-api/src/app/health.controller.ts
 - apps/dashboard-api/src/dashboard/dashboard.module.ts
+- apps/dashboard-api/src/dashboard/dashboard.controller.ts
+- apps/dashboard-api/src/dashboard/dashboard.service.ts
+- apps/dashboard-api/src/dashboard/dashboard.gateway.ts
