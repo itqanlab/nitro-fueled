@@ -1,0 +1,60 @@
+<div class="integrations-grid">
+  @for (integration of integrations; track integration.name) {
+    <article class="integration-card">
+      <div class="integration-header">
+        <div class="integration-header-left">
+          <div class="integration-icon" [ngClass]="integration.iconClass" aria-hidden="true">{{ integration.icon }}</div>
+          <span class="integration-name">{{ integration.name }}</span>
+        </div>
+        <div
+          class="integration-status"
+          [class.connected]="integration.connected"
+          [class.disconnected]="!integration.connected"
+        >
+          <div class="integration-status-dot" aria-hidden="true"></div>
+          {{ integration.connected ? 'Connected' : 'Not connected' }}
+        </div>
+      </div>
+
+      <div class="integration-detail">
+        @if (integration.details.length > 0) {
+          @for (detail of integration.details; track detail.label) {
+            <div class="integration-detail-row">
+              <span class="integration-detail-label">{{ detail.label }}</span>
+              <span
+                class="integration-detail-value"
+                [class.status-active]="detail.label === 'Status' && detail.value === 'Active'"
+              >{{ detail.value }}</span>
+            </div>
+          }
+        } @else if (integration.description) {
+          <div class="integration-detail-row">
+            <span class="integration-description">{{ integration.description }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="integration-toggle-row" [class.dimmed]="!integration.connected">
+        <span class="toggle-label">{{ integration.toggleLabel }}</span>
+        <button
+          class="toggle"
+          type="button"
+          [class.on]="integration.toggleOn"
+          [attr.aria-label]="integration.toggleLabel + (integration.toggleOn ? ' enabled' : ' disabled')"
+          [attr.aria-pressed]="integration.toggleOn"
+        >
+          <div class="toggle-knob"></div>
+        </button>
+      </div>
+
+      <div class="integration-actions">
+        @if (integration.connected) {
+          <button class="btn btn-sm" type="button">&#x2699; Configure</button>
+          <button class="btn btn-sm btn-danger" type="button">Disconnect</button>
+        } @else {
+          <button class="btn btn-sm btn-primary" type="button">Connect</button>
+        }
+      </div>
+    </article>
+  }
+</div>

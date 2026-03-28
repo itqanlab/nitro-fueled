@@ -6,6 +6,7 @@ import { ActivityEntry } from '../models/session.model';
 import { AnalyticsSummary } from '../models/analytics-summary.model';
 import { StatusIndicator } from '../models/provider.model';
 import { SidebarSection } from '../models/sidebar.model';
+import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
 import {
   MOCK_PROJECTS,
   MOCK_ACTIVE_TASKS,
@@ -15,6 +16,9 @@ import {
   MOCK_ANALYTICS,
   MOCK_STATUS_INDICATORS,
   MOCK_SIDEBAR_SECTIONS,
+  MOCK_MCP_SERVERS,
+  MOCK_MCP_TOOL_ACCESS,
+  MOCK_MCP_INTEGRATIONS,
 } from './mock-data.constants';
 
 @Injectable({ providedIn: 'root' })
@@ -49,6 +53,18 @@ export class MockDataService {
 
   public getSidebarSections(): readonly SidebarSection[] {
     return MOCK_SIDEBAR_SECTIONS;
+  }
+
+  public getMcpServers(): readonly McpServer[] {
+    return MOCK_MCP_SERVERS;
+  }
+
+  public getMcpToolAccess(): readonly McpToolAccessRow[] {
+    return MOCK_MCP_TOOL_ACCESS;
+  }
+
+  public getMcpIntegrations(): readonly McpIntegration[] {
+    return MOCK_MCP_INTEGRATIONS;
   }
 
   public getMcpConnectionCount(): number {

@@ -1,0 +1,256 @@
+:host {
+  display: block;
+}
+
+.integrations-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.integration-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: var(--border-light);
+  }
+}
+
+.integration-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.integration-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.integration-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+
+  &.gh {
+    background: #333;
+    color: #fff;
+  }
+
+  &.slack {
+    background: #4a154b;
+    color: #fff;
+  }
+
+  &.jira {
+    background: #0052cc;
+    color: #fff;
+  }
+
+  &.figma-int {
+    background: #a259ff;
+    color: #fff;
+  }
+
+  &.notion {
+    background: #fff;
+    color: #000;
+    border: 1px solid var(--border);
+  }
+}
+
+.integration-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.integration-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+
+  &.connected {
+    background: var(--success-bg);
+    color: var(--success);
+
+    .integration-status-dot {
+      background: var(--success);
+    }
+  }
+
+  &.disconnected {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+
+    .integration-status-dot {
+      background: var(--text-tertiary);
+    }
+  }
+}
+
+.integration-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.integration-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  min-height: 40px;
+}
+
+.integration-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.integration-detail-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  min-width: 60px;
+}
+
+.integration-detail-value {
+  font-size: 12px;
+  color: var(--text-primary);
+
+  &.status-active {
+    color: var(--success);
+  }
+}
+
+.integration-description {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.integration-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  border-top: 1px solid var(--border);
+
+  &.dimmed {
+    opacity: 0.4;
+  }
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.toggle {
+  width: 36px;
+  height: 20px;
+  background: var(--bg-hover);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+
+  &.on {
+    background: var(--accent);
+
+    .toggle-knob {
+      left: 18px;
+    }
+  }
+}
+
+.toggle-knob {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s;
+}
+
+.integration-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: all 0.15s;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+
+  &:hover {
+    background: var(--accent-hover);
+  }
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  border-color: #5c2125;
+  color: var(--error);
+
+  &:hover {
+    background: var(--error-bg);
+    border-color: var(--error);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .integrations-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .integrations-grid {
+    grid-template-columns: 1fr;
+  }
+}

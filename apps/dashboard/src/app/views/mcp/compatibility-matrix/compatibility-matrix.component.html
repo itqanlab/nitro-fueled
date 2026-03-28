@@ -1,0 +1,32 @@
+<section class="matrix-section" aria-label="Agent tool access matrix">
+  <h2 class="matrix-title">Agent Tool Access</h2>
+  <p class="matrix-subtitle">Control which agents can use each MCP server's tools</p>
+  <div class="matrix-table-wrapper">
+    <table class="matrix-table" role="grid">
+      <thead>
+        <tr>
+          <th scope="col">Agent</th>
+          @for (server of servers; track server.name) {
+            <th scope="col">{{ server.name }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of toolAccess; track row.agent) {
+          <tr>
+            <td>{{ row.agent }}</td>
+            @for (server of servers; track server.name) {
+              <td>
+                @if (row.access[server.name]) {
+                  <span class="matrix-check" aria-label="Has access">&#x2705;</span>
+                } @else {
+                  <span class="matrix-cross" aria-label="No access">&#x274C;</span>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

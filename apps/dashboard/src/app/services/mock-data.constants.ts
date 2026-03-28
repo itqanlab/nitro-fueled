@@ -5,6 +5,7 @@ import { ActivityEntry } from '../models/session.model';
 import { AnalyticsSummary } from '../models/analytics-summary.model';
 import { StatusIndicator } from '../models/provider.model';
 import { SidebarSection } from '../models/sidebar.model';
+import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
 
 export const MOCK_PROJECTS: readonly Project[] = [
   {
@@ -211,5 +212,179 @@ export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
     items: [
       { label: 'Settings', icon: '\u2699', route: '/dashboard' },
     ],
+  },
+];
+
+export const MOCK_MCP_SERVERS: readonly McpServer[] = [
+  {
+    name: 'Filesystem',
+    icon: '\uD83D\uDCC1',
+    iconClass: 'filesystem',
+    status: 'active',
+    badgeType: 'Built-in',
+    transport: 'stdio',
+    toolCount: '11 tools',
+    teams: ['All teams'],
+    tools: ['read_file', 'write_file', 'search_files', 'list_directory'],
+    moreToolsCount: 7,
+  },
+  {
+    name: 'GitHub',
+    icon: '\u2691',
+    iconClass: 'github',
+    status: 'active',
+    badgeType: 'Built-in',
+    transport: 'stdio',
+    toolCount: '80+ tools',
+    teams: ['Engineering'],
+    connectionInfo: 'Connected to owner/repo',
+    connectionStatus: 'ok',
+    tools: ['create_issue', 'create_pull_request', 'search_code'],
+    moreToolsCount: 77,
+  },
+  {
+    name: 'Context7',
+    icon: 'C7',
+    iconClass: 'context7',
+    status: 'active',
+    badgeType: 'Built-in',
+    transport: 'stdio',
+    toolCount: '2 tools',
+    teams: ['Engineering'],
+    tools: ['resolve-library-id', 'query-docs'],
+  },
+  {
+    name: 'Playwright',
+    icon: '\uD83C\uDFAD',
+    iconClass: 'playwright',
+    status: 'active',
+    badgeType: 'Built-in',
+    transport: 'stdio',
+    toolCount: '12 tools',
+    teams: ['Engineering', 'Design'],
+    tools: ['navigate', 'screenshot', 'click', 'fill'],
+    moreToolsCount: 8,
+  },
+  {
+    name: 'Figma',
+    icon: 'F',
+    iconClass: 'figma',
+    status: 'active',
+    badgeType: 'User',
+    transport: 'HTTP',
+    toolCount: '8 tools',
+    teams: ['Design'],
+    connectionInfo: 'API connected',
+    connectionStatus: 'ok',
+    tools: ['get_file', 'get_components', 'export_assets'],
+    moreToolsCount: 5,
+  },
+  {
+    name: 'Sentry',
+    icon: 'S',
+    iconClass: 'sentry',
+    status: 'inactive',
+    badgeType: 'User',
+    transport: 'HTTP',
+    toolCount: '15 tools',
+    teams: ['Engineering'],
+    connectionInfo: 'Not configured',
+    connectionStatus: 'warn',
+    tools: ['list_issues', 'get_event', 'resolve_issue'],
+    moreToolsCount: 12,
+  },
+];
+
+export const MOCK_MCP_TOOL_ACCESS: readonly McpToolAccessRow[] = [
+  {
+    agent: 'project-manager',
+    access: { Filesystem: true, GitHub: true, Context7: false, Playwright: false, Figma: false, Sentry: false },
+  },
+  {
+    agent: 'software-architect',
+    access: { Filesystem: true, GitHub: true, Context7: true, Playwright: false, Figma: false, Sentry: true },
+  },
+  {
+    agent: 'team-leader',
+    access: { Filesystem: true, GitHub: true, Context7: false, Playwright: false, Figma: false, Sentry: false },
+  },
+  {
+    agent: 'backend-developer',
+    access: { Filesystem: true, GitHub: true, Context7: true, Playwright: false, Figma: false, Sentry: true },
+  },
+  {
+    agent: 'frontend-developer',
+    access: { Filesystem: true, GitHub: true, Context7: true, Playwright: true, Figma: true, Sentry: false },
+  },
+  {
+    agent: 'senior-tester',
+    access: { Filesystem: true, GitHub: true, Context7: false, Playwright: true, Figma: false, Sentry: true },
+  },
+  {
+    agent: 'code-style-reviewer',
+    access: { Filesystem: true, GitHub: true, Context7: true, Playwright: false, Figma: false, Sentry: false },
+  },
+  {
+    agent: 'ui-ux-designer',
+    access: { Filesystem: true, GitHub: false, Context7: false, Playwright: true, Figma: true, Sentry: false },
+  },
+];
+
+export const MOCK_MCP_INTEGRATIONS: readonly McpIntegration[] = [
+  {
+    name: 'GitHub',
+    icon: '\u2691',
+    iconClass: 'gh',
+    connected: true,
+    details: [
+      { label: 'Account', value: 'owner/repo' },
+      { label: 'Scope', value: 'repo, issues, pull_requests' },
+    ],
+    toggleLabel: 'Auto-PR creation',
+    toggleOn: true,
+  },
+  {
+    name: 'Slack',
+    icon: '\u23CE',
+    iconClass: 'slack',
+    connected: true,
+    details: [
+      { label: 'Channel', value: '#engineering' },
+      { label: 'Notify', value: 'Task completions, errors' },
+    ],
+    toggleLabel: 'Auto-notifications',
+    toggleOn: true,
+  },
+  {
+    name: 'Jira',
+    icon: 'J',
+    iconClass: 'jira',
+    connected: false,
+    details: [],
+    description: 'Sync tasks and issues with Jira boards',
+    toggleLabel: 'Auto-sync tasks',
+    toggleOn: false,
+  },
+  {
+    name: 'Figma',
+    icon: 'F',
+    iconClass: 'figma-int',
+    connected: true,
+    details: [
+      { label: 'Via', value: 'MCP Server (Figma)' },
+      { label: 'Status', value: 'Active' },
+    ],
+    toggleLabel: 'Auto-export assets',
+    toggleOn: false,
+  },
+  {
+    name: 'Notion',
+    icon: 'N',
+    iconClass: 'notion',
+    connected: false,
+    details: [],
+    description: 'Sync documentation and knowledge base',
+    toggleLabel: 'Auto-sync docs',
+    toggleOn: false,
   },
 ];
