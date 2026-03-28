@@ -77,3 +77,8 @@ Reviewers MUST only flag and fix issues in these files:
 - .claude/skills/auto-pilot/SKILL.md
 
 Issues found outside this scope: document only, do NOT fix.
+
+## Findings Summary
+- Blocking: 0
+- Serious: 5
+- Minor: 9
