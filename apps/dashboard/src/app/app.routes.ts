@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LayoutComponent } from './layout/layout.component';
 import { PlaceholderViewComponent } from './views/placeholder-view.component';
+import { DashboardComponent } from './views/dashboard/dashboard.component';
 
 export const APP_ROUTES: Routes = [
   {
@@ -8,7 +9,7 @@ export const APP_ROUTES: Routes = [
     component: LayoutComponent,
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: PlaceholderViewComponent, data: { title: 'Dashboard' } },
+      { path: 'dashboard', component: DashboardComponent },
       { path: 'analytics', component: PlaceholderViewComponent, data: { title: 'Analytics' } },
       { path: 'agents', component: PlaceholderViewComponent, data: { title: 'Agents' } },
       { path: 'mcp', component: PlaceholderViewComponent, data: { title: 'MCP Integrations' } },

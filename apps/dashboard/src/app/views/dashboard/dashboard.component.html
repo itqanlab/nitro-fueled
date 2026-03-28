@@ -1,0 +1,153 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>
+      {{ project.name }}
+      <span class="client-pill">{{ project.client }}</span>
+    </h1>
+    <div class="subtitle">
+      @for (tag of project.stackTags; track tag) {
+        <span class="stack-tag">{{ tag }}</span>
+      }
+      <span class="separator">|</span>
+      @for (team of project.teams; track team) {
+        <span class="team-pill" [class]="team.toLowerCase()">{{ team }}</span>
+      }
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn">
+      <span>&#x2699;</span> Settings
+    </button>
+    <button class="btn btn-primary">
+      <span>+</span> New Task
+    </button>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="stats-row">
+  <app-stat-card label="Active Tasks" valueClass="running" [sub]="analytics.activeBreakdown">
+    {{ analytics.activeTasks }}
+  </app-stat-card>
+
+  <app-stat-card label="Completed" valueClass="completed" [sub]="analytics.completedPeriod">
+    {{ analytics.completedTasks }}
+  </app-stat-card>
+
+  <app-stat-card label="Budget" valueClass="cost">
+    ${{ analytics.budgetUsed }}
+    <span class="budget-denominator">/ ${{ analytics.budgetTotal }}</span>
+    <div slot="extra" class="budget-extra">
+      <div class="budget-progress">
+        <div class="budget-progress-fill" [style.width.%]="budgetPercent"></div>
+      </div>
+      <div class="budget-action">&#x26A0; Alert at {{ analytics.budgetAlertPercent }}%</div>
+    </div>
+  </app-stat-card>
+
+  <app-stat-card label="Tokens Used" [sub]="analytics.tokensPeriod">
+    {{ analytics.tokensUsed }}
+  </app-stat-card>
+
+  <app-stat-card label="Cost" valueClass="cost">
+    ${{ analytics.totalCost.toFixed(2) }}
+    <div slot="extra" class="cost-breakdown">
+      Client: <span>{{ '$' + analytics.clientCost.toFixed(2) }}</span>
+      / Internal: <span>{{ '$' + analytics.internalCost.toFixed(2) }}</span>
+    </div>
+  </app-stat-card>
+</div>
+
+<!-- Content Grid -->
+<div class="content-grid">
+  <!-- Left Column: Tasks -->
+  <div>
+    <!-- Active Tasks -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header">
+        <span class="card-header-title">Active Tasks</span>
+        <button class="btn btn-sm">View All History</button>
+      </div>
+      <div class="card-body">
+        @for (task of activeTasks; track task.id) {
+          <app-task-card [task]="task" />
+        }
+      </div>
+    </div>
+
+    <!-- Recently Completed -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-title">Recently Completed</span>
+      </div>
+      <div class="card-body">
+        @for (task of completedTasks; track task.id) {
+          <app-task-card [task]="task" />
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div>
+    <!-- Quick Actions -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header">
+        <span class="card-header-title">Quick Actions</span>
+      </div>
+      <div class="card-body">
+        <div class="quick-actions">
+          @for (action of quickActions; track action.label) {
+            <div class="quick-action">
+              <div class="quick-action-icon" [class]="action.color">{{ action.icon }}</div>
+              <span>{{ action.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Team -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header">
+        <span class="card-header-title">Team ({{ agents.length }} agents)</span>
+        <button class="btn btn-sm">Manage</button>
+      </div>
+      <div class="card-body">
+        @for (group of teamGroups; track group.team; let last = $last) {
+          <div class="team-group-header">
+            {{ group.team }}
+            <span class="team-group-count">{{ group.members.length }}</span>
+          </div>
+          <div class="team-grid" [style.margin-bottom]="last ? '0' : '12px'">
+            @for (member of group.members; track member.name) {
+              <div class="team-member">
+                <div class="team-member-dot" [class]="member.installed ? 'installed' : 'available'"></div>
+                <span class="team-member-name">{{ member.name }}</span>
+                <span class="team-member-model">{{ member.model }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-title">Activity</span>
+      </div>
+      <div class="card-body activity-body">
+        @for (entry of activity; track entry.timeAgo) {
+          <div class="activity-item">
+            <span class="activity-time">{{ entry.timeAgo }}</span>
+            <span class="activity-text">
+              <strong>{{ entry.actorBold }}</strong> {{ entry.text }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

@@ -33,8 +33,9 @@ Implement the main dashboard view at route `/dashboard` matching the N.Gine mock
 
 ## File Scope
 
-- apps/dashboard/src/app/views/dashboard/dashboard.component.ts
-- apps/dashboard/src/app/views/dashboard/dashboard.component.html
-- apps/dashboard/src/app/views/dashboard/dashboard.component.scss
-- apps/dashboard/src/app/shared/task-card/task-card.component.ts
-- apps/dashboard/src/app/shared/stat-card/stat-card.component.ts
+- apps/dashboard/src/app/views/dashboard/dashboard.component.ts (created)
+- apps/dashboard/src/app/views/dashboard/dashboard.component.html (created)
+- apps/dashboard/src/app/views/dashboard/dashboard.component.scss (created)
+- apps/dashboard/src/app/shared/task-card/task-card.component.ts (created)
+- apps/dashboard/src/app/shared/stat-card/stat-card.component.ts (created)
+- apps/dashboard/src/app/app.routes.ts (modified)
