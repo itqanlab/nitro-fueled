@@ -237,17 +237,55 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_056 | Build Full Landing Page | COMPLETE | P1-High |
 | TASK_2026_057 | Migrate docs/ Content to Starlight | COMPLETE | P2-Medium |
 
+### Phase 14: Nx Workspace Migration
+**Status**: NOT STARTED
+**Description**: Full migration to Nx monorepo — restructure packages to apps/libs, replace React with Angular 19 + NG-ZORRO (N.Gine dashboard), replace Node service with NestJS 11, replace Commander CLI with Oclif, extract session-orchestrator core as a lib. Angular app built UI-first against mock data before API integration.
+
+#### Milestones
+- [ ] Nx initialized and workspace restructured to apps/ + libs/ (Phase 14a)
+- [ ] session-orchestrator core extracted to libs/worker-core (Phase 15)
+- [ ] Angular 19 + NG-ZORRO dashboard shell and all 9 N.Gine screens complete (Phase 16-17)
+- [ ] NestJS API fully replaces dashboard-service (Phase 18)
+- [ ] Oclif CLI fully replaces Commander CLI (Phase 19)
+- [ ] Angular wired to NestJS, CLI build pipeline updated, old packages removed (Phase 20)
+
+#### Task Map
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_072 | Nx Workspace Initialization | COMPLETE | P0-Critical |
+| TASK_2026_073 | Workspace Folder Restructure (packages → apps + libs) | CREATED | P0-Critical |
+| TASK_2026_074 | Extract libs/worker-core from session-orchestrator | CREATED | P1-High |
+| TASK_2026_075 | Refactor session-orchestrator app to consume worker-core | CREATED | P1-High |
+| TASK_2026_076 | Scaffold Angular 19 + NG-ZORRO app (apps/dashboard) | CREATED | P0-Critical |
+| TASK_2026_077 | Angular shell — layout, sidebar, routing, dark theme, mock data service | CREATED | P0-Critical |
+| TASK_2026_078 | Dashboard main view | CREATED | P1-High |
+| TASK_2026_079 | Analytics & Insights view | CREATED | P1-High |
+| TASK_2026_080 | Agent Editor view | CREATED | P1-High |
+| TASK_2026_081 | MCP Integrations view | CREATED | P1-High |
+| TASK_2026_082 | Model Assignments view | CREATED | P1-High |
+| TASK_2026_083 | New Task view | CREATED | P1-High |
+| TASK_2026_084 | Project Onboarding view | CREATED | P1-High |
+| TASK_2026_085 | Provider Hub view | CREATED | P1-High |
+| TASK_2026_086 | Scaffold NestJS app (apps/dashboard-api) | CREATED | P1-High |
+| TASK_2026_087 | Migrate state services + REST controllers to NestJS | CREATED | P1-High |
+| TASK_2026_088 | Migrate WebSocket server to NestJS gateway | CREATED | P1-High |
+| TASK_2026_089 | Scaffold Oclif CLI app (apps/cli) | CREATED | P1-High |
+| TASK_2026_090 | Migrate init + run + status to Oclif commands | CREATED | P1-High |
+| TASK_2026_091 | Migrate create + dashboard + config + update to Oclif commands | CREATED | P1-High |
+| TASK_2026_092 | Angular ↔ NestJS integration + CLI build pipeline update | CREATED | P1-High |
+| TASK_2026_093 | Deprecate old packages — remove packages/ after cutover | CREATED | P2-Medium |
+
 ## Current Focus
 
-**Active Phase**: Phase 12 (CLI Maturity) + Phase 13 (Docs Site)
-**Active Milestone**: Agent rename complete; docs, scaffold sync, and /run update in progress
+**Active Phase**: Phase 14 — Nx Workspace Migration
+**Active Milestone**: Nx initialization (TASK_2026_072) must complete first; then Wave 2 (073) unblocks everything
 **Next Priorities**:
-1. Complete Phase 12 — tasks 049, 050, 052, 053 pending
-2. Phase 10 (Agent Calibration) continues in parallel
-3. Phase 4 (Validation) — end-to-end fresh project test follows Phase 12 completion
+1. TASK_2026_072 — Nx workspace initialization (no code changes, pure infrastructure)
+2. TASK_2026_073 — folder restructure (depends on 072)
+3. Wave 3 in parallel: TASK_2026_074 + TASK_2026_076 + TASK_2026_086 + TASK_2026_089 (all unblocked after 073)
 
 **Supervisor Guidance**: PROCEED
-**Guidance Note**: Phase 12 (CLI Maturity) is the active focus. TASK_2026_051 complete. Run 049+050+053 in parallel (no shared files). TASK_2026_052 depends on 049+050+051 all complete. Backlog sizing violations on tasks 038-057 acknowledged and overridden by Product Owner.
+**Guidance Note**: Phase 14 is the new active focus. Run strictly in wave order — 072 → 073 → parallel Wave 3 (074, 076, 086, 089) → parallel Wave 4 (075, 077, 087, 090) → parallel Wave 5 (078-085, 088, 091) → 092 → 093. Angular views 078-085 can all run in parallel after 077. Never start 092 before 077+088+091 are all COMPLETE.
 
 ## Decisions Log
 
@@ -262,3 +300,9 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | 2026-03-24 | Supervisor consultation via plan.md artifacts | Clean context separation — Supervisor reads plan.md, doesn't spawn Planner |
 | 2026-03-24 | TASK_006 cancelled, replaced by 015-017 | Dynamic generation split into focused tasks: stack detection, /create-agent, /create-skill |
 | 2026-03-24 | Completion phase must update plan.md | Workers update task status + phase status in plan.md to prevent staleness |
+| 2026-03-28 | Full Nx migration — Angular 19 + NG-ZORRO, NestJS 11, Oclif CLI | Modernize workspace: proper monorepo tooling, Angular (N.Gine mockups), NestJS for API, Oclif for structured CLI |
+| 2026-03-28 | Angular dashboard built UI-first (mock data) before API integration | Decouples UI work from API readiness; all 9 screens can be developed and reviewed independently |
+| 2026-03-28 | session-orchestrator core extracted to libs/worker-core | Separates reusable business logic (launchers, registry, watcher) from MCP transport layer |
+| 2026-03-28 | CLI migrated to Oclif (from Commander.js) | Structured command classes, auto-generated help, plugin system, Nx-native — scales better as commands grow |
+| 2026-03-28 | N.Gine branding used in Angular dashboard | Mockup reference retained as-is in the product |
+| 2026-03-28 | Angular app deployment model: bundled into CLI assets | Maintains current model — `nitro-fueled dashboard` serves Angular via CLI, no separate deploy needed |
