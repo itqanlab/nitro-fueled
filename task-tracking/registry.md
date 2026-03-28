@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\| — \\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\| — \\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -84,28 +84,28 @@
 | TASK_2026_079 | COMPLETE    | FEATURE | Analytics & Insights view | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_080 | COMPLETE    | FEATURE | Agent Editor view | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_081 | COMPLETE    | FEATURE | MCP Integrations view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_082 | CREATED     | FEATURE | Model Assignments view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_083 | CREATED     | FEATURE | New Task view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_084 | CREATED     | FEATURE | Project Onboarding view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_085 | CREATED     | FEATURE | Provider Hub view | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_082 | COMPLETE    | FEATURE | Model Assignments view | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_083 | COMPLETE    | FEATURE | New Task view | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_084 | COMPLETE    | FEATURE | Project Onboarding view | 2026-03-28 | claude-opus-4-6 |
+| TASK_2026_085 | COMPLETE    | FEATURE | Provider Hub view | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_086 | COMPLETE    | DEVOPS  | Scaffold NestJS app (apps/dashboard-api) | 2026-03-28 | default |
 | TASK_2026_087 | COMPLETE    | FEATURE | Migrate state services + REST controllers to NestJS | 2026-03-28 | default |
-| TASK_2026_088 | CREATED     | FEATURE | Migrate WebSocket server to NestJS gateway | 2026-03-28 | default |
+| TASK_2026_088 | IN_PROGRESS | FEATURE | Migrate WebSocket server to NestJS gateway | 2026-03-28 | default |
 | TASK_2026_089 | COMPLETE    | DEVOPS  | Scaffold Oclif CLI app (apps/cli) | 2026-03-28 | default |
 | TASK_2026_090 | COMPLETE    | REFACTORING | Migrate init + run + status commands to Oclif | 2026-03-28 | default |
 | TASK_2026_091 | CREATED     | REFACTORING | Migrate create + dashboard + config + update commands to Oclif | 2026-03-28 | default |
 | TASK_2026_092 | CREATED     | FEATURE | Angular ↔ NestJS integration + CLI build pipeline update | 2026-03-28 | default |
 | TASK_2026_093 | CREATED     | REFACTORING | Deprecate old packages — remove packages/ after cutover | 2026-03-28 | default |
-| TASK_2026_094 | IMPLEMENTED | FEATURE | Worker-Side Phase Event Emission via MCP `emit_event` | 2026-03-28 | default |
+| TASK_2026_094 | COMPLETE    | FEATURE | Worker-Side Phase Event Emission via MCP `emit_event` | 2026-03-28 | default |
 | TASK_2026_095 | CANCELLED   | REFACTORING | Global Config Infrastructure — Migrate Provider Config to User Workspace Scope | 2026-03-28 | default |
 | TASK_2026_096 | CANCELLED   | FEATURE | Dynamic Model Fetching, Auto-Refresh, and Auto-Fallback | 2026-03-28 | default |
 | TASK_2026_097 | CREATED     | FEATURE | Auto-Complexity Estimation at Task Creation | 2026-03-28 | default |
 | TASK_2026_098 | CREATED     | FEATURE | Provider/Model Tracing — Per-Task Run Telemetry | 2026-03-28 | default |
-| TASK_2026_099 | CREATED     |         |  | 2026-03-28 | — |
-| TASK_2026_100 | CREATED     |         |  | 2026-03-28 | — |
-| TASK_2026_101 | CREATED     |         |  | 2026-03-28 | — |
-| TASK_2026_102 | CREATED     |         |  | 2026-03-28 | — |
-| TASK_2026_103 | CREATED     |         |  | 2026-03-28 | — |
+| TASK_2026_099 | IN_PROGRESS | FEATURE | Per-Task Supervisor Config + Blocked Dependency Guardrail | 2026-03-28 | default |
+| TASK_2026_100 | CREATED     | REFACTORING | Nitro Commit Traceability Standard | 2026-03-28 | default |
+| TASK_2026_101 | CREATED     | FEATURE | Add CONTENT Orchestration Flow (Blog, Email, Newsletter, Ad Copy) | 2026-03-28 | default |
+| TASK_2026_102 | CREATED     | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-28 | default |
+| TASK_2026_103 | CREATED     | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
 | TASK_2026_104 | CREATED     | FEATURE | Enhance RESEARCH Orchestration Flow (Market, Competitive, Feasibility) | 2026-03-28 | default |
 | TASK_2026_105 | CREATED     | FEATURE | Add OPS Orchestration Flow (Project Setup, CI/CD, Infrastructure) | 2026-03-28 | default |
 | TASK_2026_106 | CREATED     | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-28 | claude-opus-4-6 |
@@ -118,3 +118,7 @@
 | TASK_2026_113 | CREATED     | BUGFIX  | Add Phase-Boundary Git Commits to Orchestration Pipeline | 2026-03-28 | default |
 | TASK_2026_114 | CREATED     | BUGFIX  | Enforce Review-Lessons Pre-Read in Build Worker Prompt | 2026-03-28 | default |
 | TASK_2026_115 | CREATED     | REFACTORING | Extract Inline Template/Styles in Agent Editor Sub-Components | 2026-03-28 | default |
+| TASK_2026_116 | CREATED     | REFACTORING | Rename Commands to nitro-* Prefix — Source (.claude/commands/) — Part 1 of 2 | 2026-03-28 | default |
+| TASK_2026_117 | CREATED     | REFACTORING | Rename Commands to nitro-* Prefix — Scaffold Sync — Part 2 of 2 | 2026-03-28 | default |
+| TASK_2026_118 | CREATED     | FEATURE | /nitro-status Command — Registry-Only Project Status | 2026-03-28 | default |
+| TASK_2026_119 | CREATED     | FEATURE | /nitro-burn Command — Token and Cost Analytics | 2026-03-28 | default |
