@@ -3,9 +3,17 @@
   // Background hierarchy
   --bg-primary:   #141414;
   --bg-secondary: #1f1f1f;
+  --bg-tertiary:  #262626;
+  --bg-hover:     #303030;
+
+  // Borders
+  --border:       #303030;
+  --border-light: #3a3a3a;
 
   // Accent / brand
-  --accent: #177ddc;
+  --accent:       #177ddc;
+  --accent-hover: #1890ff;
+  --accent-bg:    #111d2c;
 
   // Text hierarchy
   --text-primary:   #e8e8e8;
@@ -16,6 +24,10 @@
   --status-success: #49aa19;
   --status-warning: #d89614;
   --status-error:   #d32029;
+
+  // Radius
+  --radius:    6px;
+  --radius-lg: 8px;
 }
 
 // Global reset

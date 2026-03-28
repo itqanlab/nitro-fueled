@@ -32,9 +32,25 @@ Build the full N.Gine application shell that all 9 views plug into. Implement th
 
 ## File Scope
 
-- apps/dashboard/src/app/layout/layout.component.ts
-- apps/dashboard/src/app/layout/sidebar/sidebar.component.ts
-- apps/dashboard/src/app/layout/header/header.component.ts
-- apps/dashboard/src/app/layout/status-bar/status-bar.component.ts
-- apps/dashboard/src/app/app.routes.ts
-- apps/dashboard/src/app/services/mock-data.service.ts
+- apps/dashboard/src/app/models/project.model.ts (created)
+- apps/dashboard/src/app/models/task.model.ts (created)
+- apps/dashboard/src/app/models/agent.model.ts (created)
+- apps/dashboard/src/app/models/session.model.ts (created)
+- apps/dashboard/src/app/models/analytics-summary.model.ts (created)
+- apps/dashboard/src/app/models/provider.model.ts (created)
+- apps/dashboard/src/app/models/sidebar.model.ts (created)
+- apps/dashboard/src/app/services/mock-data.constants.ts (created)
+- apps/dashboard/src/app/services/mock-data.service.ts (created)
+- apps/dashboard/src/app/layout/layout.component.ts (created)
+- apps/dashboard/src/app/layout/header/header.component.ts (created)
+- apps/dashboard/src/app/layout/sidebar/sidebar.component.ts (created)
+- apps/dashboard/src/app/layout/sidebar/sidebar.component.html (created)
+- apps/dashboard/src/app/layout/sidebar/sidebar.component.scss (created)
+- apps/dashboard/src/app/layout/status-bar/status-bar.component.ts (created)
+- apps/dashboard/src/app/layout/status-bar/status-bar.component.html (created)
+- apps/dashboard/src/app/layout/status-bar/status-bar.component.scss (created)
+- apps/dashboard/src/app/views/placeholder-view.component.ts (created)
+- apps/dashboard/src/app/app.routes.ts (created)
+- apps/dashboard/src/app/app.config.ts (modified)
+- apps/dashboard/src/app/app.component.ts (modified)
+- apps/dashboard/src/styles.scss (modified)

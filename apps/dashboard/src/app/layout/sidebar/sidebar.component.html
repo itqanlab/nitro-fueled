@@ -1,0 +1,42 @@
+<nav class="sidebar">
+  @for (section of sections; track trackByTitle($index, section); let last = $last) {
+    @if (section.type === 'settings') {
+      <div class="sidebar-spacer"></div>
+    }
+    <div class="sidebar-section">
+      @if (section.title) {
+        <div class="sidebar-section-title">{{ section.title }}</div>
+      }
+      @for (item of section.items; track trackByLabel($index, item)) {
+        <a class="sidebar-item"
+           [routerLink]="item.route"
+           routerLinkActive="active"
+           [ngClass]="{ 'active': item.isActive }">
+          @if (item.dotStatus) {
+            <div class="sidebar-dot" [ngClass]="item.dotStatus"></div>
+          }
+          @if (item.icon) {
+            <span class="sidebar-item-icon">{{ item.icon }}</span>
+          }
+          <span class="sidebar-item-label">{{ item.label }}</span>
+          @if (item.badge !== undefined) {
+            @if (section.type === 'project') {
+              <span class="sidebar-badge">{{ item.badge }}</span>
+            } @else {
+              <span class="sidebar-count">{{ item.badge }}</span>
+            }
+          }
+        </a>
+      }
+      @if (section.showAddButton) {
+        <div class="sidebar-add-btn">
+          <span>+</span>
+          <span>Add Project</span>
+        </div>
+      }
+    </div>
+    @if (!last && section.type !== 'settings') {
+      <div class="sidebar-divider"></div>
+    }
+  }
+</nav>
