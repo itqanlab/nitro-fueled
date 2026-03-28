@@ -245,13 +245,37 @@ When the checkpoint passes (user replies "APPROVED"):
 - **After PM checkpoint passes** and task-description.md is written, commit:
   ```
   git add task-tracking/TASK_[ID]/task-description.md
-  git commit -m "docs(tasks): add requirements for TASK_[ID]"
+  git commit -m "docs(tasks): add requirements for TASK_[ID]
+
+  Task: TASK_[ID]
+  Agent: nitro-project-manager
+  Phase: pm
+  Worker: build-worker
+  Session: {SESSION_ID}
+  Provider: {provider}
+  Model: {model}
+  Retry: {N}/{max}
+  Complexity: {complexity}
+  Priority: {priority}
+  Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)"
   ```
 
 - **After Architect checkpoint passes** and plan.md is written, commit:
   ```
   git add task-tracking/TASK_[ID]/plan.md
-  git commit -m "docs(tasks): add plan for TASK_[ID]"
+  git commit -m "docs(tasks): add plan for TASK_[ID]
+
+  Task: TASK_[ID]
+  Agent: nitro-software-architect
+  Phase: architecture
+  Worker: build-worker
+  Session: {SESSION_ID}
+  Provider: {provider}
+  Model: {model}
+  Retry: {N}/{max}
+  Complexity: {complexity}
+  Priority: {priority}
+  Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)"
   ```
 
 See [checkpoints.md](references/checkpoints.md) for all checkpoint templates.
@@ -374,6 +398,40 @@ own log tracks phase-level progress.
 
 ---
 
+## Commit Metadata Block
+
+Every commit made during orchestrated work MUST include a traceability footer. The metadata block defines the 7 fields the orchestrator must collect and pass to agents so the footer can be populated.
+
+### Metadata Fields
+
+| Field | Source | Format |
+|-------|--------|--------|
+| Task | Task folder name | `TASK_YYYY_NNN` |
+| Session | Current session ID (from Session Logging setup) | `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Provider | Current execution context | `claude`, `glm`, `opencode` |
+| Model | Current execution context | `claude-sonnet-4-6`, `glm-4.7`, etc. |
+| Retry | Worker context or `state.md` | `0/2`, `1/3`, etc. (0 = first attempt) |
+| Complexity | `task.md` Metadata section | `Simple`, `Medium`, `Complex` |
+| Priority | `task.md` Metadata section | `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
+
+**Session ID**: Use `SESSION_YYYY-MM-DD_HH-MM-SS` from the session directory created at skill entry. If the orchestration was invoked directly without an auto-pilot session, use `manual`.
+
+### Field Extraction Guide
+
+| Field | Where to Find It | Fallback |
+|-------|-----------------|----------|
+| Task | Name of `task-tracking/TASK_[ID]/` folder | From `--arguments` passed to skill |
+| Session | `SESSION_ID` variable set during [Session Directory Setup](#session-directory-setup-run-once-on-skill-entry) | `manual` |
+| Provider | AI provider running the current worker (passed in worker prompt or detected from model name) | `claude` |
+| Model | Exact model identifier from execution context or worker prompt | `unknown` |
+| Retry | `Retry` field in worker prompt, or `0/2` for first-attempt interactive sessions | `0/2` |
+| Complexity | `task-tracking/TASK_[ID]/task.md` — `## Metadata` > `Complexity` row | `Medium` |
+| Priority | `task-tracking/TASK_[ID]/task.md` — `## Metadata` > `Priority` row | `P2-Medium` |
+
+See [git-standards.md](references/git-standards.md) for the full 11-field footer format and all valid field values.
+
+---
+
 ## Session Analytics
 
 At the end of every orchestration run — on all exit paths (success, failure, stuck, manual stop) — write a `session-analytics.md` file to the task folder.
@@ -491,7 +549,37 @@ After the QA cycle (reviews + fixes + final commit), the orchestrator MUST compl
 
 **Commit order:**
 1. First commit: implementation code (after dev, before QA)
+   ```
+   git commit -m "<type>(<scope>): <description> for TASK_[ID]
+
+   Task: TASK_[ID]
+   Agent: {agent-name}
+   Phase: implementation
+   Worker: build-worker
+   Session: {SESSION_ID}
+   Provider: {provider}
+   Model: {model}
+   Retry: {N}/{max}
+   Complexity: {complexity}
+   Priority: {priority}
+   Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)"
+   ```
 2. Second commit: QA fixes
+   ```
+   git commit -m "fix(<scope>): apply review fixes for TASK_[ID]
+
+   Task: TASK_[ID]
+   Agent: {agent-name}
+   Phase: review-fix
+   Worker: fix-worker
+   Session: {SESSION_ID}
+   Provider: {provider}
+   Model: {model}
+   Retry: {N}/{max}
+   Complexity: {complexity}
+   Priority: {priority}
+   Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)"
+   ```
 3. Third commit: completion bookkeeping (report + status file + plan update)
 
 All three commits are REQUIRED. Do not combine them.
@@ -585,7 +673,22 @@ Run `git status` and confirm ALL of the following are present and staged (or abo
 
 If any file is missing or shows as unstaged, fix it before committing. Do not skip this check.
 
-Then commit all bookkeeping changes with message: `docs: add TASK_[ID] completion bookkeeping`
+Then commit all bookkeeping changes with:
+```
+git commit -m "docs: add TASK_[ID] completion bookkeeping
+
+Task: TASK_[ID]
+Agent: {agent-name}
+Phase: completion
+Worker: {completion-worker|review-worker}
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {N}/{max}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)"
+```
 
 ---
 

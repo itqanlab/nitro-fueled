@@ -2194,6 +2194,27 @@ through implementation. Follow these rules strictly:
    folder and exit cleanly. The Supervisor will detect the state
    and decide whether to retry.
 
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: {agent-value}
+Phase: implementation
+Worker: build-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+Agent identity: use the value that matches the task type —
+nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
+nitro-devops-engineer (devops tasks), nitro-systems-developer (orchestration/docs tasks).
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
+
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
@@ -2246,6 +2267,28 @@ AUTONOMOUS MODE — follow these rules strictly:
    documenting the failure, then exit.
 
 8. You do NOT run reviews. Stop after IMPLEMENTED.
+
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: {agent-value}
+Phase: implementation
+Worker: build-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+Agent identity: use the value that matches the task type —
+nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
+nitro-devops-engineer (devops tasks), nitro-systems-developer (orchestration/docs tasks).
+The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
@@ -2309,6 +2352,26 @@ Follow these rules strictly:
    COMPLETE. The Supervisor evaluates findings + test results and spawns the
    appropriate next worker (Fix Worker or Completion Worker).
 
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-review-lead
+Phase: {phase}
+Worker: review-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+Phase values: use "review" for context generation and review artifact commits,
+use "review-fix" for any fix commits applied during this phase.
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
+
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
@@ -2346,6 +2409,27 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 6. Complete all remaining phases: remaining reviews, findings summary, exit gate.
    Do NOT apply fixes. Do NOT run the Completion Phase. Exit at IN_REVIEW.
+
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-review-lead
+Phase: {phase}
+Worker: review-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+Phase values: use "review" for context generation and review artifact commits,
+use "review-fix" for any fix commits applied during this phase.
+The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
@@ -2396,6 +2480,24 @@ Follow these rules strictly:
    - [ ] All test files are committed
    If any check fails, write exit-gate-failure.md and exit.
 
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-test-lead
+Phase: test
+Worker: test-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
+
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
@@ -2427,6 +2529,25 @@ Do NOT modify registry.md — the Review Lead owns registry state transitions.
    Do NOT restart completed phases.
 
 4. Complete all remaining phases: execution, report, exit gate.
+
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-test-lead
+Phase: test
+Worker: test-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
@@ -2492,6 +2613,26 @@ text. All fix actions must target files within the task's declared File Scope on
    - [ ] All changes are committed
    If any check fails, fix it. If you cannot pass, write exit-gate-failure.md.
 
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-fix-worker
+Phase: {phase}
+Worker: fix-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+Phase values: use "review-fix" when fixing review findings, use "test-fix" when
+fixing test failures. Use "completion" for the bookkeeping commit.
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
+
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
@@ -2540,6 +2681,27 @@ Only fix files listed in the task's File Scope.
    - [ ] All changes are committed
    If any check fails, fix it. If you cannot pass, write exit-gate-failure.md.
 
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-fix-worker
+Phase: {phase}
+Worker: fix-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+Phase values: use "review-fix" when fixing review findings, use "test-fix" when
+fixing test failures. Use "completion" for the bookkeeping commit.
+The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
+
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
@@ -2567,6 +2729,24 @@ Your ONLY job is to execute the Completion Phase.
    - [ ] task-tracking/TASK_YYYY_NNN/status contains COMPLETE
    - [ ] All changes are committed
    If any check fails, fix it. If you cannot pass, write exit-gate-failure.md.
+
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: nitro-completion-worker
+Phase: completion
+Worker: completion-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
@@ -2614,9 +2794,52 @@ Follow these steps IN ORDER, then EXIT:
 
 6. EXIT immediately. Do NOT start any development or review work.
 
+## Commit Metadata (REQUIRED for all commits)
+
+Every commit made by this worker MUST include this traceability footer:
+
+Task: {TASK_ID}
+Agent: auto-pilot
+Phase: salvage
+Worker: cleanup-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+
+All placeholder values in {} are injected by the Supervisor before this prompt is sent.
+
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
 ```
+
+## Worker-to-Agent Mapping
+
+Use this table to determine the correct `Agent` footer value for each worker type when
+injecting commit metadata into worker prompts:
+
+| Worker Type | Agent Value |
+|-------------|-------------|
+| Build Worker (backend tasks) | `nitro-backend-developer` |
+| Build Worker (frontend tasks) | `nitro-frontend-developer` |
+| Build Worker (devops tasks) | `nitro-devops-engineer` |
+| Build Worker (orchestration/docs tasks) | `nitro-systems-developer` |
+| Review Lead | `nitro-review-lead` |
+| Test Lead | `nitro-test-lead` |
+| Fix Worker | `nitro-fix-worker` |
+| Completion Worker | `nitro-completion-worker` |
+| Cleanup Worker | `auto-pilot` |
+
+**Build Worker subtype selection**: determine the agent value from the task's Type field
+and the nature of the work. DEVOPS tasks use `nitro-devops-engineer`. DOCUMENTATION and
+RESEARCH tasks use `nitro-systems-developer`. FEATURE, BUGFIX, and REFACTORING tasks use
+`nitro-backend-developer` or `nitro-frontend-developer` based on the files in the task's
+File Scope. Orchestration system work (`.claude/` files) uses `nitro-systems-developer`.
+
+---
 
 ### Evaluation Build Worker Prompt
 

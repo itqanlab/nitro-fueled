@@ -304,6 +304,62 @@ Execute the Completion Phase as defined in `.claude/skills/orchestration/SKILL.m
 
 ---
 
+## Commit Traceability (REQUIRED)
+
+Every commit you create must include a traceability footer. This is required for all commits in orchestrated workflows.
+
+### Footer Template
+
+```
+Task: {TASK_ID}
+Agent: nitro-review-lead
+Phase: {phase}
+Worker: review-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled@{version}
+```
+
+### Field Values
+
+| Field | Value | Source |
+|-------|-------|--------|
+| Agent | `nitro-review-lead` | Fixed — this agent's identity |
+| Phase | `review` or `review-fix` | Varies by commit type — see table below |
+| Worker | `review-worker` | Fixed for this agent |
+| Task | From task folder name | e.g., `TASK_2026_100` |
+| Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Provider | From execution context | e.g., `anthropic`, `glm` |
+| Model | From execution context | e.g., `claude-sonnet-4-6` |
+| Retry | From prompt context | e.g., `0/2`, `1/2` |
+| Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |
+| Priority | From task.md | e.g., `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
+| Generated-By | Read from `apps/cli/package.json` at project root | Fallback: `nitro-fueled@unknown` |
+
+### Phase Values by Commit Type
+
+| Commit Type | Phase Value |
+|-------------|-------------|
+| Review artifacts commit (Phase 3 — review reports) | `review` |
+| Fix commit (Phase 4 — applying review findings) | `review-fix` |
+| Bookkeeping commit (Phase 5 — completion) | `review` |
+
+### Reading the Version
+
+Before creating a commit, read the version from `apps/cli/package.json`:
+
+```bash
+# Extract version field from package.json
+# Format: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+# Fallback if file unreadable: nitro-fueled@unknown
+```
+
+---
+
 ## Exit Gate
 
 Before exiting, verify each item. If any check fails, attempt to fix it. If the Exit Gate cannot be passed, write `task-tracking/TASK_{TASK_ID}/exit-gate-failure.md` explaining which checks failed, then exit.
