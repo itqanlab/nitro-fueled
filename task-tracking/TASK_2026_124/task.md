@@ -61,9 +61,9 @@ This is Part 2 of 4 of the Model Evaluation Pipeline feature. This task covers s
 
 ## File Scope
 
-- .claude/skills/auto-pilot/SKILL.md
-- .claude/commands/nitro-auto-pilot.md
-- evaluations/ (new directory, created at runtime)
+- .claude/skills/auto-pilot/SKILL.md (modified — added Evaluation Mode section, Evaluation Build Worker Prompt Template, Evaluate entry in Modes table)
+- .claude/commands/nitro-auto-pilot.md (modified — added --evaluate flag, parameter, parsing, evaluation mode handler, Quick Reference update)
+- evaluations/ (new directory, created at runtime by the evaluation flow)
 
 ## Parallelism
 

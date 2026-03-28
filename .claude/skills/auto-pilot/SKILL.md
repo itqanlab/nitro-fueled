@@ -167,8 +167,9 @@ The supervisor operates in these modes, selected via the `/auto-pilot` command:
 | **Dry-run** | `/auto-pilot --dry-run` | Display dependency graph and wave-based execution plan. No workers spawned. |
 | **Pause** | `/auto-pilot --pause` | Run until current monitoring interval ends, then stop cleanly. Writes `Loop Status: PAUSED` to state.md and exits. Active workers continue running — they are NOT killed. Session can be resumed later with `--continue`. |
 | **Continue** | `/auto-pilot --continue [SESSION_ID]` | Resume a previously paused or stopped session. Reads state.md from the specified session (or the most recent non-active session if SESSION_ID is omitted), reconciles with MCP, and enters the Core Loop. Skips pre-flight and session-directory creation — reuses existing SESSION_DIR. |
+| **Evaluate** | `/auto-pilot --evaluate <model-id>` | Single-model evaluation mode. Loads benchmark tasks from `benchmark-suite/`, creates isolated worktree(s), spawns Evaluation Build Workers using the specified model, collects execution metrics (wall-clock time, success/failure, retry count), and stores results in `evaluations/<date>-<model>/`. Does NOT read the task registry or process real tasks. |
 
-Single-task and dry-run modes are handled by the command entry point (`.claude/commands/auto-pilot.md`). The Core Loop below describes the all-tasks mode.
+Single-task, dry-run, and evaluation modes are handled by the command entry point (`.claude/commands/auto-pilot.md`). The Core Loop below describes the all-tasks mode.
 
 ---
 
@@ -219,6 +220,206 @@ When `--continue [SESSION_ID]` is passed:
 7. **Skip Startup Sequence steps 1–4** (no fresh pre-flight, no stale-archive check, no new session dir, no log-stale-results). Go directly to **Core Loop Step 1: Read State** (worker reconciliation) to sync with MCP, then continue normally.
 
 > **Continue skips pre-flight**: The session was already validated when it started. Tasks that were valid then are assumed still valid (or will fail the JIT gate if they changed).
+
+---
+
+## Evaluation Mode
+
+When `--evaluate <model-id>` is passed, the Supervisor enters **evaluation mode** — a self-contained flow that runs benchmark tasks against a single model and collects execution metrics. This mode is entirely separate from the normal task-processing loop.
+
+### Prerequisites
+
+1. **MCP validation** (same as normal startup — HARD FAIL if MCP unavailable).
+2. **Benchmark suite must exist**: `benchmark-suite/config.md` must be present. If missing: `"FATAL: benchmark-suite/config.md not found. Run the benchmark suite setup first (TASK_2026_123)."` EXIT.
+
+### Evaluation Flow
+
+#### Step E1: Parse Model ID
+
+1. Validate `<model-id>` is a non-empty string. If empty: `"FATAL: --evaluate requires a model ID (e.g., claude-opus-4-6)."` EXIT.
+2. Sanitize the model ID for use in directory names: replace any character that is not `[a-zA-Z0-9._-]` with `-`.
+3. Store as `eval_model_id`.
+
+#### Step E2: Load Benchmark Tasks
+
+1. Read `benchmark-suite/config.md`. Parse the **Task Manifest** table:
+   - Extract: Task ID (column 1), Difficulty (column 2), Type (column 3), Est. Time (column 4).
+   - Validate each Task ID matches `^[a-z0-9-]+$`. Skip and log warning for malformed IDs.
+
+2. For each task in the manifest, verify the task directory exists:
+   - Check `benchmark-suite/tasks/{task_id}/task.md` exists.
+   - If missing: log warning `"EVAL WARNING — benchmark task '{task_id}' missing task.md, skipping"`. Remove from evaluation set.
+
+3. Parse **Difficulty Weights** table from config.md:
+   - Map difficulty levels to numeric weights (easy=1.0, medium=1.5, hard=2.0).
+   - For `custom` difficulty: read from the task's own task.md Metadata table.
+
+4. Build the evaluation task list: `[{task_id, difficulty, weight, type, est_time, task_dir}]`.
+
+5. Display:
+   ```
+   EVALUATION MODE
+   ===============
+   Model: {eval_model_id}
+   Benchmark tasks: {N}
+     easy: {N} (weight 1.0)
+     medium: {N} (weight 1.5)
+     hard: {N} (weight 2.0)
+   ```
+
+#### Step E3: Create Evaluation Session Directory
+
+1. Compute date stamp: `EVAL_DATE = YYYY-MM-DD` (current date).
+2. Compute evaluation directory: `evaluations/{EVAL_DATE}-{eval_model_id}/`.
+3. Create directory structure:
+   ```
+   evaluations/{EVAL_DATE}-{eval_model_id}/
+     session.md          # Session metadata
+     per-task/           # Per-task result files
+   ```
+4. Write `session.md` with initial metadata:
+   ```markdown
+   # Evaluation Session
+
+   | Field       | Value                          |
+   |-------------|--------------------------------|
+   | Model       | {eval_model_id}                |
+   | Date        | {EVAL_DATE}                    |
+   | Started     | {YYYY-MM-DD HH:MM:SS +ZZZZ}   |
+   | Status      | RUNNING                        |
+   | Tasks       | {N}                            |
+   | Completed   | 0                              |
+   | Failed      | 0                              |
+
+   ## Task Results
+
+   | Task ID | Difficulty | Status | Wall Clock | Retries | Notes |
+   |---------|------------|--------|------------|---------|-------|
+   ```
+
+Store `EVAL_DIR = evaluations/{EVAL_DATE}-{eval_model_id}/` as the working path.
+
+#### Step E4: Create Isolated Worktree
+
+Each evaluation run uses a git worktree to isolate benchmark task execution from the real codebase.
+
+1. Compute worktree branch name: `eval/{EVAL_DATE}-{eval_model_id}` (sanitized).
+2. Create a new orphan branch for the evaluation:
+   ```
+   git worktree add --detach .claude/worktrees/eval-{eval_model_id} HEAD
+   ```
+   Store the worktree path as `EVAL_WORKTREE`.
+3. If worktree creation fails (e.g., path already exists from a previous aborted run):
+   - Attempt cleanup: `git worktree remove .claude/worktrees/eval-{eval_model_id} --force`
+   - Retry creation once.
+   - If still fails: log `"FATAL: Cannot create evaluation worktree"`. Write failure to session.md. EXIT.
+
+> **Isolation contract**: All Evaluation Build Workers run in the worktree directory, not the main working directory. This prevents benchmark task files from polluting the real codebase. The worktree is cleaned up after all tasks complete.
+
+#### Step E5: Spawn Evaluation Build Workers
+
+For each benchmark task in the evaluation task list:
+
+1. **Copy setup files** into the worktree:
+   - If `benchmark-suite/tasks/{task_id}/setup/` exists, copy its contents into `{EVAL_WORKTREE}/`.
+   - Use `cp -r` to preserve directory structure.
+
+2. **Generate the Evaluation Build Worker prompt** using the template from the Worker Prompt Templates section.
+
+3. **Call MCP `spawn_worker`**:
+   - `prompt`: the generated Evaluation Build Worker prompt
+   - `working_directory`: `{EVAL_WORKTREE}` (the isolated worktree path)
+   - `model`: `{eval_model_id}` (the model being evaluated)
+   - `label`: `EVAL-{task_id}-{eval_model_id}`
+
+4. **Record spawn time**: `spawn_time = current wall-clock time` (for wall-clock duration calculation).
+
+5. **Track in memory**:
+   ```
+   active_eval_workers[worker_id] = {
+     task_id, difficulty, weight, spawn_time, retry_count: 0, status: "running"
+   }
+   ```
+
+6. **Concurrency**: Spawn one worker at a time (sequential evaluation). This ensures clean worktree state between tasks and accurate per-task timing. Each worker must complete before the next is spawned.
+
+#### Step E6: Monitor Evaluation Workers
+
+After spawning each worker, monitor until completion:
+
+1. **Poll interval**: 30 seconds (evaluation tasks are expected to be shorter than real tasks).
+
+2. **On each poll**:
+   a. Call MCP `get_worker_activity` for the active worker.
+   b. Check if worker has finished (not in MCP worker list, or status is `finished`/`failed`).
+
+3. **On worker completion**:
+   a. Compute `wall_clock_seconds = current_time - spawn_time`.
+   b. Check for success evidence in the worktree:
+      - Read `{EVAL_WORKTREE}/eval-result.md` if present (worker writes this).
+      - Check git log in worktree for commits by the worker.
+      - If evidence of work exists: mark as `SUCCESS`.
+      - If no evidence: mark as `FAILED`.
+   c. Record result in `{EVAL_DIR}session.md` Task Results table:
+      `| {task_id} | {difficulty} | {SUCCESS/FAILED} | {wall_clock}s | {retry_count} | {notes} |`
+   d. Write per-task result file `{EVAL_DIR}per-task/{task_id}.md`:
+      ```markdown
+      # Evaluation Result: {task_id}
+
+      | Field         | Value              |
+      |---------------|--------------------|
+      | Task ID       | {task_id}          |
+      | Difficulty    | {difficulty}       |
+      | Weight        | {weight}           |
+      | Model         | {eval_model_id}    |
+      | Status        | {SUCCESS/FAILED}   |
+      | Wall Clock    | {seconds}s         |
+      | Retry Count   | {retry_count}      |
+      | Spawn Time    | {ISO timestamp}    |
+      | Finish Time   | {ISO timestamp}    |
+      ```
+
+4. **On worker failure** (no success evidence):
+   - If `retry_count < 1`: increment retry_count, re-spawn with the same model.
+   - If `retry_count >= 1`: mark as FAILED, move to next task.
+
+5. **Clean worktree between tasks**: After each task completes, reset the worktree:
+   ```
+   cd {EVAL_WORKTREE} && git checkout -- . && git clean -fd
+   ```
+   This ensures the next benchmark task starts with a clean slate.
+
+#### Step E7: Finalize Evaluation
+
+After all benchmark tasks have been processed:
+
+1. **Update session.md**:
+   - Set `Status` to `COMPLETE`.
+   - Set `Completed` to the count of SUCCESS tasks.
+   - Set `Failed` to the count of FAILED tasks.
+   - Add `Finished` field with current timestamp.
+
+2. **Clean up worktree**:
+   ```
+   git worktree remove .claude/worktrees/eval-{eval_model_id} --force
+   ```
+   If cleanup fails, log warning but do not block.
+
+3. **Display summary**:
+   ```
+   EVALUATION COMPLETE
+   ===================
+   Model: {eval_model_id}
+   Tasks: {total} ({success} succeeded, {failed} failed)
+   Total wall-clock time: {total_seconds}s
+   Results: {EVAL_DIR}
+
+   Per-task breakdown:
+     {task_id} ({difficulty}): {SUCCESS/FAILED} in {seconds}s
+     ...
+   ```
+
+4. **EXIT.** Evaluation mode does not enter the Core Loop.
 
 ---
 
@@ -1750,6 +1951,44 @@ Follow these steps IN ORDER, then EXIT:
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
+```
+
+### Evaluation Build Worker Prompt
+
+```
+EVALUATION BUILD WORKER — BENCHMARK MODE
+WORKER_ID: {worker_id}
+
+You are an Evaluation Build Worker running a benchmark task. Your job is to
+complete the benchmark task as accurately and efficiently as possible.
+
+TASK: {task_id}
+DIFFICULTY: {difficulty}
+MODEL UNDER EVALUATION: {eval_model_id}
+
+1. Read the benchmark task description from: benchmark-suite/tasks/{task_id}/task.md
+
+2. The setup files have already been copied into this working directory.
+   You are working in an isolated worktree — changes here do not affect
+   the main repository.
+
+3. Implement the solution according to the task requirements.
+   Follow the Requirements Checklist in the task.md precisely.
+
+4. After implementation is complete:
+   a. Commit your changes with message: "eval({task_id}): implementation"
+   b. Write eval-result.md in the working directory root with:
+      ```
+      # Evaluation Result
+      | Field  | Value |
+      |--------|-------|
+      | Status | DONE  |
+      | Task   | {task_id} |
+      ```
+
+5. EXIT after committing. Do not start any other work.
+
+Working directory: {eval_worktree}
 ```
 
 ---

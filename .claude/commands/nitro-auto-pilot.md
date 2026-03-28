@@ -15,6 +15,7 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --pause                            # Run one monitoring cycle then stop cleanly (workers keep running)
 /nitro-auto-pilot --continue                         # Resume most recent paused/stopped session
 /nitro-auto-pilot --continue SESSION_2026-03-28_14-00-00  # Resume specific session
+/nitro-auto-pilot --evaluate claude-opus-4-6          # Evaluate a model against the benchmark suite
 ```
 
 ### Parameters
@@ -29,6 +30,7 @@ and loops until all tasks are complete or blocked.
 | --force         | flag                         | false   | Override stale RUNNING state                             |
 | --pause         | flag                         | false   | Stop cleanly after current monitoring cycle; workers keep running |
 | --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given)  |
+| --evaluate      | model-id string              | —       | Enter evaluation mode: run benchmark suite against specified model |
 
 ## Execution Steps
 
@@ -52,6 +54,10 @@ Parse $ARGUMENTS for:
   the target session; otherwise auto-detect the most recent paused/stopped session
   (see Continue Mode in SKILL.md). **If `--continue` is present, skip Steps 3 and 4 entirely**
   and jump directly to the Continue Mode sequence in SKILL.md.
+- `--evaluate <model-id>` -> evaluation mode: enter single-model evaluation against the
+  benchmark suite. The `<model-id>` is required (e.g., `claude-opus-4-6`, `claude-sonnet-4-6`,
+  `glm-5`). **If `--evaluate` is present, skip Steps 3 and 4 entirely** and jump
+  directly to the Evaluation Mode sequence in SKILL.md.
 
 ### Step 3: Pre-Flight Checks
 
@@ -229,6 +235,18 @@ Mode: {all | single-task TASK_ID | dry-run}
 
 ### Step 6: Handle Mode
 
+**IF `--evaluate <model-id>`:**
+
+Enter Evaluation Mode. See the `## Evaluation Mode` section in SKILL.md.
+The supervisor loads benchmark tasks from `benchmark-suite/`, creates an isolated
+worktree, spawns Evaluation Build Workers using the specified model, collects
+execution metrics, and stores results in `evaluations/<date>-<model>/`.
+This mode does NOT read the task registry or process real tasks.
+
+STOP after all benchmark tasks complete or fail.
+
+---
+
 **IF `--dry-run`:**
 
 Display the dependency graph, task classifications by state,
@@ -272,7 +290,7 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 ## Quick Reference
 
 **Worker Types**: Build Worker (CREATED -> IMPLEMENTED), Review Worker (IMPLEMENTED -> COMPLETE)
-**Modes**: all-tasks (default), single-task, dry-run, pause, continue
+**Modes**: all-tasks (default), single-task, dry-run, pause, continue, evaluate
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity, get_worker_stats,
               kill_worker, subscribe_worker, get_pending_events, emit_event
 **State Dir**: task-tracking/sessions/SESSION_{timestamp}/
@@ -285,3 +303,4 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 - Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
 - MCP session-orchestrator design: `docs/mcp-session-orchestrator-design.md`
 - Task template guide: `docs/task-template-guide.md`
+- Benchmark suite: `benchmark-suite/config.md`
