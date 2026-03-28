@@ -49,3 +49,8 @@ Reviewers MUST only flag and fix issues in these files:
 - `apps/cli/scaffold/.claude/commands/nitro-status.md`
 
 Issues found outside this scope: document only, do NOT fix.
+
+## Findings Summary
+- Blocking: 0
+- Serious: 0
+- Minor: 3 (STYLE-1 title missing nitro- prefix, STYLE-2 Active Tasks/Needs Attention ambiguity, SEC-01 prompt injection via registry.md — LOW)
