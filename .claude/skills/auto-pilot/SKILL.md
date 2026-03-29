@@ -68,7 +68,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 > **Note on `escalate_to_user`**: This option requires `cortex_available = true` — it
 > depends on `query_events` to poll for NEED_INPUT signals. If `cortex_available = false`
 > at session start, `escalate_to_user` is automatically forced to `false` and a warning
-> is logged: `"ESCALATE disabled — cortex unavailable"`. Workers always fail autonomously
+> is logged: `"ESCALATE DISABLED — cortex unavailable, escalate_to_user forced false"`. Workers always fail autonomously
 > on the file-based path.
 
 When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `{SESSION_DIR}state.md`. Written as part of Session Lifecycle startup (after Session Directory is created).

@@ -82,24 +82,24 @@ Load this file when `cortex_available = true` to understand which DB paths apply
 
 On first run against a new project, call `sync_tasks_from_files()` once to import existing task-tracking files into the nitro-cortex DB before calling `get_tasks()`. This only needs to run once (safe to re-run — upsert). After the initial sync, all subsequent state changes go through the MCP tools and the DB stays current.
 
-### Event Logging
+## Event Logging
 
 - **cortex path**: For every log event, call `log_event(session_id, task_id?, source="auto-pilot", event_type, data)` (best-effort, fire-and-forget) in addition to appending to `{SESSION_DIR}log.md`. See **Event Logging — Cortex Path** section in `parallel-mode.md` for the full event_type mapping table.
 - **cortex path (session end)**: Call `query_events(session_id=SESSION_ID)` to render `{SESSION_DIR}log.md` from DB before calling `end_session()`. Preserves audit trail across compaction events.
 - **fallback path**: Write only to `{SESSION_DIR}log.md`. Skip all `log_event` calls.
 
-### Session History (orchestrator-history.md)
+## Session History (orchestrator-history.md)
 
 - **cortex path**: Call `log_event(event_type="SUPERVISOR_COMPLETE", data={completed, failed, blocked, duration_minutes})` instead of appending to `task-tracking/orchestrator-history.md`. The file-based append is preserved as the fallback and for human readability — both paths run.
 - **Analytics query**: Use `query_events(event_type="SUPERVISOR_COMPLETE")` instead of reading `orchestrator-history.md`.
 - **fallback path**: Append to `task-tracking/orchestrator-history.md` only.
 
-### Worker Handoff Injection
+## Worker Handoff Injection
 
 - **cortex path**: Before spawning a Review Worker, call `read_handoff(task_id)` to retrieve the structured handoff record. Inject a `## Handoff Data (injected by Supervisor from nitro-cortex DB)` block into the Review Lead prompt. See **Step 5c-handoff** in `parallel-mode.md` for the full injection format.
 - **fallback path**: Worker reads `task-tracking/TASK_YYYY_NNN/handoff.md` file directly (Step 1 of Review Lead prompt — unchanged).
 
-### Session Teardown
+## Session Teardown
 
 - **cortex path**: At session end, call `end_session(session_id=SESSION_ID, summary="...")` after all file cleanup. Best-effort, non-blocking.
 - **fallback path**: File cleanup only (`active-sessions.md` row removal, `log.md` final entry).
