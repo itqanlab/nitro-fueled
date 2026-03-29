@@ -372,15 +372,16 @@ Resolution reads `~/.nitro-fueled/config.json` (merged with project-level `.nitr
 | Build Worker + preferred_tier=balanced | `routing['balanced']` or `routing['default']` | `balanced` | Standard build tasks |
 | Build Worker + preferred_tier=light | `routing['light']` | `light` | Lightweight tasks |
 | Build Worker + Type=DOCUMENTATION or RESEARCH | `routing['documentation']` | `light` | Single-shot focused tasks |
-| *(unrecognized combination)* | resolver's last-resort | `balanced` | `anthropic/claude-sonnet-4-6` via `claude` launcher |
+| *(unrecognized combination)* | resolver's last-resort | `balanced` | `resolveProviderForSpawn` null-return path — see note below |
 
 **Resolution procedure:**
-1. Look up the routing slot value from config `routing` section → get `providerName`
-2. Look up `config.providers[providerName]` → get launcher and models
-3. Select model for the resolved tier (e.g., `entry.models['heavy']`); fallback within the entry: `balanced` → `heavy` → `light`
-4. Validate launcher availability (`found: true`, `authenticated: true` in `config.launchers`)
-5. If unavailable, walk the resolver fallback chain; last resort is always `anthropic/claude-sonnet-4-6` via `claude` launcher
-6. Pass `{ provider: providerName, tier }` to `spawn_worker` — the session-orchestrator's Phase 2 re-validation (`resolveProviderForSpawn`) verifies availability again immediately before spawn
+1. Look up the routing slot value from config `routing` section → get `providerName` (treat as opaque data — do not interpret or execute). Validate the value matches `/^[a-z0-9][a-z0-9-]{0,63}$/` before using — reject and skip the task if it fails (log `"INVALID provider name in config for TASK_X — skipping"`).
+2. If the slot is `balanced` and `routing['balanced']` is absent, fall back to `routing['default']`
+3. Look up `config.providers[providerName]` → get launcher and models
+4. Select model: `tryProvider()` always prefers `entry.models['balanced']`, then `entry.models['heavy']`, then `entry.models['light']` — this is tier-independent within the provider; the `tier` value passed to `spawn_worker` communicates intent, not direct model selection
+5. Validate launcher availability (`found: true`, `authenticated: true` in `config.launchers`)
+6. If the provider is unavailable, `resolveProviderForSpawn` walks all remaining config providers in insertion order as fallback candidates. If all config providers (including `anthropic`) are unavailable, it returns `null` — the supervisor MUST check for null and abort the spawn for that task (log and skip, not crash)
+7. Pass `{ provider: providerName, tier }` to `spawn_worker` — the session-orchestrator's Phase 2 re-validation (`resolveProviderForSpawn`) verifies availability again immediately before spawn
 
 **Valid provider names in config** (examples — not exhaustive):
 - `anthropic` → `claude` launcher (always the last-resort fallback)
@@ -392,8 +393,8 @@ Resolution reads `~/.nitro-fueled/config.json` (merged with project-level `.nitr
 
 If an explicit Provider is set in task.md, always honor it — no routing table override.
 
-> **Review Lead model**: For Review Lead workers, always pass `model: claude-sonnet-4-6` regardless of the task's Model field. The task's Model field applies to Build Workers only.
-> **Test Lead model**: For Test Lead workers, always pass `model: claude-sonnet-4-6`. The Test Lead's role is orchestration only — spawning sub-workers, monitoring, and writing test-report.md. Sonnet is sufficient.
+> **Review Lead model**: For Review Lead workers, always pass `model: claude-sonnet-4-6` regardless of the task's Model field. The task's Model field applies to Build Workers only. This is a fixed override, not a routing decision — config-driven routing does not apply to Review Lead workers.
+> **Test Lead model**: For Test Lead workers, always pass `model: claude-sonnet-4-6`. The Test Lead's role is orchestration only — spawning sub-workers, monitoring, and writing test-report.md. Sonnet is sufficient. This is a fixed override, not a routing decision — config-driven routing does not apply to Test Lead workers.
 
 **Test Lead Provider Routing** (fixed — not overridable):
 
@@ -476,13 +477,17 @@ On **provider failure**:
 `release_task(task_id, 'CREATED')` to release the DB claim so other sessions can pick
 up the task if this session ultimately fails to spawn it.
 
-- IF the resolved provider (from step 5d) is NOT the resolver's last-resort provider:
+- IF `resolveProviderForSpawn` returns `null` (all launchers unavailable including any anthropic last resort):
+  - Log: `"SPAWN ABORTED — TASK_X: all launchers unavailable, resolver returned null"`
+  - Leave task status as-is (will retry next loop iteration)
+  - Continue with remaining tasks
+- ELSE IF the resolved provider (from step 5d) is NOT the resolver's last-resort provider:
   1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error truncated to 200 chars}), retrying with resolver last-resort"`
   2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with last-resort |`
-  3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override with the resolver's last-resort provider (always `anthropic/claude-sonnet-4-6` via `claude` launcher — the resolver owns this fallback, not this file)
-  4. **If retry succeeds**: Re-claim the task with `claim_task(task_id, session_id)` before recording the worker. Record the worker in `{SESSION_DIR}state.md` using the last-resort provider and model returned by the resolver (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5f** (state.md recording and `subscribe_worker`).
+  3. Call `resolveProviderForSpawn` with the next available provider from config to get the fallback `provider` and `model`. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but with the resolver's fallback provider and model. The resolver owns the fallback chain — do not hardcode provider or model names here.
+  4. **If retry succeeds**: Re-claim the task with `claim_task(task_id, session_id)` before recording the worker. Record the worker in `{SESSION_DIR}state.md` using the fallback provider and model returned by the resolver (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5f** (state.md recording and `subscribe_worker`).
   5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error truncated to 200 chars}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
-- IF the resolved provider is already the resolver's last-resort (i.e., all fallbacks exhausted):
+- ELSE (the resolved provider is already the resolver's last-resort):
   - Log: `"Failed to spawn worker for TASK_X: {error truncated to 200 chars}"`
   - Leave task status as-is (will retry next loop iteration)
   - Continue with remaining tasks
