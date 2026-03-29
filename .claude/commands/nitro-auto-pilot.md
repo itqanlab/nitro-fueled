@@ -61,10 +61,15 @@ Parse $ARGUMENTS for:
 - `--retries N` -> override retry limit
 - `--force` flag -> override stale RUNNING state from a previous session
 - `--pause` flag -> pause after current monitoring cycle (see Pause Mode in SKILL.md)
-- `--continue [SESSION_ID]` -> resume mode: if followed by a `SESSION_{...}` token, use it as
-  the target session; otherwise auto-detect the most recent paused/stopped session
-  (see Continue Mode in SKILL.md). **If `--continue` is present, skip Steps 3 and 4 entirely**
-  and jump directly to the Continue Mode sequence in SKILL.md.
+- `--continue [SESSION_ID]` -> resume mode: if followed by a token, validate it against the
+  regex `^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$` before use. If the token does NOT
+  match, **STOP IMMEDIATELY** — do not strip or modify the token. Display:
+  `"ERROR: Invalid SESSION_ID format. Expected SESSION_YYYY-MM-DD_HH-MM-SS (e.g. SESSION_2026-03-28_14-00-00). Refusing to proceed to prevent path traversal."` and EXIT.
+  If the token matches or no token is provided, use the validated SESSION_ID as the target
+  session, or auto-detect the most recent paused/stopped session if no token was given
+  (see Continue Mode in SKILL.md). **If `--continue` is present and the SESSION_ID is valid
+  (or absent), skip Steps 3 and 4 entirely** and jump directly to the Continue Mode
+  sequence in SKILL.md.
 - `--evaluate <model-id>` -> evaluation mode: enter single-model evaluation against the
   benchmark suite. The `<model-id>` is required (e.g., `claude-opus-4-6`, `claude-sonnet-4-6`,
   `glm-5`). **If `--evaluate` is present, skip Steps 3, 4, 5, and 6 entirely** and jump
