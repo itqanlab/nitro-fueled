@@ -333,6 +333,14 @@ invocations are visible in the same audit trail as auto-pilot-spawned workers.
    ```
 5. Register in `task-tracking/active-sessions.md` (append row with source `orchestrate`,
    Tasks `1`, path `{SESSION_DIR}`).
+6a. **nitro-cortex session registration (Supervisor mode only, best-effort)**:
+    If running as a Build Worker (WORKER_ID: line present in prompt) AND nitro-cortex
+    `update_session` tool is available:
+    - The session_id was created by the Supervisor via `create_session()` before spawning
+      this worker. The session already exists in the DB.
+    - Call `update_session(session_id, fields=JSON.stringify({loop_status: "running"}))` to
+      confirm this worker's session is active.
+    - If unavailable or error: log warning and continue.
 6. Append startup entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | orchestrate | STARTED TASK_{ID} ({task_type}) |`
 
@@ -386,6 +394,16 @@ injected by the Supervisor and has the form `WORKER_ID: WID_xxxxxxxx`.
 **Best-effort**: `emit_event` calls are fire-and-forget. If the MCP tool is unavailable
 or returns an error, log a warning and continue. Never let `emit_event` failure
 interrupt orchestration.
+
+**nitro-cortex companion writes** (Supervisor mode only, best-effort):
+After writing the status file for IN_PROGRESS and IMPLEMENTED transitions, if the
+nitro-cortex `update_task` tool is available:
+- Call `update_task(task_id, fields=JSON.stringify({status: "IN_PROGRESS"}))` after the
+  IN_PROGRESS file write.
+- Call `update_task(task_id, fields=JSON.stringify({status: "IMPLEMENTED"}))` after the
+  IMPLEMENTED file write.
+These calls are fire-and-forget. If the tool is unavailable or returns an error, log a
+warning and continue. Never let update_task failure interrupt orchestration.
 
 **Do NOT emit** if running in interactive mode (no `WORKER_ID:` in the prompt). The
 `emit_event` tool is a supervisor-to-worker contract, not a user-facing feature.

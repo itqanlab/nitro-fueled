@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { buildMcpConfigEntry } from './mcp-setup-guide.js';
+import { buildMcpConfigEntry, buildNitroCortexConfigEntry } from './mcp-setup-guide.js';
 
 export function expandTilde(inputPath: string): string {
   if (inputPath.startsWith('~/') || inputPath === '~') {
@@ -82,6 +82,47 @@ export async function configureMcp(
   const success = mergeJsonFile(targetPath, mcpEntry);
   if (success) {
     console.log(`  MCP session-orchestrator configured in ${targetPath}`);
+  }
+  return success;
+}
+
+export async function configureNitroCortex(
+  cwd: string,
+  serverPath: string,
+  location: 'project' | 'global'
+): Promise<boolean> {
+  const expandedPath = expandTilde(serverPath);
+  const resolvedServerPath = resolve(expandedPath);
+
+  if (!existsSync(resolvedServerPath)) {
+    console.error(`Error: Directory not found: ${resolvedServerPath}`);
+    return false;
+  }
+
+  let realPath: string;
+  try {
+    realPath = realpathSync(resolvedServerPath);
+  } catch {
+    console.error(`Error: Could not resolve path: ${resolvedServerPath}`);
+    return false;
+  }
+
+  const entryPoint = resolve(realPath, 'dist', 'index.js');
+  if (!existsSync(entryPoint)) {
+    console.error(`Error: nitro-cortex entry point not found at ${entryPoint}`);
+    console.error('Make sure nitro-cortex is built (npm run build).');
+    return false;
+  }
+
+  const mcpEntry = buildNitroCortexConfigEntry(realPath);
+
+  const targetPath = location === 'project'
+    ? resolve(cwd, '.mcp.json')
+    : resolve(homedir(), '.claude.json');
+
+  const success = mergeJsonFile(targetPath, mcpEntry);
+  if (success) {
+    console.log(`  MCP nitro-cortex configured in ${targetPath}`);
   }
   return success;
 }

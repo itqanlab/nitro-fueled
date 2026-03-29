@@ -51,3 +51,15 @@ export function buildMcpConfigEntry(serverPath: string): Record<string, unknown>
     },
   };
 }
+
+export function buildNitroCortexConfigEntry(serverPath: string): Record<string, unknown> {
+  return {
+    mcpServers: {
+      'nitro-cortex': {
+        type: 'stdio',
+        command: 'node',
+        args: [resolve(serverPath, 'dist', 'index.js')],
+      },
+    },
+  };
+}

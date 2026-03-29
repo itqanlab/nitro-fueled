@@ -1,11 +1,11 @@
-import { existsSync, copyFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
 import { detectMcpConfig } from '../utils/mcp-config.js';
-import { configureMcp } from '../utils/mcp-configure.js';
+import { configureMcp, configureNitroCortex } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
 import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
@@ -21,6 +21,8 @@ import { getPackageVersion } from '../utils/package-version.js';
 interface InitFlags {
   'mcp-path': string | undefined;
   'skip-mcp': boolean;
+  'cortex-path': string | undefined;
+  'skip-cortex': boolean;
   'skip-agents': boolean;
   overwrite: boolean;
   yes: boolean;
@@ -265,6 +267,48 @@ async function handleMcpConfig(cwd: string, opts: InitFlags): Promise<void> {
   }
 }
 
+async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<void> {
+  console.log('');
+  if (opts['skip-cortex']) {
+    console.log('MCP nitro-cortex: skipped (--skip-cortex)');
+    return;
+  }
+
+  // Check if already configured
+  const projectMcp = resolve(cwd, '.mcp.json');
+  if (existsSync(projectMcp)) {
+    try {
+      const cfg = JSON.parse(readFileSync(projectMcp, 'utf-8')) as Record<string, unknown>;
+      const servers = (cfg['mcpServers'] ?? {}) as Record<string, unknown>;
+      if ('nitro-cortex' in servers) {
+        console.log('MCP nitro-cortex: already configured');
+        return;
+      }
+    } catch {
+      // parse error — fall through to configure
+    }
+  }
+
+  let serverPath = opts['cortex-path'];
+  if (serverPath === undefined) {
+    serverPath = await prompt('Path to nitro-cortex directory (or press Enter to skip): ');
+    if (serverPath === '') {
+      console.log('Skipping nitro-cortex configuration. Configure manually later.');
+      return;
+    }
+  }
+
+  const locationAnswer = opts.yes
+    ? 'project'
+    : await prompt('Configure nitro-cortex globally or per-project? (global/project) [project]: ');
+  const location: 'project' | 'global' = locationAnswer === 'global' ? 'global' : 'project';
+
+  const success = await configureNitroCortex(cwd, serverPath, location);
+  if (!success) {
+    console.error('nitro-cortex configuration failed. You can configure it manually later.');
+  }
+}
+
 function commitScaffold(cwd: string, files: string[]): boolean {
   if (files.length === 0) {
     console.log('Commit: no new files to commit (all files already existed)');
@@ -332,7 +376,7 @@ function buildAndWriteManifest(
   console.log('  Manifest: written (.nitro-fueled/manifest.json)');
 }
 
-function printSummary(mcpConfigured: boolean, skipMcp: boolean): void {
+function printSummary(mcpConfigured: boolean, skipMcp: boolean, skipCortex: boolean): void {
   console.log('');
   console.log('=================');
   console.log('Init complete!');
@@ -352,6 +396,9 @@ function printSummary(mcpConfigured: boolean, skipMcp: boolean): void {
   if (!mcpConfigured && skipMcp) {
     console.log('  4. npx nitro-fueled init --mcp-path <path>   Configure MCP server');
   }
+  if (skipCortex) {
+    console.log('  4. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server');
+  }
   console.log('');
 }
 
@@ -361,6 +408,8 @@ export default class Init extends BaseCommand {
   public static override flags = {
     'mcp-path': Flags.string({ description: 'Path to session-orchestrator server' }),
     'skip-mcp': Flags.boolean({ description: 'Skip MCP server configuration', default: false }),
+    'cortex-path': Flags.string({ description: 'Path to nitro-cortex server (packages/mcp-cortex in this repo)' }),
+    'skip-cortex': Flags.boolean({ description: 'Skip nitro-cortex MCP configuration', default: false }),
     'skip-agents': Flags.boolean({ description: 'Skip AI-assisted developer agent generation', default: false }),
     overwrite: Flags.boolean({ description: 'Overwrite existing files instead of merging', default: false }),
     yes: Flags.boolean({ char: 'y', description: 'Accept all defaults without prompting', default: false }),
@@ -489,6 +538,9 @@ export default class Init extends BaseCommand {
     // Step 10: MCP configuration
     await handleMcpConfig(cwd, opts);
 
+    // Step 10b: nitro-cortex configuration
+    await handleNitroCortexConfig(cwd, opts);
+
     // Step 11: Commit scaffolded files if --commit flag is set
     if (opts.commit) {
       console.log('');
@@ -500,6 +552,6 @@ export default class Init extends BaseCommand {
 
     // Step 12: Summary
     const mcpAfter = detectMcpConfig(cwd);
-    printSummary(mcpAfter.found, opts['skip-mcp']);
+    printSummary(mcpAfter.found, opts['skip-mcp'], opts['skip-cortex']);
   }
 }
