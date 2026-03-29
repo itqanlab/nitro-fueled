@@ -9,6 +9,10 @@ Scaffold a new task folder with a pre-filled `task.md` from the canonical templa
 /nitro-create-task [brief description]    # Pre-fills description, prompts for the rest
 ```
 
+## CRITICAL: No Approval Step
+
+**Do NOT ask the user to confirm or approve before creating the task.** Gather the information, write the files immediately, then show the summary. The task can always be edited after creation. Never present gathered info with "Does this look right?" or "Any adjustments?" before writing — just create it.
+
 ## Execution Steps
 
 ### Step 1: Read Template
