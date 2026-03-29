@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
 import { detectMcpConfig } from '../utils/mcp-config.js';
-import { configureMcp, configureNitroCortex } from '../utils/mcp-configure.js';
+import { configureNitroCortex } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
 import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
@@ -19,8 +19,6 @@ import type { Manifest, GeneratedFileEntry } from '../utils/manifest.js';
 import { getPackageVersion } from '../utils/package-version.js';
 
 interface InitFlags {
-  'mcp-path': string | undefined;
-  'skip-mcp': boolean;
   'cortex-path': string | undefined;
   'skip-cortex': boolean;
   'skip-agents': boolean;
@@ -228,43 +226,6 @@ async function handleStackDetection(
   }
   console.log(`  ${generated}/${analysis.proposals.length} developer agents generated`);
   return createdPaths;
-}
-
-async function handleMcpConfig(cwd: string, opts: InitFlags): Promise<void> {
-  console.log('');
-  const mcpConfig = detectMcpConfig(cwd);
-  if (mcpConfig.found) {
-    console.log(`MCP session-orchestrator: already configured (${mcpConfig.location})`);
-    return;
-  }
-
-  if (opts['skip-mcp']) {
-    console.log('MCP configuration: skipped (--skip-mcp)');
-    return;
-  }
-
-  console.log('MCP session-orchestrator is not configured.');
-  console.log('The Supervisor requires this to spawn and manage worker sessions.');
-  console.log('');
-
-  let serverPath = opts['mcp-path'];
-  if (serverPath === undefined) {
-    serverPath = await prompt('Path to session-orchestrator directory (or press Enter to skip): ');
-    if (serverPath === '') {
-      console.log('Skipping MCP configuration. Run init again or configure manually.');
-      return;
-    }
-  }
-
-  const locationAnswer = opts.yes
-    ? 'project'
-    : await prompt('Configure globally or per-project? (global/project) [project]: ');
-  const location: 'project' | 'global' = locationAnswer === 'global' ? 'global' : 'project';
-
-  const success = await configureMcp(cwd, serverPath, location);
-  if (!success) {
-    console.error('MCP configuration failed. You can configure it manually later.');
-  }
 }
 
 async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<void> {

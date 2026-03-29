@@ -7,6 +7,71 @@ import type { ToolResult } from '../tools/types.js';
 const MAX_CONDITIONS_PER_WORKER = 20;
 const MAX_EVENT_QUEUE_SIZE = 1_000;
 
+// --- EmitQueue: in-memory queue for emit_event tool ---
+
+const EMIT_QUEUE_MAX = 2_000;
+const WORKER_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATA_PAYLOAD_MAX_BYTES = 8192;
+
+export interface EmittedEvent {
+  worker_id: string;
+  event_label: string;
+  emitted_at: string;
+  data?: Record<string, string>;
+  source: 'emit_event';
+}
+
+export class EmitQueue {
+  private queue: EmittedEvent[] = [];
+
+  enqueue(ev: EmittedEvent): void {
+    if (this.queue.length >= EMIT_QUEUE_MAX) {
+      this.queue.shift(); // drop oldest
+    }
+    this.queue.push(ev);
+  }
+
+  drain(): EmittedEvent[] {
+    const out = this.queue;
+    this.queue = [];
+    return out;
+  }
+}
+
+export function handleEmitEvent(
+  db: Database.Database,
+  emitQueue: EmitQueue,
+  args: { worker_id: string; label: string; data?: Record<string, string> },
+): ToolResult {
+  const safeId = args.worker_id.replace(/[\r\n\x1b]/g, '<LF>');
+  const safeLabel = args.label.replace(/[\r\n\x1b]/g, '<LF>');
+
+  if (!WORKER_ID_RE.test(args.worker_id)) {
+    process.stderr.write(`[emit_event] rejected: invalid worker_id format "${safeId}"\n`);
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, error: 'invalid worker_id format' }) }], isError: true };
+  }
+
+  if (args.data !== undefined && JSON.stringify(args.data).length > DATA_PAYLOAD_MAX_BYTES) {
+    process.stderr.write(`[emit_event] rejected: data payload exceeds ${DATA_PAYLOAD_MAX_BYTES} bytes for ${safeId}\n`);
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, error: 'data payload too large' }) }], isError: true };
+  }
+
+  const w = db.prepare('SELECT id FROM workers WHERE id = ?').get(args.worker_id);
+  if (!w) {
+    process.stderr.write(`[emit_event] worker ${safeId} not found in DB — event queued anyway\n`);
+  }
+
+  emitQueue.enqueue({
+    worker_id: args.worker_id,
+    event_label: safeLabel,
+    emitted_at: new Date().toISOString(),
+    data: args.data,
+    source: 'emit_event',
+  });
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, worker_id: args.worker_id, label: args.label }) }] };
+}
+
 interface FileValueCondition {
   type: 'file_value';
   path: string;
@@ -230,8 +295,10 @@ export function handleSubscribeWorker(
   }
 }
 
-export function handleGetPendingEvents(fileWatcher: FileWatcher, sessionId?: string): ToolResult {
+export function handleGetPendingEvents(fileWatcher: FileWatcher, emitQueue: EmitQueue, sessionId?: string): ToolResult {
   // H5: filter by session_id when provided.
-  const events = fileWatcher.drainEvents(sessionId);
-  return { content: [{ type: 'text' as const, text: JSON.stringify({ events: events.length > 0 ? events : [] }, events.length > 0 ? null : undefined, events.length > 0 ? 2 : undefined) }] };
+  const fileEvents = fileWatcher.drainEvents(sessionId);
+  const emitEvents = emitQueue.drain();
+  const all = [...fileEvents, ...emitEvents];
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ events: all }, all.length > 0 ? null : undefined, all.length > 0 ? 2 : undefined) }] };
 }

@@ -10,7 +10,7 @@ import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles } from './tools/sync.js';
 import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession } from './tools/sessions.js';
 import { handleSpawnWorker, handleListWorkers, handleGetWorkerStats, handleGetWorkerActivity, handleKillWorker } from './tools/workers.js';
-import { FileWatcher, handleSubscribeWorker, handleGetPendingEvents } from './events/subscriptions.js';
+import { FileWatcher, EmitQueue, handleSubscribeWorker, handleGetPendingEvents, handleEmitEvent } from './events/subscriptions.js';
 import { JsonlWatcher } from './process/jsonl-watcher.js';
 import { handleWriteHandoff, handleReadHandoff } from './tools/handoffs.js';
 import { handleLogEvent, handleQueryEvents } from './tools/events.js';
@@ -26,10 +26,11 @@ console.error('[nitro-cortex] database initialized');
 
 const jsonlWatcher = new JsonlWatcher(db);
 const fileWatcher = new FileWatcher();
+const emitQueue = new EmitQueue();
 
 const server = new McpServer({
   name: 'nitro-cortex',
-  version: '0.2.0',
+  version: '0.4.0',
 });
 
 // --- Task tools (from Part 1) ---
@@ -290,12 +291,21 @@ server.registerTool('subscribe_worker', {
   },
 }, (args) => handleSubscribeWorker(db, fileWatcher, args));
 
+server.registerTool('emit_event', {
+  description: 'Emit a phase-transition event from a worker. Enqueued into the supervisor event queue. Retrieve via get_pending_events.',
+  inputSchema: {
+    worker_id: z.string().max(36).describe('Worker ID returned by spawn_worker'),
+    label: z.string().max(64).describe('Event label (e.g. IN_PROGRESS, PM_COMPLETE, ARCHITECTURE_COMPLETE, BATCH_COMPLETE, IMPLEMENTED)'),
+    data: z.record(z.string().max(64), z.string().max(512)).optional().describe('Optional key-value payload'),
+  },
+}, (args) => handleEmitEvent(db, emitQueue, args));
+
 server.registerTool('get_pending_events', {
   description: 'Drain and return all pending worker completion events (idempotent drain).',
   inputSchema: {
     session_id: z.string().optional().describe('Optional session filter (not yet implemented)'),
   },
-}, (args) => handleGetPendingEvents(fileWatcher, args.session_id));
+}, (args) => handleGetPendingEvents(fileWatcher, emitQueue, args.session_id));
 
 // --- Start ---
 
@@ -303,7 +313,7 @@ jsonlWatcher.start();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-console.error('[nitro-cortex] MCP server connected via stdio (v0.3.0 — sessions + workers + handoffs + events)');
+console.error('[nitro-cortex] MCP server connected via stdio (v0.4.0 — sessions + workers + handoffs + events + emit_event)');
 
 process.on('SIGINT', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
 process.on('SIGTERM', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
