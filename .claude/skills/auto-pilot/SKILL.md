@@ -268,7 +268,8 @@ The supervisor startup follows this exact order:
 2. Append final log entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
 3. Remove this session's row from `task-tracking/active-sessions.md`.
-4. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (commit all session artifacts).
+4. **Render log.md from events (when cortex available)**: When `cortex_available = true`, at session end, call `query_events(session_id=SESSION_ID)` and render the results as a pipe-table to `{SESSION_DIR}log.md` (overwriting the incremental appends). This ensures log.md is a complete, queryable-derived artifact. If `query_events` fails, keep the incrementally-written log.md as-is. This is best-effort.
+5. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (commit all session artifacts).
 
 ---
 

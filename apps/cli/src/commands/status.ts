@@ -332,8 +332,8 @@ export default class Status extends BaseCommand {
           db.close();
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[nitro-fueled] cortex DB unavailable (${msg}), falling back to file scan`);
+        const msg = err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200);
+        this.warn(`cortex DB unavailable (${msg}), falling back to file scan`);
       }
     }
 

@@ -101,7 +101,7 @@ server.registerTool('sync_tasks_from_files', {
 }, () => handleSyncTasksFromFiles(db, projectRoot));
 
 server.registerTool('reconcile_status_files', {
-  description: 'Compare status files on disk against DB rows. Updates DB where file status differs (file wins). Only updates existing rows — does not insert. Returns { ok, drifted, matched, missing }.',
+  description: 'Compare status files on disk against DB rows. Updates DB where file status differs (file wins). Only updates existing rows — does not insert. Returns { ok, drifted, matched, missing_status_file, missing_db_row }. missing_status_file = tasks with no status file, empty file, or invalid enum value on disk. missing_db_row = tasks with a valid status file but no matching DB row (call sync_tasks_from_files first if missing_db_row > 0 on a fresh DB).',
 }, () => handleReconcileStatusFiles(db, projectRoot));
 
 server.registerTool('upsert_task', {

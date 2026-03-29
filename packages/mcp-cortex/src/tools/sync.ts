@@ -144,6 +144,11 @@ export function handleSyncTasksFromFiles(
   return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
 }
 
+const VALID_TASK_STATUSES = new Set([
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+]);
+
 export function handleReconcileStatusFiles(
   db: Database.Database,
   projectRoot: string,
@@ -156,7 +161,8 @@ export function handleReconcileStatusFiles(
   const entries = readdirSync(trackingDir, { withFileTypes: true });
   let drifted = 0;
   let matched = 0;
-  let missing = 0;
+  let missingStatusFile = 0;
+  let missingDbRow = 0;
 
   const selectRow = db.prepare('SELECT id, status FROM tasks WHERE id = ?');
   const updateStatus = db.prepare(
@@ -169,19 +175,29 @@ export function handleReconcileStatusFiles(
 
       const statusPath = join(trackingDir, entry.name, 'status');
       if (!existsSync(statusPath)) {
-        missing++;
+        missingStatusFile++;
         continue;
       }
 
       const fileStatus = readFileSync(statusPath, 'utf8').trim();
-      const row = selectRow.get(entry.name) as { id: string; status: string } | undefined;
-
-      if (!row) {
-        missing++;
+      if (fileStatus.length === 0) {
+        missingStatusFile++;
         continue;
       }
 
-      if (row.status === fileStatus) {
+      if (!VALID_TASK_STATUSES.has(fileStatus)) {
+        missingStatusFile++;
+        continue;
+      }
+
+      const existing = selectRow.get(entry.name);
+      if (!existing || typeof existing !== 'object') {
+        missingDbRow++;
+        continue;
+      }
+      const dbRow = existing as { id: string; status: string };
+
+      if (dbRow.status === fileStatus) {
         matched++;
       } else {
         updateStatus.run(fileStatus, entry.name);
@@ -190,7 +206,12 @@ export function handleReconcileStatusFiles(
     }
   });
 
-  runReconcile();
+  try {
+    runReconcile();
+  } catch (err: unknown) {
+    const reason = err instanceof Error ? err.message : String(err);
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason }) }] };
+  }
 
-  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, drifted, matched, missing }) }] };
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, drifted, matched, missing_status_file: missingStatusFile, missing_db_row: missingDbRow }) }] };
 }
