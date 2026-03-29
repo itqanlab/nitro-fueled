@@ -95,7 +95,11 @@ export function queryWorkers(db: Database.Database, filters?: { sessionId?: stri
   return (db.prepare(sql).all(...params) as RawWorker[]).map(mapWorker);
 }
 
-export function queryTaskTrace(db: Database.Database, taskId: string): CortexTaskTrace {
+export function queryTaskTrace(db: Database.Database, taskId: string): CortexTaskTrace | null {
+  // Return null when the task doesn't exist so controllers can distinguish 404 from 503
+  const exists = db.prepare('SELECT id FROM tasks WHERE id = ?').get(taskId);
+  if (!exists) return null;
+
   const workers = (
     db.prepare(`SELECT ${WORKER_COLS} FROM workers WHERE task_id = ? ORDER BY spawn_time ASC`).all(taskId) as RawWorker[]
   ).map(mapWorker);
@@ -151,21 +155,25 @@ export function queryModelPerformance(
   db: Database.Database,
   filters?: { taskType?: string; model?: string },
 ): CortexModelPerformance[] {
-  const params: string[] = [];
+  // Phase and review params are built separately then concatenated to match CTE bind order:
+  // SQL scans phase_data CTE first (uses phaseParams), then review_data CTE (uses reviewParams).
+  const phaseParams: string[] = [];
+  const reviewParams: string[] = [];
   let phaseWhere = '';
   let reviewWhere = '';
   if (filters?.model) {
     phaseWhere += ' AND p.model = ?';
-    params.push(filters.model);
+    phaseParams.push(filters.model);
     reviewWhere += ' AND r.model_that_reviewed = ?';
-    params.push(filters.model);
+    reviewParams.push(filters.model);
   }
   if (filters?.taskType) {
     phaseWhere += ' AND t.type = ?';
-    params.push(filters.taskType);
+    phaseParams.push(filters.taskType);
     reviewWhere += ' AND t.type = ?';
-    params.push(filters.taskType);
+    reviewParams.push(filters.taskType);
   }
+  const params = [...phaseParams, ...reviewParams];
   const sql = `
     WITH phase_data AS (
       SELECT p.model, t.type AS task_type, p.duration_minutes, p.input_tokens, p.output_tokens

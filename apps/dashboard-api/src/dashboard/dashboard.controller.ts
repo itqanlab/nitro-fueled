@@ -308,10 +308,13 @@ export class DashboardController {
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('cortex/tasks/:id')
   public getCortexTask(@Param('id') id: string): ReturnType<CortexService['getTaskContext']> {
-    const result = this.cortexService.getTaskContext(id);
-    if (result === null && !this.isCortexAvailable()) {
+    if (!TASK_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid task ID format' });
+    }
+    if (!this.cortexService.isAvailable()) {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
     }
+    const result = this.cortexService.getTaskContext(id);
     if (result === null) {
       throw new NotFoundException({ error: 'Task not found' });
     }
@@ -326,10 +329,13 @@ export class DashboardController {
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('cortex/tasks/:id/trace')
   public getCortexTaskTrace(@Param('id') id: string): ReturnType<CortexService['getTaskTrace']> {
-    const result = this.cortexService.getTaskTrace(id);
-    if (result === null && !this.isCortexAvailable()) {
+    if (!TASK_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid task ID format' });
+    }
+    if (!this.cortexService.isAvailable()) {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
     }
+    const result = this.cortexService.getTaskTrace(id);
     if (result === null) {
       throw new NotFoundException({ error: 'Task not found' });
     }
@@ -359,10 +365,10 @@ export class DashboardController {
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('cortex/sessions/:id')
   public getCortexSession(@Param('id') id: string): ReturnType<CortexService['getSessionSummary']> {
-    const result = this.cortexService.getSessionSummary(id);
-    if (result === null && !this.isCortexAvailable()) {
+    if (!this.cortexService.isAvailable()) {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
     }
+    const result = this.cortexService.getSessionSummary(id);
     if (result === null) {
       throw new NotFoundException({ error: 'Session not found' });
     }
@@ -422,16 +428,4 @@ export class DashboardController {
     return result;
   }
 
-  // ============================================================
-  // Private helpers
-  // ============================================================
-
-  /**
-   * Checks whether the cortex DB is reachable (file exists).
-   * Used to disambiguate null returns: DB unavailable vs. record not found.
-   */
-  private isCortexAvailable(): boolean {
-    // Probe with a lightweight call — getEventsSince(0) returns [] or null
-    return this.cortexService.getEventsSince(Number.MAX_SAFE_INTEGER) !== null;
-  }
 }

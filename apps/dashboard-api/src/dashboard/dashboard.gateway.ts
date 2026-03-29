@@ -35,7 +35,7 @@ export class DashboardGateway
   private cortexPollInterval: ReturnType<typeof setInterval> | null = null;
   private lastCortexEventId = 0;
 
-  constructor(
+  public constructor(
     private readonly sessionsService: SessionsService,
     private readonly analyticsService: AnalyticsService,
     private readonly watcherService: WatcherService,
@@ -44,10 +44,16 @@ export class DashboardGateway
 
   /**
    * Called after the gateway is initialized.
-   * Sets up the file watcher subscription to trigger broadcasts on changes.
+   * Seeds lastCortexEventId with the current DB max so we don't replay history on restart.
    */
   public afterInit(): void {
     this.logger.log('WebSocket gateway initialized');
+    // Seed with current max event ID to avoid replaying full event history on restart
+    const seed = this.cortexService.getEventsSince(0);
+    if (seed !== null && seed.length > 0) {
+      this.lastCortexEventId = seed[seed.length - 1]!.id;
+      this.logger.debug(`Cortex event polling seeded at id=${this.lastCortexEventId}`);
+    }
     this.setupWatcherSubscription();
     this.startCortexPolling();
   }

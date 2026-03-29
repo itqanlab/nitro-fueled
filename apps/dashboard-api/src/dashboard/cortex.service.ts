@@ -52,6 +52,11 @@ export class CortexService {
     this.dbPath = join(process.cwd(), '.nitro', 'cortex.db');
   }
 
+  /** Returns true when the cortex DB file exists. Used by controllers to distinguish 503 from 404. */
+  public isAvailable(): boolean {
+    return existsSync(this.dbPath);
+  }
+
   private openDb(): Database.Database | null {
     if (!existsSync(this.dbPath)) return null;
     try {
