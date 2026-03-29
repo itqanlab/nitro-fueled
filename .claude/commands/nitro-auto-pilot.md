@@ -78,7 +78,7 @@ Parse $ARGUMENTS for:
   or `both`.
 - `--reviewer <model-id>` -> overrides the model used for Review Workers in evaluation.
   Defaults to `--compare` model if A/B mode, or no review phase if single-model builder.
-- `--sequential` flag -> sequential mode (set `sequential_mode = true`). If `--sequential` is present, **skip Step 3c** (MCP validation) entirely and jump to Step 4 after completing Step 3a (stale archive check) and Step 3b (registry check). All other pre-flight checks still run.
+- `--sequential` flag -> sequential mode (set `sequential_mode = true`). **If `--sequential` is present, skip Step 3c** (MCP validation) entirely — jump to Step 4 after Steps 3a and 3b. All other pre-flight checks still run. **Then skip Steps 5–6** and jump directly to the Sequential Mode sequence in SKILL.md.
 
 ### Step 3: Pre-Flight Checks
 
@@ -102,6 +102,7 @@ context and break the architecture. Configure the MCP server in
 and its status is CREATED or IMPLEMENTED. If status is IN_PROGRESS or
 IN_REVIEW, the Supervisor will spawn the appropriate worker type to resume.
 If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
+- If `--sequential` is active and status is IMPLEMENTED: ERROR — "TASK_X is IMPLEMENTED. Sequential mode requires CREATED status. Use /auto-pilot TASK_X (without --sequential) to run a Review Worker."
 
 ### Step 4: Pre-Flight Task Validation
 
@@ -252,6 +253,19 @@ Blocked/Cancelled: {N}
 Concurrency limit: {N}
 Monitoring interval: {N} minutes
 Mode: {all | single-task TASK_ID | dry-run}
+```
+
+If `--sequential` is active, display instead:
+```
+SEQUENTIAL SUPERVISOR STARTING
+-------------------------------
+Total tasks in registry: {N}
+Ready for sequential execution (CREATED): {N}
+Complete: {N}
+Blocked/Cancelled: {N}
+Task limit: {N | "unlimited"}
+Retry limit: {N}
+Mode: {all | single-task TASK_ID}
 ```
 
 ### Step 6: Handle Mode
