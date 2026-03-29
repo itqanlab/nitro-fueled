@@ -28,7 +28,7 @@ and loops until all tasks are complete or blocked.
 | --retries       | integer                      | 2       | Max retries per task                                     |
 | --force         | flag                         | false   | Override stale RUNNING state                             |
 | --pause         | flag                         | false   | Stop cleanly after current monitoring cycle; workers keep running |
-| --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given)  |
+| --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given; invalid format exits immediately) |
 
 ## Execution Steps
 
@@ -48,15 +48,17 @@ Parse $ARGUMENTS for:
 - `--retries N` -> override retry limit
 - `--force` flag -> override stale RUNNING state from a previous session
 - `--pause` flag -> pause after current monitoring cycle (see Pause Mode in SKILL.md)
-- `--continue [SESSION_ID]` -> resume mode: if followed by a token, validate it against the
-  regex `^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$` before use. If the token does NOT
-  match, **STOP IMMEDIATELY** — do not strip or modify the token. Display:
-  `"ERROR: Invalid SESSION_ID format. Expected SESSION_YYYY-MM-DD_HH-MM-SS (e.g. SESSION_2026-03-28_14-00-00). Refusing to proceed to prevent path traversal."` and EXIT.
-  If the token matches or no token is provided, use the validated SESSION_ID as the target
-  session, or auto-detect the most recent paused/stopped session if no token was given
-  (see Continue Mode in SKILL.md). **If `--continue` is present and the SESSION_ID is valid
-  (or absent), skip Steps 3 and 4 entirely** and jump directly to the Continue Mode
-  sequence in SKILL.md.
+- `--continue [SESSION_ID]` -> resume mode: if the next whitespace-separated argument does
+  not start with `--`, treat it as the SESSION_ID token and validate it against the regex
+  `^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$` before use. If the token does NOT match,
+  **STOP IMMEDIATELY** — do not strip or modify the token. Display:
+  `ERROR: Invalid SESSION_ID format. Expected SESSION_YYYY-MM-DD_HH-MM-SS (e.g. SESSION_2026-03-28_14-00-00). Refusing to proceed to prevent path traversal.`
+  **EXIT.**
+  If the token matches, or no SESSION_ID was provided, use the validated SESSION_ID as the
+  target session, or auto-detect the most recent paused/stopped session if no SESSION_ID was
+  given (see Continue Mode in SKILL.md). **If `--continue` is present and the SESSION_ID is
+  valid, or no SESSION_ID was provided, skip Steps 3 and 4 entirely** and jump directly to
+  the Continue Mode sequence in SKILL.md.
 
 ### Step 3: Pre-Flight Checks
 
