@@ -104,9 +104,9 @@ For each task in the queue:
 - Stage and commit session artifacts:
   ```
   git add {SESSION_DIR}log.md task-tracking/active-sessions.md {SESSION_DIR}analytics.md
-  git commit -m "docs: sequential session artifacts for TASK_2026_133
+  git commit -m "docs: sequential session artifacts for {TASK_IDs processed this session}
 
-  Task: TASK_2026_133
+  Task: {TASK_IDs processed this session}
   Agent: auto-pilot
   Phase: completion
   Worker: sequential

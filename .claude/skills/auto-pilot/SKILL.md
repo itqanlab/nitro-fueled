@@ -86,7 +86,7 @@ The registry (`task-tracking/registry.md`) is a generated artifact regenerated b
 
 ## Session Log
 
-The supervisor MUST append every significant event to `{SESSION_DIR}log.md` using the pipe-table format below.
+The supervisor MUST append every significant event to `{SESSION_DIR}log.md` using the pipe-table format (see `references/log-templates.md`).
 
 > **Load full template list**: Read `references/log-templates.md` for all event types and their exact log row formats.
 
@@ -124,7 +124,7 @@ Single-task, dry-run, sequential, and evaluation modes are handled by the comman
 7. **`--continue`**: load `references/pause-continue.md`
 8. **Spawning workers** (Step 5): load `references/worker-prompts.md`
 9. **Need exact log format**: load `references/log-templates.md`
-10. **cortex_available = true**: cortex paths are inline in `references/parallel-mode.md`
+10. **`cortex_available = true`**: load `references/cortex-integration.md` for DB-specific path summary (full inline details in `references/parallel-mode.md`)
 
 ---
 
@@ -156,7 +156,7 @@ When `--sequential` is passed: process tasks inline in the same session — no M
 
 > **Load reference**: Read `references/evaluation-mode.md` for the full evaluation flow (Steps E1-E10).
 
-When `--evaluate <model-id>` is passed: runs benchmark tasks from `benchmark-suite/` in isolated worktrees. Does NOT process the task registry. Results stored in `evaluations/<date>-<model>/`. Supports `--compare`, `--role`, and A/B modes.
+When `--evaluate <model-id>` is passed: runs benchmark tasks from `benchmark-suite/` in isolated worktrees. Does NOT process the task registry. Results stored in `evaluations/<date>-<model>/`. Supports `--compare`, `--role`, and A/B modes. Exits after Step E10 — does NOT enter the Core Loop.
 
 ---
 
