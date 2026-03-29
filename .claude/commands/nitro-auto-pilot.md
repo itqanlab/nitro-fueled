@@ -20,6 +20,9 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role reviewer  # Test as reviewer
 /nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role both      # Test both roles
 /nitro-auto-pilot --evaluate claude-opus-4-6 --reviewer claude-sonnet-4-6  # Override reviewer model
+/nitro-auto-pilot --sequential                       # Process backlog inline (no MCP workers)
+/nitro-auto-pilot --sequential TASK_YYYY_NNN         # Process single task inline
+/nitro-auto-pilot --sequential --limit 3             # Process up to 3 tasks inline
 ```
 
 ### Parameters
@@ -38,6 +41,7 @@ and loops until all tasks are complete or blocked.
 | --compare       | model-id string              | —       | A/B comparison: run same benchmarks for both models (parallel worktrees in builder mode; sequential phases in reviewer/both modes) |
 | --role          | builder\|reviewer\|both       | builder | Which role to test the model in. `reviewer` and `both` require `--compare` |
 | --reviewer      | model-id string              | —       | Override the reviewer model for evaluation (defaults to baseline or system default) |
+| --sequential    | flag                         | false   | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. Compatible with [TASK_ID] and --limit N. |
 
 ## Execution Steps
 
@@ -74,6 +78,7 @@ Parse $ARGUMENTS for:
   or `both`.
 - `--reviewer <model-id>` -> overrides the model used for Review Workers in evaluation.
   Defaults to `--compare` model if A/B mode, or no review phase if single-model builder.
+- `--sequential` flag -> sequential mode (set `sequential_mode = true`). If `--sequential` is present, **skip Step 3c** (MCP validation) entirely and jump to Step 4 after completing Step 3a (stale archive check) and Step 3b (registry check). All other pre-flight checks still run.
 
 ### Step 3: Pre-Flight Checks
 
@@ -291,10 +296,16 @@ STOP after task reaches COMPLETE or failure.
 
 Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 
+**IF `--sequential` mode:**
+
+1. If a TASK_ID was also provided: single-task sequential mode.
+2. Skip MCP validation (already skipped in Step 3).
+3. Load the Sequential Mode flow from SKILL.md and execute it.
+
 ## Quick Reference
 
 **Worker Types**: Build Worker (CREATED -> IMPLEMENTED), Review Worker (IMPLEMENTED -> COMPLETE)
-**Modes**: all-tasks (default), single-task, dry-run, pause, continue, evaluate, evaluate-ab, evaluate-role
+**Modes**: all-tasks (default), single-task, dry-run, pause, continue, sequential, evaluate, evaluate-ab, evaluate-role
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity, get_worker_stats,
               kill_worker, subscribe_worker, get_pending_events, emit_event
 **State Dir**: task-tracking/sessions/SESSION_{timestamp}/

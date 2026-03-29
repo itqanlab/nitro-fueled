@@ -59,6 +59,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 | Monitoring interval | 5 minutes   | --interval Nm    | Time between health checks                           |
 | Retry limit         | 2           | --retries N      | Maximum retry attempts for a failed task. Maximum allowed value: 5. Values above 5 are clamped to 5. |
 | Task limit          | 0 (unlimited) | --limit N      | Stop gracefully after N tasks reach a terminal state (COMPLETE/FAILED/BLOCKED). 0 = process entire backlog. |
+| Sequential mode     | false       | --sequential     | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
 
 > **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
@@ -148,6 +149,13 @@ The supervisor MUST append every significant event to `{SESSION_DIR}log.md`. Thi
 | Worker log failed | `\| {HH:MM:SS} \| auto-pilot \| WORKER LOG FAILED — TASK_X: {reason} \|` |
 | Analytics written | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS — {N} tasks completed, total ${X.XX} \|` |
 | Analytics failed | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS FAILED — {reason} \|` |
+| Sequential started | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL MODE STARTED — {N} tasks in backlog \|` |
+| Sequential task started | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL — starting TASK_X (attempt {N}/{retry_limit}) \|` |
+| Sequential task completed | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL COMPLETE — TASK_X \|` |
+| Sequential task partial | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL PARTIAL — TASK_X: status={status}, treating as needs-review \|` |
+| Sequential task retry | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL RETRY — TASK_X: attempt {N}/{retry_limit} \|` |
+| Sequential task blocked | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL BLOCKED — TASK_X: exceeded {retry_limit} retries \|` |
+| Sequential stopped | `\| {HH:MM:SS} \| auto-pilot \| SEQUENTIAL STOPPED — {completed} completed, {failed} failed, {blocked} blocked \|` |
 | Session archive committed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE — committed {SESSION_ID} \|` |
 | Session archive failed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE WARNING — commit failed: {reason[:200]} \|` |
 | Cortex available | `\| {HH:MM:SS} \| auto-pilot \| CORTEX AVAILABLE — using nitro-cortex for task state \|` |
@@ -172,8 +180,9 @@ The supervisor operates in these modes, selected via the `/auto-pilot` command:
 | **Evaluate** | `/auto-pilot --evaluate <model-id>` | Single-model evaluation mode. Loads benchmark tasks from `benchmark-suite/`, creates isolated worktree(s), spawns Evaluation Build Workers using the specified model, collects execution metrics (wall-clock time, success/failure, retry count), and stores results in `evaluations/<date>-<model>/`. Does NOT read the task registry or process real tasks. |
 | **Evaluate A/B** | `/auto-pilot --evaluate <model-id> --compare <baseline-model>` | A/B comparison mode. Runs the same benchmark tasks for both models in separate worktrees, collects identical metrics, and stores results in `evaluations/<date>-<modelA>_vs_<modelB>/` with per-model subdirectories. |
 | **Evaluate Role** | `/auto-pilot --evaluate <model-id> --role builder\|reviewer\|both` | Role testing mode. `builder` (default): model under test as Build Worker only — no review phase in A/B builder mode (see E5c). `reviewer`: baseline model builds, model under test reviews. `both`: two full passes — one as builder (E5c), one as reviewer (E5d). Requires `--compare` when `--role` is `reviewer` or `both`. |
+| **Sequential** | `/auto-pilot --sequential` | Process tasks inline (same session). No MCP workers spawned. Reads registry once, builds dependency graph, picks highest-priority unblocked task, invokes orchestration skill inline via Agent tool. Re-reads only changed status files after each task. Supports `--limit N` and single-task (`--sequential TASK_X`). Retry on failure: re-invoke orchestration for same task up to retry limit. Session logging still works. |
 
-Single-task, dry-run, and evaluation modes are handled by the command entry point (`.claude/commands/nitro-auto-pilot.md`). The Core Loop below describes the all-tasks mode.
+Single-task, dry-run, sequential, and evaluation modes are handled by the command entry point (`.claude/commands/nitro-auto-pilot.md`). The Core Loop below describes the all-tasks mode.
 
 ---
 
@@ -224,6 +233,113 @@ When `--continue [SESSION_ID]` is passed:
 7. **Skip Startup Sequence steps 1–4** (no fresh pre-flight, no stale-archive check, no new session dir, no log-stale-results). Go directly to **Core Loop Step 1: Read State** (worker reconciliation) to sync with MCP, then continue normally.
 
 > **Continue skips pre-flight**: The session was already validated when it started. Tasks that were valid then are assumed still valid (or will fail the JIT gate if they changed).
+
+---
+
+## Sequential Mode
+
+When `--sequential` is passed, the supervisor processes tasks inline in the same session — no MCP workers are spawned. This avoids the token multiplication caused by parallel worker overhead (duplicate registry reads every loop, cross-session context, monitoring polling).
+
+### When to use
+
+- Processing a small backlog (5 tasks or fewer) without incurring MCP session overhead
+- Single-task execution: `/auto-pilot --sequential TASK_X`
+- Token-budget-constrained runs where spawning separate sessions is too expensive
+- Development/testing where worker isolation is not needed
+
+### Sequential Mode Flow
+
+**1. Parse flags**
+
+- `sequential_mode = true`
+- If a `TASK_ID` argument is also present: `single_task_mode = true`, `target_task_id = TASK_ID`
+- If `--limit N` is present: `sequential_limit = N` (0 = unlimited)
+- Retry limit from `--retries N` or default (2)
+
+**2. Skip MCP validation**
+
+Do NOT check MCP session-orchestrator availability. Do NOT validate MCP tools. Proceed directly to pre-flight validation (Step 4 in the command entry point) — but SKIP Step 3c (MCP check). All other pre-flight checks still run.
+
+**3. Session setup**
+
+- Create session directory and log.md (same as normal startup)
+- Register in `task-tracking/active-sessions.md` (source: `auto-pilot-sequential`)
+- Append to log.md: `| {HH:MM:SS} | auto-pilot | SEQUENTIAL MODE STARTED — {N} tasks in backlog |`
+- Write `Loop Status: RUNNING` to `{SESSION_DIR}state.md`
+
+**4. Read registry once**
+
+- Read `task-tracking/registry.md` — extract all task IDs and statuses
+- Read `task-tracking/plan.md` if it exists (for ordering hints)
+- Build dependency graph (same DFS logic as Core Loop Step 3)
+
+**5. Build sequential task queue**
+
+- Filter: include only CREATED tasks (IMPLEMENTED tasks are skipped — sequential mode does not run review workers)
+- If `single_task_mode`: scope to `target_task_id` only (verify it is CREATED or error)
+- Sort by priority then dependency order (same as Core Loop Step 4)
+- If `--limit N`: cap the queue to N tasks
+
+**6. Execute tasks inline**
+
+For each task in the queue:
+
+```
+6a. Check dependencies
+    - Read each dependency's status file (not the full registry)
+    - If any dependency is not COMPLETE: skip this task, log BLOCKED, continue to next
+
+6b. Log task start
+    Append: | {HH:MM:SS} | auto-pilot | SEQUENTIAL — starting TASK_X (attempt {N}/{retry_limit}) |
+
+6c. Write task status to IN_PROGRESS
+    Write task-tracking/TASK_X/status = IN_PROGRESS
+
+6d. Invoke orchestration inline
+    Use the Agent tool to run the full orchestration pipeline for TASK_X.
+    Pass the task folder path and instruct the subagent to read
+    .claude/skills/orchestration/SKILL.md and execute the full pipeline.
+    The subagent should not stop for approval — build, commit, review, fix, complete.
+
+6e. After agent returns: read task-tracking/TASK_X/status
+    - If COMPLETE: success path
+      - Log: | {HH:MM:SS} | auto-pilot | SEQUENTIAL COMPLETE — TASK_X |
+      - Increment sequential_completed counter
+      - If --limit reached: break out of queue
+    - If IMPLEMENTED or IN_REVIEW: partial (build done but no review ran)
+      - Log: | {HH:MM:SS} | auto-pilot | SEQUENTIAL PARTIAL — TASK_X: status={status}, treating as needs-review |
+      - Still count as completed for --limit purposes
+    - If IN_PROGRESS or CREATED (no transition): failure
+      - If retry_count < retry_limit:
+        - Increment retry count
+        - Log: | {HH:MM:SS} | auto-pilot | SEQUENTIAL RETRY — TASK_X: attempt {N}/{retry_limit} |
+        - Re-add task to front of queue (retry immediately)
+      - Else:
+        - Write status = BLOCKED
+        - Log: | {HH:MM:SS} | auto-pilot | SEQUENTIAL BLOCKED — TASK_X: exceeded {retry_limit} retries |
+        - Continue to next task
+```
+
+**7. Session teardown**
+
+- Append: `| {HH:MM:SS} | auto-pilot | SEQUENTIAL STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
+- Remove session row from `task-tracking/active-sessions.md`
+- Write session analytics (same format as normal mode, Outcome = COMPLETE if any tasks completed)
+- Commit session artifacts (log.md, active-sessions.md, session analytics) in a single commit:
+  `git commit -m "docs: sequential session artifacts for {TASK_X} (and others if batch)"`
+
+### Key differences from parallel mode
+
+| Aspect | Parallel mode | Sequential mode |
+|--------|--------------|-----------------|
+| MCP validation | HARD FAIL if missing | Skipped entirely |
+| Worker sessions | Separate MCP-spawned sessions | Inline Agent tool calls |
+| Concurrency | Up to N parallel workers | 1 task at a time |
+| Review phase | Review Lead + Test Lead | Full pipeline (orchestration handles review inline) |
+| Token cost | High (cross-session duplication) | Lower (single session context) |
+| Health checks | Every 5 minutes | None needed |
+| --limit N | Tasks to COMPLETE terminal state | Tasks to start |
+| Retry | Re-spawn worker | Re-invoke Agent |
 
 ---
 
