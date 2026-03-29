@@ -143,3 +143,54 @@ export function handleSyncTasksFromFiles(
   const result = { ok: true, imported, skipped, errors: errors.length > 0 ? errors : undefined };
   return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
 }
+
+export function handleReconcileStatusFiles(
+  db: Database.Database,
+  projectRoot: string,
+): { content: Array<{ type: 'text'; text: string }> } {
+  const trackingDir = join(projectRoot, 'task-tracking');
+  if (!existsSync(trackingDir)) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task-tracking directory not found' }) }] };
+  }
+
+  const entries = readdirSync(trackingDir, { withFileTypes: true });
+  let drifted = 0;
+  let matched = 0;
+  let missing = 0;
+
+  const selectRow = db.prepare('SELECT id, status FROM tasks WHERE id = ?');
+  const updateStatus = db.prepare(
+    "UPDATE tasks SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?"
+  );
+
+  const runReconcile = db.transaction(() => {
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !TASK_ID_RE.test(entry.name)) continue;
+
+      const statusPath = join(trackingDir, entry.name, 'status');
+      if (!existsSync(statusPath)) {
+        missing++;
+        continue;
+      }
+
+      const fileStatus = readFileSync(statusPath, 'utf8').trim();
+      const row = selectRow.get(entry.name) as { id: string; status: string } | undefined;
+
+      if (!row) {
+        missing++;
+        continue;
+      }
+
+      if (row.status === fileStatus) {
+        matched++;
+      } else {
+        updateStatus.run(fileStatus, entry.name);
+        drifted++;
+      }
+    }
+  });
+
+  runReconcile();
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, drifted, matched, missing }) }] };
+}

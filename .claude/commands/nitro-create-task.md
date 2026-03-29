@@ -127,6 +127,30 @@ Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no tr
 > - COMPLETE/CANCELLED rows use `—` for both Priority and Dependencies
 > - Legacy rows (pre-TASK_2026_064) missing Priority/Dependencies columns are handled by the Supervisor's Step 2 fallback (treated as P2-Medium, no deps).
 
+### Step 5c: Best-Effort Cortex Upsert (if cortex available)
+
+If the MCP `upsert_task` tool is available in the current session, call it immediately after writing the status file:
+
+```
+upsert_task(
+  task_id: "TASK_YYYY_NNN",
+  fields: JSON.stringify({
+    title: "<title from Step 3>",
+    type: "<type from Step 3>",
+    priority: "<priority from Step 3>",
+    status: "CREATED",
+    complexity: "<complexity from Step 3>",
+    dependencies: JSON.stringify([<array of dep task IDs, or empty>]),
+    description: "<one-line description from Step 3>"
+  })
+)
+```
+
+This is **best-effort** — if `upsert_task` is unavailable (tool not in list) or returns an error, log a warning and continue:
+> `[warn] cortex upsert failed for TASK_YYYY_NNN — proceeding without DB sync`
+
+Do NOT retry. Do NOT block Step 5b. The status file on disk is always the authoritative record.
+
 ### Step 5b: Commit Task Creation
 
 After writing the status file, commit the new task folder:

@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { initDatabase } from './db/schema.js';
 import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
-import { handleSyncTasksFromFiles } from './tools/sync.js';
+import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
 import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession } from './tools/sessions.js';
 import { handleSpawnWorker, handleListWorkers, handleGetWorkerStats, handleGetWorkerActivity, handleKillWorker } from './tools/workers.js';
 import { FileWatcher, EmitQueue, handleSubscribeWorker, handleGetPendingEvents, handleEmitEvent } from './events/subscriptions.js';
@@ -99,6 +99,10 @@ server.registerTool('get_next_wave', {
 server.registerTool('sync_tasks_from_files', {
   description: 'Bootstrap: scan task-tracking/TASK_*/ folders, import into DB. Safe to re-run (upsert).',
 }, () => handleSyncTasksFromFiles(db, projectRoot));
+
+server.registerTool('reconcile_status_files', {
+  description: 'Compare status files on disk against DB rows. Updates DB where file status differs (file wins). Only updates existing rows — does not insert. Returns { ok, drifted, matched, missing }.',
+}, () => handleReconcileStatusFiles(db, projectRoot));
 
 server.registerTool('upsert_task', {
   description: 'Create or update a task record. If task_id exists, updates provided fields. If not, inserts a new row (title, type, priority required for insert).',

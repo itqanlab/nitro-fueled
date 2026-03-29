@@ -5,6 +5,29 @@ import { BaseCommand } from '../base-command.js';
 import { parseRegistry, generateRegistry } from '../utils/registry.js';
 import type { RegistryRow, TaskStatus } from '../utils/registry.js';
 
+const TASK_STATUS_VALUES: ReadonlyArray<TaskStatus> = [
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+];
+
+function dbRowsToRegistryRows(dbRows: Array<Record<string, unknown>>): RegistryRow[] {
+  const result: RegistryRow[] = [];
+  for (const row of dbRows) {
+    const id = String(row['id'] ?? '');
+    if (id.length === 0) continue;
+    const rawStatus = String(row['status'] ?? 'CREATED');
+    const status = (TASK_STATUS_VALUES.includes(rawStatus as TaskStatus)
+      ? rawStatus
+      : 'CREATED') as TaskStatus;
+    const type = String(row['type'] ?? '');
+    const description = String(row['title'] ?? row['description'] ?? '');
+    const createdAt = String(row['created_at'] ?? '');
+    const created = createdAt.includes('T') ? createdAt.split('T')[0]! : (createdAt || 'Unknown');
+    result.push({ id, status, type, description, created });
+  }
+  return result;
+}
+
 interface WorkerEntry {
   workerId: string;
   taskId: string;
@@ -291,8 +314,34 @@ export default class Status extends BaseCommand {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Status);
     const cwd = process.cwd();
-    generateRegistry(cwd);
-    const rows = parseRegistry(cwd);
+
+    const dbPath = resolve(cwd, '.nitro', 'cortex.db');
+    let rows: RegistryRow[] = [];
+    let usedDb = false;
+
+    if (existsSync(dbPath)) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const Database = require('better-sqlite3') as typeof import('better-sqlite3');
+        const db = new Database(dbPath, { readonly: true });
+        try {
+          const dbRows = db.prepare('SELECT * FROM tasks ORDER BY id').all() as Array<Record<string, unknown>>;
+          rows = dbRowsToRegistryRows(dbRows);
+          usedDb = true;
+        } finally {
+          db.close();
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[nitro-fueled] cortex DB unavailable (${msg}), falling back to file scan`);
+      }
+    }
+
+    if (!usedDb) {
+      generateRegistry(cwd);
+      rows = parseRegistry(cwd);
+    }
+
     const workers = parseActiveWorkers(cwd);
 
     if (rows.length === 0) {

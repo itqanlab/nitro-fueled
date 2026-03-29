@@ -195,6 +195,11 @@ per loop iteration.
 > once to import existing task-tracking files into the nitro-cortex DB before calling
 > `get_tasks()`. This only needs to run once (safe to re-run — upsert). After the initial
 > sync, all subsequent state changes go through the MCP tools and the DB stays current.
+>
+> **Startup reconciliation**: On every startup when `cortex_available = true`, also call
+> `reconcile_status_files()` immediately after `sync_tasks_from_files()`. This fixes any
+> status drift from the previous session (file wins). This is best-effort — if it fails
+> or the tool is unavailable, log a warning and proceed. Do not abort startup.
 
 ---
 
@@ -250,6 +255,12 @@ The supervisor startup follows this exact order:
 5. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
 6. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
    subsequent state and log writes.
+
+> **When `cortex_available = true`**: After reading state and before entering the Core Loop, call:
+> 1. `sync_tasks_from_files()` — full task metadata import (bootstrap; safe to re-run)
+> 2. `reconcile_status_files()` — status-only drift fix (runs every startup; file wins)
+>
+> Both calls are best-effort. On failure: log a warning and continue. Do not abort.
 
 **On stop** (normal completion, compaction limit, MCP unreachable, manual):
 
