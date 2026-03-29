@@ -22,6 +22,11 @@ export type {
   FileExistsCondition,
   WatchCondition,
   WatchEvent,
+  LauncherName,
+  ModelTier,
+  LauncherInfo,
+  ProviderEntry,
+  NitroFueledConfig,
 } from './types.js';
 
 // Core classes and functions
@@ -65,3 +70,17 @@ export type {
   OpenCodeLaunchOptions,
   OpenCodeLaunchResult,
 } from './core/opencode-launcher.js';
+export {
+  launchWithCodex,
+  getCodexExitCode,
+  killCodexProcess,
+} from './core/codex-launcher.js';
+export type {
+  CodexLaunchOptions,
+  CodexLaunchResult,
+} from './core/codex-launcher.js';
+export {
+  readProviderConfig,
+  resolveProviderForSpawn,
+  FALLBACK_PROVIDER,
+} from './core/provider-resolver.js';

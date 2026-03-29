@@ -36,8 +36,33 @@ export interface WorkerProgress {
 export type WorkerStatus = 'running' | 'completed' | 'failed' | 'killed';
 export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished';
 
-export type LauncherMode = 'iterm' | 'print' | 'opencode';
-export type Provider = 'claude' | 'glm' | 'opencode';
+export type LauncherMode = 'iterm' | 'print' | 'opencode' | 'codex';
+export type Provider = 'claude' | 'glm' | 'opencode' | 'codex';
+
+// ---------------------------------------------------------------------------
+// Provider config types (for Phase 2 re-validation in session-orchestrator)
+// ---------------------------------------------------------------------------
+
+export type LauncherName = 'claude' | 'opencode' | 'codex';
+export type ModelTier = 'heavy' | 'balanced' | 'light';
+
+export interface LauncherInfo {
+  found: boolean;
+  authenticated: boolean;
+  models: string[];
+}
+
+export interface ProviderEntry {
+  launcher: LauncherName;
+  modelPrefix?: string;
+  models: Record<ModelTier, string>;
+}
+
+export interface NitroFueledConfig {
+  launchers: Partial<Record<LauncherName, LauncherInfo>>;
+  providers: Record<string, ProviderEntry>;
+  routing: Partial<Record<string, string>>;
+}
 
 export interface Worker {
   worker_id: string;

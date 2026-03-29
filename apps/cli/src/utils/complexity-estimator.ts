@@ -1,6 +1,14 @@
+import type { NitroFueledConfig, LauncherName } from './provider-config.js';
+
 export type ComplexityTier = 'simple' | 'medium' | 'complex';
 export type Confidence = 'high' | 'low';
 export type PreferredTier = 'light' | 'balanced' | 'heavy';
+
+export interface ResolvedProvider {
+  providerName: string;
+  model: string;
+  launcher: LauncherName;
+}
 
 export interface ComplexityEstimate {
   tier: ComplexityTier;
@@ -113,4 +121,81 @@ export function estimateComplexity(description: string): ComplexityEstimate {
     signals,
     preferredTier: TIER_MAP[tier],
   };
+}
+
+// ---------------------------------------------------------------------------
+// Provider resolution for tier
+// ---------------------------------------------------------------------------
+
+const TIER_TO_MODEL_TIER: Record<PreferredTier, 'heavy' | 'balanced' | 'light'> = {
+  heavy: 'heavy',
+  balanced: 'balanced',
+  light: 'light',
+};
+
+// Fallback chains when the primary tier's provider is unavailable
+const FALLBACK_CHAINS: Record<PreferredTier, PreferredTier[]> = {
+  heavy: ['balanced', 'light'],
+  balanced: ['light'],
+  light: [],
+};
+
+function isLauncherAvailable(
+  launcherName: LauncherName,
+  config: NitroFueledConfig,
+): boolean {
+  const launcher = config.launchers[launcherName];
+  if (launcher === undefined) return false;
+  return launcher.found && launcher.authenticated;
+}
+
+function tryResolveSlot(
+  slot: PreferredTier,
+  config: NitroFueledConfig,
+): ResolvedProvider | null {
+  const modelTier = TIER_TO_MODEL_TIER[slot];
+  const providerName = config.routing[slot] ?? config.routing['default'];
+  if (providerName === undefined) return null;
+
+  const entry = config.providers[providerName];
+  if (entry === undefined) return null;
+  if (!isLauncherAvailable(entry.launcher, config)) return null;
+
+  const model = entry.models[modelTier];
+  if (model === undefined || model === '') return null;
+
+  return { providerName, model, launcher: entry.launcher };
+}
+
+/**
+ * Resolves the best available provider and model for the given PreferredTier.
+ * Runs a fallback chain if the primary provider's launcher is not available.
+ * Returns null if no provider is available (including anthropic fallback).
+ */
+export function resolveProviderForTier(
+  tier: PreferredTier,
+  config: NitroFueledConfig,
+): ResolvedProvider | null {
+  // Try the requested tier first
+  const primary = tryResolveSlot(tier, config);
+  if (primary !== null) return primary;
+
+  // Walk fallback chain
+  for (const fallbackTier of FALLBACK_CHAINS[tier]) {
+    const fallback = tryResolveSlot(fallbackTier, config);
+    if (fallback !== null) return fallback;
+  }
+
+  // Last resort: hardcoded anthropic
+  const anthropicEntry = config.providers['anthropic'];
+  if (anthropicEntry !== undefined && isLauncherAvailable(anthropicEntry.launcher, config)) {
+    const model = anthropicEntry.models[TIER_TO_MODEL_TIER[tier]]
+      ?? anthropicEntry.models['balanced']
+      ?? anthropicEntry.models['light'];
+    if (model !== undefined && model !== '') {
+      return { providerName: 'anthropic', model, launcher: anthropicEntry.launcher };
+    }
+  }
+
+  return null;
 }

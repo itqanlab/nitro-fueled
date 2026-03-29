@@ -2,7 +2,8 @@ import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
 import { basicPreflightChecks } from '../utils/preflight.js';
 import { spawnClaude } from '../utils/spawn-claude.js';
-import { estimateComplexity } from '../utils/complexity-estimator.js';
+import { estimateComplexity, resolveProviderForTier } from '../utils/complexity-estimator.js';
+import { readConfig } from '../utils/provider-config.js';
 
 export default class Create extends BaseCommand {
   public static override description = 'Interactive task creation via Planner or quick form';
@@ -45,7 +46,16 @@ export default class Create extends BaseCommand {
     if (flags.quick) {
       if (description.length > 0) {
         const estimate = estimateComplexity(description);
-        const tierNote = `\n\nAuto-estimated preferred_tier: ${estimate.preferredTier} (confidence: ${estimate.confidence}${estimate.signals.length > 0 ? `, signals: ${estimate.signals.join(', ')}` : ''}). Include \`| preferred_tier | ${estimate.preferredTier} |\` in the task.md Metadata table — do not prompt the user for this value.`;
+        let tierNote = `\n\nAuto-estimated preferred_tier: ${estimate.preferredTier} (confidence: ${estimate.confidence}${estimate.signals.length > 0 ? `, signals: ${estimate.signals.join(', ')}` : ''}). Include \`| preferred_tier | ${estimate.preferredTier} |\` in the task.md Metadata table — do not prompt the user for this value.`;
+
+        const config = readConfig(cwd);
+        if (config !== null) {
+          const resolved = resolveProviderForTier(estimate.preferredTier, config);
+          if (resolved !== null) {
+            tierNote += `\n\nProvider suggestion: ${resolved.providerName} / ${resolved.model} (launcher: ${resolved.launcher}). Include \`| Provider | ${resolved.providerName} |\` and \`| Model | ${resolved.model} |\` in the task.md Metadata table.`;
+          }
+        }
+
         claudePrompt = `/create-task ${description}${tierNote}`;
       } else {
         claudePrompt = '/create-task';
