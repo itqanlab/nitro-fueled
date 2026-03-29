@@ -26,12 +26,12 @@
 
 ---
 
-## Batch 1: Core Hydration Utility IMPLEMENTED
+## Batch 1: Core Hydration Utility COMPLETE
 
 **Developer**: nitro-backend-developer
 **Tasks**: 2 | **Dependencies**: None
 
-### Task 1.1: Create `cortex-hydrate.ts` utility IMPLEMENTED
+### Task 1.1: Create `cortex-hydrate.ts` utility COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/cli/src/utils/cortex-hydrate.ts`
 **Spec Reference**: plan.md — Component 1 (cortex-hydrate.ts), Integration Architecture
@@ -69,7 +69,7 @@
 
 ---
 
-### Task 1.2: Build verification IMPLEMENTED
+### Task 1.2: Build verification COMPLETE
 
 **Action**: Run TypeScript build and confirm zero errors.
 
@@ -92,12 +92,12 @@
 
 ---
 
-## Batch 2: Wire into Update Command IMPLEMENTED
+## Batch 2: Wire into Update Command COMPLETE
 
 **Developer**: nitro-backend-developer
 **Tasks**: 1 | **Dependencies**: Batch 1 must be COMPLETE
 
-### Task 2.1: Insert Step 5.5 into `update.ts` IMPLEMENTED
+### Task 2.1: Insert Step 5.5 into `update.ts` COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/cli/src/commands/update.ts`
 **Spec Reference**: plan.md — Component 2, Integration Architecture (update command data flow)
