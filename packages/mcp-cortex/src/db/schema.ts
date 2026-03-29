@@ -122,6 +122,57 @@ CREATE TABLE IF NOT EXISTS events (
   created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
+// Telemetry tables (TASK_2026_143)
+
+const PHASES_TABLE = `
+CREATE TABLE IF NOT EXISTS phases (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  worker_run_id    TEXT NOT NULL,
+  task_id          TEXT REFERENCES tasks(id),
+  phase            TEXT NOT NULL,
+  model            TEXT,
+  start_time       TEXT,
+  end_time         TEXT,
+  duration_minutes REAL,
+  input_tokens     INTEGER,
+  output_tokens    INTEGER,
+  outcome          TEXT,
+  metadata         TEXT,
+  created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const REVIEWS_TABLE = `
+CREATE TABLE IF NOT EXISTS reviews (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id               TEXT NOT NULL REFERENCES tasks(id),
+  phase_id              INTEGER REFERENCES phases(id),
+  review_type           TEXT NOT NULL,
+  score                 REAL NOT NULL,
+  findings_count        INTEGER NOT NULL DEFAULT 0,
+  critical_count        INTEGER NOT NULL DEFAULT 0,
+  serious_count         INTEGER NOT NULL DEFAULT 0,
+  minor_count           INTEGER NOT NULL DEFAULT 0,
+  model_that_built      TEXT,
+  model_that_reviewed   TEXT,
+  launcher_that_built   TEXT,
+  launcher_that_reviewed TEXT,
+  created_at            TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const FIX_CYCLES_TABLE = `
+CREATE TABLE IF NOT EXISTS fix_cycles (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id            TEXT NOT NULL REFERENCES tasks(id),
+  phase_id           INTEGER REFERENCES phases(id),
+  fixes_applied      INTEGER NOT NULL DEFAULT 0,
+  fixes_skipped      INTEGER NOT NULL DEFAULT 0,
+  required_manual    INTEGER NOT NULL DEFAULT 0,
+  model_that_fixed   TEXT,
+  launcher_that_fixed TEXT,
+  duration_minutes   REAL,
+  created_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_claimed ON tasks(session_claimed)',
@@ -136,10 +187,16 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)',
   'CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_phases_worker ON phases(worker_run_id)',
+  'CREATE INDEX IF NOT EXISTS idx_phases_task ON phases(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_phases_model ON phases(model)',
+  'CREATE INDEX IF NOT EXISTS idx_reviews_task ON reviews(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_reviews_model_built ON reviews(model_that_built)',
+  'CREATE INDEX IF NOT EXISTS idx_fix_cycles_task ON fix_cycles(task_id)',
 ];
 
-// Column additions for schema evolution. Each entry is applied once via ALTER TABLE;
-// SQLite silently ignores duplicates when we catch the "duplicate column name" error.
+// Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
+// Table-keyed to avoid cross-table column name collisions.
 const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'complexity',           ddl: 'ALTER TABLE tasks ADD COLUMN complexity TEXT' },
   { column: 'model',                ddl: 'ALTER TABLE tasks ADD COLUMN model TEXT' },
@@ -150,6 +207,31 @@ const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'session_claimed',      ddl: 'ALTER TABLE tasks ADD COLUMN session_claimed TEXT' },
   { column: 'claimed_at',           ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
 ];
+
+const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
+  { column: 'supervisor_model',          ddl: 'ALTER TABLE sessions ADD COLUMN supervisor_model TEXT' },
+  { column: 'supervisor_launcher',       ddl: 'ALTER TABLE sessions ADD COLUMN supervisor_launcher TEXT' },
+  { column: 'mode',                      ddl: 'ALTER TABLE sessions ADD COLUMN mode TEXT' },
+  { column: 'total_cost',                ddl: 'ALTER TABLE sessions ADD COLUMN total_cost REAL' },
+  { column: 'total_input_tokens',        ddl: 'ALTER TABLE sessions ADD COLUMN total_input_tokens INTEGER' },
+  { column: 'total_output_tokens',       ddl: 'ALTER TABLE sessions ADD COLUMN total_output_tokens INTEGER' },
+];
+
+const WORKER_MIGRATIONS: Array<{ column: string; ddl: string }> = [
+  { column: 'outcome',       ddl: 'ALTER TABLE workers ADD COLUMN outcome TEXT' },
+  { column: 'retry_number',  ddl: 'ALTER TABLE workers ADD COLUMN retry_number INTEGER NOT NULL DEFAULT 0' },
+];
+
+function applyMigrations(db: Database.Database, table: string, migrations: Array<{ column: string; ddl: string }>): void {
+  const existingColumns = new Set(
+    (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map(r => r.name),
+  );
+  for (const { column, ddl } of migrations) {
+    if (!existingColumns.has(column)) {
+      db.exec(ddl);
+    }
+  }
+}
 
 export function initDatabase(dbPath: string): Database.Database {
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
@@ -163,19 +245,16 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(WORKERS_TABLE);
   db.exec(HANDOFFS_TABLE);
   db.exec(EVENTS_TABLE);
+  db.exec(PHASES_TABLE);
+  db.exec(REVIEWS_TABLE);
+  db.exec(FIX_CYCLES_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }
 
-  // Apply forward-only column migrations for pre-existing tasks tables
-  const existingColumns = new Set(
-    (db.prepare('PRAGMA table_info(tasks)').all() as Array<{ name: string }>).map(r => r.name),
-  );
-  for (const { column, ddl } of TASK_MIGRATIONS) {
-    if (!existingColumns.has(column)) {
-      db.exec(ddl);
-    }
-  }
+  applyMigrations(db, 'tasks', TASK_MIGRATIONS);
+  applyMigrations(db, 'sessions', SESSION_MIGRATIONS);
+  applyMigrations(db, 'workers', WORKER_MIGRATIONS);
 
   return db;
 }

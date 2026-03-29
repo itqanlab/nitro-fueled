@@ -14,6 +14,8 @@ import { FileWatcher, EmitQueue, handleSubscribeWorker, handleGetPendingEvents, 
 import { JsonlWatcher } from './process/jsonl-watcher.js';
 import { handleWriteHandoff, handleReadHandoff } from './tools/handoffs.js';
 import { handleLogEvent, handleQueryEvents } from './tools/events.js';
+import { handleGetTaskContext, handleGetReviewLessons, handleGetRecentChanges, handleGetCodebasePatterns, handleStageAndCommit, handleReportProgress } from './tools/context.js';
+import { handleLogPhase, handleLogReview, handleLogFixCycle, handleGetModelPerformance, handleGetTaskTrace, handleGetSessionSummary } from './tools/telemetry.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -311,13 +313,148 @@ server.registerTool('get_pending_events', {
   },
 }, (args) => handleGetPendingEvents(fileWatcher, emitQueue, args.session_id));
 
+// --- Agent context tools ---
+
+server.registerTool('get_task_context', {
+  description: 'Returns task metadata + plan summary + file scope in one structured response. Agents use this instead of reading task.md + plan.md separately.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID (e.g. TASK_2026_143)'),
+  },
+}, (args) => handleGetTaskContext(db, args, projectRoot));
+
+server.registerTool('get_review_lessons', {
+  description: 'Returns only review lessons relevant to the specified file types (e.g. ["ts", "md"]). Filters review-lessons/*.md by file extension coverage.',
+  inputSchema: {
+    file_types: z.array(z.string().max(20)).min(1).max(20).describe('File extensions to filter by (e.g. ["ts", "tsx", "md"])'),
+  },
+}, (args) => handleGetReviewLessons(db, args, projectRoot));
+
+server.registerTool('get_recent_changes', {
+  description: 'Returns files changed in commits for a task (via git log --grep). Agents use this instead of running git log + git diff manually.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to find commits for'),
+    include_diff: z.boolean().optional().describe('Include stat diff for the most recent commit'),
+  },
+}, (args) => handleGetRecentChanges(db, args, projectRoot));
+
+server.registerTool('get_codebase_patterns', {
+  description: 'Returns 2-3 example files matching a pattern type (service, component, repository, etc.). Agents use this to find existing patterns instead of manual globbing.',
+  inputSchema: {
+    pattern_type: z.string().max(50).describe('Pattern type: service, component, repository, controller, handler, middleware, schema, test, model, util, hook, store, type, config, tool'),
+    limit: z.number().int().min(1).max(10).optional().describe('Max example files to return (default 3)'),
+  },
+}, (args) => handleGetCodebasePatterns(db, args, projectRoot));
+
+server.registerTool('stage_and_commit', {
+  description: 'Stages files and commits with traceability footer auto-populated from cortex session/task data. Agents use this instead of building the 11-field footer manually.',
+  inputSchema: {
+    files: z.array(z.string().max(1000)).min(1).max(200).describe('File paths to stage (relative to project root)'),
+    message: z.string().min(1).max(500).describe('Commit message (subject line + optional body, without traceability footer)'),
+    task_id: z.string().max(200).describe('Task ID for traceability footer'),
+    agent: z.string().max(100).describe('Agent name (e.g. nitro-backend-developer)'),
+    phase: z.string().max(100).describe('Phase name (e.g. implementation, review-fix, completion)'),
+    worker_type: z.string().max(50).optional().describe('Worker type (build-worker, review-worker, interactive)'),
+    session_id: z.string().max(200).optional().describe('Session ID (auto-detected from DB if omitted)'),
+    provider: z.string().max(50).optional().describe('Provider (claude, glm, opencode)'),
+    model: z.string().max(100).optional().describe('Model ID'),
+    retry: z.string().max(10).optional().describe('Retry count in N/M format (e.g. 0/2)'),
+    complexity: z.string().max(50).optional().describe('Task complexity (Simple, Medium, Complex)'),
+    priority: z.string().max(50).optional().describe('Task priority (P0-Critical, P1-High, P2-Medium, P3-Low)'),
+    version: z.string().max(20).optional().describe('nitro-fueled version'),
+  },
+}, (args) => handleStageAndCommit(db, args, projectRoot));
+
+server.registerTool('report_progress', {
+  description: 'Updates task progress in DB and logs a phase event. Supervisor gets real-time visibility without polling.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to update'),
+    phase: z.string().max(100).describe('Phase name (PM, Architect, Dev, Review, Fix, Completion)'),
+    status: z.string().max(50).describe('Status update (IN_PROGRESS, IMPLEMENTED, IN_REVIEW, COMPLETE, or custom phase status)'),
+    details: z.string().max(500).optional().describe('Optional details about the progress update'),
+  },
+}, (args) => handleReportProgress(db, args));
+
+// --- Telemetry tools ---
+
+server.registerTool('log_phase', {
+  description: 'Record per-phase timing and outcome for a worker run. Called by orchestration skill at each phase boundary.',
+  inputSchema: {
+    worker_run_id: z.string().max(200).describe('Worker ID or session ID for this run'),
+    task_id: z.string().max(200).optional().describe('Task ID this phase belongs to'),
+    phase: z.string().max(100).describe('Phase name (PM, Architect, Dev, Review, Fix, Completion)'),
+    start: z.string().max(50).describe('Phase start time (ISO 8601)'),
+    end: z.string().max(50).describe('Phase end time (ISO 8601)'),
+    outcome: z.string().max(50).describe('Phase outcome (COMPLETE, FAILED, SKIPPED)'),
+    model: z.string().max(100).optional().describe('Model used for this phase'),
+    input_tokens: z.number().int().optional().describe('Input tokens consumed in this phase'),
+    output_tokens: z.number().int().optional().describe('Output tokens produced in this phase'),
+    metadata: z.record(z.string().max(64), z.unknown()).optional().describe('Optional phase metadata'),
+  },
+}, (args) => handleLogPhase(db, args));
+
+server.registerTool('log_review', {
+  description: 'Record review results with model provenance. Called by Review Lead after collecting reports.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this review belongs to'),
+    phase_id: z.number().int().optional().describe('Phase ID from log_phase (optional)'),
+    review_type: z.string().max(50).describe('Review type (code-style, code-logic, security, visual)'),
+    score: z.number().min(0).max(10).describe('Review score out of 10'),
+    findings_count: z.number().int().min(0).describe('Total number of findings'),
+    critical_count: z.number().int().min(0).optional().describe('Critical findings count'),
+    serious_count: z.number().int().min(0).optional().describe('Serious findings count'),
+    minor_count: z.number().int().min(0).optional().describe('Minor findings count'),
+    model_that_built: z.string().max(100).optional().describe('Model that built the implementation'),
+    model_that_reviewed: z.string().max(100).optional().describe('Model that performed the review'),
+    launcher_that_built: z.string().max(50).optional().describe('Launcher used to build'),
+    launcher_that_reviewed: z.string().max(50).optional().describe('Launcher used to review'),
+  },
+}, (args) => handleLogReview(db, args));
+
+server.registerTool('log_fix_cycle', {
+  description: 'Record fix phase results with model info. Called by Fix Worker / Review Lead after applying fixes.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this fix cycle belongs to'),
+    phase_id: z.number().int().optional().describe('Phase ID from log_phase (optional)'),
+    fixes_applied: z.number().int().min(0).describe('Number of fixes applied'),
+    fixes_skipped: z.number().int().min(0).optional().describe('Number of fixes skipped (out of scope or false positive)'),
+    required_manual: z.number().int().min(0).optional().describe('Number of fixes that required manual intervention'),
+    model_that_fixed: z.string().max(100).optional().describe('Model that applied the fixes'),
+    launcher_that_fixed: z.string().max(50).optional().describe('Launcher used to apply fixes'),
+    duration_minutes: z.number().optional().describe('Fix cycle duration in minutes'),
+  },
+}, (args) => handleLogFixCycle(db, args));
+
+server.registerTool('get_model_performance', {
+  description: 'Query aggregated quality/cost/failure stats across all runs. Used by supervisor for data-driven model routing.',
+  inputSchema: {
+    task_type: z.string().max(50).optional().describe('Filter by task type (FEATURE, BUG, REFACTOR, etc.)'),
+    complexity: z.string().max(50).optional().describe('Filter by task complexity (Simple, Medium, Complex)'),
+    model: z.string().max(100).optional().describe('Filter by model name'),
+    launcher: z.string().max(50).optional().describe('Filter by launcher type'),
+  },
+}, (args) => handleGetModelPerformance(db, args));
+
+server.registerTool('get_task_trace', {
+  description: 'Full trace for one task: session → workers → phases → reviews → fix cycles. Complete observability.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to get full trace for'),
+  },
+}, (args) => handleGetTaskTrace(db, args));
+
+server.registerTool('get_session_summary', {
+  description: 'Session overview: supervisor model, mode, tasks processed, cost breakdown, per-worker timing.',
+  inputSchema: {
+    session_id: z.string().max(200).describe('Session ID to summarize'),
+  },
+}, (args) => handleGetSessionSummary(db, args));
+
 // --- Start ---
 
 jsonlWatcher.start();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-console.error('[nitro-cortex] MCP server connected via stdio (v0.4.0 — sessions + workers + handoffs + events + emit_event)');
+console.error('[nitro-cortex] MCP server connected via stdio (v0.5.0 — sessions + workers + handoffs + events + agent-context + telemetry)');
 
 process.on('SIGINT', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
 process.on('SIGTERM', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
