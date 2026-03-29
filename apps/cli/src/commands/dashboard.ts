@@ -90,7 +90,7 @@ export default class Dashboard extends BaseCommand {
     try {
       const entryScript = findEntryScript();
       if (entryScript === null) {
-        console.error('Error: Dashboard service not found. Build dashboard-service package first.');
+        console.error('Error: Dashboard service not found. Install @nitro-fueled/dashboard-service or build the dashboard-api.');
         process.exitCode = 1;
         return;
       }
@@ -118,7 +118,7 @@ export default class Dashboard extends BaseCommand {
         console.log('Starting dashboard with web UI...');
       } else if (!flags.service) {
         console.warn('Warning: Web UI dist not found. Starting data service only.');
-        console.warn('Run `npm run build:dashboard` first to embed web assets.');
+        console.warn('Install @nitro-fueled/dashboard-web or run the Angular dashboard build to embed web assets.');
       } else {
         console.log('Starting dashboard data service...');
       }

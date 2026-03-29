@@ -2,7 +2,6 @@
   "name": "nitro-fueled-workspace",
   "private": true,
   "scripts": {
-    "build:dashboard": "npm run build --workspace=apps/dashboard-web && npm run build --workspace=apps/dashboard-service && npm run copy-web-assets --workspace=apps/cli",
     "build": "npm run build --workspaces",
     "dashboard": "node apps/cli/dist/index.js dashboard"
   },

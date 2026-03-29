@@ -13,7 +13,6 @@ export function findEntryScript(): string | null {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
     resolve(thisDir, '../../node_modules/@nitro-fueled/dashboard-service/dist/cli-entry.js'),
-    resolve(thisDir, '../../../dashboard-service/dist/cli-entry.js'),
   ];
   for (const candidate of candidates) {
     if (existsSync(candidate)) return candidate;
@@ -24,8 +23,6 @@ export function findEntryScript(): string | null {
 export function findWebDistPath(): string | undefined {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    // Monorepo sibling (preferred during local development to avoid stale embedded assets)
-    resolve(thisDir, '../../../dashboard-web/dist'),
     // Embedded in published CLI package (copied during build)
     resolve(thisDir, '../../dashboard-assets'),
     // Installed as a peer npm package
