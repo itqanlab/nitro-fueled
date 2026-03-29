@@ -207,8 +207,8 @@ If no blocked dependencies are found, continue to Phase Detection.
 | tasks.md (IN PROGRESS)  | Team-leader MODE 2 (verify)         |
 | tasks.md (IMPLEMENTED)  | Team-leader MODE 2 (commit)         |
 | tasks.md (all COMPLETE) | Team-leader MODE 3 OR QA choice     |
-| review-context.md       | Review Lead context generated — spawn sub-workers |
-| review-context.md + review files (registry still IN_REVIEW) | Review/Test phase done — Supervisor spawns Fix or Completion Worker |
+| handoff.md (no review files) | Dev complete — Review Worker reads handoff.md to scope review |
+| handoff.md + review files (registry still IN_REVIEW) | Review/Test phase done — Supervisor spawns Fix or Completion Worker |
 | fix committed, no completion-report.md | Fix phase done — run Completion Phase |
 | future-enhancements.md  | Workflow complete                   |
 
@@ -567,8 +567,31 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 
 After the QA cycle (reviews + fixes + final commit), the orchestrator MUST complete ALL of these bookkeeping steps BEFORE the final commit. The completion report is the #1 most-skipped deliverable — if you skip it, the task is considered INCOMPLETE regardless of code quality.
 
+**Before the first commit — write `handoff.md`:**
+
+After all dev batches complete and before writing the IMPLEMENTED status, write `task-tracking/TASK_[ID]/handoff.md`:
+
+```markdown
+# Handoff — TASK_[ID]
+
+## Files Changed
+- path/to/file.ts (new, 142 lines)
+- path/to/other.ts (modified, +38 -12)
+
+## Commits
+- abc123: feat(scope): description
+
+## Decisions
+- Key architectural decision and why
+
+## Known Risks
+- Areas with weak coverage or edge cases
+```
+
+Include `handoff.md` in the first (implementation) commit. The Review Worker reads this file as its **first action** to scope the review — it does NOT re-run git diff exploration or generate a separate review-context.md.
+
 **Commit order:**
-1. First commit: implementation code (after dev, before QA)
+1. First commit: implementation code + handoff.md (after dev, before QA)
    ```
    git commit -m "<type>(<scope>): <description> for TASK_[ID]
 
@@ -727,8 +750,9 @@ Run these checks after implementation is committed and status file is written:
 | tasks.md exists | Glob task-tracking/TASK_[ID]/ for tasks.md | File found |
 | tasks.md has content | Grep "Task" in tasks.md | At least one `### Task N.N:` heading present |
 | All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
+| handoff.md written | Read task-tracking/TASK_[ID]/handoff.md | File exists with `## Files Changed` and `## Commits` sections |
 | Anti-patterns consulted | Read `.claude/anti-patterns.md` | Reviewed relevant sections; no violations in implementation |
-| Implementation committed | Check git status | No unstaged implementation files |
+| Implementation committed | Check git status | No unstaged implementation files (handoff.md included) |
 | Status file written | Read task-tracking/TASK_[ID]/status | Contains IMPLEMENTED |
 | Status file committed | Check git status | task-tracking/TASK_[ID]/status is committed |
 
@@ -761,9 +785,9 @@ Run these checks after reviews, fixes, and completion phase are done:
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| Review files exist | Glob task folder for review-*.md | review-context.md + at least style + logic reviews present |
+| handoff.md read | Read task-tracking/TASK_[ID]/handoff.md | File exists — Review Worker reads this as first action to scope review |
+| Review files exist | Glob task folder for review-*.md | At least style + logic reviews present |
 | Security review | Glob task folder for review-security.md | Present (or note if sub-worker failed) |
-| Findings summary | Read review-context.md | Has ## Findings Summary section with counts |
 | Status file at IN_REVIEW | Read task-tracking/TASK_[ID]/status | Contains IN_REVIEW (Review Lead does NOT set COMPLETE) |
 | All committed | Check git status | Clean working tree for task files |
 | Test report exists | Read task folder for test-report.md | Present (or note if Test Lead was skipped/failed — advisory only) |

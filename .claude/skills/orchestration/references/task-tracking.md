@@ -33,6 +33,7 @@ task-tracking/
     task-description.md          # Requirements (PM output)
     plan.md                      # Plan (Architect output — architecture, content outline, design brief)
     tasks.md                     # Atomic task breakdown (Team-leader output)
+    handoff.md                   # Build Worker handoff artifact (written before IMPLEMENTED; Review Worker reads this first)
     test-report.md               # Testing results (Tester output)
     code-style-review.md         # Style review (Code-style-reviewer output)
     code-logic-review.md         # Logic review (Code-logic-reviewer output)
@@ -149,6 +150,7 @@ Created during Phase 0 initialization:
 | task-description.md    | project-manager        | Requirements, acceptance criteria |
 | plan.md | software-architect     | Plan — architecture, outline, or brief |
 | tasks.md               | team-leader (MODE 1)   | Batched atomic tasks              |
+| handoff.md             | Build Worker           | Files changed, commit hashes, architectural decisions, known risks — read by Review Worker as first action |
 | test-report.md         | senior-tester          | Test results, coverage            |
 | code-style-review.md   | code-style-reviewer    | Pattern compliance findings       |
 | code-logic-review.md   | code-logic-reviewer    | Business logic findings           |
@@ -193,6 +195,7 @@ Glob(task-tracking/TASK_[ID]/*.md)
 | + tasks.md (has IN PROGRESS)     | Dev in progress        | team-leader MODE 2 (verify + next)    |
 | + tasks.md (has IMPLEMENTED)     | Dev done, await verify | team-leader MODE 2 (verify + commit)  |
 | + tasks.md (all COMPLETE)        | Dev complete           | team-leader MODE 3 OR QA choice       |
+| + handoff.md (no review files)   | Handoff written        | Review Worker reads handoff.md first  |
 | + test-report.md                 | Tester complete        | Continue QA or complete               |
 | + code-style-review.md           | Style reviewed         | Continue QA or complete               |
 | + code-logic-review.md           | Logic reviewed         | Continue QA or complete               |

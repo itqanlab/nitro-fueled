@@ -54,10 +54,10 @@ Phase 4: nitro-software-architect --> Creates plan.md
          v
 Phase 5: nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
          |
-         USER CHOOSES QA (tester/style/logic/reviewers/all/skip)
+         Build Worker writes handoff.md (files changed, commits, decisions, risks)
          |
          v
-Phase 6: [QA agents as chosen]
+Phase 6: [QA agents as chosen — Review Worker reads handoff.md as first action]
          |
          v
 Phase 7: User handles git (commits already created)
