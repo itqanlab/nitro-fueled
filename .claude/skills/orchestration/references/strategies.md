@@ -142,10 +142,10 @@ nitro-project-manager --> Creates task-description.md
 [appropriate developer] --> Implements documentation
          |
          v
-nitro-code-style-reviewer --> Verifies formatting/consistency
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
          |
          v
-Git
+[QA agents — Review Worker reads handoff.md as first action] --> Git
 ```
 
 ### Developer Selection
@@ -199,16 +199,13 @@ Phase 2: nitro-software-architect --> Creates plan.md
          v
 Phase 3: nitro-devops-engineer --> Implements infrastructure
          |
+         v
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
+         |
          USER CHOOSES QA (style/logic/skip)
          |
          v
-Phase 4: [QA agents as chosen]
-         |
-         v
-Phase 5: User handles git (commits already created)
-         |
-         v
-Phase 6: nitro-modernization-detector --> Creates future-enhancements.md
+Phase 4: [QA agents — Review Worker reads handoff.md as first action] --> Git --> nitro-modernization-detector
 ```
 
 ### DEVOPS Trigger Keywords
@@ -478,13 +475,13 @@ Phase 2: [IF topic depth needed] nitro-researcher-expert --> Creates research-re
          v
 Phase 3: nitro-technical-content-writer --> Creates content output
          |
+         v
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
+         |
          USER CHOOSES QA (style/skip)
          |
          v
-Phase 4: [nitro-code-style-reviewer] --> Tone, brand voice, audience fit, readability
-         |
-         v
-Phase 5: User handles git (commits already created)
+Phase 4: [QA agents — Review Worker reads handoff.md as first action] --> Git
 ```
 
 ### CONTENT Trigger Keywords

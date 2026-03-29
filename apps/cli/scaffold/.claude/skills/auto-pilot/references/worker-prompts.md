@@ -28,14 +28,27 @@ through implementation. Follow these rules strictly:
    Complete ALL batches until tasks.md shows all tasks COMPLETE.
 
 4. After ALL development is complete (all batches COMPLETE in tasks.md):
-   a. Create a git commit with all implementation code
-   b. **Populate file scope**: Add list of files created/modified to the task's File Scope section
-   c. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED (no trailing
+   a. Write task-tracking/TASK_YYYY_NNN/handoff.md — this is MANDATORY before committing:
+      ```
+      # Handoff — TASK_YYYY_NNN
+      ## Files Changed
+      - path/to/file (new/modified, +N -N lines)
+      ## Commits
+      - <hash>: <commit message>
+      ## Decisions
+      - Key architectural decision and why
+      ## Known Risks
+      - Areas with weak coverage or edge cases
+      ```
+   b. Create a git commit with all implementation code AND handoff.md:
+      `git add <all implementation files> task-tracking/TASK_YYYY_NNN/handoff.md`
+   c. **Populate file scope**: Add list of files created/modified to the task's File Scope section
+   d. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED (no trailing
       newline). This is the FINAL action before exit.
       If the nitro-cortex MCP server is available:
       also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
       Best-effort — if it fails, continue. The status file is authoritative.
-   d. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
+   e. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
 
 5. Before developers write any code, they MUST read
    ALL review-lessons files and anti-patterns:
@@ -45,7 +58,8 @@ through implementation. Follow these rules strictly:
 
 6. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
-   - [ ] Implementation code is committed
+   - [ ] task-tracking/TASK_YYYY_NNN/handoff.md exists with ## Files Changed, ## Commits, ## Decisions, ## Known Risks
+   - [ ] Implementation code is committed (handoff.md included in commit)
    - [ ] task-tracking/TASK_YYYY_NNN/status contains IMPLEMENTED
    - [ ] Status file commit exists in git log
    If any check fails, fix it before exiting.
@@ -121,18 +135,21 @@ AUTONOMOUS MODE — follow these rules strictly:
    These contain accumulated rules and patterns from past reviews.
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
-   a. Create a git commit with all implementation code
-   b. **Populate file scope**: Add list of files created/modified to the task's File Scope section
-   c. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED (no trailing
+   a. Write task-tracking/TASK_YYYY_NNN/handoff.md (if not already written) — include ## Files Changed, ## Commits, ## Decisions, ## Known Risks.
+   b. Create a git commit with all implementation code AND handoff.md:
+      `git add <all implementation files> task-tracking/TASK_YYYY_NNN/handoff.md`
+   c. **Populate file scope**: Add list of files created/modified to the task's File Scope section
+   d. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED (no trailing
       newline). This is the FINAL action before exit.
       If the nitro-cortex MCP server is available:
       also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
       Best-effort — if it fails, continue. The status file is authoritative.
-   d. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
+   e. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
 
 7. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
-   - [ ] Implementation code is committed
+   - [ ] task-tracking/TASK_YYYY_NNN/handoff.md exists with ## Files Changed, ## Commits, ## Decisions, ## Known Risks
+   - [ ] Implementation code is committed (handoff.md included in commit)
    - [ ] task-tracking/TASK_YYYY_NNN/status contains IMPLEMENTED
    - [ ] Status file commit exists in git log
    If you cannot pass the Exit Gate, write exit-gate-failure.md
