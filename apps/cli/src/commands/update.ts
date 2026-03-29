@@ -9,6 +9,7 @@ import type { Manifest } from '../utils/manifest.js';
 import { detectStack } from '../utils/stack-detect.js';
 import { generateAntiPatterns } from '../utils/anti-patterns.js';
 import { getPackageVersion } from '../utils/package-version.js';
+import { runCortexStep } from '../utils/cortex-hydrate.js';
 
 type FileOutcome = 'updated' | 'added' | 'skipped' | 'reinstalled';
 
@@ -269,6 +270,32 @@ export default class Update extends BaseCommand {
 
     // Step 5: Print summary
     printResults(results, manifest, latestVersion, flags['dry-run']);
+
+    // Step 5.5: Cortex DB check — create/migrate/reconcile
+    if (!flags['dry-run']) {
+      console.log('');
+      console.log('Checking cortex database...');
+      const cortexResult = runCortexStep(cwd, 'init-or-migrate');
+      if (cortexResult !== null) {
+        if (cortexResult.tasks.imported > 0 || cortexResult.sessions.imported > 0) {
+          console.log(`  Hydrated ${cortexResult.tasks.imported} tasks, ${cortexResult.sessions.imported} sessions`);
+        }
+        if (cortexResult.handoffs.imported > 0) {
+          console.log(`  Hydrated ${cortexResult.handoffs.imported} handoffs`);
+        }
+        if (cortexResult.drifted > 0) {
+          console.log(`  Fixed ${cortexResult.drifted} status drift(s)`);
+        }
+        if (cortexResult.tasks.errors.length > 0) {
+          for (const e of cortexResult.tasks.errors) {
+            console.warn(`  Warning: ${e}`);
+          }
+        }
+        if (cortexResult.tasks.imported === 0 && cortexResult.drifted === 0) {
+          console.log('  Database in sync with files');
+        }
+      }
+    }
 
     // Step 6: Handle --regen (must run before manifest write to capture new generatedAt)
     if (flags.regen) {
