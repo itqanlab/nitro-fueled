@@ -298,6 +298,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_138 | nitro-cortex schema extension — tasks, handoffs, and events tables | COMPLETE | P1-High |
 | TASK_2026_135 | Event-driven supervisor loop — cache registry and plan, refresh on events only | COMPLETE | P1-High |
 | TASK_2026_139 | Supervisor DB migration — query cortex instead of reading files | COMPLETE | P1-High |
+| TASK_2026_140 | File-DB sync layer — bidirectional consistency between files and cortex | COMPLETE | P1-High |
 
 ## Current Focus
 
