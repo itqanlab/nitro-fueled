@@ -147,7 +147,7 @@ function buildAutoPilotArgs(options: RunFlags): string[] {
 async function startDashboardService(cwd: string): Promise<ChildProcess | null> {
   const entryScript = findEntryScript();
   if (entryScript === null) {
-    console.log('Dashboard service not found (skipping). Install @nitro-fueled/dashboard-service to enable.');
+    console.log('Dashboard service not found (skipping). Install @nitro-fueled/dashboard-service to enable the dashboard.');
     return null;
   }
 

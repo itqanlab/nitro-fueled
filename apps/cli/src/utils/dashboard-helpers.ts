@@ -12,6 +12,7 @@ export const POLL_INTERVAL_MS = 100;
 export function findEntryScript(): string | null {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    // Installed as a peer npm package (published CLI consumer)
     resolve(thisDir, '../../node_modules/@nitro-fueled/dashboard-service/dist/cli-entry.js'),
   ];
   for (const candidate of candidates) {
