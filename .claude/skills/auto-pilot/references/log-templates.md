@@ -11,7 +11,7 @@ All event types and their exact log row formats for `{SESSION_DIR}log.md`.
 | Pre-flight blocking issue | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT BLOCKING — {blocking_issue_message} \|` |
 | Pre-flight aborted | `\| {HH:MM:SS} \| auto-pilot \| PRE-FLIGHT FAILED — {N} blocking issue(s) found \|` |
 | Loop started | `\| {HH:MM:SS} \| auto-pilot \| SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} \|` |
-| Worker spawned | `\| {HH:MM:SS} \| auto-pilot \| SPAWNED {worker_id} for TASK_X ({WorkerType}: {TaskType}) \|` |
+| Worker spawned | `\| {HH:MM:SS} \| auto-pilot \| SPAWNED {worker_id} for TASK_X ({WorkerType}: {TaskType}) — provider={provider}, model={model}, tier={tier} \|` |
 | Worker subscribed | `\| {HH:MM:SS} \| auto-pilot \| SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s) \|` |
 | Subscribe fallback | `\| {HH:MM:SS} \| auto-pilot \| WARN — subscribe_worker unavailable, falling back to 5-minute polling \|` |
 | Completion event received | `\| {HH:MM:SS} \| auto-pilot \| EVENT — TASK_X: {event_label} received, triggering completion handler \|` |
@@ -45,7 +45,8 @@ All event types and their exact log row formats for `{SESSION_DIR}log.md`.
 | MCP failure (per-worker) | `\| {HH:MM:SS} \| auto-pilot \| MCP SKIP — TASK_X: {tool_name} failed, will retry next interval \|` |
 | MCP failure (global) | `\| {HH:MM:SS} \| auto-pilot \| MCP UNREACHABLE — pausing supervisor, state saved \|` |
 | Spawn failure | `\| {HH:MM:SS} \| auto-pilot \| SPAWN FAILED — TASK_X: {error} \|` |
-| Spawn fallback triggered | `\| {HH:MM:SS} \| auto-pilot \| SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet \|` |
+| Spawn fallback triggered | `\| {HH:MM:SS} \| auto-pilot \| SPAWN FALLBACK — TASK_X: {provider} failed, retrying with {fallback_provider}/{fallback_model} \|` |
+| Provider switch (retry) | `\| {HH:MM:SS} \| auto-pilot \| PROVIDER SWITCH — TASK_X: {previous_provider} failed {N} times, switching to claude \|` |
 | State recovered | `\| {HH:MM:SS} \| auto-pilot \| STATE RECOVERED — {N} active workers, {N} completed \|` |
 | Reconciliation | `\| {HH:MM:SS} \| auto-pilot \| RECONCILE — worker {id} missing from MCP, treating as finished \|` |
 | Cleanup spawned | `\| {HH:MM:SS} \| auto-pilot \| CLEANUP — TASK_X: spawning Cleanup Worker to salvage uncommitted work \|` |
@@ -59,7 +60,7 @@ All event types and their exact log row formats for `{SESSION_DIR}log.md`.
 | Plan not found | `\| {HH:MM:SS} \| auto-pilot \| PLAN — no plan.md found, using default ordering \|` |
 | Loop stopped | `\| {HH:MM:SS} \| auto-pilot \| SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked \|` |
 | Limit reached | `\| {HH:MM:SS} \| auto-pilot \| LIMIT REACHED — {N}/{limit} tasks completed, stopping \|` |
-| Worker log written | `\| {HH:MM:SS} \| auto-pilot \| WORKER LOG — TASK_X ({Build\|Review\|Cleanup}): {duration}m, ${X.XX}, {N} files changed \|` |
+| Worker log written | `\| {HH:MM:SS} \| auto-pilot \| WORKER LOG — TASK_X ({Build\|Review\|Cleanup}): {duration}m, ${X.XX}, {tokens}k tokens, ctx={context_pct}%, compactions={N}, provider={provider}, model={model}, {N} files changed \|` |
 | Worker log failed | `\| {HH:MM:SS} \| auto-pilot \| WORKER LOG FAILED — TASK_X: {reason} \|` |
 | Analytics written | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS — {N} tasks completed, total ${X.XX} \|` |
 | Analytics failed | `\| {HH:MM:SS} \| auto-pilot \| ANALYTICS FAILED — {reason} \|` |

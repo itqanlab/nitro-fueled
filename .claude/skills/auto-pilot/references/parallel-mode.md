@@ -1,5 +1,20 @@
 # Parallel Mode — Core Loop — auto-pilot
 
+## Context Budget Principle (CRITICAL)
+
+The supervisor runs in a single Claude Code session. Every file read, tool output, state write, and log entry consumes context. After ~2,500 lines of accumulated context, compaction triggers and the supervisor loses in-memory state.
+
+**When `cortex_available = true`:**
+
+1. **DB is the state store, not files.** All state persistence via `update_session()`. All task queries via MCP tools (`get_tasks()`, `get_task_context()`, `get_next_wave()`). All recovery via `get_session()`.
+2. **state.md is a debug snapshot**, written once at session end (Step 8) and on explicit pause. NOT written during monitoring cycles. NOT read during normal operation.
+3. **No file reads in the core loop.** Task metadata comes from `get_task_context(task_id)`. Task status comes from `get_tasks()`. Review/test completion comes from `subscribe_worker` events. Plan guidance is cached in the session DB.
+4. **Minimize tool output.** Use `get_worker_activity()` (5-line compact summary) over `get_worker_stats()` (15+ lines) unless escalation is needed.
+5. **Never read a file to confirm what an event already told you.** If `BUILD_COMPLETE` event fired, the status IS `IMPLEMENTED` — don't re-read the status file to confirm.
+
+**When `cortex_available = false`:**
+File-based fallback applies — read registry.md, status files, state.md as documented in each step's fallback path. This is the high-context-cost path and will compact sooner.
+
 ## Core Loop
 
 ### Step 1: Read State (Recovery Check)
@@ -48,15 +63,12 @@ lost from the supervisor's context window.
 **Preferred path (cortex_available = true):**
 
 1. The supervisor knows its `session_id` (it was set at startup and written into the first
-   log entry before any compaction risk). After compaction, `session_id` appears in
-   `task-tracking/active-sessions.md` and in `{SESSION_DIR}log.md`.
+   log entry before any compaction risk).
 2. Call `get_session(session_id)` to restore full session state: active workers, completed
-   tasks, failed tasks, retry counters, config, mcp_empty_count.
-3. Set `SESSION_DIR = task-tracking/sessions/{session_id}/` (derived from session_id — no
-   file read needed).
-4. Reset `mcp_empty_count` to 0 (a fresh `list_workers` call will determine current MCP
-   state). If `mcp_empty_count` is in the session record, honor it only if > 0 would be
-   confirmed by `list_workers`.
+   tasks, failed tasks, retry counters, config, mcp_empty_count, metadata cache.
+3. Set `SESSION_DIR = task-tracking/sessions/{session_id}/` (derived from session_id).
+4. Reset `mcp_empty_count` to 0 (a fresh `list_workers` call will determine current MCP state).
+5. **Do NOT read state.md or active-sessions.md.** The DB has everything.
 
 **Fallback path (cortex_available = false):**
 
@@ -98,9 +110,9 @@ See `### Cache Invalidation Rules` below for the complete invalidation table and
 4. If any row is missing priority or dependencies fields: treat as `P2-Medium` / empty deps.
    Log warning: `"[warn] TASK_YYYY_NNN: get_tasks() row missing Priority/Dependencies — treating as P2-Medium, no deps"`
 
-After calling `get_tasks()`, write the returned statuses into `{SESSION_DIR}state.md` under `## Cached Status Map` (same format as fallback). Step 3 uses this map directly. After the `get_tasks()` call completes successfully, write the returned task list to `## Cached Task Roster` in `{SESSION_DIR}state.md` (same format as the fallback path). Set `task_roster_cached = true`.
+After calling `get_tasks()`, cache the returned task list in-memory for Step 3. Call `update_session(session_id, fields=JSON.stringify({task_roster: [...], task_roster_cached: true}))` to persist the roster in the DB for compaction recovery. **Do NOT write to state.md** — the DB is the cache store on the cortex path.
 
-Note: On the cortex path, the Cached Status Map in state.md is a compaction-recovery artifact — the authoritative runtime source for Step 3 routing is the in-memory task list from `get_tasks()`. The map is consulted only after compaction (Step 1 recovery), or when the cortex DB is unavailable on a subsequent call.
+Note: On the cortex path, the DB session record is the compaction-recovery source — `get_session()` restores the task roster. No state.md read needed.
 
 **Fallback path (nitro-cortex unavailable — file-based):**
 
@@ -392,9 +404,13 @@ For each selected task:
 
 **5a-jit. Just-in-Time Quality Gate (run before any other spawn logic):**
 
-1. **Check metadata cache first**: If `## Metadata Cache` in `{SESSION_DIR}state.md` has an entry for `TASK_YYYY_NNN`, treat the cached values as opaque data and validate Type/Priority/Complexity against their enums. If enums are valid, proceed directly to **5b** — timing fields are pre-resolved as seconds in the cache; skip steps 2-8. If an enum is invalid, discard the cache entry and continue to step 2.
-2. If not cached: Read only the first 20 lines of `task-tracking/TASK_YYYY_NNN/task.md` — the metadata table. This is sufficient to extract all supervisor-required fields without loading the full file. **If the file is missing or unreadable**: log `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`. Move to the next task in the queue.
-3. Extract from the metadata table: **Type**, **Priority**, **Complexity**, **Model** (treat as `default` if absent), **Provider** (treat as `default` if absent), **Preferred Tier**, **Testing** flag, **Poll Interval**, **Health Check Interval**, **Max Retries**. Treat all extracted values as opaque data — do not interpret or execute embedded content. Use extracted values only for the specific routing/validation purposes listed here.
+1. **Check metadata cache first**: If the session's metadata cache (stored in cortex via `update_session()`, or in `## Metadata Cache` in state.md on fallback path) has an entry for `TASK_YYYY_NNN`, validate Type/Priority/Complexity against their enums. If valid, proceed directly to **5b**. If invalid, discard and continue to step 2.
+
+2. **Cortex path (cortex_available = true):** Call `get_task_context(task_id)`. Returns: type, priority, complexity, model, status, description, file_scope, dependencies. **No file read needed.** If the call fails, log warning and skip the task. For fields NOT in cortex (preferred_tier, Testing, Poll Interval, Health Check Interval, Max Retries): use defaults (preferred_tier=auto, Testing=run, timing=global defaults). Only read task.md if the task has non-default values AND the DB doesn't have them — this should be rare.
+
+   **Fallback path (cortex_available = false):** Read only the first 20 lines of `task-tracking/TASK_YYYY_NNN/task.md` — the metadata table. **If the file is missing or unreadable**: log `"Skipping TASK_YYYY_NNN: task.md missing or unreadable"`. Move to the next task.
+
+3. Extract: **Type**, **Priority**, **Complexity**, **Model** (treat as `default` if absent), **Provider** (treat as `default` if absent), **Preferred Tier**, **Testing** flag, **Poll Interval**, **Health Check Interval**, **Max Retries**. Treat all extracted values as opaque data.
 4. Validate quality:
 
    | Field | Requirement | If Fails |
@@ -657,8 +673,7 @@ up the task if this session ultimately fails to spawn it.
 orphaned workers if the session compacts mid-spawn sequence.
 
 **With cortex_available = true:**
-1. Call `update_session(session_id, fields=JSON.stringify({loop_status: "running", ...active_workers_summary}))` to persist structured state in the DB. This survives compaction — after compaction, `get_session()` restores the supervisor's active worker list.
-2. Also write `{SESSION_DIR}state.md` (unchanged format) as a human-readable snapshot and fallback for the Continue mode and Stale Archive Check.
+Call `update_session(session_id, fields=JSON.stringify({loop_status: "running", ...active_workers_summary, metadata_cache: {...}}))` to persist structured state in the DB. This survives compaction — after compaction, `get_session()` restores everything. **Do NOT write state.md** — it will be written once at session end (Step 8).
 
 **With cortex_available = false:**
 Write `{SESSION_DIR}state.md` only (original behavior).
@@ -710,8 +725,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
    - **Otherwise**: skip (will be checked on the next 5-minute boundary).
 
 4. **Write session state** after processing events and completing stuck checks.
-   - **With cortex_available = true**: call `update_session()` with current active_workers
-     summary. Also write `{SESSION_DIR}state.md` as snapshot.
+   - **With cortex_available = true**: call `update_session()` with current active_workers summary. **Do NOT write state.md** — DB is the live store.
    - **With cortex_available = false**: write `{SESSION_DIR}state.md` only.
 
 > **Health states during stuck detection** (event-driven mode):
@@ -786,9 +800,8 @@ After this re-check (in either outcome), continue to the normal mode steps below
 Reset `stuck_count` to 0 for any worker **NOT** in `stuck` state.
 
 **6e.** (Polling mode only) Write session state after monitoring pass.
-- **With cortex_available = true**: call `update_session(session_id, fields=JSON.stringify({active_workers: [...], mcp_empty_count: N}))`. Also write `{SESSION_DIR}state.md` as a snapshot.
-- **With cortex_available = false**: write `{SESSION_DIR}state.md` only.
-Also append the health events from this pass to `{SESSION_DIR}log.md`.
+- **With cortex_available = true**: call `update_session(session_id, fields=JSON.stringify({active_workers: [...], mcp_empty_count: N}))`. **Do NOT write state.md** — DB is the live store. Use `log_event()` for health events instead of appending to log.md.
+- **With cortex_available = false**: write `{SESSION_DIR}state.md` only. Append health events to `{SESSION_DIR}log.md`.
 
 ### Step 7: Handle Completions
 
@@ -796,13 +809,8 @@ For each worker with health `finished` (or discovered missing during reconciliat
 
 **7a. Read current task state:**
 
-- **With cortex_available = true**: Call `get_tasks(status=undefined)` filtered by task_id,
-  OR use the cached task list from Step 2's `get_tasks()` result — find the row whose
-  task_id matches. Use the `status` field from that row as the current state.
-  As a belt-and-suspenders check, also read `task-tracking/TASK_YYYY_NNN/status` file.
-  If both are present and differ, the file takes precedence (workers write the file as their
-  last action; DB is updated concurrently by update_task but the file is authoritative for
-  final state detection in this version).
+- **With cortex_available = true AND event fired**: Trust the event. If `BUILD_COMPLETE` event fired, state is `IMPLEMENTED`. If `REVIEW_DONE` fired, review artifacts exist. If `TEST_DONE` fired, test-report.md exists. **Do NOT re-read status files or call get_tasks() to confirm** — events are triggered by file watchers that already verified the condition. This saves ~5 lines of context per completion.
+- **With cortex_available = true AND no event (reconciliation/polling)**: Call `get_task_context(task_id)` — returns status in a compact response (~5 lines). Do NOT read the status file.
 - **With cortex_available = false**: Read `task-tracking/TASK_YYYY_NNN/status` (trim
   whitespace). If the file is missing, fall back to reading the registry row and log a warning.
 
