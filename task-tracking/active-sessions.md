@@ -32,6 +32,5 @@
 | SESSION_2026-03-28_22-18-25 | auto-pilot | 22:18 | 22 | task-tracking/sessions/SESSION_2026-03-28_22-18-25/ |
 | SESSION_2026-03-28_22-37-24 | orchestrate | 22:37 | 1 | task-tracking/sessions/SESSION_2026-03-28_22-37-24/ |
 | SESSION_2026-03-29_15-48-19 | orchestrate | 15:48 | 1 | task-tracking/sessions/SESSION_2026-03-29_15-48-19/ |
-| SESSION_2026-03-29_16-12-55 | orchestrate | 16:12 | 1 | task-tracking/sessions/SESSION_2026-03-29_16-12-55/ |
 | SESSION_2026-03-29_16-49-41 | orchestrate | 16:49 | 1 | task-tracking/sessions/SESSION_2026-03-29_16-49-41/ |
 | SESSION_2026-03-29_16-50-03 | orchestrate | 16:50 | 1 | task-tracking/sessions/SESSION_2026-03-29_16-50-03/ |
