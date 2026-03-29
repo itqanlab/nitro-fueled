@@ -541,7 +541,7 @@ Invoke CONTENT strategy when the request contains any of:
 ---
 
 
-## SOCIAL (Multi-Platform Social Media)
+## SOCIAL (Platform-First Workflow)
 
 **When to use**: Social media campaigns, platform posts, content calendars, hashtag strategies, carousels, threads
 
@@ -619,8 +619,8 @@ Invoke SOCIAL strategy when the request contains any of:
 | ----------------------- | -------------------------------------------------- |
 | Social copy             | `docs/content/social-[platform]-[name].md`         |
 | Visual specs            | `task-tracking/TASK_[ID]/visual-design-specification.md` |
-| Campaign plan           | `task-tracking/TASK_[ID]/content-specification.md` |
-| Content specification   | `task-tracking/TASK_[ID]/content-specification.md` |
+| Campaign plan           | `task-tracking/TASK_[ID]/campaign-plan.md`          |
+| Content specification   | `task-tracking/TASK_[ID]/content-specification.md`  |
 
 ---
 
@@ -637,12 +637,12 @@ Is task CREATIVE (landing page, brand, marketing, theme design)?
     YES -> Check design system -> CREATIVE strategy
     NO  -> continue
 
-Is task CONTENT (blog post, email campaign, newsletter, ad copy)?
-    YES -> CONTENT strategy
-    NO  -> continue
-
 Is task SOCIAL (social media, twitter/linkedin/instagram posts, campaigns, carousels)?
     YES -> SOCIAL strategy
+    NO  -> continue
+
+Is task CONTENT (blog post, email campaign, newsletter, ad copy)?
+    YES -> CONTENT strategy
     NO  -> continue
 
 Is task a new FEATURE?
