@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { initDatabase } from '../db/schema.js';
 import { handleCreateSession } from '../tools/sessions.js';
-import { FileWatcher, handleSubscribeWorker, handleGetPendingEvents, type WatchEvent } from './subscriptions.js';
+import { FileWatcher, EmitQueue, handleSubscribeWorker, handleGetPendingEvents, type WatchEvent } from './subscriptions.js';
 import type Database from 'better-sqlite3';
 
 function makeTempDb(): { db: Database.Database; cleanup: () => void } {
@@ -227,7 +227,7 @@ describe('handleGetPendingEvents', () => {
   it('returns empty events array when queue is empty', () => {
     const watcher = new FileWatcher();
     try {
-      const result = handleGetPendingEvents(watcher);
+      const result = handleGetPendingEvents(watcher, new EmitQueue());
       const data = parseText(result) as { events: unknown[] };
       expect(Array.isArray(data.events)).toBe(true);
       expect(data.events).toHaveLength(0);

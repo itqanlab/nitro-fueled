@@ -5,14 +5,14 @@ description: >
   Use when: Running batch task execution, processing a task backlog,
   or spawning parallel workers for multiple tasks.
   Reads the task registry and task folders, builds a dependency graph,
-  spawns Build Workers and Review Workers via MCP session-orchestrator,
+  spawns Build Workers and Review Workers via MCP nitro-cortex,
   monitors health and state transitions, and loops.
   Invoked via /auto-pilot command.
 ---
 
 # Supervisor Skill
 
-Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP session-orchestrator.
+Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
 
 ## Quick Start
 
@@ -174,22 +174,28 @@ When `--evaluate <model-id>` is passed: runs benchmark tasks from `benchmark-sui
 1. Call MCP `list_workers` (with no filters).
 2. **IF the tool exists and returns a response** (even an empty list): MCP is available. Continue.
 3. **IF the tool does NOT exist, times out, or returns an error**: **STOP IMMEDIATELY.**
-   - Display: `"FATAL: MCP session-orchestrator is not configured or not running. The Supervisor REQUIRES the MCP session-orchestrator to spawn separate worker sessions. Without it, tasks cannot be processed. Please configure the MCP server in .claude/settings.json and restart."`
+   - Display: `"FATAL: nitro-cortex MCP is not configured or not running. The Supervisor REQUIRES the nitro-cortex MCP server to spawn and manage worker sessions. Without it, tasks cannot be processed. Configure nitro-cortex in .mcp.json (run: npx nitro-fueled init --cortex-path <path>) and restart."`
    - **Do NOT fall back to the Agent tool, sub-agents, or any other mechanism.**
    - **Do NOT attempt to process tasks inline.**
    - **EXIT.**
 
 The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions with fresh context windows. Using the Agent tool (sub-agents) defeats the entire architecture — sub-agents share the parent's context, have no isolation, and break the Build Worker / Review Worker separation. This is not a suggestion — it is a hard requirement.
 
-### nitro-cortex Availability Check (optional — soft check)
+### nitro-cortex Availability Check
 
-Detection runs at **Step 2** — see Step 2 for the `get_tasks()` soft-check and
-`cortex_available` flag logic. Calling `get_tasks()` is the authoritative detection
-method because it tests actual functionality, not just tool list presence.
+Detection runs at **Step 2**: call `get_tasks()`. Calling `get_tasks()` is the authoritative
+detection method because it tests actual DB functionality, not just tool list presence.
 
-This is a **soft check** — the supervisor proceeds either way. `cortex_available` is a
-session flag that controls which code path is used in Steps 2-7. It is NOT re-checked
-per loop iteration.
+**Default behavior** (allow_file_fallback not set, or set to false):
+If `get_tasks()` fails, **STOP IMMEDIATELY** and display:
+`"FATAL: nitro-cortex DB unavailable. The Supervisor requires nitro-cortex to be operational. Set allow_file_fallback: true in .nitro-fueled/config.json to enable degraded file-based mode, then restart."`
+
+**With allow_file_fallback: true** (opt-in degraded mode):
+If `get_tasks()` fails, set `cortex_available = false` and proceed with file-based fallback
+paths documented in `references/parallel-mode.md`. This degrades task coordination
+but allows the Supervisor to run without the cortex DB.
+
+`cortex_available` is a session flag — it is NOT re-checked per loop iteration.
 
 > **Bootstrap note**: On first run against a new project, call `sync_tasks_from_files()`
 > once to import existing task-tracking files into the nitro-cortex DB before calling

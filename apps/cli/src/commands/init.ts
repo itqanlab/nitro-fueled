@@ -4,7 +4,6 @@ import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
-import { detectMcpConfig } from '../utils/mcp-config.js';
 import { configureNitroCortex } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
@@ -343,7 +342,7 @@ function buildAndWriteManifest(
   console.log('  Manifest: written (.nitro-fueled/manifest.json)');
 }
 
-function printSummary(mcpConfigured: boolean, skipMcp: boolean, skipCortex: boolean): void {
+function printSummary(skipCortex: boolean): void {
   console.log('');
   console.log('=================');
   console.log('Init complete!');
@@ -361,9 +360,6 @@ function printSummary(mcpConfigured: boolean, skipMcp: boolean, skipCortex: bool
   console.log(`  ${step++}. npx nitro-fueled create     Create your first task`);
   console.log(`  ${step++}. npx nitro-fueled run         Run the orchestration pipeline`);
   console.log(`  ${step++}. npx nitro-fueled status      Check project status`);
-  if (!mcpConfigured && skipMcp) {
-    console.log(`  ${step++}. npx nitro-fueled init --mcp-path <path>   Configure MCP server`);
-  }
   if (skipCortex) {
     console.log(`  ${step++}. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server`);
   }
@@ -374,9 +370,7 @@ export default class Init extends BaseCommand {
   public static override description = 'Scaffold .claude/ and task-tracking/ into the current project';
 
   public static override flags = {
-    'mcp-path': Flags.string({ description: 'Path to session-orchestrator server' }),
-    'skip-mcp': Flags.boolean({ description: 'Skip MCP server configuration', default: false }),
-    'cortex-path': Flags.string({ description: 'Path to nitro-cortex server (packages/mcp-cortex in this repo)' }),
+    'cortex-path': Flags.string({ description: 'Path to nitro-cortex MCP server (packages/mcp-cortex in this repo)' }),
     'skip-cortex': Flags.boolean({ description: 'Skip nitro-cortex MCP configuration', default: false }),
     'skip-agents': Flags.boolean({ description: 'Skip AI-assisted developer agent generation', default: false }),
     overwrite: Flags.boolean({ description: 'Overwrite existing files instead of merging', default: false }),
@@ -503,10 +497,7 @@ export default class Init extends BaseCommand {
       return;
     }
 
-    // Step 10: MCP configuration
-    await handleMcpConfig(cwd, opts);
-
-    // Step 10b: nitro-cortex configuration
+    // Step 10: nitro-cortex MCP configuration (single MCP server)
     await handleNitroCortexConfig(cwd, opts);
 
     // Step 11: Commit scaffolded files if --commit flag is set
@@ -519,7 +510,6 @@ export default class Init extends BaseCommand {
     }
 
     // Step 12: Summary
-    const mcpAfter = detectMcpConfig(cwd);
-    printSummary(mcpAfter.found, opts['skip-mcp'], opts['skip-cortex']);
+    printSummary(opts['skip-cortex']);
   }
 }

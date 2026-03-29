@@ -66,6 +66,8 @@ export interface NitroFueledConfig {
   launchers: Partial<Record<LauncherName, LauncherInfo>>;
   providers: Record<string, ProviderEntry>;
   routing: Partial<Record<string, string>>;
+  /** When false (default), nitro-cortex MCP unavailability = error + stop. Set true to enable degraded file-based fallback. */
+  allow_file_fallback?: boolean;
 }
 
 export interface Worker {
