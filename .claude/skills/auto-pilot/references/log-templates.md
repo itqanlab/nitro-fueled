@@ -75,3 +75,10 @@ All event types and their exact log row formats for `{SESSION_DIR}log.md`.
 | Session archive failed | `\| {HH:MM:SS} \| auto-pilot \| SESSION ARCHIVE WARNING — commit failed: {reason[:200]} \|` |
 | Cortex available | `\| {HH:MM:SS} \| auto-pilot \| CORTEX AVAILABLE — using nitro-cortex for task state \|` |
 | Cortex unavailable | `\| {HH:MM:SS} \| auto-pilot \| CORTEX UNAVAILABLE — falling back to file-based state \|` |
+| log_event call failed         | `\| {HH:MM:SS} \| auto-pilot \| CORTEX LOG FAILED — {event_type}: {error[:100]} \|` |
+| Session log rendered from DB  | `\| {HH:MM:SS} \| auto-pilot \| LOG RENDERED — {N} events from cortex, {M} already in log.md \|` |
+| Escalate disabled (cortex off) | `\| {HH:MM:SS} \| auto-pilot \| ESCALATE DISABLED — cortex unavailable, escalate_to_user forced false \|` |
+| NEED_INPUT received             | `\| {HH:MM:SS} \| auto-pilot \| NEED INPUT — TASK_X: pausing loop for user response \|` |
+| Input provided                  | `\| {HH:MM:SS} \| auto-pilot \| INPUT PROVIDED — TASK_X: resuming loop \|` |
+| end_session called successfully | `\| {HH:MM:SS} \| auto-pilot \| SESSION ENDED — cortex session record closed \|` |
+| end_session failed              | `\| {HH:MM:SS} \| auto-pilot \| SESSION END FAILED — cortex end_session error: {error[:100]} \|` |

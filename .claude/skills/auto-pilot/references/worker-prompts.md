@@ -231,6 +231,13 @@ Follow these rules strictly:
    COMPLETE. The Supervisor evaluates findings + test results and spawns the
    appropriate next worker (Fix Worker or Completion Worker).
 
+## Handoff Context (injected when cortex available)
+
+If the Supervisor injected a `## Handoff Data` section above (before this Commit Metadata
+block), use it instead of reading `task-tracking/TASK_YYYY_NNN/handoff.md` from disk.
+The injected data is authoritative and pre-verified by the Supervisor. If no injected
+section is present, read handoff.md from disk as usual.
+
 ## Commit Metadata (REQUIRED for all commits)
 
 Every commit made by this worker MUST include this traceability footer:
@@ -287,6 +294,13 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 6. Complete all remaining phases: remaining reviews, findings summary, exit gate.
    Do NOT apply fixes. Do NOT run the Completion Phase. Exit at IN_REVIEW.
+
+## Handoff Context (injected when cortex available)
+
+If the Supervisor injected a `## Handoff Data` section above (before this Commit Metadata
+block), use it instead of reading `task-tracking/TASK_YYYY_NNN/handoff.md` from disk.
+The injected data is authoritative and pre-verified by the Supervisor. If no injected
+section is present, read handoff.md from disk as usual.
 
 ## Commit Metadata (REQUIRED for all commits)
 

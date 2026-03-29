@@ -100,6 +100,18 @@ For each task in the queue:
 
 - Append: `| {HH:MM:SS} | auto-pilot | SEQUENTIAL STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
 - Remove session row from `task-tracking/active-sessions.md`
+
+**Cortex path (cortex_available = true):**
+
+- At SEQUENTIAL STOPPED: call `log_event(session_id, source="auto-pilot",
+  event_type='SUPERVISOR_COMPLETE', data={completed, failed, blocked, mode='sequential'})`.
+- After the git commit: call `end_session(session_id, summary=...)`.
+  Both calls are best-effort — failure is logged and ignored.
+
+**Fallback path (cortex_available = false):** Skip cortex calls. File cleanup only (same as current behavior).
+
+Note: Sequential mode performs `cortex_available` detection at startup (same as parallel mode — call `get_tasks()` in step 4, set flag, cache for session).
+
 - Write session analytics (same format as normal mode, Outcome = COMPLETE if any tasks completed, FAILED if no tasks completed)
 - Stage and commit session artifacts:
   ```

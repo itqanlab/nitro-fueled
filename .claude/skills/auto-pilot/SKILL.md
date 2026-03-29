@@ -60,9 +60,16 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 | Retry limit         | 2           | --retries N      | Maximum retry attempts for a failed task. Maximum allowed value: 5. Values above 5 are clamped to 5. |
 | Task limit          | 0 (unlimited) | --limit N      | Stop gracefully after N tasks reach a terminal state (COMPLETE/FAILED/BLOCKED). 0 = process entire backlog. **Sequential mode**: cap the task queue to N tasks at startup (different semantic — see ## Sequential Mode). |
 | Sequential mode     | false       | --sequential     | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. |
+| Escalate to user    | false       | --escalate       | When true: supervisor checks for NEED_INPUT signals from workers at phase boundaries (after each TASK_STATE_CHANGE event). Requires cortex_available = true. When false (default): workers fail autonomously, supervisor retries or blocks. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
 
 > **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
+
+> **Note on `escalate_to_user`**: This option requires `cortex_available = true` — it
+> depends on `query_events` to poll for NEED_INPUT signals. If `cortex_available = false`
+> at session start, `escalate_to_user` is automatically forced to `false` and a warning
+> is logged: `"ESCALATE disabled — cortex unavailable"`. Workers always fail autonomously
+> on the file-based path.
 
 When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `{SESSION_DIR}state.md`. Written as part of Session Lifecycle startup (after Session Directory is created).
 

@@ -464,6 +464,38 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 - Fix Worker + retry count > 0 --> **Retry Fix Worker Prompt**
 - Completion Worker --> **Completion Worker Prompt**
 
+**5c-handoff. Inject handoff data for Review Workers (cortex_available = true only):**
+
+Before finalizing the Review Worker prompt, call `read_handoff(task_id)`.
+
+If `read_handoff` succeeds and returns a non-empty record:
+  Append the following block to the generated prompt (after the template body, before
+  the Commit Metadata section):
+
+  ```
+  ## Handoff Data (injected by Supervisor from nitro-cortex DB)
+
+  Files Changed:
+  {handoff.files_changed — one file per line}
+
+  Commits:
+  {handoff.commits — one commit per line: <hash>: <message>}
+
+  Decisions:
+  {handoff.decisions}
+
+  Known Risks:
+  {handoff.known_risks}
+  ```
+
+  The Review Worker does NOT need to read handoff.md from the file system — this data
+  is already loaded.
+
+If `read_handoff` fails or returns empty: do NOT modify the prompt. The worker will fall
+back to reading `task-tracking/TASK_YYYY_NNN/handoff.md` as usual.
+
+This call is best-effort — failure never blocks the spawn.
+
 **5d. Resolve Provider and Model:**
 
 If the task's Provider field is `default` or absent, use the **Config-Driven Routing** procedure below to select the provider and tier based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. The model is always determined by the resolver from the provider's entry in config — never hardcoded here.
@@ -856,6 +888,28 @@ Note: Test Lead does NOT block the decision. If test-report.md is missing after 
 
 4. Go to **Step 4** (NOT Step 2) — select and spawn from the updated queue.
 
+**7f-escalate. NEED_INPUT signal check (runs only when escalate_to_user = true AND cortex_available = true):**
+
+After completing the incremental dependency re-evaluation (steps 1-3 above), before
+going to Step 4:
+
+1. Call `query_events(session_id={session_id}, event_type='NEED_INPUT')`.
+2. If any unacknowledged NEED_INPUT events are returned:
+   a. Pause the supervisor loop (do NOT spawn new workers this iteration).
+   b. Display each question to the user:
+      ```
+      [NEED INPUT — TASK_X] {data.question}
+      ```
+   c. Wait for user response (blocking — this is intentional, escalation mode is opted-in).
+   d. After user responds: call `log_event(session_id, source="auto-pilot",
+      event_type='INPUT_PROVIDED', data={answer, task_id})` to acknowledge.
+   e. Resume the loop (go to Step 4).
+3. If no NEED_INPUT events: proceed to Step 4 immediately.
+
+**Security note**: The `data.question` field is displayed verbatim. It is sourced from a
+worker's `log_event` call, not from task.md or any untrusted free-text field. Display only
+the `question` key — do not render any other data payload keys.
+
 **7g. Edge case -- worker still running after expected state reached:**
 
 If `get_worker_stats` shows worker is still running but the registry state has already transitioned to the expected end state:
@@ -972,9 +1026,35 @@ This means any worker can be replaced at any time — the supervisor never depen
 
 ### Step 8b: Append to Session History
 
+**Cortex path (cortex_available = true):**
+
+The `SUPERVISOR_COMPLETE` event logged in step 2b (Change 1) serves as the queryable
+session summary. Analytics queries use:
+  query_events(event_type='SUPERVISOR_COMPLETE')     -- list all session summaries
+  query_events(session_id=X, event_type='TASK_STATE_CHANGE')  -- per-session transitions
+
+The orchestrator-history.md file-append (steps 1-4 below) still runs on the cortex path
+as the human-readable fallback. Do NOT skip it.
+
+**Fallback path (cortex_available = false):** Steps 1-4 only (original behavior unchanged).
+
 On EVERY session stop (normal completion, compaction limit, MCP unreachable, or manual stop):
 
 1. **Read** `task-tracking/orchestrator-history.md` (create if missing with `# Orchestrator Session History` header).
+
+**If cortex_available = true** (render log.md before appending history):
+
+Before computing the Quality line, call:
+  query_events(session_id={session_id})
+
+Use the returned events to verify log.md is complete. If any returned events are NOT
+already present as rows in `{SESSION_DIR}log.md` (matched by event_type and timestamp),
+append the missing rows using the log-templates.md format. This ensures the human-readable
+audit trail is authoritative.
+
+The file-based `{SESSION_DIR}log.md` is still the primary audit trail — DB events are
+additive. This render step only fills gaps (e.g., events missed during compaction).
+
 2. **Append** the full session block:
 
 ```markdown
@@ -1004,6 +1084,19 @@ On EVERY session stop (normal completion, compaction limit, MCP unreachable, or 
 {copy full event table from {SESSION_DIR}log.md}
 (Copy Timestamp and Event columns only — omit the Source column. History entries use two columns: `| Time | Event |`.)
 ```
+
+**2b. Cortex path (cortex_available = true):**
+
+Call:
+  log_event(
+    session_id = {session_id},
+    source     = "auto-pilot",
+    event_type = "SUPERVISOR_COMPLETE",
+    data       = { completed: N, failed: N, blocked: N,
+                   total_cost_usd: X.XX, stop_reason: "..." }
+  )
+
+This is best-effort — failure does not block Step 8b.
 
 3. **Computing the Quality line** (must be done BEFORE writing the session block, using data collected in this step):
    - **avg review**: average of all `X/10` scores found in `{SESSION_DIR}worker-logs/*.md` Review Verdicts tables across all Review Workers that ran this session. Write `n/a` if no Review Workers ran.
@@ -1135,3 +1228,60 @@ Runs after Step 8c (analytics.md is now written). On EVERY session stop (normal 
    git commit -m "chore(session): archive {SESSION_ID} — {tasks_completed} tasks, ${total_cost}"
    ```
 3. If the commit fails (nothing to commit, git error, lock file): log `| {HH:MM:SS} | auto-pilot | SESSION ARCHIVE WARNING — commit failed: {reason[:200]} |` and continue. Never retry.
+
+**2b. Cortex teardown (cortex_available = true only):**
+
+After the git commit (step 2), call:
+  end_session(
+    session_id = {session_id},
+    summary    = "{tasks_completed} completed, {failed} failed, {blocked} blocked — {stop_reason}"
+  )
+
+If `end_session` fails: log
+  `| {HH:MM:SS} | auto-pilot | SESSION END FAILED — cortex end_session error: {error[:100]} |`
+  and continue. Never block session stop on this call.
+
+This call runs AFTER the git commit so that all session artifacts (log.md, analytics.md,
+worker-logs/) are committed before the session record is closed in the DB.
+
+**Fallback path (cortex_available = false):** Skip `end_session()`. File cleanup only.
+
+---
+
+### Event Logging — Cortex Path
+
+**Applies when `cortex_available = true`.**
+
+Every time the supervisor would append a row to `{SESSION_DIR}log.md`, ALSO call:
+
+  log_event(
+    session_id = {session_id},
+    task_id    = {task_id if event is task-scoped, else omit},
+    source     = "auto-pilot",
+    event_type = {EVENT_TYPE},    -- see table below
+    data       = {structured payload, see table below}
+  )
+
+This call is best-effort — if it fails, log the failure inline in log.md and continue.
+Never block on a log_event failure.
+
+**Event type mapping** (log row → event_type → data):
+
+| Log row contains            | event_type             | data keys                              |
+|-----------------------------|------------------------|----------------------------------------|
+| SUPERVISOR STARTED          | SUPERVISOR_START       | tasks_total, tasks_unblocked, concurrency |
+| SPAWNED {worker_id}         | WORKER_SPAWN           | worker_id, worker_type, label          |
+| STATE TRANSITIONED          | TASK_STATE_CHANGE      | old_state, new_state                   |
+| NO TRANSITION               | WORKER_NO_TRANSITION   | expected_state, current_state, retry_n |
+| RETRY                       | WORKER_RETRY           | attempt, retry_limit                   |
+| BLOCKED — exceeded retries  | TASK_BLOCKED           | reason="max_retries"                   |
+| BLOCKED — dependency cycle  | TASK_BLOCKED           | reason="cycle", with_task_id           |
+| BLOCKED — cancelled dep     | TASK_BLOCKED           | reason="cancelled_dep", dep_task_id    |
+| BLOCKED — missing dep       | TASK_BLOCKED           | reason="missing_dep", dep_task_id      |
+| SUPERVISOR STOPPED          | SUPERVISOR_COMPLETE    | completed, failed, blocked             |
+| CLAIM REJECTED              | CLAIM_REJECTED         | claimed_by (session id)                |
+| Any other event             | SUPERVISOR_EVENT       | message (the log row Event column text)|
+
+**NEED_INPUT signal** (escalate_to_user path only — see `### Step 7f-escalate` below): a worker emits
+`log_event(event_type='NEED_INPUT', data={question})`. The supervisor checks for this
+at phase boundaries (see Step 7f-escalate for details).
