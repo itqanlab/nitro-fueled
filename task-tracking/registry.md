@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -114,7 +114,7 @@
 | TASK_2026_109 | COMPLETE    | FEATURE | API Contract Layer — OpenAPI Spec, Typed DTOs, Versioned Endpoints | 2026-03-28 | default |
 | TASK_2026_110 | COMPLETE    | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_111 | COMPLETE    | FEATURE | Two-Phase Provider Resolver Engine (Part 2/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_112 | CREATED     | REFACTORING | Auto-Pilot Routing Update — Config-Driven with Codex Support (Part 3/3 — Provider Resolver Engine) | 2026-03-28 | default |
+| TASK_2026_112 | COMPLETE    | REFACTORING | Auto-Pilot Routing Update — Config-Driven with Codex Support (Part 3/3 — Provider Resolver Engine) | 2026-03-28 | default |
 | TASK_2026_113 | COMPLETE    | BUGFIX  | Add Phase-Boundary Git Commits to Orchestration Pipeline | 2026-03-28 | default |
 | TASK_2026_114 | COMPLETE    | BUGFIX  | Enforce Review-Lessons Pre-Read in Build Worker Prompt | 2026-03-28 | default |
 | TASK_2026_115 | CREATED     | REFACTORING | Extract Inline Template/Styles in Agent Editor Sub-Components | 2026-03-28 | default |
@@ -136,4 +136,11 @@
 | TASK_2026_131 | CREATED     | BUGFIX  | Add Authentication Guard to NestJS WebSocket Gateway | 2026-03-28 | default |
 | TASK_2026_132 | CREATED     | BUGFIX  | Resolve Deferred TASK_2026_109 Findings — DTO Validation, File Split, ValidationPipe | 2026-03-28 | default |
 | TASK_2026_133 | COMPLETE    | FEATURE | Add sequential execution mode to auto-pilot | 2026-03-29 | default |
-| TASK_2026_134 | CREATED     | REFACTORING | Slim down auto-pilot SKILL.md — split into core + mode-specific references | 2026-03-29 | default |
+| TASK_2026_134 | COMPLETE    | REFACTORING | Slim down auto-pilot SKILL.md — split into core + mode-specific references | 2026-03-29 | default |
+| TASK_2026_135 | CREATED     | REFACTORING | Event-driven supervisor loop — cache registry and plan, refresh on events only | 2026-03-29 | default |
+| TASK_2026_136 | CREATED     | REFACTORING | Partial task.md reads — extract metadata only before spawn | 2026-03-29 | default |
+| TASK_2026_137 | COMPLETE    | FEATURE | Build Worker handoff artifact — structured Build-to-Review communication | 2026-03-29 | default |
+| TASK_2026_138 | CREATED     | FEATURE | nitro-cortex schema extension — tasks, handoffs, and events tables | 2026-03-29 | default |
+| TASK_2026_139 | CREATED     | REFACTORING | Supervisor DB migration — query cortex instead of reading files | 2026-03-29 | default |
+| TASK_2026_140 | CREATED     | FEATURE | File-DB sync layer — bidirectional consistency between files and cortex | 2026-03-29 | default |
+| TASK_2026_141 | CREATED     | FEATURE | CLI update command — DB migration and hydration for existing projects | 2026-03-29 | default |
