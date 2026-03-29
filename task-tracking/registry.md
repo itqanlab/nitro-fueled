@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -131,7 +131,7 @@
 | TASK_2026_126 | COMPLETE    | FEATURE | Evaluation Review Scoring and Report Generation | 2026-03-28 | claude-opus-4-6 |
 | TASK_2026_127 | CREATED     | REFACTORING | Extract inline constants from new-task.component.ts to new-task.constants.ts | 2026-03-28 | default |
 | TASK_2026_128 | CREATED     | REFACTORING | Extract inline interfaces from dashboard/analytics/agent-editor components to model files | 2026-03-28 | default |
-| TASK_2026_129 | CREATED     | REFACTORING | Add SESSION_ID Validation to nitro-auto-pilot --continue Flag | 2026-03-28 | default |
+| TASK_2026_129 | COMPLETE    | REFACTORING | Add SESSION_ID Validation to nitro-auto-pilot --continue Flag | 2026-03-28 | default |
 | TASK_2026_130 | CREATED     | BUGFIX  | Fix Retrospective Commit Step Ordering | 2026-03-28 | default |
 | TASK_2026_131 | CREATED     | BUGFIX  | Add Authentication Guard to NestJS WebSocket Gateway | 2026-03-28 | default |
 | TASK_2026_132 | CREATED     | BUGFIX  | Resolve Deferred TASK_2026_109 Findings — DTO Validation, File Split, ValidationPipe | 2026-03-28 | default |
@@ -141,10 +141,10 @@
 | TASK_2026_136 | COMPLETE    | REFACTORING | Partial task.md reads — extract metadata only before spawn | 2026-03-29 | default |
 | TASK_2026_137 | COMPLETE    | FEATURE | Build Worker handoff artifact — structured Build-to-Review communication | 2026-03-29 | default |
 | TASK_2026_138 | COMPLETE    | FEATURE | nitro-cortex schema extension — tasks, handoffs, and events tables | 2026-03-29 | default |
-| TASK_2026_139 | CREATED     | REFACTORING | Supervisor DB migration — query cortex instead of reading files | 2026-03-29 | default |
-| TASK_2026_140 | CREATED     | FEATURE | File-DB sync layer — bidirectional consistency between files and cortex | 2026-03-29 | default |
+| TASK_2026_139 | COMPLETE    | REFACTORING | Supervisor DB migration — query cortex instead of reading files | 2026-03-29 | default |
+| TASK_2026_140 | IN_PROGRESS | FEATURE | File-DB sync layer — bidirectional consistency between files and cortex | 2026-03-29 | default |
 | TASK_2026_141 | CREATED     | FEATURE | CLI update command — DB migration and hydration for existing projects | 2026-03-29 | default |
-| TASK_2026_142 | CREATED     | REFACTORING | Merge session-orchestrator into nitro-cortex — single MCP server | 2026-03-29 | default |
+| TASK_2026_142 | IN_PROGRESS | REFACTORING | Merge session-orchestrator into nitro-cortex — single MCP server | 2026-03-29 | default |
 | TASK_2026_143 | CREATED     | FEATURE | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | 2026-03-29 | default |
 | TASK_2026_144 | CREATED     | REFACTORING | Remove legacy dashboard apps (dashboard-service + dashboard-web) | 2026-03-29 | default |
 | TASK_2026_145 | CREATED     | REFACTORING | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | 2026-03-29 | default |
