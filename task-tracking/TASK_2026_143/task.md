@@ -1,4 +1,4 @@
-# Task: Agent helper MCP tools — context, lessons, commit, and progress tools
+# Task: Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools
 
 ## Metadata
 
@@ -34,6 +34,28 @@ Add agent-facing MCP tools to nitro-cortex that reduce token burn for agents dur
 
 6. **`get_codebase_patterns(pattern_type, limit?)`** — Returns 2-3 example files matching a pattern (e.g., "service", "component", "repository"). Agents currently glob + read 5-10 files to find patterns.
 
+**Telemetry tools (data collection for model routing intelligence):**
+
+7. **`log_phase(worker_run_id, phase, start, end, outcome, metadata?)`** — Record per-phase timing and outcome. Called by orchestration skill at each phase boundary (PM, Architect, Dev Batch N, Review, Fix, Completion).
+
+8. **`log_review(task_id, review_type, score, findings_count, critical_count, model_that_built, model_that_reviewed, launcher_that_built, launcher_that_reviewed)`** — Record review results with model provenance. Called by Review Lead after collecting reports.
+
+9. **`log_fix_cycle(task_id, fixes_applied, fixes_skipped, required_manual, model_that_fixed, launcher_that_fixed)`** — Record fix phase results. Called by Fix Worker / Review Lead.
+
+10. **`get_model_performance(task_type?, complexity?, model?, launcher?)`** — Query aggregated quality/cost/failure stats across all runs. Used by supervisor for data-driven model routing.
+
+11. **`get_task_trace(task_id)`** — Full trace for one task: session → worker runs → phases → reviews → fixes. Complete observability.
+
+12. **`get_session_summary(session_id)`** — Session overview: supervisor model, mode, tasks processed, cost breakdown, per-worker timing.
+
+**Telemetry schema additions (tables added to cortex):**
+
+- `phases` table: worker_run_id, task_id, phase, model, start_time, end_time, duration_minutes, input_tokens, output_tokens, outcome, metadata (JSON)
+- `reviews` table: task_id, phase_id, review_type, score, findings_count, critical_count, serious_count, minor_count, model_that_built, model_that_reviewed, launcher_that_built, launcher_that_reviewed
+- `fix_cycles` table: task_id, phase_id, fixes_applied, fixes_skipped, required_manual, model_that_fixed, launcher_that_fixed, duration_minutes
+- `sessions` table enhanced: supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens
+- `worker_runs` table enhanced: launcher, input_tokens, output_tokens, total_cost, compaction_count, outcome, retry_number
+
 **CLI mirrors for important tools:**
 - `npx nitro-fueled status` — already exists (queries DB when available)
 - `npx nitro-fueled burn` — TASK_2026_119 (token analytics)
@@ -56,6 +78,14 @@ Add agent-facing MCP tools to nitro-cortex that reduce token burn for agents dur
 - [ ] `get_codebase_patterns` returns example files matching a pattern
 - [ ] All tools return structured JSON (not raw text)
 - [ ] All tools handle errors gracefully with structured error responses
+- [ ] `log_phase` records per-phase timing with model and outcome
+- [ ] `log_review` records review scores with model provenance (who built, who reviewed)
+- [ ] `log_fix_cycle` records fix results with model info
+- [ ] `get_model_performance` returns aggregated quality/cost/failure stats
+- [ ] `get_task_trace` returns full session→worker→phase→review chain for a task
+- [ ] `get_session_summary` returns supervisor session overview with cost breakdown
+- [ ] phases, reviews, fix_cycles tables created with proper schema and indexes
+- [ ] sessions and worker_runs tables enhanced with launcher, token, cost fields
 
 ## References
 
