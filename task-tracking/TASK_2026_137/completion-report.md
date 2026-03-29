@@ -1,30 +1,62 @@
 # Completion Report — TASK_2026_137
 
-## Summary
+## Files Created
+- None (all changes were modifications to existing files)
 
-Build Worker handoff artifact (Part 1 of 4 — Supervisor-Worker Communication Overhaul) is complete.
-
-The `handoff.md` artifact has been integrated into the orchestration workflow:
-- Build Worker writes `handoff.md` before marking IMPLEMENTED (new mandatory section in SKILL.md, placed before Completion Phase so it runs in Supervisor mode)
-- Review Lead reads `handoff.md` as its first action (Phase 1 updated from "Context Generation" to "Context Setup")
-- Sub-worker prompts (Style, Logic, Security reviewers) updated to reference `handoff.md` + `task.md` instead of `review-context.md`
-- strategies.md updated for FEATURE, BUGFIX, and REFACTORING flows
-- task-tracking.md updated with folder structure and Document Ownership table
-- review-context.md generation removed from the workflow
+## Files Modified
+- `.claude/skills/orchestration/SKILL.md` — added `## Build Worker Handoff (MANDATORY)` section, updated Exit Gate to check all 4 handoff.md sections, fixed "Dev complete" → "Handoff written" phase label, added explicit git add instruction
+- `.claude/skills/orchestration/references/task-tracking.md` — added handoff.md to folder structure, Document Ownership table, and Phase Detection Table
+- `.claude/skills/orchestration/references/strategies.md` — added handoff.md write step to FEATURE, BUGFIX, REFACTORING, DOCUMENTATION, DEVOPS, CONTENT flows
+- `.claude/agents/nitro-review-lead.md` — Phase 1 reads handoff.md instead of generating review-context.md; all 4 sections verified; opaque-data on fallback git log; sub-worker prompts reference handoff.md
+- `.claude/agents/nitro-code-security-reviewer.md` — reads handoff.md instead of review-context.md; file scope sourced from task.md
+- `.claude/skills/auto-pilot/references/worker-prompts.md` — Build Worker prompts include mandatory handoff.md write step and Exit Gate check; Review Lead prompts use review file Verdict detection instead of review-context.md
+- `.claude/skills/auto-pilot/references/parallel-mode.md` — REVIEW_DONE detection updated to `review-code-logic.md ## Verdict` (was `review-context.md ## Findings Summary`)
+- All 7 files above synced to `apps/cli/scaffold/.claude/` (including auto-pilot/SKILL.md which was stale by 1,212 lines)
 
 ## Review Scores
+| Review | Score |
+|--------|-------|
+| Code Style | 6/10 |
+| Code Logic | 6/10 |
+| Security | 7/10 |
 
-| Review     | Score |
-|------------|-------|
-| Code Style | 5/10  |
-| Code Logic | 4/10  |
-| Security   | 6/10  |
+## Findings Fixed
+- **Style blocking**: Added handoff.md step to DOCUMENTATION, DEVOPS, CONTENT strategies
+- **Style serious 1**: Exit Gate expanded to check all 4 sections (was 2)
+- **Style serious 2**: Phase label "Dev complete" → "Handoff written" for consistency
+- **Style serious 3**: Review Lead Phase 1 verification updated to check all 4 sections
+- **Logic critical**: Synced stale scaffold `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md`
+- **Logic serious 1**: Added handoff.md write step to Build Worker prompts in worker-prompts.md
+- **Logic serious 2**: Added explicit `git add handoff.md` instruction in SKILL.md
+- **Security serious**: Added opaque-data qualifier to fallback git log path in nitro-review-lead.md
+- **Security minor 1**: Build Worker Exit Gate in worker-prompts.md now checks handoff.md
+- **Security minor 2**: Review Lead fallback git log content now marked as opaque data
 
-## Findings Applied
+## New Review Lessons Added
+- `.claude/review-lessons/security.md` — security-relevant steps mandated in a skill spec must also appear in every worker prompt template; a step in the spec but absent from the template is a dead letter
+- `.claude/review-lessons/review-general.md` — updated with cross-file consistency rule for scaffold sync
 
-All findings from review reports have been addressed in the fix commit. Key fixes:
-- Moved `handoff.md` write instruction out of Completion Phase into a dedicated `## Build Worker Handoff (MANDATORY)` section (logic: Build Workers skip Completion Phase in Supervisor mode)
-- Updated all three sub-worker prompt templates to reference `handoff.md` instead of `review-context.md`
-- Added `handoff.md` step to BUGFIX and REFACTORING flows in strategies.md (not just FEATURE)
-- Phase 4 scope check updated from `review-context.md` to `task.md`
-- Exit Gate updated from `review-context.md exists` to `handoff.md exists`
+## Integration Checklist
+- [x] handoff.md written by Build Worker (SKILL.md, worker-prompts.md both updated)
+- [x] handoff.md read by Review Worker as first action (nitro-review-lead.md Phase 1)
+- [x] review-context.md fully removed from all in-scope files
+- [x] Phase detection table updated to recognize handoff.md
+- [x] All strategy flows include handoff.md step
+- [x] Scaffold files synced to apps/cli/scaffold/.claude/
+- [x] REVIEW_DONE detection in parallel-mode.md uses review-code-logic.md ## Verdict
+
+## Verification Commands
+```bash
+# Verify no stale review-context.md references remain in source
+grep -rn "review-context" .claude/ | grep -v "no longer\|defunct\|old artifact\|replaced by"
+
+# Verify handoff.md is in all strategy flows
+grep -n "handoff.md" .claude/skills/orchestration/references/strategies.md
+
+# Verify scaffold matches source
+diff .claude/agents/nitro-review-lead.md apps/cli/scaffold/.claude/agents/nitro-review-lead.md
+diff .claude/skills/orchestration/SKILL.md apps/cli/scaffold/.claude/skills/orchestration/SKILL.md
+
+# Verify REVIEW_DONE detection
+grep -n "review-code-logic\|REVIEW_DONE" .claude/skills/auto-pilot/references/parallel-mode.md
+```
