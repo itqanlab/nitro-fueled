@@ -281,7 +281,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_093 | Deprecate old packages — remove packages/ after cutover | CREATED | P2-Medium |
 | TASK_2026_144 | Remove legacy dashboard apps (dashboard-service + dashboard-web) | COMPLETE | P2-Medium |
 | TASK_2026_145 | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | COMPLETE | P1-High |
-| TASK_2026_146 | Dashboard telemetry views — model performance, phase timing, session analytics | CREATED | P2-Medium |
+| TASK_2026_146 | Dashboard telemetry views — model performance, phase timing, session analytics | COMPLETE | P2-Medium |
 
 ### Phase 15: nitro-cortex — Shared Intelligence Layer
 **Status**: IN_PROGRESS
