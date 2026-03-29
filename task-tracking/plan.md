@@ -224,6 +224,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_052 | Validate Workspace Init End-to-End | CREATED | P1-High |
 | TASK_2026_053 | Update Docs and Workspace to Reflect Package Vision | COMPLETE | P1-High |
 | TASK_2026_111 | Two-Phase Provider Resolver Engine (Part 2/3) | COMPLETE | P1-High |
+| TASK_2026_112 | Auto-Pilot Routing Update — Config-Driven (Part 3/3) | COMPLETE | P1-High |
 
 ### Phase 13: Documentation Site
 **Status**: COMPLETE
