@@ -32,7 +32,7 @@ const emitQueue = new EmitQueue();
 
 const server = new McpServer({
   name: 'nitro-cortex',
-  version: '0.4.0',
+  version: '0.5.0',
 });
 
 // --- Task tools (from Part 1) ---

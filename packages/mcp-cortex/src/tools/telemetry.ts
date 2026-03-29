@@ -23,7 +23,9 @@ export function handleLogPhase(
   try {
     const startMs = new Date(args.start).getTime();
     const endMs = new Date(args.end).getTime();
-    const durationMinutes = isNaN(startMs) || isNaN(endMs) ? null : Math.round((endMs - startMs) / 60_000 * 10) / 10;
+    const rawDuration = isNaN(startMs) || isNaN(endMs) ? null : (endMs - startMs) / 60_000;
+    // Clamp to 0 to handle clock skew or caller errors
+    const durationMinutes = rawDuration !== null ? Math.max(0, Math.round(rawDuration * 10) / 10) : null;
 
     const result = db.prepare(
       `INSERT INTO phases (worker_run_id, task_id, phase, model, start_time, end_time, duration_minutes, input_tokens, output_tokens, outcome, metadata)
@@ -70,6 +72,11 @@ export function handleLogReview(
   },
 ): ToolResult {
   try {
+    const taskExists = db.prepare('SELECT id FROM tasks WHERE id = ?').get(args.task_id) as { id: string } | undefined;
+    if (!taskExists) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }], isError: true };
+    }
+
     const result = db.prepare(
       `INSERT INTO reviews (task_id, phase_id, review_type, score, findings_count, critical_count, serious_count, minor_count, model_that_built, model_that_reviewed, launcher_that_built, launcher_that_reviewed)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -112,6 +119,11 @@ export function handleLogFixCycle(
   },
 ): ToolResult {
   try {
+    const taskExists = db.prepare('SELECT id FROM tasks WHERE id = ?').get(args.task_id) as { id: string } | undefined;
+    if (!taskExists) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }], isError: true };
+    }
+
     const result = db.prepare(
       `INSERT INTO fix_cycles (task_id, phase_id, fixes_applied, fixes_skipped, required_manual, model_that_fixed, launcher_that_fixed, duration_minutes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -272,15 +284,22 @@ export function handleGetTaskTrace(
     ).all(args.task_id) as Array<Record<string, unknown>>;
 
     const phases = db.prepare(
-      'SELECT * FROM phases WHERE task_id = ? ORDER BY start_time',
+      `SELECT id, worker_run_id, task_id, phase, model, start_time, end_time, duration_minutes,
+              input_tokens, output_tokens, outcome, created_at
+       FROM phases WHERE task_id = ? ORDER BY start_time`,
     ).all(args.task_id) as Array<Record<string, unknown>>;
 
     const reviews = db.prepare(
-      'SELECT * FROM reviews WHERE task_id = ? ORDER BY id',
+      `SELECT id, task_id, phase_id, review_type, score, findings_count, critical_count,
+              serious_count, minor_count, model_that_built, model_that_reviewed,
+              launcher_that_built, launcher_that_reviewed, created_at
+       FROM reviews WHERE task_id = ? ORDER BY id`,
     ).all(args.task_id) as Array<Record<string, unknown>>;
 
     const fixCycles = db.prepare(
-      'SELECT * FROM fix_cycles WHERE task_id = ? ORDER BY id',
+      `SELECT id, task_id, phase_id, fixes_applied, fixes_skipped, required_manual,
+              model_that_fixed, launcher_that_fixed, duration_minutes, created_at
+       FROM fix_cycles WHERE task_id = ? ORDER BY id`,
     ).all(args.task_id) as Array<Record<string, unknown>>;
 
     const handoffs = db.prepare(
@@ -356,15 +375,15 @@ export function handleGetSessionSummary(
       try {
         const cost = JSON.parse(w.cost_json) as { total_usd?: number };
         const tokens = JSON.parse(w.tokens_json) as { total_input?: number; total_output?: number; total_cache_creation?: number; total_cache_read?: number };
-        if (cost.total_usd) {
+        if (cost.total_usd != null) {
           totalCost += cost.total_usd;
           const key = w.model ?? 'unknown';
           perModelCost[key] = (perModelCost[key] ?? 0) + cost.total_usd;
         }
-        if (tokens.total_input) totalInputTokens += tokens.total_input;
-        if (tokens.total_output) totalOutputTokens += tokens.total_output;
-        if (tokens.total_cache_creation) totalCacheTokens += tokens.total_cache_creation;
-        if (tokens.total_cache_read) totalCacheTokens += tokens.total_cache_read;
+        if (tokens.total_input != null) totalInputTokens += tokens.total_input;
+        if (tokens.total_output != null) totalOutputTokens += tokens.total_output;
+        if (tokens.total_cache_creation != null) totalCacheTokens += tokens.total_cache_creation;
+        if (tokens.total_cache_read != null) totalCacheTokens += tokens.total_cache_read;
       } catch { /* ignore */ }
     }
 

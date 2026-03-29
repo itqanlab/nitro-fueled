@@ -122,21 +122,19 @@ CREATE TABLE IF NOT EXISTS events (
   created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
-// Telemetry tables (TASK_2026_143)
-
 const PHASES_TABLE = `
 CREATE TABLE IF NOT EXISTS phases (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
   worker_run_id    TEXT NOT NULL,
   task_id          TEXT REFERENCES tasks(id),
-  phase            TEXT NOT NULL,
+  phase            TEXT NOT NULL CHECK(phase IN ('PM','Architect','Dev','Review','Fix','Completion','other')),
   model            TEXT,
   start_time       TEXT,
   end_time         TEXT,
   duration_minutes REAL,
   input_tokens     INTEGER,
   output_tokens    INTEGER,
-  outcome          TEXT,
+  outcome          TEXT CHECK(outcome IN ('COMPLETE','FAILED','SKIPPED','STUCK') OR outcome IS NULL),
   metadata         TEXT,
   created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
@@ -146,7 +144,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id               TEXT NOT NULL REFERENCES tasks(id),
   phase_id              INTEGER REFERENCES phases(id),
-  review_type           TEXT NOT NULL,
+  review_type           TEXT NOT NULL CHECK(review_type IN ('code-style','code-logic','security','visual','other')),
   score                 REAL NOT NULL,
   findings_count        INTEGER NOT NULL DEFAULT 0,
   critical_count        INTEGER NOT NULL DEFAULT 0,

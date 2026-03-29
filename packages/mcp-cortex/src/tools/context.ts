@@ -1,17 +1,21 @@
 import type Database from 'better-sqlite3';
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join, extname, basename } from 'node:path';
+import { join, basename, resolve, sep } from 'node:path';
 import type { ToolResult } from './types.js';
 
 // Map from review-lesson file suffix to the file extensions they cover.
-// Extend this as new lesson files are added.
+// Files NOT in this map are treated as unknown and are NOT auto-included —
+// only files explicitly listed (or with an empty array marker) are included.
 const LESSON_FILE_MAP: Record<string, string[]> = {
-  'backend.md':       ['ts', 'js', 'mjs', 'cjs', 'py', 'go', 'rs', 'rb', 'java', 'kt', 'cs'],
-  'frontend.md':      ['tsx', 'jsx', 'vue', 'svelte', 'html', 'css', 'scss', 'sass', 'less'],
-  'review-general.md': [], // always included
-  'security.md':      ['ts', 'js', 'tsx', 'jsx', 'py', 'go', 'rs', 'rb', 'java', 'kt', 'cs', 'sql', 'sh', 'bash'],
-};
+  'backend.md':        ['ts', 'js', 'mjs', 'cjs', 'py', 'go', 'rs', 'rb', 'java', 'kt', 'cs'],
+  'frontend.md':       ['tsx', 'jsx', 'vue', 'svelte', 'html', 'css', 'scss', 'sass', 'less'],
+  'review-general.md': null, // null = always include
+  'security.md':       ['ts', 'js', 'tsx', 'jsx', 'py', 'go', 'rs', 'rb', 'java', 'kt', 'cs', 'sql', 'sh', 'bash'],
+} as unknown as Record<string, string[]>;
+
+// Files NOT in LESSON_FILE_MAP are never auto-included (opt-in, not opt-out).
+const ALWAYS_INCLUDE_LESSONS = new Set<string>(['review-general.md']);
 
 function readFileSafe(path: string): string {
   try {
@@ -24,6 +28,13 @@ function readFileSafe(path: string): string {
 function truncate(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
   return text.slice(0, maxChars) + '\n...[truncated]';
+}
+
+function assertInsideBase(base: string, target: string): void {
+  const resolved = resolve(target);
+  if (!resolved.startsWith(base + sep) && resolved !== base) {
+    throw new Error('path_traversal_denied');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -40,7 +51,14 @@ export function handleGetTaskContext(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }], isError: true };
   }
 
-  const taskFolder = join(projectRoot, 'task-tracking', args.task_id);
+  const taskTrackingBase = resolve(projectRoot, 'task-tracking');
+  const taskFolder = resolve(taskTrackingBase, args.task_id);
+
+  try {
+    assertInsideBase(taskTrackingBase, taskFolder);
+  } catch {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_task_id' }) }], isError: true };
+  }
 
   // Read plan.md and extract a summary (first 1500 chars)
   const planPath = join(taskFolder, 'plan.md');
@@ -112,9 +130,14 @@ export function handleGetReviewLessons(
   const included: Array<{ file: string; content: string }> = [];
 
   for (const file of files) {
-    const coverageExts = LESSON_FILE_MAP[file] ?? [];
-    const isGeneral = coverageExts.length === 0; // always include (e.g. review-general.md)
-    const isRelevant = isGeneral || coverageExts.some(ext => requestedExts.has(ext));
+    // Files not in the map are excluded (opt-in inclusion, not opt-out)
+    if (!(file in (LESSON_FILE_MAP as Record<string, unknown>)) && !ALWAYS_INCLUDE_LESSONS.has(file)) {
+      continue;
+    }
+
+    const coverageExts = (LESSON_FILE_MAP as unknown as Record<string, string[] | null>)[file];
+    const isAlwaysInclude = ALWAYS_INCLUDE_LESSONS.has(file) || coverageExts === null;
+    const isRelevant = isAlwaysInclude || (Array.isArray(coverageExts) && coverageExts.some(ext => requestedExts.has(ext)));
 
     if (isRelevant) {
       const content = readFileSafe(join(lessonsDir, file));
@@ -149,12 +172,17 @@ export function handleGetRecentChanges(
   }
 
   try {
-    const logOutput = execSync(
-      `git log --grep="${taskIdSafe}" --pretty=format:"%H|%s|%ai" --name-only`,
-      { cwd: projectRoot, encoding: 'utf8', timeout: 10_000 },
-    );
+    // Use NUL (x00) as record separator to avoid pipe-in-subject issues.
+    // --max-count caps to 50 commits to bound output size.
+    const logResult = spawnSync('git', [
+      'log',
+      `--grep=${taskIdSafe}`,
+      '--max-count=50',
+      '--pretty=format:%H%x00%s%x00%ai',
+      '--name-only',
+    ], { cwd: projectRoot, encoding: 'utf8', timeout: 10_000 });
 
-    if (!logOutput.trim()) {
+    if (logResult.status !== 0 || !logResult.stdout.trim()) {
       return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, task_id: args.task_id, commits: [], files_changed: [] }) }] };
     }
 
@@ -163,7 +191,7 @@ export function handleGetRecentChanges(
 
     let currentCommit: { hash: string; subject: string; date: string; files: string[] } | null = null;
 
-    for (const line of logOutput.split('\n')) {
+    for (const line of logResult.stdout.split('\n')) {
       const trimmed = line.trim();
       if (!trimmed) {
         if (currentCommit) {
@@ -172,9 +200,12 @@ export function handleGetRecentChanges(
         }
         continue;
       }
-      if (trimmed.includes('|') && /^[0-9a-f]{40}/.test(trimmed)) {
-        const [hash, subject, date] = trimmed.split('|') as [string, string, string];
-        currentCommit = { hash: hash.slice(0, 12), subject, date, files: [] };
+      // Lines with NUL separators are commit header lines
+      if (trimmed.includes('\x00')) {
+        const parts = trimmed.split('\x00');
+        if (parts.length >= 3 && parts[0] && /^[0-9a-f]{40}/.test(parts[0])) {
+          currentCommit = { hash: parts[0].slice(0, 12), subject: parts[1] ?? '', date: parts[2] ?? '', files: [] };
+        }
       } else if (currentCommit) {
         currentCommit.files.push(trimmed);
         allFiles.add(trimmed);
@@ -191,10 +222,10 @@ export function handleGetRecentChanges(
     };
 
     if (args.include_diff && commits.length > 0 && commits[0]) {
-      try {
-        const diff = execSync(`git show --stat ${commits[0].hash}`, { cwd: projectRoot, encoding: 'utf8', timeout: 10_000 });
-        result['latest_commit_stat'] = truncate(diff, 2000);
-      } catch { /* best-effort */ }
+      const statResult = spawnSync('git', ['show', '--stat', commits[0].hash], { cwd: projectRoot, encoding: 'utf8', timeout: 10_000 });
+      if (statResult.status === 0) {
+        result['latest_commit_stat'] = truncate(statResult.stdout, 2000);
+      }
     }
 
     return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
@@ -207,37 +238,38 @@ export function handleGetRecentChanges(
 // get_codebase_patterns
 // ---------------------------------------------------------------------------
 
-const PATTERN_GLOBS: Record<string, string[]> = {
-  service:     ['**/*.service.ts', '**/services/**/*.ts'],
-  component:   ['**/*.component.tsx', '**/components/**/*.tsx', '**/*.component.ts'],
-  repository:  ['**/*.repository.ts', '**/repositories/**/*.ts', '**/repos/**/*.ts'],
-  controller:  ['**/*.controller.ts', '**/controllers/**/*.ts'],
-  handler:     ['**/*.handler.ts', '**/handlers/**/*.ts'],
-  middleware:  ['**/*.middleware.ts', '**/middleware/**/*.ts'],
-  schema:      ['**/schema.ts', '**/schemas/**/*.ts', '**/*.schema.ts'],
-  test:        ['**/*.spec.ts', '**/*.test.ts'],
-  model:       ['**/*.model.ts', '**/models/**/*.ts'],
-  util:        ['**/utils/**/*.ts', '**/helpers/**/*.ts', '**/*.util.ts'],
-  hook:        ['**/hooks/**/*.ts', '**/hooks/**/*.tsx', '**/*.hook.ts'],
-  store:       ['**/stores/**/*.ts', '**/*.store.ts'],
-  type:        ['**/types.ts', '**/types/**/*.ts', '**/*.types.ts'],
-  config:      ['**/config.ts', '**/configs/**/*.ts', '**/*.config.ts'],
-  tool:        ['**/tools/**/*.ts'],
+// Each pattern maps to [nameGlob, directoryContext] pairs used in find commands.
+const PATTERN_SEARCH: Record<string, Array<{ name: string; dir?: string }>> = {
+  service:     [{ name: '*.service.ts' }, { name: '*.ts', dir: 'services' }],
+  component:   [{ name: '*.component.tsx' }, { name: '*.tsx', dir: 'components' }, { name: '*.component.ts' }],
+  repository:  [{ name: '*.repository.ts' }, { name: '*.ts', dir: 'repositories' }, { name: '*.ts', dir: 'repos' }],
+  controller:  [{ name: '*.controller.ts' }, { name: '*.ts', dir: 'controllers' }],
+  handler:     [{ name: '*.handler.ts' }, { name: '*.ts', dir: 'handlers' }],
+  middleware:  [{ name: '*.middleware.ts' }, { name: '*.ts', dir: 'middleware' }],
+  schema:      [{ name: 'schema.ts' }, { name: '*.schema.ts' }, { name: '*.ts', dir: 'schemas' }],
+  test:        [{ name: '*.spec.ts' }, { name: '*.test.ts' }],
+  model:       [{ name: '*.model.ts' }, { name: '*.ts', dir: 'models' }],
+  util:        [{ name: '*.util.ts' }, { name: '*.ts', dir: 'utils' }, { name: '*.ts', dir: 'helpers' }],
+  hook:        [{ name: '*.hook.ts' }, { name: '*.ts', dir: 'hooks' }, { name: '*.tsx', dir: 'hooks' }],
+  store:       [{ name: '*.store.ts' }, { name: '*.ts', dir: 'stores' }],
+  type:        [{ name: 'types.ts' }, { name: '*.types.ts' }, { name: '*.ts', dir: 'types' }],
+  config:      [{ name: 'config.ts' }, { name: '*.config.ts' }, { name: '*.ts', dir: 'configs' }],
+  tool:        [{ name: '*.ts', dir: 'tools' }],
 };
 
-function globSync(pattern: string, rootDir: string): string[] {
-  // Simple recursive glob implementation using execSync find
-  try {
-    // Convert glob pattern to a find -name compatible expression
-    const namePart = basename(pattern);
-    const result = execSync(
-      `find . -type f -name "${namePart}" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" -not -path "*/build/*" 2>/dev/null | head -10`,
-      { cwd: rootDir, encoding: 'utf8', timeout: 5_000 },
-    );
-    return result.trim().split('\n').filter(Boolean).map(p => p.replace(/^\.\//, ''));
-  } catch {
-    return [];
+function findFiles(name: string, dir: string | undefined, rootDir: string, limit: number): string[] {
+  const args = ['.',  '-type', 'f', '-name', name,
+    '-not', '-path', '*/node_modules/*',
+    '-not', '-path', '*/.git/*',
+    '-not', '-path', '*/dist/*',
+    '-not', '-path', '*/build/*',
+  ];
+  if (dir) {
+    args.push('-path', `*/${dir}/*`);
   }
+  const result = spawnSync('find', args, { cwd: rootDir, encoding: 'utf8', timeout: 5_000 });
+  if (result.status !== 0) return [];
+  return result.stdout.trim().split('\n').filter(Boolean).map(p => p.replace(/^\.\//, '')).slice(0, limit);
 }
 
 export function handleGetCodebasePatterns(
@@ -247,10 +279,10 @@ export function handleGetCodebasePatterns(
 ): ToolResult {
   const limit = Math.min(args.limit ?? 3, 10);
   const patternType = args.pattern_type.toLowerCase();
-  const globs = PATTERN_GLOBS[patternType];
+  const searches = PATTERN_SEARCH[patternType];
 
-  if (!globs) {
-    const available = Object.keys(PATTERN_GLOBS);
+  if (!searches) {
+    const available = Object.keys(PATTERN_SEARCH);
     return {
       content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'unknown_pattern_type', available_types: available }) }],
       isError: true,
@@ -258,9 +290,9 @@ export function handleGetCodebasePatterns(
   }
 
   const foundFiles = new Set<string>();
-  for (const glob of globs) {
+  for (const search of searches) {
     if (foundFiles.size >= limit) break;
-    const matches = globSync(glob, projectRoot);
+    const matches = findFiles(search.name, search.dir, projectRoot, limit - foundFiles.size);
     for (const f of matches) {
       foundFiles.add(f);
       if (foundFiles.size >= limit) break;
@@ -313,7 +345,7 @@ export function handleStageAndCommit(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'no_files_provided' }) }], isError: true };
   }
 
-  // Sanitize commit message fields — never interpolate free text into shell
+  // Sanitize metadata fields used only in the commit message body (no shell exposure)
   const taskIdSafe = (args.task_id ?? '').replace(/[^A-Z0-9_]/g, '');
   const agentSafe = (args.agent ?? 'unknown').replace(/[^\w-]/g, '');
   const phaseSafe = (args.phase ?? 'unknown').replace(/[^\w-]/g, '');
@@ -354,24 +386,31 @@ export function handleStageAndCommit(
   const fullMessage = `${args.message}\n\n${footer}`;
 
   try {
-    // Stage files
+    // Stage files using spawnSync (array form — no shell, no injection surface)
     for (const file of args.files) {
-      // Validate no shell metacharacters in file paths
-      const fileSafe = file.replace(/['"\\]/g, '');
-      execSync(`git add -- "${fileSafe}"`, { cwd: projectRoot, timeout: 10_000, encoding: 'utf8' });
+      const stageResult = spawnSync('git', ['add', '--', file], { cwd: projectRoot, timeout: 10_000, encoding: 'utf8' });
+      if (stageResult.status !== 0) {
+        const stderr = stageResult.stderr?.trim() ?? 'unknown error';
+        return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: `git add failed for '${basename(file)}': ${stderr}` }) }], isError: true };
+      }
     }
 
-    // Commit using environment variable to avoid shell injection in message
-    execSync('git commit -F -', {
+    // Commit using spawnSync with message on stdin (no shell, no injection surface)
+    const commitResult = spawnSync('git', ['commit', '-F', '-'], {
       cwd: projectRoot,
       timeout: 30_000,
       encoding: 'utf8',
       input: fullMessage,
-      env: { ...process.env },
     });
 
+    if (commitResult.status !== 0) {
+      const stderr = commitResult.stderr?.trim() ?? 'unknown error';
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: `git commit failed: ${stderr}` }) }], isError: true };
+    }
+
     // Get the new commit hash
-    const commitHash = execSync('git rev-parse --short HEAD', { cwd: projectRoot, encoding: 'utf8', timeout: 5_000 }).trim();
+    const hashResult = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: projectRoot, encoding: 'utf8', timeout: 5_000 });
+    const commitHash = hashResult.stdout.trim();
 
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, commit: commitHash, files_staged: args.files.length }) }] };
   } catch (err) {
@@ -392,17 +431,20 @@ export function handleReportProgress(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_task_id' }) }], isError: true };
   }
 
+  // Sanitize phase and status before using in event_type column
+  const phaseSafe = args.phase.replace(/[^\w-]/g, '').toUpperCase().slice(0, 50);
+  const statusSafe = args.status.replace(/[^\w-]/g, '').toUpperCase().slice(0, 50);
+
   const validStatuses = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED'];
-  const statusUpper = args.status.toUpperCase();
 
   try {
     const now = new Date().toISOString();
 
-    if (validStatuses.includes(statusUpper)) {
+    if (validStatuses.includes(statusSafe)) {
       // Update status in DB
       const result = db.prepare(
         'UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?',
-      ).run(statusUpper, now, taskIdSafe);
+      ).run(statusSafe, now, taskIdSafe);
 
       if (result.changes === 0) {
         return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }], isError: true };
@@ -411,14 +453,14 @@ export function handleReportProgress(
       // Log the event
       db.prepare(
         `INSERT INTO events (session_id, task_id, source, event_type, data) VALUES ('system', ?, 'report_progress', ?, ?)`,
-      ).run(taskIdSafe, `PHASE_${args.phase.toUpperCase()}_${statusUpper}`, JSON.stringify({ phase: args.phase, details: args.details ?? null }));
+      ).run(taskIdSafe, `PHASE_${phaseSafe}_${statusSafe}`, JSON.stringify({ phase: args.phase, details: args.details ?? null }));
 
-      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, task_id: taskIdSafe, phase: args.phase, status: statusUpper, updated_at: now }) }] };
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, task_id: taskIdSafe, phase: args.phase, status: statusSafe, updated_at: now }) }] };
     } else {
       // Non-standard status — just log the event without updating task status
       db.prepare(
         `INSERT INTO events (session_id, task_id, source, event_type, data) VALUES ('system', ?, 'report_progress', ?, ?)`,
-      ).run(taskIdSafe, `PHASE_${args.phase.toUpperCase()}_${args.status}`, JSON.stringify({ phase: args.phase, status: args.status, details: args.details ?? null }));
+      ).run(taskIdSafe, `PHASE_${phaseSafe}_${statusSafe}`, JSON.stringify({ phase: args.phase, status: args.status, details: args.details ?? null }));
 
       return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, task_id: taskIdSafe, phase: args.phase, status: args.status, note: 'progress event logged (status not a valid task status — no DB update)' }) }] };
     }

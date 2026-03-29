@@ -89,6 +89,9 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **In-memory queues need persistence or recovery** — purely in-memory task queues are lost on app restart. Persist to SQLite or serialize on change. (T86)
 - **Stub resolveWorkDir breaks dependent features** — if conflict guard and parallel runner both use a hardcoded `process.cwd()`, all tasks conflict with each other, making parallel execution impossible. (T86)
 - **Prevent duplicate enqueue** — check for existing taskId in queue before pushing. Double-enqueue causes pipeline "already running" throws. (T86)
+- **Use `execFileSync` with argument arrays for MCP shell tools** — `execSync` with a string command passes through a shell; any `$`, `` ` ``, `$()`, or `${}` in user-supplied path arguments survive quote-based sanitization and are expanded. Use `execFileSync('git', ['add', '--', filePath])` to bypass the shell entirely. Never sanitize by stripping characters — use shell-bypass instead. (TASK_2026_143)
+- **Falsy checks must not gate numeric accumulations** — `if (value)` silently skips `0`. When aggregating costs, tokens, counters, or durations, use `if (value != null)` to ensure zero-valued entries are included. A model with zero cost is not the same as a model with no cost data. (TASK_2026_143)
+- **Structured delimiters in git log format strings** — `--pretty=format:"%H|%s|%ai"` uses `|` as a field delimiter, but `%s` (subject) is unescaped and can contain `|`. Use NUL as the delimiter (`%H%x00%s%x00%ai`) and split on `\0` to guarantee correct field parsing regardless of commit message content. (TASK_2026_143)
 
 ## CLI Argument Validation
 
@@ -100,6 +103,9 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Action callback option types must not use inline intersection to smuggle in extra fields** — typing the Commander.js action callback as `RunOptions & { skipConnectivity: boolean }` means `skipConnectivity` is absent from the interface and only visible at the call site. Add all run-time flags directly to the options interface; intersections at action boundaries are a type hygiene smell that obscures the real shape of the options object. (TASK_2026_047)
 
 ## Service Discovery / CLI Services
+
+- **Hand-rolled glob helpers that use `basename()` to extract the name pattern degrade silently** — `basename('**/services/**/*.ts')` returns `'*.ts'`, making the `find -name` match every TypeScript file in the project. A glob-to-find converter must inspect whether the pattern contains directory path segments and build a `-path` expression instead of `-name`. Capping results at 10 files masks the degradation since the over-match is bounded but wrong. (TASK_2026_143)
+- **Server version in constructor and in startup log must match** — when a McpServer (or any versioned server) is initialized with `version: 'X.Y.Z'` and a startup `console.error` prints a different version string, the protocol handshake and operator visibility disagree. Keep both declarations in sync; treat divergence as a blocking issue. (TASK_2026_143)
 
 - **File-based service discovery needs identity validation** — checking `resp.ok` on a `/health` endpoint accepts any HTTP 200, including from unrelated local servers. The health endpoint must return a distinctive JSON body (e.g., `{"service":"nitro-dashboard"}`) and callers must validate it. (T024)
 - **Service startup must use `process.once` not `process.on` for signals** — `process.on('SIGINT')` accumulates handlers on each `start()` call. Use `process.once` and store the reference for removal in `stop()`. (T024)
