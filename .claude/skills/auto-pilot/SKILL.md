@@ -63,7 +63,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 | Escalate to user    | false       | --escalate       | When true: supervisor checks for NEED_INPUT signals from workers at phase boundaries (after each TASK_STATE_CHANGE event). Requires cortex_available = true. When false (default): workers fail autonomously, supervisor retries or blocks. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
 
-> **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
+> **Note on stuck detection**: Stuck detection is server-side -- the MCP nitro-cortex server determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
 
 > **Note on `escalate_to_user`**: This option requires `cortex_available = true` — it
 > depends on `query_events` to poll for NEED_INPUT signals. If `cortex_available = false`
@@ -186,11 +186,11 @@ The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions 
 Detection runs at **Step 2**: call `get_tasks()`. Calling `get_tasks()` is the authoritative
 detection method because it tests actual DB functionality, not just tool list presence.
 
-**Default behavior** (allow_file_fallback not set, or set to false):
+**Default behavior** (allowFileFallback not set, or set to false):
 If `get_tasks()` fails, **STOP IMMEDIATELY** and display:
-`"FATAL: nitro-cortex DB unavailable. The Supervisor requires nitro-cortex to be operational. Set allow_file_fallback: true in .nitro-fueled/config.json to enable degraded file-based mode, then restart."`
+`"FATAL: nitro-cortex DB unavailable. The Supervisor requires nitro-cortex to be operational. Set \"allowFileFallback\": true in .nitro-fueled/config.json to enable degraded file-based mode, then restart."`
 
-**With allow_file_fallback: true** (opt-in degraded mode):
+**With `"allowFileFallback": true`** (opt-in degraded mode, set in `.nitro-fueled/config.json`):
 If `get_tasks()` fails, set `cortex_available = false` and proceed with file-based fallback
 paths documented in `references/parallel-mode.md`. This degrades task coordination
 but allows the Supervisor to run without the cortex DB.
@@ -576,7 +576,7 @@ If an MCP call fails, apply scoped retry logic:
 1. Retry up to **3 times** with **30-second backoff**.
 2. If still failing:
    - Write current state to `{SESSION_DIR}state.md`.
-   - Log: `"MCP session-orchestrator unreachable after 3 retries. Supervisor paused. State saved. Resolve MCP connection and re-run /auto-pilot to resume."`
+   - Log: `"MCP nitro-cortex unreachable after 3 retries. Supervisor paused. State saved. Resolve MCP connection and re-run /auto-pilot to resume."`
    - **STOP** the loop (graceful pause -- do not crash).
 
 ### Malformed Task Data

@@ -13,8 +13,12 @@ const EMIT_QUEUE_MAX = 2_000;
 const WORKER_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATA_PAYLOAD_MAX_BYTES = 8192;
 
+/** Matches the supervisor's phase-transition label conventions: uppercase letters, digits, underscores only. */
+const EMIT_LABEL_RE = /^[A-Z0-9_]{1,64}$/;
+
 export interface EmittedEvent {
   worker_id: string;
+  session_id: string;
   event_label: string;
   emitted_at: string;
   data?: Record<string, string>;
@@ -31,10 +35,23 @@ export class EmitQueue {
     this.queue.push(ev);
   }
 
-  drain(): EmittedEvent[] {
-    const out = this.queue;
-    this.queue = [];
-    return out;
+  drain(sessionId?: string): EmittedEvent[] {
+    if (sessionId === undefined) {
+      const out = this.queue;
+      this.queue = [];
+      return out;
+    }
+    const matching: EmittedEvent[] = [];
+    const remaining: EmittedEvent[] = [];
+    for (const ev of this.queue) {
+      if (ev.session_id === sessionId) {
+        matching.push(ev);
+      } else {
+        remaining.push(ev);
+      }
+    }
+    this.queue = remaining;
+    return matching;
   }
 }
 
@@ -44,11 +61,15 @@ export function handleEmitEvent(
   args: { worker_id: string; label: string; data?: Record<string, string> },
 ): ToolResult {
   const safeId = args.worker_id.replace(/[\r\n\x1b]/g, '<LF>');
-  const safeLabel = args.label.replace(/[\r\n\x1b]/g, '<LF>');
 
   if (!WORKER_ID_RE.test(args.worker_id)) {
     process.stderr.write(`[emit_event] rejected: invalid worker_id format "${safeId}"\n`);
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, error: 'invalid worker_id format' }) }], isError: true };
+  }
+
+  if (!EMIT_LABEL_RE.test(args.label)) {
+    process.stderr.write(`[emit_event] rejected: label must match [A-Z0-9_]{1,64} for ${safeId}\n`);
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, error: 'invalid label format — use uppercase letters, digits, underscores only' }) }], isError: true };
   }
 
   if (args.data !== undefined && JSON.stringify(args.data).length > DATA_PAYLOAD_MAX_BYTES) {
@@ -56,14 +77,16 @@ export function handleEmitEvent(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, error: 'data payload too large' }) }], isError: true };
   }
 
-  const w = db.prepare('SELECT id FROM workers WHERE id = ?').get(args.worker_id);
-  if (!w) {
-    process.stderr.write(`[emit_event] worker ${safeId} not found in DB — event queued anyway\n`);
+  const row = db.prepare('SELECT id, session_id FROM workers WHERE id = ?').get(args.worker_id) as { id: string; session_id: string } | undefined;
+  if (!row) {
+    process.stderr.write(`[emit_event] worker ${safeId} not found in DB — rejecting event\n`);
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, error: 'unknown worker_id' }) }], isError: true };
   }
 
   emitQueue.enqueue({
     worker_id: args.worker_id,
-    event_label: safeLabel,
+    session_id: row.session_id,
+    event_label: args.label,
     emitted_at: new Date().toISOString(),
     data: args.data,
     source: 'emit_event',
@@ -296,9 +319,9 @@ export function handleSubscribeWorker(
 }
 
 export function handleGetPendingEvents(fileWatcher: FileWatcher, emitQueue: EmitQueue, sessionId?: string): ToolResult {
-  // H5: filter by session_id when provided.
+  // Filter both file-watcher events and emit-events by session_id when provided.
   const fileEvents = fileWatcher.drainEvents(sessionId);
-  const emitEvents = emitQueue.drain();
+  const emitEvents = emitQueue.drain(sessionId);
   const all = [...fileEvents, ...emitEvents];
   return { content: [{ type: 'text' as const, text: JSON.stringify({ events: all }, all.length > 0 ? null : undefined, all.length > 0 ? 2 : undefined) }] };
 }

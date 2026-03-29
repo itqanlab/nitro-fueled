@@ -251,7 +251,7 @@ async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<vo
         }
       }
     } catch {
-      // parse error — fall through to configure
+      console.warn('Warning: Could not parse existing .mcp.json — falling through to reconfigure.');
     }
   }
 

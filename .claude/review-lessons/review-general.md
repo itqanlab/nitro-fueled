@@ -28,6 +28,7 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **SCREAMING_SNAKE_CASE** for const domain objects (`TABLES`, `CHANNELS`)
 - **camelCase** for variables, functions, methods
 - **PascalCase** for classes, interfaces, types, enums
+- **Interface field names must follow the interface's established casing convention** — a single `snake_case` field in a `camelCase` interface (e.g. `allow_file_fallback` in `NitroFueledConfig`) is a naming defect. If the JSON config file uses snake_case, coerce at the parse boundary and keep the TypeScript property camelCase. (TASK_2026_142)
 
 ## File Structure
 

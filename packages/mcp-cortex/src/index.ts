@@ -299,7 +299,7 @@ server.registerTool('emit_event', {
   description: 'Emit a phase-transition event from a worker. Enqueued into the supervisor event queue. Retrieve via get_pending_events.',
   inputSchema: {
     worker_id: z.string().max(36).describe('Worker ID returned by spawn_worker'),
-    label: z.string().max(64).describe('Event label (e.g. IN_PROGRESS, PM_COMPLETE, ARCHITECTURE_COMPLETE, BATCH_COMPLETE, IMPLEMENTED)'),
+    label: z.string().regex(/^[A-Z0-9_]{1,64}$/).describe('Event label — uppercase letters, digits, underscores only (e.g. IN_PROGRESS, PM_COMPLETE, BATCH_COMPLETE, IMPLEMENTED)'),
     data: z.record(z.string().max(64), z.string().max(512)).optional().describe('Optional key-value payload'),
   },
 }, (args) => handleEmitEvent(db, emitQueue, args));
@@ -307,7 +307,7 @@ server.registerTool('emit_event', {
 server.registerTool('get_pending_events', {
   description: 'Drain and return all pending worker completion events (idempotent drain).',
   inputSchema: {
-    session_id: z.string().optional().describe('Optional session filter (not yet implemented)'),
+    session_id: z.string().optional().describe('Filter by session ID — only events for this session are returned'),
   },
 }, (args) => handleGetPendingEvents(fileWatcher, emitQueue, args.session_id));
 
