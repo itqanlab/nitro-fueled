@@ -15,6 +15,7 @@ Detailed workflow diagrams and guidance for all 6 execution strategies plus crea
 | RESEARCH      | Investigation  | Researcher                           | None                                  |
 | DEVOPS        | Infrastructure | PM, Architect, DevOps Engineer, QA   | Requirements, Architecture, QA        |
 | CREATIVE      | Design-first   | UI/UX Designer, Content Writer, Dev  | Scope, Design System, Content         |
+| CONTENT       | Text-first     | PM, [Researcher], Content Writer, Style Reviewer | Scope, Requirements, QA   |
 
 ---
 
@@ -460,6 +461,87 @@ Developer should:
 
 ---
 
+## CONTENT (Text-First Content Workflow)
+
+**When to use**: Blog articles, email campaigns, newsletters, ad copy, marketing copy — non-coding content work
+
+**Key distinction from CREATIVE**: CONTENT is text-first (deliverable is written copy); CREATIVE is design-first (deliverable is a visual/UI).
+
+```
+Phase 1: nitro-project-manager --> Creates task-description.md
+         |
+         USER VALIDATES ("APPROVED" or feedback)
+         |
+         v
+Phase 2: [IF topic depth needed] nitro-researcher-expert --> Creates research-report.md
+         |
+         v
+Phase 3: nitro-technical-content-writer --> Creates content output
+         |
+         USER CHOOSES QA (style/skip)
+         |
+         v
+Phase 4: [nitro-code-style-reviewer] --> Tone, brand voice, audience fit, readability
+         |
+         v
+Phase 5: User handles git (commits already created)
+```
+
+### CONTENT Trigger Keywords
+
+Invoke CONTENT strategy when the request contains any of:
+
+- "blog post", "article", "write an article"
+- "email campaign", "marketing email", "email sequence"
+- "newsletter"
+- "ad copy", "advertising copy"
+- "content piece", "copywriting"
+- "write copy for"
+
+### CONTENT Review Criteria
+
+| Criterion          | Reviewer |
+| ------------------ | -------- |
+| Tone & brand voice | nitro-code-style-reviewer |
+| Audience fit       | nitro-code-style-reviewer |
+| SEO (for blogs)    | nitro-code-style-reviewer |
+| Call-to-action effectiveness | nitro-code-style-reviewer |
+| Readability        | nitro-code-style-reviewer |
+
+### CONTENT vs CREATIVE Decision
+
+| User Says                    | Workflow  |
+| ---------------------------- | --------- |
+| "Write a blog post about..." | CONTENT   |
+| "Write a newsletter for..."  | CONTENT   |
+| "Write ad copy for..."       | CONTENT   |
+| "Create a landing page for..." | CREATIVE |
+| "Design our homepage"        | CREATIVE  |
+| "Build a marketing site"     | CREATIVE  |
+| "Visual design for..."       | CREATIVE  |
+
+**Key signal**: If the deliverable is primarily *written copy* (text file, email body, blog post), use CONTENT. If the deliverable is a *visual page or UI* (HTML, component, design system), use CREATIVE.
+
+### Conditional Research Trigger
+
+| Condition | Action |
+| --------- | ------ |
+| Blog post on a specific technical topic | Invoke nitro-researcher-expert for topic accuracy |
+| Email campaign referencing product metrics | Invoke nitro-researcher-expert to gather facts |
+| General marketing copy | Skip research, go directly to nitro-technical-content-writer |
+
+### CONTENT Output Locations
+
+| Deliverable           | Output Path                                        |
+| --------------------- | -------------------------------------------------- |
+| Blog post             | `docs/content/blog-[slug].md`                      |
+| Email campaign        | `docs/content/email-[name].md`                     |
+| Newsletter            | `docs/content/newsletter-[issue].md`               |
+| Ad copy               | `docs/content/ad-copy-[name].md`                   |
+| Content specification | `task-tracking/TASK_[ID]/content-specification.md` |
+
+---
+
 ## Strategy Selection Summary
 
 Use this decision tree for quick strategy selection:
@@ -471,6 +553,10 @@ Is task DEVOPS (CI/CD, packaging, build config, deployment)?
 
 Is task CREATIVE (landing page, brand, marketing, theme design)?
     YES -> Check design system -> CREATIVE strategy
+    NO  -> continue
+
+Is task CONTENT (blog post, email campaign, newsletter, ad copy)?
+    YES -> CONTENT strategy
     NO  -> continue
 
 Is task a new FEATURE?

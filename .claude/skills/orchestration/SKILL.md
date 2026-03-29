@@ -31,6 +31,7 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 | RESEARCH      | Researcher -> [conditional implementation]         |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
 | CREATIVE      | [nitro-ui-ux-designer] -> nitro-technical-content-writer -> nitro-frontend-developer |
+| CONTENT       | PM -> [nitro-researcher-expert] -> nitro-technical-content-writer -> Style Reviewer |
 
 See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
@@ -94,13 +95,14 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | --------------------------------------------- | ------------- |
 | CI/CD, pipeline, build tool, deploy, pack     | DEVOPS        |
 | landing page, marketing, brand, visual        | CREATIVE      |
+| blog post, article, email campaign, newsletter, ad copy, marketing email, content piece, copywriting | CONTENT |
 | implement, add, create, build                 | FEATURE       |
 | fix, bug, error, issue                        | BUGFIX        |
 | refactor, improve, optimize                   | REFACTORING   |
 | document, readme, comment                     | DOCUMENTATION |
 | research, investigate, analyze                | RESEARCH      |
 
-**Priority**: DEVOPS > CREATIVE > FEATURE (when multiple keywords present)
+**Priority**: DEVOPS > CREATIVE > CONTENT > FEATURE (when multiple keywords present)
 
 ### Adaptive Strategy Selection
 

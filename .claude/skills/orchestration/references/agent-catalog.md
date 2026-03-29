@@ -46,7 +46,8 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Architecture     | nitro-software-architect                                 | Design                      |
 | Landing page     | nitro-ui-ux-designer -> nitro-technical-content-writer         | Marketing pages             |
 | Brand/visual     | nitro-ui-ux-designer                                     | Design system               |
-| Content          | nitro-technical-content-writer                           | Blogs, docs, video          |
+| Content          | nitro-project-manager -> [nitro-researcher-expert] -> nitro-technical-content-writer -> nitro-code-style-reviewer | Blog, email, newsletter, ad copy (CONTENT flow) |
+| Design content   | nitro-technical-content-writer                           | Blogs, docs, video (CREATIVE flow) |
 | Infrastructure   | nitro-devops-engineer                                    | CI/CD, packaging            |
 | Planning         | nitro-planner                                            | Roadmap, backlog, task creation |
 
@@ -65,6 +66,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 - Starting new features (FEATURE strategy Phase 1)
 - Documentation tasks (DOCUMENTATION strategy Phase 1)
 - DevOps tasks (DEVOPS strategy Phase 1)
+- Content tasks (CONTENT strategy Phase 1)
 - Any task needing scope clarification
 
 **Inputs**:
@@ -760,13 +762,15 @@ See nitro-ui-ux-designer.md for detailed instructions.`,
 
 ### nitro-technical-content-writer
 
-**Role**: Marketing content, documentation, blog posts, video scripts
+**Role**: Marketing content, documentation, blog posts, video scripts, email campaigns, newsletters, ad copy
 
 **Triggers**:
 
+- CONTENT workflow (Phase 3 — primary content producer)
 - CREATIVE workflow (after design system exists)
 - Landing page content creation
 - Blog post writing
+- Email campaign / newsletter / ad copy creation
 - Documentation creation
 - Video script development
 
