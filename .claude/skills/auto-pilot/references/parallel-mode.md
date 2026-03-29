@@ -109,6 +109,8 @@ If `get_tasks()` is not in the MCP tool list, or returns an error, fall back to:
 1. Read `task-tracking/registry.md`.
 2. Parse every row: extract **Task ID**, **Status** (registry column — used only as fallback if status file is missing), **Type**, **Description**, **Priority**, **Dependencies** (do NOT rely on the registry Status column as the live state for routing decisions).
 3. For each Task ID parsed from the registry, validate the Task ID matches `TASK_\d{4}_\d{3}` before constructing any file path. If the value does not match, skip the row and log warning: `"[warn] Skipping malformed Task ID: {raw_id}"`. For valid Task IDs, read `task-tracking/TASK_YYYY_NNN/status` to get the current state (trim all whitespace). If the `status` file is missing, fall back to registry column 2 and log warning: `"[warn] TASK_YYYY_NNN: status file missing, reading state from registry.md"`.
+
+   > **Shell variable naming**: When reading status files in a bash loop, do NOT use `status` as a variable name — it is a read-only reserved variable in zsh and will cause `read-only variable: status` errors. Use `task_status` instead (e.g., `task_status=$(cat "task-tracking/$task/status" 2>/dev/null | tr -d '[:space:]')`).
 4. If a row is missing Priority or Dependencies columns (legacy registry format):
    - Treat Priority as `P2-Medium` and Dependencies as empty.
    - Log warning: `"[warn] TASK_YYYY_NNN: registry row missing Priority/Dependencies — treating as P2-Medium, no deps"`
@@ -676,7 +678,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 #### Step 6 — Event-Driven Mode (`event_driven_mode = true`)
 
-1. **Wait 30 seconds** (fast event poll interval).
+1. **Wait 30 seconds** (fast event poll interval). Implement this as `Bash: sleep 30` — do NOT yield control to the user or ask for input. The supervisor loop must be fully autonomous between monitoring cycles.
 
 2. **Drain the event queue:** Call MCP `get_pending_events()`.
    - For each event returned: trigger the completion handler (Step 7) for that worker immediately.
@@ -712,7 +714,7 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 #### Step 6 — Polling Mode (`event_driven_mode = false`)
 
-1. **Wait** for the configured monitoring interval (default: 5 minutes).
+1. **Wait** for the configured monitoring interval (default: 5 minutes). Implement this as `Bash: sleep N` (where N is the interval in seconds, e.g., `sleep 300` for 5 minutes) — do NOT yield control to the user, ask for input, or suggest the user send a message to trigger the next check. The supervisor loop must run autonomously until the backlog is drained or `--limit` is reached.
 
 2. For each active worker in `{SESSION_DIR}state.md`:
 
