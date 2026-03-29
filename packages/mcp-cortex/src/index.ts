@@ -44,6 +44,17 @@ server.registerTool('get_tasks', {
   },
 }, (args) => handleGetTasks(db, args));
 
+// query_tasks is an alias for get_tasks (acceptance-criteria name from TASK_2026_138 spec)
+server.registerTool('query_tasks', {
+  description: 'Alias for get_tasks. Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE.',
+  inputSchema: {
+    status: z.string().optional().describe('Filter by task status'),
+    type: z.string().optional().describe('Filter by task type'),
+    priority: z.string().optional().describe('Filter by priority'),
+    unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
+  },
+}, (args) => handleGetTasks(db, args));
+
 server.registerTool('claim_task', {
   description: 'Atomic claim on a task. Returns {ok: true} or {ok: false, claimed_by: session_id}.',
   inputSchema: {
@@ -56,7 +67,7 @@ server.registerTool('release_task', {
   description: 'Release a claimed task, clearing the claim and setting a new status.',
   inputSchema: {
     task_id: z.string().describe('Task ID to release'),
-    new_status: z.string().describe('New status to set'),
+    new_status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','COMPLETE','FAILED','BLOCKED','CANCELLED']).describe('New status to set'),
   },
 }, (args) => handleReleaseTask(db, args));
 
@@ -107,25 +118,25 @@ server.registerTool('upsert_task', {
 // --- Handoff tools ---
 
 server.registerTool('write_handoff', {
-  description: 'Record a Build-to-Review handoff: files changed, commits, decisions, and risks for a task.',
+  description: 'Record a Build-to-Review handoff: files changed, commits, decisions, and risks for a task. Handoff records are immutable — no update tool exists.',
   inputSchema: {
-    task_id: z.string().describe('Task ID this handoff belongs to'),
+    task_id: z.string().max(200).describe('Task ID this handoff belongs to'),
     worker_type: z.enum(['build', 'review']).describe('Worker type writing the handoff'),
     files_changed: z.array(z.object({
-      path: z.string().describe('File path'),
-      action: z.string().describe('new | modified | deleted'),
+      path: z.string().max(1000).describe('File path'),
+      action: z.string().max(50).describe('new | modified | deleted'),
       lines: z.number().optional().describe('Line count or diff size'),
-    })).describe('Files changed in this work unit'),
-    commits: z.array(z.string()).describe('Commit hashes included in this handoff'),
-    decisions: z.array(z.string()).describe('Key architectural or implementation decisions'),
-    risks: z.array(z.string()).describe('Known risks, edge cases, or areas needing extra review'),
+    })).max(500).describe('Files changed in this work unit'),
+    commits: z.array(z.string().max(200)).max(200).describe('Commit hashes included in this handoff'),
+    decisions: z.array(z.string().max(2000)).max(100).describe('Key architectural or implementation decisions'),
+    risks: z.array(z.string().max(2000)).max(100).describe('Known risks, edge cases, or areas needing extra review'),
   },
 }, (args) => handleWriteHandoff(db, args));
 
 server.registerTool('read_handoff', {
   description: 'Return the most recent handoff record for a task (parsed JSON fields).',
   inputSchema: {
-    task_id: z.string().describe('Task ID to retrieve handoff for'),
+    task_id: z.string().max(200).describe('Task ID to retrieve handoff for'),
   },
 }, (args) => handleReadHandoff(db, args));
 
@@ -134,22 +145,22 @@ server.registerTool('read_handoff', {
 server.registerTool('log_event', {
   description: 'Append a structured event to the events log. Replaces log.md for queryable event history.',
   inputSchema: {
-    session_id: z.string().describe('Session ID this event belongs to'),
-    task_id: z.string().optional().describe('Task ID this event relates to (optional)'),
-    source: z.string().describe("Event source: 'auto-pilot', 'orchestrate', or a worker_id"),
-    event_type: z.string().describe("Event type: SPAWNED, HEALTH_CHECK, STATE_TRANSITIONED, PM_COMPLETE, etc."),
+    session_id: z.string().max(200).describe('Session ID this event belongs to'),
+    task_id: z.string().max(200).optional().describe('Task ID this event relates to (optional)'),
+    source: z.string().max(200).describe("Event source: 'auto-pilot', 'orchestrate', or a worker_id"),
+    event_type: z.string().max(100).describe("Event type: SPAWNED, HEALTH_CHECK, STATE_TRANSITIONED, PM_COMPLETE, etc."),
     data: z.record(z.string(), z.unknown()).optional().describe('Optional JSON payload'),
   },
 }, (args) => handleLogEvent(db, args));
 
 server.registerTool('query_events', {
-  description: 'Query the events log with optional filters. Returns events ordered by id ASC.',
+  description: 'Query the events log with optional filters. Returns events ordered by id ASC. limit=0 returns an empty set; omitting limit defaults to 500.',
   inputSchema: {
-    session_id: z.string().optional().describe('Filter by session ID'),
-    task_id: z.string().optional().describe('Filter by task ID'),
-    event_type: z.string().optional().describe('Filter by event type'),
-    since: z.string().optional().describe('ISO timestamp — return events at or after this time'),
-    limit: z.number().optional().describe('Max events to return (default 500, max 1000)'),
+    session_id: z.string().max(200).optional().describe('Filter by session ID'),
+    task_id: z.string().max(200).optional().describe('Filter by task ID'),
+    event_type: z.string().max(100).optional().describe('Filter by event type'),
+    since: z.string().max(50).optional().describe('ISO timestamp — return events at or after this time'),
+    limit: z.number().int().min(0).max(1000).optional().describe('Max events to return (default 500, max 1000, 0 = empty set)'),
   },
 }, (args) => handleQueryEvents(db, args));
 
@@ -292,7 +303,7 @@ jsonlWatcher.start();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-console.error('[nitro-cortex] MCP server connected via stdio (v0.2.0 — sessions + workers)');
+console.error('[nitro-cortex] MCP server connected via stdio (v0.3.0 — sessions + workers + handoffs + events)');
 
 process.on('SIGINT', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
 process.on('SIGTERM', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });

@@ -135,10 +135,24 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)',
+  'CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)',
+];
+
+// Column additions for schema evolution. Each entry is applied once via ALTER TABLE;
+// SQLite silently ignores duplicates when we catch the "duplicate column name" error.
+const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
+  { column: 'complexity',           ddl: 'ALTER TABLE tasks ADD COLUMN complexity TEXT' },
+  { column: 'model',                ddl: 'ALTER TABLE tasks ADD COLUMN model TEXT' },
+  { column: 'dependencies',         ddl: "ALTER TABLE tasks ADD COLUMN dependencies TEXT NOT NULL DEFAULT '[]'" },
+  { column: 'description',          ddl: 'ALTER TABLE tasks ADD COLUMN description TEXT' },
+  { column: 'acceptance_criteria',  ddl: 'ALTER TABLE tasks ADD COLUMN acceptance_criteria TEXT' },
+  { column: 'file_scope',           ddl: "ALTER TABLE tasks ADD COLUMN file_scope TEXT NOT NULL DEFAULT '[]'" },
+  { column: 'session_claimed',      ddl: 'ALTER TABLE tasks ADD COLUMN session_claimed TEXT' },
+  { column: 'claimed_at',           ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
 ];
 
 export function initDatabase(dbPath: string): Database.Database {
-  mkdirSync(dirname(dbPath), { recursive: true });
+  mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
 
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
@@ -151,6 +165,16 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(EVENTS_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
+  }
+
+  // Apply forward-only column migrations for pre-existing tasks tables
+  const existingColumns = new Set(
+    (db.prepare('PRAGMA table_info(tasks)').all() as Array<{ name: string }>).map(r => r.name),
+  );
+  for (const { column, ddl } of TASK_MIGRATIONS) {
+    if (!existingColumns.has(column)) {
+      db.exec(ddl);
+    }
   }
 
   return db;

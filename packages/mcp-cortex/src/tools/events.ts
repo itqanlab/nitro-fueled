@@ -13,17 +13,16 @@ export function handleLogEvent(
 ): ToolResult {
   const dataJson = JSON.stringify(args.data ?? {});
 
-  const result = db.prepare(
-    `INSERT INTO events (session_id, task_id, source, event_type, data)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(args.session_id, args.task_id ?? null, args.source, args.event_type, dataJson);
+  try {
+    const result = db.prepare(
+      `INSERT INTO events (session_id, task_id, source, event_type, data)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(args.session_id, args.task_id ?? null, args.source, args.event_type, dataJson);
 
-  return {
-    content: [{
-      type: 'text' as const,
-      text: JSON.stringify({ ok: true, id: result.lastInsertRowid }),
-    }],
-  };
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, id: result.lastInsertRowid }) }] };
+  } catch (err) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: err instanceof Error ? err.message : String(err) }) }] };
+  }
 }
 
 export function handleQueryEvents(
@@ -56,17 +55,25 @@ export function handleQueryEvents(
     params.push(args.since);
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = args.limit && args.limit > 0 ? `LIMIT ${Math.min(args.limit, 1000)}` : 'LIMIT 500';
+  // Use a bound parameter for LIMIT to stay consistent with the parameterized-query pattern.
+  // Undefined limit → default 500. Explicit limit (including 0) → capped at 1000.
+  const limit = args.limit !== undefined ? Math.min(Math.max(0, args.limit), 1000) : 500;
+  params.push(limit);
 
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const rows = db.prepare(
-    `SELECT * FROM events ${where} ORDER BY id ASC ${limitClause}`,
+    `SELECT * FROM events ${where} ORDER BY id ASC LIMIT ?`,
   ).all(...params) as Array<Record<string, unknown>>;
 
-  const parsed = rows.map((row) => ({
-    ...row,
-    data: JSON.parse(row.data as string) as unknown,
-  }));
+  const parsed = rows.map((row) => {
+    let data: unknown;
+    try {
+      data = JSON.parse(row.data as string);
+    } catch {
+      data = { _parse_error: true, raw: row.data };
+    }
+    return { ...row, data };
+  });
 
   return { content: [{ type: 'text' as const, text: JSON.stringify(parsed, null, 2) }] };
 }

@@ -35,8 +35,14 @@ export function handleGetTasks(
       (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE'").all() as Array<{ id: string }>).map(r => r.id),
     );
     const filtered = rows.filter(row => {
-      const deps = JSON.parse((row['dependencies'] as string) ?? '[]') as string[];
-      return deps.length === 0 || deps.every(d => completeTasks.has(d));
+      let deps: unknown;
+      try {
+        deps = JSON.parse((row['dependencies'] as string) ?? '[]');
+      } catch {
+        deps = [];
+      }
+      if (!Array.isArray(deps)) deps = [];
+      return (deps as string[]).length === 0 || (deps as string[]).every(d => completeTasks.has(d));
     });
     return { content: [{ type: 'text' as const, text: JSON.stringify(filtered, null, 2) }] };
   }
@@ -88,6 +94,8 @@ export function handleReleaseTask(
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true }) }] };
 }
 
+// UPSERTABLE_COLUMNS mirrors UPDATABLE_COLUMNS but excludes session_claimed/claimed_at,
+// which are managed by claim_task/release_task to preserve claim atomicity.
 const UPSERTABLE_COLUMNS = new Set([
   'title', 'type', 'priority', 'status', 'complexity', 'model',
   'dependencies', 'description', 'acceptance_criteria', 'file_scope',
@@ -102,12 +110,12 @@ export function handleUpsertTask(
   const existing = db.prepare('SELECT id FROM tasks WHERE id = ?').get(args.task_id) as { id: string } | undefined;
 
   if (existing) {
-    // UPDATE path — same whitelist as update_task
+    // UPDATE path — rejects non-whitelisted columns; mirrors handleUpdateTask behavior
     const sets: string[] = [];
     const params: unknown[] = [];
 
     for (const [key, value] of Object.entries(args.fields)) {
-      if (!UPDATABLE_COLUMNS.has(key)) {
+      if (!UPSERTABLE_COLUMNS.has(key)) {
         return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: `column '${key}' not updatable` }) }] };
       }
       sets.push(`${key} = ?`);
@@ -115,40 +123,51 @@ export function handleUpsertTask(
       params.push(serialized);
     }
 
-    if (sets.length > 0) {
-      sets.push('updated_at = ?');
-      params.push(now);
-      params.push(args.task_id);
+    if (sets.length === 0) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'no fields provided' }) }] };
+    }
+
+    sets.push('updated_at = ?');
+    params.push(now);
+    params.push(args.task_id);
+
+    try {
       db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: err instanceof Error ? err.message : String(err) }) }] };
     }
 
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, action: 'updated' }) }] };
   }
 
-  // INSERT path — title, type, priority, status are required
-  const f = args.fields as Record<string, unknown>;
-  const title = f.title as string | undefined;
-  const type = f.type as string | undefined;
-  const priority = f.priority as string | undefined;
-  const status = (f.status as string | undefined) ?? 'CREATED';
+  // INSERT path — title, type, priority required; all other fields optional
+  const fields = args.fields;
+  const title = fields.title as string | undefined;
+  const type = fields.type as string | undefined;
+  const priority = fields.priority as string | undefined;
+  const status = (fields.status as string | undefined) ?? 'CREATED';
 
   if (!title || !type || !priority) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'title, type, and priority are required for insert' }) }] };
   }
 
-  const complexity = f.complexity as string | null ?? null;
-  const model = f.model as string | null ?? null;
-  const dependencies = typeof f.dependencies === 'object' && f.dependencies !== null
-    ? JSON.stringify(f.dependencies) : (f.dependencies as string | null ?? '[]');
-  const description = f.description as string | null ?? null;
-  const acceptanceCriteria = f.acceptance_criteria as string | null ?? null;
-  const fileScope = typeof f.file_scope === 'object' && f.file_scope !== null
-    ? JSON.stringify(f.file_scope) : (f.file_scope as string | null ?? '[]');
+  const complexity = (fields.complexity as string | null) ?? null;
+  const model = (fields.model as string | null) ?? null;
+  const dependencies = typeof fields.dependencies === 'object' && fields.dependencies !== null
+    ? JSON.stringify(fields.dependencies) : ((fields.dependencies as string | null) ?? '[]');
+  const description = (fields.description as string | null) ?? null;
+  const acceptanceCriteria = (fields.acceptance_criteria as string | null) ?? null;
+  const fileScope = typeof fields.file_scope === 'object' && fields.file_scope !== null
+    ? JSON.stringify(fields.file_scope) : ((fields.file_scope as string | null) ?? '[]');
 
-  db.prepare(
-    `INSERT INTO tasks (id, title, type, priority, status, complexity, model, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(args.task_id, title, type, priority, status, complexity, model, dependencies, description, acceptanceCriteria, fileScope, now, now);
+  try {
+    db.prepare(
+      `INSERT INTO tasks (id, title, type, priority, status, complexity, model, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(args.task_id, title, type, priority, status, complexity, model, dependencies, description, acceptanceCriteria, fileScope, now, now);
+  } catch (err) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: err instanceof Error ? err.message : String(err) }) }] };
+  }
 
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, action: 'inserted' }) }] };
 }
