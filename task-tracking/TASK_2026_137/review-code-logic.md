@@ -1,17 +1,15 @@
 # Code Logic Review — TASK_2026_137
 
-## Score: 4/10
+## Review Summary
 
-## Acceptance Criteria Status
-
-| Criterion | Status |
-|-----------|--------|
-| Build Worker writes `handoff.md` to task folder after dev phase, before IMPLEMENTED status | PASS |
-| handoff.md includes: files changed (with line counts), commit hashes, key decisions, known risks | PASS |
-| Review Worker reads handoff.md as first action — uses it to scope review instead of re-discovering | FAIL |
-| review-context.md generation removed (handoff.md replaces it) | FAIL |
-| Phase detection table updated to recognize handoff.md | PASS |
-| Single orchestration mode (`/orchestrate`) also writes handoff.md (same flow) | PARTIAL |
+| Metric              | Value          |
+| ------------------- | -------------- |
+| Overall Score       | 6/10           |
+| Assessment          | NEEDS_REVISION |
+| Critical Issues     | 1              |
+| Serious Issues      | 2              |
+| Moderate Issues     | 2              |
+| Failure Modes Found | 5              |
 
 ---
 
@@ -19,206 +17,143 @@
 
 ### 1. How does this fail silently?
 
-The `nitro-review-lead` agent still writes `review-context.md` as Phase 1 and instructs all three sub-worker prompts to read `review-context.md` as their first action. The `handoff.md` change is invisible to the Review Worker because the agent that runs review (`nitro-review-lead.md`) was not updated. The Supervisor will spawn a Review Worker, it will generate `review-context.md` the old way (running git diff, burning 50-100KB of context), and complete successfully — nobody detects that the feature did not activate.
+The Build Worker prompts in `worker-prompts.md` (both First-Run and Retry) do not mention `handoff.md` anywhere. The Build Worker is told to write IMPLEMENTED, commit the status file, and exit — but there is no instruction to write `handoff.md` in those prompts. A Build Worker following only the worker-prompts.md template will skip the handoff step entirely. The SKILL.md section does have the instruction, but the worker prompts are what actually drive autonomous execution. The Review Lead's fallback path (git log reconstruction) activates silently, context savings are lost, and no error is raised.
 
 ### 2. What user action causes unexpected behavior?
 
-A user who runs `/orchestrate TASK_X` on a task that was IMPLEMENTED under the new flow will see the Review Worker ignore `handoff.md` entirely. The Review Worker reads `review-context.md`, which it generated itself from scratch. The stated goal — Review Worker reads handoff.md as its first action — never executes.
-
-Additionally, the Review Lead Exit Gate in `nitro-review-lead.md` at line 367 checks:
-```
-- [ ] `task-tracking/TASK_{TASK_ID}/review-context.md` exists
-```
-This means the Review Lead actively rejects any session that did NOT generate `review-context.md`. `handoff.md` is not present in that checklist, so the old artifact is still required for the Exit Gate to pass.
+A user who initializes a new project via `npx @itqanlab/nitro-fueled init` gets the scaffold copy of `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md`. That file contains multiple `review-context.md` references (at least 7 occurrences) for REVIEW_DONE detection, completion detection logic, and Review Lead continuation checks. This file was not in the declared File Scope and was not synced. Any new project initialized after this task ships will use the old REVIEW_DONE detection logic (`review-context.md` / `## Findings Summary`), which will never match what the Review Lead now writes (`review-code-logic.md` / `## Verdict`). The Supervisor will never detect Review Lead completion for any new project, leaving the loop stuck indefinitely.
 
 ### 3. What data makes this produce wrong results?
 
-Tasks that entered IMPLEMENTED state before this change ship without `handoff.md`. The SKILL.md phase detection table has no fallback row for `tasks.md (all COMPLETE)` without `handoff.md`. A Review Worker re-entering such a task will see `tasks.md (all COMPLETE)` and be directed to `team-leader MODE 3 OR QA choice` — the same row that existed before. There is no detection gap for those tasks. However, the more immediate problem is that any new task going through the updated Build Worker flow (which writes `handoff.md`) will then be picked up by the unchanged Review Worker (`nitro-review-lead.md`) which ignores `handoff.md` and regenerates `review-context.md` anyway.
+The `parallel-mode.md` references file correctly uses `review-code-logic.md` with `## Verdict` for REVIEW_DONE detection. However, the scaffold's `auto-pilot/SKILL.md` still expects `review-context.md` with `## Findings Summary`. If a new project is initialized and the Supervisor reads its SKILL.md for completion criteria, it watches for a file that no longer exists. The detection returns false permanently. The task stays IN_REVIEW forever.
 
 ### 4. What happens when dependencies fail?
 
-The Review Lead's sub-worker prompts at lines 150, 162, 173, 185, 196, and 208 all direct sub-workers to `review-context.md` as the source of file scope and conventions. If `handoff.md` had replaced `review-context.md`, a missing `handoff.md` (Build Worker crashed before writing it) would cause sub-workers to fail immediately with no useful fallback. As implemented, `review-context.md` is still the operative document — meaning the feature's resilience story is unchanged and handoff.md adds zero fault tolerance to the review pipeline.
+If the Build Worker exits without writing `handoff.md` (because worker-prompts.md does not instruct it to), the Review Lead falls back to git log reconstruction. The fallback is documented and functional — but the stated token-savings goal of the task (eliminating 50-100KB context burn per review) is silently defeated. No error or warning is surfaced to the Supervisor. The system degrades gracefully but the feature's value proposition is completely lost.
 
 ### 5. What's missing that the requirements didn't mention?
 
-**Scaffold sync**: `apps/cli/scaffold/.claude/skills/orchestration/SKILL.md` and `apps/cli/scaffold/.claude/agents/nitro-review-lead.md` are the files copied to target projects on `npx @itqanlab/nitro-fueled init`. Both are unchanged. New projects initialized after this change ship with the old `review-context.md` architecture. The CLAUDE.md explicitly states: "The `.claude/` directory here is the scaffold — it is always in sync with what `npx @itqanlab/nitro-fueled init` copies into a target project."
+The task requirements stated "Update phase detection table to recognize handoff.md" with a File Scope limited to the orchestration SKILL.md, task-tracking.md, and strategies.md. The Review Lead and auto-pilot files were added to scope as part of the fix for the previous review — but `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` was never part of either scope definition. The reviewed auto-pilot references files (`parallel-mode.md`, `worker-prompts.md`) were synced correctly. The parent SKILL.md for auto-pilot was not. This is the file with the most `review-context.md` occurrences and is the one the Supervisor actually loads.
 
 ---
 
 ## Failure Mode Analysis
 
-### Failure Mode 1: Review Worker Continues to Burn 50-100KB Context
+### Failure Mode 1: Build Worker Prompt Has No handoff.md Write Instruction
 
-**Trigger**: Any task reaches IMPLEMENTED status and the Supervisor spawns a Review Worker.
+- **Trigger**: Supervisor spawns a Build Worker using the template from `worker-prompts.md`. The worker follows the prompt's numbered steps exactly.
+- **Symptoms**: `handoff.md` is never written. Review Lead's Phase 1 fallback activates silently. Review runs but burns 50-100KB of extra context on git diff reconstruction.
+- **Impact**: The entire token-savings rationale of this task is defeated on every autonomous run. No error surfaces. The Supervisor sees normal execution.
+- **Current Handling**: SKILL.md has the handoff.md step in the `## Build Worker Handoff (MANDATORY)` section. But worker-prompts.md is what drives autonomous workers — it is a self-contained prompt template, not a pointer to SKILL.md for build steps.
+- **Recommendation**: Add a step to both First-Run and Retry Build Worker prompts in `worker-prompts.md`: after all dev batches complete and before writing IMPLEMENTED, write `task-tracking/TASK_YYYY_NNN/handoff.md` with the required sections and include it in the implementation commit.
 
-**Symptoms**: `review-context.md` is still generated in Phase 1 of `nitro-review-lead.md`. Sub-workers read `review-context.md`, not `handoff.md`. Token savings goal is not achieved.
+### Failure Mode 2: Scaffold auto-pilot/SKILL.md Not Synced — REVIEW_DONE Broken for New Projects
 
-**Impact**: The entire stated purpose of the task — eliminating the ~50-100KB rediscovery cost — is never realized.
+- **Trigger**: Any user who runs `npx @itqanlab/nitro-fueled init` on a new project gets the scaffold copy of `auto-pilot/SKILL.md`. That file contains 7+ occurrences of `review-context.md` as the REVIEW_DONE signal, including the event-driven watch condition table and the ReviewLead completion detection logic.
+- **Symptoms**: The Supervisor spawns a Review Lead. The Review Lead writes `review-code-logic.md` with a `## Verdict` section (correct per updated nitro-review-lead.md). The Supervisor watches for `review-context.md` (per stale scaffold SKILL.md). The condition never fires. Stuck-count increments, worker gets killed, task enters retry loop, retry limit exceeded, task marked BLOCKED.
+- **Impact**: Critical production blocker for any new project. The Supervisor loop becomes permanently stuck on every task that reaches the review phase.
+- **Current Handling**: None. The scaffold file was not in the declared File Scope and was not synced.
+- **Recommendation**: Sync `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` to `.claude/skills/auto-pilot/SKILL.md`.
 
-**Current Handling**: `nitro-review-lead.md` Phase 1 is completely unchanged. It generates `review-context.md` unconditionally before spawning reviewers.
+### Failure Mode 3: handoff.md Not Explicitly Staged in Any Worker Prompt
 
-**Recommendation**: Phase 1 of `nitro-review-lead.md` must be rewritten. The new Phase 1 should: (1) Read `handoff.md` and validate it has the expected sections. (2) If `handoff.md` is present and well-formed, pass its content to sub-workers as context instead of running git diff. (3) If `handoff.md` is absent (backward compatibility for old tasks), fall back to the existing git diff approach. The sub-worker prompts must be updated to read `handoff.md` instead of `review-context.md`.
+- **Trigger**: Even if a Build Worker writes `handoff.md` (following SKILL.md prose), there is no explicit `git add task-tracking/TASK_[ID]/handoff.md` instruction. The commit step says "create a git commit with all implementation code" — whether this includes untracked files in the task folder depends on the worker's interpretation.
+- **Symptoms**: `handoff.md` exists on disk but is not committed. The Review Lead reads it (present on disk), but the commit cross-check in nitro-review-lead.md Phase 1 step 3 (git show --name-only) cannot verify its authorship.
+- **Impact**: Serious. The cross-check proceeds normally and handoff.md is treated as gospel even though its presence in git history is unverifiable. The cross-check's value is negated.
+- **Current Handling**: SKILL.md says "Include handoff.md in the implementation commit alongside the code changes (not as a separate commit)." This is prose guidance but not an explicit git add step.
+- **Recommendation**: Add explicit staging: `git add task-tracking/TASK_[ID]/handoff.md` alongside code files before the implementation commit. Mirror in worker-prompts.md once the write step is added there.
 
-### Failure Mode 2: Review Lead Exit Gate Blocks on Missing review-context.md
+### Failure Mode 4: DOCUMENTATION and DEVOPS Strategies Do Not Include handoff.md
 
-**Trigger**: A Review Worker finishes without generating `review-context.md` (e.g., if someone manually updated the Review Lead to use `handoff.md`).
+- **Trigger**: A task with DOCUMENTATION or DEVOPS strategy runs through the orchestration workflow. strategies.md only updated FEATURE, BUGFIX, and REFACTORING workflows to include the handoff.md step. DEVOPS (Phase 3 → nitro-devops-engineer) has no team-leader loop so it may not apply — but the DEVOPS flow also ends with "Phase 4: QA agents as chosen" without any handoff.md reference. DOCUMENTATION has no handoff.md mention.
+- **Symptoms**: Review Worker spawned for a DOCUMENTATION or DEVOPS task finds no handoff.md. Falls back to git log. Token savings never realized for these task types.
+- **Impact**: Moderate. The fallback works. But the stated goal of universal token savings is partially unmet.
+- **Current Handling**: Not addressed. strategies.md only updated the three main dev strategies.
+- **Recommendation**: Add handoff.md notation to DEVOPS Phase 3 exit and DOCUMENTATION workflow if those strategies ever invoke review workers.
 
-**Symptoms**: The Review Lead Exit Gate at line 367 checks `review-context.md exists` — it will fail the gate if `review-context.md` was not created.
+### Failure Mode 5: Phase Detection Table Entry for handoff.md Is Informational Only
 
-**Impact**: The Review Worker writes `exit-gate-failure.md` and exits, signaling failure to the Supervisor. The task stalls at IN_REVIEW.
-
-**Current Handling**: Exit Gate in `nitro-review-lead.md` lists `review-context.md` as a required artifact. `handoff.md` is not mentioned.
-
-**Recommendation**: Update the Exit Gate to check `handoff.md` instead of (or alongside) `review-context.md` depending on the migration strategy chosen.
-
-### Failure Mode 3: Scaffold Copies Are Stale — New Projects Get Old Architecture
-
-**Trigger**: A user runs `npx @itqanlab/nitro-fueled init` after this change ships.
-
-**Symptoms**: The copied scaffold files (`apps/cli/scaffold/.claude/skills/orchestration/SKILL.md`, `apps/cli/scaffold/.claude/agents/nitro-review-lead.md`) still reference `review-context.md`. New projects initialize with the old flow.
-
-**Impact**: All new projects skip the handoff.md feature entirely. The token savings benefit is not delivered to any new project.
-
-**Current Handling**: The scaffold directory was not in the file scope for TASK_2026_137 and was not updated.
-
-**Recommendation**: The task's file scope must be expanded to include the scaffold copies of every modified file, or a separate sync task must be created and tracked as a follow-on. Given CLAUDE.md's explicit statement that `.claude/` and `apps/cli/scaffold/.claude/` must stay in sync, this is a blocking gap.
+- **Trigger**: task-tracking.md correctly added `+ handoff.md (no review files)` → "Handoff written" row to the phase detection table. However, this entry appears between "Dev complete" and "Tester complete." The Supervisor uses this table for continuation mode. If a task is continued at the "Handoff written" phase, the next action is "Review Worker reads handoff.md first." But the continuation logic in SKILL.md does not explicitly handle this phase — it delegates to `nitro-review-lead.md` which already handles the fallback.
+- **Symptoms**: No functional failure. The phase is detected and the Review Worker is spawned correctly.
+- **Impact**: Minor. The table entry is correct and consistent. No action needed.
+- **Current Handling**: Handled correctly by Review Lead's own Phase 1 logic.
+- **Recommendation**: No change needed for this failure mode.
 
 ---
 
 ## Critical Issues
 
-### Issue 1: nitro-review-lead.md Not Updated — Review Worker Still Uses review-context.md
+### Issue 1: Scaffold auto-pilot/SKILL.md Not Synced — REVIEW_DONE Permanently Broken for New Projects
 
-**File**: `.claude/agents/nitro-review-lead.md` (lines 26, 40, 150, 162, 173, 185, 196, 208, 268, 367)
-
-**Scenario**: Every time a Review Worker runs for any task after this change, it executes the old Phase 1: generates `review-context.md` by running git diff and reading CLAUDE.md conventions. Sub-workers receive prompts that tell them to read `review-context.md` as step 1.
-
-**Impact**: Acceptance criterion "Review Worker reads handoff.md as first action" never passes. Acceptance criterion "review-context.md generation removed" never passes. Token savings never materialize.
-
-**Evidence**: `nitro-review-lead.md` line 26 — `Before spawning any sub-workers, generate task-tracking/TASK_{TASK_ID}/review-context.md` — is unchanged. Line 367 — `review-context.md exists` — is still a required Exit Gate check.
-
-**Fix**: Update `nitro-review-lead.md` Phase 1 to read `handoff.md` as the first action. Update all three sub-worker prompt templates to reference `handoff.md` instead of `review-context.md`. Update the Exit Gate to check `handoff.md` instead of `review-context.md`.
-
-### Issue 2: Scaffold Copies Not Updated — New Projects Ship Old Flow
-
-**File**: `apps/cli/scaffold/.claude/skills/orchestration/SKILL.md` (no handoff.md mentions), `apps/cli/scaffold/.claude/agents/nitro-review-lead.md` (10+ review-context.md references)
-
-**Scenario**: Running `npx @itqanlab/nitro-fueled init` on a fresh project copies these files. The installed files describe the old `review-context.md` flow.
-
-**Impact**: The feature is dead-on-arrival for every new project. The scaffold is the primary distribution mechanism of this library.
-
-**Evidence**: `Grep(handoff.md, apps/cli/scaffold/.claude/skills/orchestration/SKILL.md)` returns no matches.
-
-**Fix**: Apply all changes from the `.claude/` directory to the corresponding `apps/cli/scaffold/.claude/` files. This should be an invariant enforced at review time for any change touching `.claude/`.
-
-### Issue 3: nitro-code-security-reviewer.md Also Still References review-context.md
-
-**File**: `.claude/agents/nitro-code-security-reviewer.md` (lines 34, 54)
-
-**Scenario**: Security reviewers spawned directly (not via Review Lead) still read `review-context.md` for scope context.
-
-**Impact**: Partial execution of the feature — the file is still referenced as the scope authority by the security reviewer agent.
-
-**Evidence**: Grep confirmed `review-context.md` at lines 34 and 54 in `nitro-code-security-reviewer.md`.
-
-**Fix**: Update these references to `handoff.md`.
+- **File**: `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md`
+- **Scenario**: New project initialized via `npx @itqanlab/nitro-fueled init`. Supervisor reads its local SKILL.md for REVIEW_DONE detection. Finds `review-context.md` / `## Findings Summary` as the watch condition. Review Lead writes `review-code-logic.md` / `## Verdict`. Condition never fires. Task never exits IN_REVIEW.
+- **Impact**: All review-phase tasks in all new projects stall permanently. Retry limit exceeded, tasks blocked en masse. The Supervisor loop is effectively broken for any project initialized after this release.
+- **Evidence**: `grep -n "review-context.md" apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` returns 7+ matches including the event-driven watch condition table and ReviewLead completion detection. `grep "review-context.md" .claude/skills/auto-pilot/SKILL.md` returns zero matches. The two files are 1475 diff lines apart.
+- **Fix**: Copy `.claude/skills/auto-pilot/SKILL.md` to `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` byte-for-byte, matching the sync pattern used for all other scaffold files in this task.
 
 ---
 
 ## Serious Issues
 
-### Issue 4: auto-pilot worker-prompts.md Still References review-context.md
+### Issue 2: Build Worker Prompts Missing handoff.md Write Step
 
-**File**: `.claude/skills/auto-pilot/references/worker-prompts.md` (lines 191, 196, 207, 218, 269, 273)
+- **File**: `.claude/skills/auto-pilot/references/worker-prompts.md` — First-Run Build Worker Prompt (step 4) and Retry Build Worker Prompt (step 6)
+- **Scenario**: Supervisor spawns a Build Worker using these templates. The worker follows the numbered steps exactly. Step 4 instructs: (a) create git commit, (b) populate file scope, (c) write IMPLEMENTED, (d) commit status file. No step for handoff.md.
+- **Impact**: On every autonomous run, `handoff.md` is never written. Review Lead burns 50-100KB per task on git diff reconstruction. The entire token-savings goal of TASK_2026_137 is silently defeated.
+- **Evidence**: Search `worker-prompts.md` for "handoff" returns zero matches. The write instruction exists only in SKILL.md's `## Build Worker Handoff (MANDATORY)` section, which the build worker prompt does not reference.
+- **Fix**: Insert before step 4c (First-Run) and step 6c (Retry) in both prompt templates: write `task-tracking/TASK_YYYY_NNN/handoff.md` with Files Changed, Commits, Decisions, Known Risks sections. Add `git add task-tracking/TASK_YYYY_NNN/handoff.md` to the commit at the preceding step.
 
-**Scenario**: The Supervisor uses `worker-prompts.md` to build the prompt it injects into Review Workers. That prompt template still instructs the Review Worker to check `review-context.md` for context generation status, generate `review-context.md` if absent, and look for a `## Findings Summary` section in `review-context.md`.
+### Issue 3: handoff.md Staging Not Explicit — Git Cross-Check Unreliable
 
-**Impact**: The Supervisor's retry/completion detection logic is based on `review-context.md` presence and content. Even if `nitro-review-lead.md` were updated to use `handoff.md`, the Supervisor would still expect `review-context.md` artifacts.
-
-**Evidence**: Lines 191 (`review-context.md exists? -> skip context generation`), 269 (`review-context.md exists? -> context generation done`), 273 (`review-context.md has ## Findings Summary`).
-
-**Fix**: Update `worker-prompts.md` references from `review-context.md` to `handoff.md` for the read-context step, and update the Review Lead completion detection signal to match the new state indicator.
-
-### Issue 5: parallel-mode.md Completion Detection Tied to review-context.md
-
-**File**: `.claude/skills/auto-pilot/references/parallel-mode.md` (lines 22, 435, 454, 644, 666)
-
-**Scenario**: The Supervisor's `expected_end_state` for a Review Lead worker is `REVIEW_DONE`, detected by checking `review-context.md` having a `## Findings Summary` section. If `review-context.md` no longer exists, the Supervisor can never detect review completion.
-
-**Impact**: The Supervisor would loop indefinitely polling for a `## Findings Summary` in `review-context.md` that never gets written. Tasks get stuck in IN_REVIEW until the Supervisor kills the worker as stuck.
-
-**Evidence**: Line 454 — `file_contains | task-tracking/TASK_X/review-context.md | ## Findings Summary | REVIEW_DONE`.
-
-**Fix**: Update the completion detection signal. The new Review Lead writes `handoff.md` + review files; a viable new signal could be checking that `review-code-logic.md` and `review-code-style.md` both exist and have Verdict sections.
-
-### Issue 6: Phase Detection Table Missing Backward Compatibility Row
-
-**File**: `.claude/skills/orchestration/SKILL.md` (line 210), `.claude/skills/orchestration/references/task-tracking.md` (line 198)
-
-**Scenario**: Tasks that reached IMPLEMENTED status before this change ship without `handoff.md`. The phase detection table now has a row for `tasks.md (all COMPLETE)` which leads to "Team-leader MODE 3 OR QA choice", but there is no explicit row for `tasks.md (all COMPLETE)` without `handoff.md` plus existing `status = IMPLEMENTED`. A Build Worker resuming such a task may not correctly identify the right starting phase.
-
-**Impact**: Ambiguous phase detection for tasks in the IMPLEMENTED→IN_REVIEW transition that predate this change. The new `handoff.md` row in the phase detection table becomes the canonical entry point, but old tasks lack the file that triggers it.
-
-**Fix**: Add a note or fallback row: "tasks.md (all COMPLETE), no handoff.md, status = IMPLEMENTED → Dev complete without handoff artifact; Review Worker should treat as if handoff.md is absent and fall back to git diff exploration."
-
----
-
-## Minor Issues
-
-### Issue 7: SKILL.md Placement of handoff.md Instructions Is Counterintuitive
-
-**File**: `.claude/skills/orchestration/SKILL.md` (lines 570-591)
-
-**Scenario**: The `handoff.md` write instruction appears under the heading `## Completion Phase (MANDATORY — DO NOT SKIP)`, which is described as the Review Worker / Fix Worker / Completion Worker phase. A Build Worker reading this section might reasonably assume it is not their responsibility.
-
-**Impact**: A Build Worker that reads only the "Build Worker Exit Gate" section (which correctly lists `handoff.md written` as a check) may not find the write instructions because they are buried in a section named for the opposite phase.
-
-**Recommendation**: Add a dedicated `## handoff.md` section in the "Dev Phase" area of SKILL.md, or add a forward reference from the Build Worker section to line 570.
-
-### Issue 8: Commit Order Instructions Place handoff.md in First (Implementation) Commit — But SKILL.md Section Title Misleads
-
-**File**: `.claude/skills/orchestration/SKILL.md` (lines 570, 593-609)
-
-**Scenario**: The text at line 570 says "Before the first commit — write handoff.md" but this appears inside the `## Completion Phase` section header. The Completion Phase scope note at lines 556-559 says "this phase runs in the Review Worker session only" and "Build Workers stop after implementation and do NOT execute this phase." This creates a direct contradiction: the `handoff.md` write step is inside the Completion Phase section, which says Build Workers do not execute it.
-
-**Impact**: A Build Worker reading the Completion Phase scope note at line 556 would correctly infer "I skip this entire section." The `handoff.md` write step would then be skipped, making the Exit Gate check at line 753 fail unexpectedly.
-
-**Recommendation**: Move the `handoff.md` write instructions out of the Completion Phase section and into a `## Dev Phase Handoff` section that explicitly targets Build Workers.
+- **File**: `.claude/skills/orchestration/SKILL.md` (§ Build Worker Handoff) and `.claude/skills/auto-pilot/references/worker-prompts.md`
+- **Scenario**: A Build Worker writes `handoff.md` to disk following SKILL.md guidance, then runs "git commit with all implementation code." If `handoff.md` is an untracked file in the task folder and the worker only stages source files, `handoff.md` is left uncommitted.
+- **Impact**: Review Lead's Phase 1 step 3 (cross-check commit hashes via git show --name-only) cannot find `handoff.md` in the commit. The cross-check silently passes because the check is about listed files matching actual changes — not about handoff.md specifically being committed. The Review Lead still reads the file from disk, so review proceeds, but the integrity guarantee of the cross-check is weakened.
+- **Fix**: Add explicit `git add task-tracking/TASK_[ID]/handoff.md` to the implementation commit instructions in SKILL.md and in the worker prompts once Issue 2 is addressed.
 
 ---
 
 ## Data Flow Analysis
 
 ```
-Current (intended) flow after this change:
-  Build Worker
-    -> dev batches complete
-    -> [NEW] write handoff.md (SKILL.md line 572)
-    -> first commit: implementation + handoff.md (SKILL.md line 594)
-    -> write status = IMPLEMENTED
-    -> Exit Gate checks handoff.md present (SKILL.md line 753) ← PASS
-    -> EXIT
-
-  Supervisor detects IMPLEMENTED
-    -> spawns Review Worker via worker-prompts.md ← UNCHANGED (still review-context.md)
-    -> Review Worker starts nitro-review-lead.md
-       -> Phase 1: generate review-context.md ← UNCHANGED — handoff.md ignored
-       -> Sub-worker prompts: read review-context.md ← UNCHANGED
-       -> Sub-workers complete
-       -> Review Lead updates review-context.md with Findings Summary ← UNCHANGED
-    -> Supervisor polls parallel-mode.md: looks for review-context.md ## Findings Summary ← UNCHANGED
-
-  Actual outcome: handoff.md is written but never read.
-  review-context.md is still generated. Token savings = 0.
+Build Worker (autonomous — uses worker-prompts.md)
+  |
+  | follows First-Run Build Worker Prompt steps 1-8
+  |
+  +--> step 4a: git commit with implementation code
+  |     handoff.md NOT in this step (no write instruction in prompt)
+  |     handoff.md NOT staged (no explicit git add)
+  |
+  +--> step 4c: writes status = IMPLEMENTED
+  |
+  v
+Supervisor (.claude/skills/auto-pilot/SKILL.md OR scaffold copy)
+  |
+  +--> SKILL.md source: watches review-code-logic.md ## Verdict [CORRECT]
+  |
+  +--> scaffold SKILL.md: watches review-context.md ## Findings Summary [BROKEN]
+        new projects get scaffold copy → REVIEW_DONE never fires
+  |
+  v
+Review Lead (nitro-review-lead.md) — spawned correctly in all cases
+  |
+  +--> Phase 1: tries to read handoff.md
+  |     handoff.md missing (Build Worker never wrote it per prompt)
+  |     → fallback: git log --oneline -5, git diff to reconstruct
+  |     Token savings: 0 of intended 50-100KB
+  |
+  +--> writes review-code-logic.md with ## Verdict [CORRECT]
+  |
+  v
+Supervisor REVIEW_DONE detection
+  +--> Existing projects (correct SKILL.md): detects ## Verdict [WORKS]
+  +--> New projects (stale scaffold): looks for review-context.md [NEVER FIRES]
 ```
 
 ### Gap Points Identified
 
-1. `nitro-review-lead.md` — Phase 1 still generates `review-context.md` unconditionally.
-2. Sub-worker prompt templates — still direct reviewers to `review-context.md` for scope.
-3. `parallel-mode.md` — Supervisor completion detection tied to `review-context.md ## Findings Summary`.
-4. `worker-prompts.md` — Review Worker prompt still references `review-context.md` throughout.
-5. `apps/cli/scaffold/` — Not updated; scaffold is the delivery mechanism for new projects.
+1. Worker prompts are the authoritative instructions for autonomous workers — SKILL.md prose is not followed unless explicitly referenced in the prompt. The handoff.md write step lives only in SKILL.md.
+2. Scaffold `auto-pilot/SKILL.md` diverges from source by 1475 diff lines including the REVIEW_DONE detection mechanism. All new projects initialized from scaffold have broken Supervisor detection.
+3. `git add handoff.md` is not explicit in any instruction, relying on workers interpreting "all implementation code" to include task folder artifacts.
 
 ---
 
@@ -226,17 +161,17 @@ Current (intended) flow after this change:
 
 | Requirement | Status | Concern |
 |-------------|--------|---------|
-| Build Worker writes `handoff.md` before IMPLEMENTED status | COMPLETE | Write instruction exists in SKILL.md; Exit Gate verifies it |
-| handoff.md includes files changed, commits, decisions, risks | COMPLETE | Template in SKILL.md matches task spec exactly |
-| Review Worker reads handoff.md as first action | MISSING | nitro-review-lead.md Phase 1 still writes review-context.md; sub-workers still read review-context.md |
-| review-context.md generation removed | MISSING | 10+ references in nitro-review-lead.md; 2 in nitro-code-security-reviewer.md; present in auto-pilot |
-| Phase detection table updated to recognize handoff.md | COMPLETE | New rows added in both SKILL.md and task-tracking.md |
-| Single orchestration mode (`/orchestrate`) also writes handoff.md | PARTIAL | SKILL.md covers this path; but commit order note inside Completion Phase section contradicts Build Worker scope note |
+| Build Worker writes handoff.md before IMPLEMENTED | PARTIAL | SKILL.md has the instruction; worker-prompts.md (what autonomous workers follow) does not. |
+| handoff.md includes files changed, commits, decisions, risks | COMPLETE | Format fully specified in SKILL.md with all four required sections. |
+| Review Worker reads handoff.md as first action | COMPLETE | nitro-review-lead.md Phase 1 reads handoff.md first with documented fallback. |
+| review-context.md generation removed | PARTIAL | Removed from all in-scope files. Scaffold auto-pilot/SKILL.md (out of declared scope) still references it. New projects broken. |
+| Phase detection table updated to recognize handoff.md | COMPLETE | task-tracking.md phase detection table correctly includes handoff.md row. |
+| Single orchestration mode also writes handoff.md | PARTIAL | SKILL.md covers interactive mode. Autonomous worker prompts do not instruct it. |
 
 ### Implicit Requirements NOT Addressed
 
-1. **Scaffold sync**: `apps/cli/scaffold/.claude/` files must mirror `.claude/` changes. This is stated as an invariant in CLAUDE.md but was not part of the task's file scope. All scaffold copies remain on the old flow.
-2. **Backward compatibility signal**: Tasks reaching IMPLEMENTED before this change (no handoff.md) need an explicit fallback in phase detection and in the Review Lead's Phase 1, so the Supervisor can handle mixed-era tasks without getting stuck.
+1. The task's token-savings goal requires autonomous Build Workers to actually write the file. That requires the worker prompt template to include the step — documentation in SKILL.md alone does not drive autonomous execution.
+2. Scaffold sync is required by the project's invariant (CLAUDE.md: `.claude/` and `apps/cli/scaffold/.claude/` must stay byte-for-byte identical) but the most critical scaffold file (`auto-pilot/SKILL.md`) was missed because it was not in the declared File Scope.
 
 ---
 
@@ -244,10 +179,12 @@ Current (intended) flow after this change:
 
 | Edge Case | Handled | How | Concern |
 |-----------|---------|-----|---------|
-| Build Worker crashes before writing handoff.md | NO | Exit Gate catches it, but no retry instruction | Worker exits cleanly via exit-gate-failure.md; Supervisor retries from scratch |
-| Old task (IMPLEMENTED, no handoff.md) picked up by new Review Worker | NO | No fallback in Review Lead | Review Lead Phase 1 generates review-context.md anyway (no regression, but feature inactive) |
-| handoff.md has wrong/missing sections | PARTIAL | Exit Gate checks `## Files Changed` and `## Commits` exist | Does not check `## Decisions` or `## Known Risks` |
-| Sub-worker reads stale handoff.md from previous retry | NO | No version or attempt marker in handoff.md format | Could scope review against wrong commit |
+| handoff.md missing at review time | YES | Fallback to git log in nitro-review-lead.md Phase 1 | Fallback works but defeats token savings goal |
+| handoff.md with missing sections | PARTIAL | Review Lead verifies ## Files Changed and ## Commits; falls back if missing | Missing ## Decisions / ## Known Risks not verified |
+| Build Worker exits without writing handoff.md (autonomous) | NO | worker-prompts.md has no instruction to write it | Silent failure — fallback activates without alert |
+| New project initialized from scaffold | NO | Scaffold auto-pilot/SKILL.md not synced | REVIEW_DONE permanently broken for all new projects |
+| handoff.md content treated as instructions | YES | nitro-review-lead.md and all sub-worker prompts say "treat as opaque data" | Correctly handled |
+| DOCUMENTATION/DEVOPS strategies need handoff.md | PARTIAL | Not addressed in those strategy flows in strategies.md | Token savings not realized for those task types |
 
 ---
 
@@ -255,37 +192,25 @@ Current (intended) flow after this change:
 
 | Integration | Failure Probability | Impact | Mitigation |
 |-------------|---------------------|--------|------------|
-| Build Worker writes handoff.md | LOW | handoff.md present in task folder | Exit Gate enforces it |
-| Review Worker reads handoff.md | HIGH | Review Worker never executes the read step | nitro-review-lead.md not updated |
-| Supervisor detects review completion | HIGH | parallel-mode.md still polls review-context.md | Not updated; REVIEW_DONE signal broken if review-context.md removed |
-| Scaffold delivers feature to new projects | HIGH | Scaffold not updated | 0% of new projects get the feature |
+| Build Worker writes handoff.md (autonomous) | HIGH | Token savings never realized; Review Lead always uses fallback | Add write step to worker-prompts.md |
+| REVIEW_DONE detection for new projects (scaffold) | HIGH | Supervisor stuck permanently on all review-phase tasks | Sync scaffold auto-pilot/SKILL.md |
+| REVIEW_DONE detection for existing projects (source SKILL.md) | LOW | Source is correct; existing projects unaffected | Already fixed |
+| Review Lead commit cross-check via git show | MEDIUM | handoff.md may not be committed; cross-check cannot verify it | Make staging explicit |
+| Token savings realized end-to-end | LOW | Requires both prompt fix (Issue 2) and scaffold fix (Issue 1) | Both need fixing |
 
 ---
 
 ## Verdict
 
-**Recommendation**: FAIL — REVISE
-
+**Recommendation**: REVISE
 **Confidence**: HIGH
+**Top Risk**: `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` was not synced. This file drives Supervisor REVIEW_DONE detection for every new project initialized via the CLI. It still watches for `review-context.md` — a file that no longer exists. Every review-phase task in every new project will permanently stall in the Supervisor loop.
 
-**Top Risk**: The primary consumer of `handoff.md` — the Review Worker (`nitro-review-lead.md`) — was not updated. The feature exists as an inert artifact: Build Workers write `handoff.md`, but nobody reads it. The token savings motivation for this task is not delivered.
-
-**Minimum viable fix requires changes to**:
-1. `.claude/agents/nitro-review-lead.md` — Phase 1 must read `handoff.md` instead of generating `review-context.md`; sub-worker prompts must reference `handoff.md`; Exit Gate must check `handoff.md`
-2. `.claude/agents/nitro-code-security-reviewer.md` — remove `review-context.md` references
-3. `.claude/skills/auto-pilot/references/worker-prompts.md` — update Review Worker prompt template
-4. `.claude/skills/auto-pilot/references/parallel-mode.md` — update REVIEW_DONE completion signal
-5. `apps/cli/scaffold/.claude/` — sync all changed files to scaffold
-
-**Also recommended**:
-6. Move `handoff.md` write instructions out of the `Completion Phase` section in SKILL.md to avoid the contradiction with the "Build Workers do not run this phase" scope note.
+---
 
 ## What Robust Implementation Would Include
 
-- `nitro-review-lead.md` Phase 1 rewritten to read `handoff.md` as first action, with explicit fallback to git diff if `handoff.md` is absent (backward compatibility for pre-feature tasks)
-- Sub-worker prompts updated: "Read `handoff.md` (files changed, commits, scope)" instead of "Read `review-context.md`"
-- `parallel-mode.md` REVIEW_DONE detection updated to check `review-code-logic.md` Verdict section (or similar stable signal) instead of `review-context.md ## Findings Summary`
-- `worker-prompts.md` review prompt template updated throughout
-- Scaffold sync enforced — all `.claude/` changes applied to `apps/cli/scaffold/.claude/`
-- Backward compatibility row in phase detection table for IMPLEMENTED tasks without `handoff.md`
-- `handoff.md` write step placed in a dedicated Build Worker section, not inside the Completion Phase
+1. **Worker prompts as the canonical instruction source for autonomous workers**: Every step a Build Worker must perform needs to be in the worker prompt template. SKILL.md prose is reference documentation, not execution instructions.
+2. **Explicit git staging for every task artifact**: An explicit `git add task-tracking/TASK_[ID]/handoff.md` line ensures the artifact enters git history and is verifiable by the Review Lead's cross-check.
+3. **Full scaffold sync verified by diff before close**: The equivalent of running `diff .claude/skills/auto-pilot/SKILL.md apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` as part of the exit gate would have caught this immediately.
+4. **Automated review-context.md absence assertion**: A grep across both `.claude/` and `apps/cli/scaffold/.claude/` for `review-context.md` in any non-lesson context, as part of the acceptance test, would have surfaced the 7 stale references in the scaffold file.

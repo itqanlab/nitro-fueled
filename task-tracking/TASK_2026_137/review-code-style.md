@@ -1,17 +1,15 @@
 # Code Style Review — TASK_2026_137
 
-## Score: 5/10
+## Review Summary
 
-## Summary
-
-| Metric          | Value        |
-|-----------------|--------------|
-| Overall Score   | 5/10         |
+| Metric          | Value          |
+| --------------- | -------------- |
+| Overall Score   | 6/10           |
 | Assessment      | NEEDS_REVISION |
-| Blocking Issues | 3            |
-| Serious Issues  | 2            |
-| Minor Issues    | 2            |
-| Files Reviewed  | 3            |
+| Blocking Issues | 1              |
+| Serious Issues  | 3              |
+| Minor Issues    | 4              |
+| Files Reviewed  | 8              |
 
 ---
 
@@ -19,72 +17,89 @@
 
 ### 1. What could break in 6 months?
 
-The `handoff.md` instruction is placed inside the **Completion Phase** heading in SKILL.md (line 570), which opens with a scope note saying "Review Workers run this phase — Build Workers do NOT." A Build Worker reading this section top-to-bottom sees the scope note first (telling it to stop), then the `handoff.md` write instruction after. The instruction will be silently skipped by Build Workers following the documented intent of that section.
+The `Build Worker Handoff` section in SKILL.md (line ~309) instructs: "Include `handoff.md` in the implementation commit alongside the code changes (not as a separate commit)." However, the first-commit template at line ~602 shows `implementation code + handoff.md` as one commit. This is fine. But the Exit Gate table for Build Workers (line ~761) lists the check as "File exists with `## Files Changed` and `## Commits` sections" — the `## Commits` section check is good, but `## Decisions` and `## Known Risks` sections from the task specification are NOT required by the Exit Gate. In 6 months, Build Workers will routinely write minimal handoff.md files missing `## Decisions` and `## Known Risks`, defeating the token-savings goal because Review Workers must then re-discover architectural context on their own.
 
 ### 2. What would confuse a new team member?
 
-The Review Lead Exit Gate (`SKILL.md:788`) says the check is "Review Worker reads this as first action to scope review" — but this is an **explanation**, not an enforceable check. The Command column says `Read task-tracking/TASK_[ID]/handoff.md` and the Expected column says `File exists — Review Worker reads this as first action`. The Exit Gate format requires Command/Expected pairs that can be mechanically verified. The Expected here mixes a machine-checkable condition (file exists) with a behavioral instruction ("reads this as first action") that cannot be verified at exit time. A new team member following the Exit Gate literally will pass this check simply because the file exists, with no guarantee the Review Worker actually used it.
+The Phase Detection Table in SKILL.md (line ~210) uses the key `handoff.md (no review files)` to describe the state "Dev complete". But `task-tracking.md` (line 198) uses the same key to describe the state as "Handoff written". These are consistent in intent but use different state labels: one says "Dev complete", the other says "Handoff written". A new team member reading both files will be uncertain whether these are the same phase with different names, or two distinct states. The inconsistency in naming across two canonical reference files introduces ambiguity in phase detection logic.
 
 ### 3. What's the hidden complexity cost?
 
-The acceptance criterion "review-context.md generation removed" is **not met** in the reviewed files. `nitro-review-lead.md` still generates `review-context.md` in at least 8 places (including its own Exit Gate checklist at line 367). This task's scope explicitly excluded agent files (File Scope lists only 3 SKILL files), but the task's own acceptance criterion says "review-context.md generation removed" without that scope constraint. The result is a split-brain state: SKILL.md says Review Workers read `handoff.md` instead of `review-context.md`, but `nitro-review-lead.md` still writes and requires `review-context.md`. The orchestration skill and the agent it spawns now disagree on the protocol.
+The `nitro-review-lead.md` Phase 1 introduces a cross-check step (step 3): for each commit hash in `## Commits`, run `git show --name-only {hash}` to confirm listed files match actual changes, and if discrepancies exist, add unlisted files to review scope. This is a sound security control. However, SKILL.md's `Build Worker Handoff` section and the sub-worker prompt templates in `worker-prompts.md` do NOT document this cross-check behavior. A Build Worker author or future maintainer modifying the handoff format will not know that the Review Lead actively verifies commit hashes against the file list. If the handoff.md format is changed (e.g., omitting commit hashes), the Review Lead silently falls back to `git log --oneline -5` — but no file documents that the hash field is load-bearing for scope validation. This is hidden coupling.
 
 ### 4. What pattern inconsistencies exist?
 
-`handoff.md` was added only to the **FEATURE** flow in `strategies.md` (line 57). The BUGFIX and REFACTORING flows still show `[QA agents] --> Git --> nitro-modernization-detector` with no mention of `handoff.md`. Per SKILL.md, ALL task types go through the Build Worker / Review Worker split in Supervisor mode. BUGFIX and REFACTORING tasks running in Supervisor mode will have Build Workers with no instruction to write `handoff.md`, and Review Workers with no instruction to read it.
+Four strategy diagrams in `strategies.md` are missing the handoff.md step: DOCUMENTATION, DEVOPS, CONTENT, and CREATIVE. FEATURE, BUGFIX, and REFACTORING all show:
+
+```
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
+[QA agents — Review Worker reads handoff.md as first action]
+```
+
+But DEVOPS shows only:
+```
+Phase 4: [QA agents as chosen]
+```
+
+DOCUMENTATION skips straight from developer to code-style-reviewer with no handoff step. CONTENT skips from content-writer to style-reviewer with no handoff step. The task specification says "Single orchestration mode (`/orchestrate`) also writes handoff.md (same flow)" — this was presumably meant to cover all strategy types, but four strategies are missing the annotation. This is a documentation inconsistency that will cause Build Workers using those strategies to skip writing handoff.md.
 
 ### 5. What would I do differently?
 
-Move the `handoff.md` write instruction out of the Completion Phase section and into a dedicated **Build Worker Completion** section (or the section immediately after team-leader MODE 3). The instruction belongs to the Build Worker lifecycle, not the Completion Phase, which is explicitly owned by the Review Worker. Additionally, split the acceptance criterion — "review-context.md generation removed" should be a separate task scoped to the agent files.
+1. Make the Exit Gate for Build Workers require ALL four handoff.md sections (`## Files Changed`, `## Commits`, `## Decisions`, `## Known Risks`), not just two. The `## Known Risks` section is why this artifact was designed — if it is optional, Build Workers will omit it consistently.
+
+2. Add the handoff.md write step to ALL strategy diagrams in `strategies.md`, even if abbreviated (a single comment line is enough). The current asymmetry will cause confusion.
+
+3. Define one canonical phase name for the state "handoff written, no reviews yet". Both files should use the same label — currently SKILL.md says "Dev complete" and task-tracking.md says "Handoff written". Pick one.
+
+4. Document in the handoff.md format spec that the `## Commits` section is security-load-bearing (Review Lead validates it against `git show`) so future format changes do not inadvertently break the cross-check.
 
 ---
 
 ## Blocking Issues
 
-### Issue 1: handoff.md instruction is buried inside a Review-Worker-scoped section
+### Issue 1: Four Strategy Diagrams Missing handoff.md Step
 
-- **File**: `.claude/skills/orchestration/SKILL.md:554-570`
-- **Problem**: The `handoff.md` write instruction (line 570) appears after the Completion Phase heading (line 554), which opens with: "In Supervisor mode, this phase runs in the Review Worker session only. Build Workers stop after implementation and do NOT execute this phase." The instruction that follows is addressed to Build Workers, but it is physically inside a section explicitly scoped to Review Workers. A Build Worker reading the Completion Phase scope note will stop reading and miss the `handoff.md` instruction entirely.
-- **Impact**: `handoff.md` will not be written. The Build Worker Exit Gate (line 753) checks for it, so the Exit Gate will fail — but the worker may not reach the Exit Gate if it exits after the scope note tells it to stop.
-- **Fix**: Move the `handoff.md` instruction block (lines 570-594) to a section clearly owned by the Build Worker, such as immediately after the team-leader MODE 3 description, or create a dedicated `## Build Worker Completion` section before the Completion Phase.
-
-### Issue 2: Agent files still generate review-context.md — accepted criterion not met
-
-- **File**: `.claude/agents/nitro-review-lead.md` (lines 26, 40, 150, 162, 173, 185, 196, 208, 268, 367 and more)
-- **Problem**: The task acceptance criterion states "review-context.md generation removed (handoff.md replaces it)". `nitro-review-lead.md` still writes `review-context.md` as its primary first action, passes it to all sub-worker spawns, and requires it in its own Exit Gate. This is the agent that SKILL.md's Review Lead Exit Gate now says reads `handoff.md`. The two files now describe contradictory protocols for the same worker.
-- **Impact**: In production, the Review Worker will follow `nitro-review-lead.md` (its direct instruction file) and generate `review-context.md`, ignoring `handoff.md`. The SKILL.md instruction to "read handoff.md as first action" will be overridden by the agent's own contradictory instructions.
-- **Fix**: Either update `nitro-review-lead.md` to replace `review-context.md` with `handoff.md` (completing the migration), or revise the acceptance criterion to scope it to SKILL files only and track agent migration as a separate task.
-
-### Issue 3: BUGFIX and REFACTORING strategies missing handoff.md step
-
-- **File**: `.claude/skills/orchestration/references/strategies.md:78-128`
-- **Problem**: The `handoff.md` write step was added only to the FEATURE flow (line 57). BUGFIX and REFACTORING flows end with `[QA agents] --> Git --> nitro-modernization-detector` with no `handoff.md` step. In Supervisor mode, all task types use the Build Worker / Review Worker split. Build Workers on BUGFIX and REFACTORING tasks have no instruction to write `handoff.md`, and their Review Workers have no instruction to read it.
-- **Impact**: Review Workers on BUGFIX and REFACTORING tasks will either fail the Exit Gate check (because `handoff.md` is absent) or proceed without it, negating the token-savings benefit for those task types.
-- **Fix**: Add the `handoff.md` write step to BUGFIX (after team-leader MODE 3) and REFACTORING (after team-leader MODE 3) flows.
+- **File**: `.claude/skills/orchestration/references/strategies.md` — DOCUMENTATION (~line 136), DEVOPS (~line 200), CONTENT (~line 471), CREATIVE (~line 280) sections
+- **Problem**: FEATURE, BUGFIX, and REFACTORING strategy diagrams explicitly show "Build Worker writes handoff.md" and "Review Worker reads handoff.md as first action". DOCUMENTATION, DEVOPS, CONTENT, and CREATIVE diagrams show no equivalent step. The task acceptance criterion states "Single orchestration mode (`/orchestrate`) also writes handoff.md (same flow)", implying the requirement is universal. Build Workers running DOCUMENTATION or DEVOPS strategies will not write handoff.md, causing Review Workers to fall back to `git log` re-discovery — exactly the token burn this task was designed to eliminate.
+- **Impact**: Partial adoption of the handoff protocol. DOCUMENTATION and DEVOPS tasks continue to pay the ~50-100KB re-discovery cost. Over the next 6 months, as more DEVOPS and DOCUMENTATION tasks run, the inconsistency compounds. Workers following strategy diagrams literally will not write handoff.md.
+- **Fix**: Add the handoff.md step to all four strategy diagrams between the developer step and the QA step, matching the phrasing used in FEATURE/BUGFIX/REFACTORING. Even a single-line annotation is sufficient.
 
 ---
 
 ## Serious Issues
 
-### Issue 1: Review Lead Exit Gate mixes a behavioral instruction into an Expected column
+### Issue 1: Exit Gate Does Not Require All Four Handoff Sections
 
-- **File**: `.claude/skills/orchestration/SKILL.md:788`
-- **Problem**: The row `handoff.md read | Read task-tracking/TASK_[ID]/handoff.md | File exists — Review Worker reads this as first action to scope review` embeds "Review Worker reads this as first action" inside the Expected column. Per the review-general.md lesson (TASK_2026_028): "Exit Gate / checklist table Expected columns must match what the Command column actually checks." The Command only verifies file existence; the second clause in Expected is a behavioral assertion that cannot be mechanically verified at exit time. It will be silently ignored by any worker running the Exit Gate.
-- **Recommendation**: Split into two rows — one checking file existence (machine-verifiable), one as a prose instruction block outside the table directing the Review Worker to read it as the first action.
+- **File**: `.claude/skills/orchestration/SKILL.md` — Build Worker Exit Gate table (~line 761)
+- **Problem**: The Exit Gate check for `handoff.md` requires only `## Files Changed` and `## Commits` sections. The task specification defines four required sections: `## Files Changed`, `## Commits`, `## Decisions`, `## Known Risks`. The `## Decisions` and `## Known Risks` sections are the architectural-context value of handoff.md — without them, the Review Worker cannot skip re-discovering why decisions were made. Omitting these two sections from the Exit Gate check means Build Workers can pass the gate with a structurally incomplete handoff.md.
+- **Tradeoff**: Making the gate stricter risks false negatives (a Build Worker that wrote good content but used a slightly different heading name fails the gate). However, the current gate is so loose that it provides nearly zero quality signal — any non-empty handoff.md passes.
+- **Recommendation**: Expand the Exit Gate check to verify all four sections are present: `## Files Changed`, `## Commits`, `## Decisions`, `## Known Risks`. Use Grep to check for section headings rather than exact content. Update the Expected column accordingly.
 
-### Issue 2: handoff.md absent from Phase Detection Table in SKILL.md
+### Issue 2: Inconsistent Phase State Label for Handoff-Written Phase
 
-- **File**: `.claude/skills/orchestration/SKILL.md:200-213`
-- **Problem**: The SKILL.md Phase Detection Table (the abbreviated version at line 200) was updated to include `handoff.md` rows. However, the `task-tracking.md` Phase Detection Table (line 187-203) was also updated. These two tables serve the same purpose for different audiences (SKILL.md for orchestrators, task-tracking.md for continuation detection). The two tables are now inconsistent: SKILL.md line 210 says "Dev complete — Review Worker reads handoff.md to scope review" while task-tracking.md line 198 says "Handoff written | Review Worker reads handoff.md first". The Phase Status column in task-tracking.md uses the value "Handoff written" which is not part of the canonical phase status vocabulary elsewhere in the document ("Initialized", "PM done", "Architect done", etc.). This looks like a new value was invented for this row without confirming it matches any other phase vocabulary.
-- **Recommendation**: Verify the Phase Status label is intentional and consistent with other tables that use phase status values.
+- **File**: `.claude/skills/orchestration/SKILL.md` (~line 210) vs `.claude/skills/orchestration/references/task-tracking.md` (~line 198)
+- **Problem**: SKILL.md Phase Detection Table labels the state as "Dev complete" when `handoff.md` exists with no review files. `task-tracking.md` Phase Detection Table labels the same state as "Handoff written". These are the same phase described in two authoritative reference files using different names. Workers that parse phase names as strings (e.g., for logging or routing decisions) will produce inconsistent log entries. Future contributors modifying one file may not realize the other file defines the same state differently.
+- **Tradeoff**: This is not a runtime failure, but it contributes to documentation drift — the canonical reference for phase states should have one label per state, not two.
+- **Recommendation**: Standardize on one label for this phase. "Handoff written" is more precise because "Dev complete" is already implied by tasks.md all-COMPLETE. Update the diverging file to match.
+
+### Issue 3: Review Lead Sub-Worker Prompts Do Not Include `## Decisions` and `## Known Risks` in Handoff Read Instruction
+
+- **File**: `.claude/agents/nitro-review-lead.md` — Sub-Worker Prompt Templates section (~lines 120-183)
+- **Problem**: The sub-worker prompts tell each reviewer: "Read `task-tracking/TASK_{TASK_ID}/handoff.md` (files changed, commits, decisions, known risks)". The parenthetical accurately lists all four sections. However, the handoff.md format required by SKILL.md defines four sections (`## Files Changed`, `## Commits`, `## Decisions`, `## Known Risks`) but the Phase 1 verification step in the Review Lead (line ~34) only checks for `## Files Changed` and `## Commits` sections. If `## Decisions` or `## Known Risks` are absent, Phase 1 passes without warning, and reviewers proceed without architectural context. The parenthetical in the sub-worker prompts becomes misleading — it implies the data will be there, but the verification does not ensure it.
+- **Tradeoff**: This could be addressed in the Review Lead (Phase 1 adds section validation) or in SKILL.md (Exit Gate requires all four sections — see Serious Issue 1 above). Either fix resolves both issues together.
+- **Recommendation**: Expand the Phase 1 verification check to require all four sections, matching the sub-worker prompt documentation. If `## Decisions` or `## Known Risks` are absent, note the gap in the completion report rather than silently proceeding.
 
 ---
 
 ## Minor Issues
 
-1. **strategies.md line 57**: The `handoff.md` step appears between Phase 5 and Phase 6 as a plain line (not a phase). The surrounding flow uses `Phase N:` labels. The inserted step has no phase number, which breaks the sequential phase numbering. Consider `Phase 5.5:` or restructure as a sub-bullet under Phase 5.
+1. **`strategies.md` line 57 phrasing is asymmetric with line 88 and 114**: FEATURE strategy (line 57) says "Build Worker writes handoff.md (files changed, commits, decisions, risks)" but BUGFIX (line 88) and REFACTORING (line 114) use identical phrasing. FEATURE uses "risks" while the handoff format spec uses "Known Risks". All three should match the canonical section name exactly: "known risks" (or "Known Risks") to avoid any ambiguity about what belongs in that section.
 
-2. **SKILL.md line 591**: The sentence "it does NOT re-run git diff exploration or generate a separate review-context.md" uses implementation-era language ("generate a separate review-context.md"). Per review-general.md (TASK_2026_064): "Implementation-era language must be removed before merge." Once review-context.md is fully removed from the system, this sentence references a defunct artifact as if it is still an active concern. Rewrite as: "it does NOT re-run git diff exploration."
+2. **`task-tracking.md` Document Ownership table (~line 153)**: The `handoff.md` row description is 22 words long — the longest cell in the table by a significant margin. All other rows use 5-10 words. The verbosity breaks table scanning. Trim to "Files changed, commits, decisions, known risks" (4 words + table reference).
+
+3. **`nitro-review-lead.md` Phase 1 step 3 describes the cross-check behavior**: "Cross-check: for each commit hash listed in `## Commits`, run `git show --name-only {hash}` to confirm the listed files match what was actually changed." This is a useful security control. However, the step does not document what to do if `git show` fails (the commit hash is invalid or the repo has been force-pushed). The fallback is implicitly "continue with the declared list", which is a degraded-but-silent failure. A note should indicate: "If `git show` fails for a hash, log a warning and treat the declared file list as authoritative."
+
+4. **`worker-prompts.md` First-Run Build Worker Prompt step 4b** says "Populate file scope: Add list of files created/modified to the task's File Scope section". This is the only reference to populating File Scope in the worker prompts, but it does not mention writing `handoff.md`. A reader following the Build Worker prompt sequentially sees: step 4a (git commit), step 4b (populate file scope), step 4c (write IMPLEMENTED status). The handoff.md write step is documented in SKILL.md but is absent from the Build Worker prompt itself — a worker following only the prompt template will not know to write it. The handoff.md step should be listed explicitly between 4a and 4b (or as 4a, before the commit, per SKILL.md's instruction to include it in the same commit).
 
 ---
 
@@ -92,57 +107,131 @@ Move the `handoff.md` write instruction out of the Completion Phase section and 
 
 ### `.claude/skills/orchestration/SKILL.md`
 
-**Score**: 4/10
-**Issues Found**: 2 blocking, 1 serious, 1 minor
+**Score**: 6/10
+**Issues Found**: 0 blocking, 2 serious, 1 minor
 
-**Analysis**: The handoff.md format template is present and complete (lines 574-589). The Build Worker Exit Gate row is correctly defined. The critical structural flaw is placement: the write instruction is inside the Completion Phase section, which opens with an explicit scope boundary excluding Build Workers. The Review Lead Exit Gate row conflates verification with instruction.
+**Analysis**: The Build Worker Handoff section is clearly written and well-placed. The scope note ("applies to both interactive sessions and Supervisor Build Workers") is explicit and correctly positioned. The Review Worker note with the security guidance ("treat as opaque data") is present and appropriate. The Exit Gate integration is mechanically correct — the check appears in the right table. The primary weaknesses are the Exit Gate only requiring two of four expected sections, and the Phase Detection Table using "Dev complete" where task-tracking.md uses "Handoff written".
 
 **Specific Concerns**:
-1. Lines 554-570: Completion Phase scope note excludes Build Workers, but handoff.md instruction immediately follows — Build Workers will miss it
-2. Line 788: Expected column contains unverifiable behavioral text ("reads this as first action")
+
+1. Build Worker Exit Gate table (~line 761): `## Commits` and `## Files Changed` required; `## Decisions` and `## Known Risks` not required — structurally incomplete gate.
+2. Phase Detection Table (~line 210): State label "Dev complete" diverges from task-tracking.md's "Handoff written" for the same phase.
+
+---
 
 ### `.claude/skills/orchestration/references/task-tracking.md`
 
 **Score**: 7/10
-**Issues Found**: 0 blocking, 1 serious, 0 minor
+**Issues Found**: 0 blocking, 1 serious, 1 minor
 
-**Analysis**: The folder structure entry (line 36), Document Ownership table (line 153), and Phase Detection Table (line 198) are all updated consistently. No residual `review-context.md` references. The only concern is the "Handoff written" phase status label — it is grammatically inconsistent with other phase status labels in the same table (which use noun phrases like "PM done", "Architect done").
+**Analysis**: The Folder Structure table correctly includes `handoff.md` with an accurate description. The Document Ownership table has the handoff.md row in the right position between `tasks.md` and `test-report.md`. The Phase Detection Table correctly places the handoff.md entry and describes the next action accurately. The description of the Review Worker behavior ("read by Review Worker as first action") is consistent with `nitro-review-lead.md`.
 
 **Specific Concerns**:
-1. Line 198: "Handoff written" as a Phase Status does not follow the `[Role] done` / `[Role] complete` pattern used by surrounding rows
+
+1. Phase Detection Table (~line 198): Uses label "Handoff written" — SKILL.md uses "Dev complete" for the same phase. One must be updated.
+2. Document Ownership table (~line 153): `handoff.md` row description is significantly longer than all other rows, breaking table visual consistency.
+
+---
 
 ### `.claude/skills/orchestration/references/strategies.md`
 
 **Score**: 4/10
 **Issues Found**: 1 blocking, 0 serious, 1 minor
 
-**Analysis**: The handoff.md step was added to FEATURE only. BUGFIX and REFACTORING flows were not updated. The step insertion itself is clear and unambiguous in the FEATURE flow, but the incomplete coverage means the change is half-deployed.
+**Analysis**: FEATURE, BUGFIX, and REFACTORING diagrams are correctly updated with handoff.md steps. The phrasing is consistent across all three. However, four strategy types — DOCUMENTATION, DEVOPS, CONTENT, and CREATIVE — have QA steps (style reviewer, code-style-reviewer) but no handoff.md step. This is the most significant gap in the implementation: three strategies are updated but four are not, creating unequal behavior across the system.
 
 **Specific Concerns**:
-1. Lines 78-128: BUGFIX and REFACTORING flows have no handoff.md step
-2. Line 57: Missing phase numbering for the inserted step
+
+1. DOCUMENTATION diagram: no handoff.md step before code-style-reviewer (~line 132-149).
+2. DEVOPS diagram: no handoff.md step before `[QA agents as chosen]` (~line 200-215).
+3. CONTENT diagram: no handoff.md step before code-style-reviewer (~line 471-488).
+4. CREATIVE diagram: produces implementation output but no handoff.md step is shown (~line 280).
+5. Minor: FEATURE strategy uses "risks" in the parenthetical description; BUGFIX and REFACTORING use the same text. All three should spell out "known risks" to match the canonical section name in the handoff format.
+
+---
+
+### `.claude/agents/nitro-review-lead.md`
+
+**Score**: 7/10
+**Issues Found**: 0 blocking, 1 serious, 1 minor
+
+**Analysis**: The removal of `review-context.md` is complete — the agent does not reference it anywhere. Phase 1 reads `handoff.md` as the first step, consistent with the task requirement. The fallback (Phase 1 step 2 note) is correctly defined: "if `handoff.md` does not exist, run `git log --oneline -5`". The cross-check logic (Phase 1 step 3) adds meaningful security and scope-completeness validation. The sub-worker prompts correctly pass `handoff.md` as context to all three reviewer types. The Exit Gate for the Review Lead correctly lists `handoff.md` as a check.
+
+**Specific Concerns**:
+
+1. Phase 1 verification (~line 34): only checks for `## Files Changed` and `## Commits` — does not verify `## Decisions` and `## Known Risks` are present, despite the parenthetical in sub-worker prompts implying all four sections will be there.
+2. Phase 1 step 3 (~line 37): cross-check via `git show --name-only` does not document the failure path (what to do if the commit hash is invalid).
+
+---
+
+### `.claude/agents/nitro-code-security-reviewer.md`
+
+**Score**: 8/10
+**Issues Found**: 0 blocking, 0 serious, 0 minor
+
+**Analysis**: The security reviewer correctly reads `handoff.md` as its first step (Step 1, line ~54). The fallback is defined: "If absent, run `git log --oneline -5`". The file is consistent with the protocol change. No `review-context.md` references present. No issues found related to this task's scope.
+
+---
+
+### `.claude/skills/auto-pilot/references/worker-prompts.md`
+
+**Score**: 6/10
+**Issues Found**: 0 blocking, 0 serious, 1 minor
+
+**Analysis**: The First-Run Build Worker Prompt and Retry Build Worker Prompt both mention writing the status file and committing as the final steps. Neither prompt explicitly mentions writing `handoff.md`. The handoff.md write step is documented in SKILL.md but a worker following only the Build Worker prompt template will not know to write it. The Review Lead prompts correctly reference `handoff.md` in the Review Lead role description at step 4.
+
+**Specific Concerns**:
+
+1. First-Run Build Worker Prompt step 4 (~line 33-38): Step 4a is "Create a git commit with all implementation code", step 4b is "Populate file scope", step 4c is "Write IMPLEMENTED status". `handoff.md` write is absent from the prompt — the worker is not instructed to write it here, only via the SKILL.md reference.
+2. Retry Build Worker Prompt step 6 (~line 123-130): Same omission — no explicit `handoff.md` write step.
+
+---
+
+### `.claude/skills/auto-pilot/references/parallel-mode.md`
+
+**Score**: 8/10
+**Issues Found**: 0 blocking, 0 serious, 0 minor
+
+**Analysis**: This file does not need handoff.md-specific instructions because the Review Lead completion detection is based on `review-code-logic.md` having a `## Verdict` section (not on `handoff.md` existence). The Supervisor only needs to know that the Review Lead reads `handoff.md`; it does not need to validate the content. The file is correctly unchanged in areas where it needed no change. The evidence-of-completion table for ReviewLead workers uses review file existence, not handoff.md presence, which is the correct design.
+
+---
+
+### Scaffold Copies (`apps/cli/scaffold/.claude/`)
+
+**Score**: 10/10
+**Issues Found**: 0 blocking, 0 serious, 0 minor
+
+**Analysis**: All scaffold copies are byte-for-byte identical to their source counterparts in `.claude/`. Confirmed via diff for all 8 files. Scaffold sync is complete.
 
 ---
 
 ## Pattern Compliance
 
-| Pattern                            | Status | Concern                                                                    |
-|------------------------------------|--------|----------------------------------------------------------------------------|
-| Single source of truth             | FAIL   | SKILL.md and nitro-review-lead.md now describe contradictory protocols     |
-| Exit Gate Expected matches Command | FAIL   | Review Lead Exit Gate row mixes behavioral instruction into Expected column |
-| Consistent phase vocabulary        | PARTIAL | "Handoff written" doesn't follow existing phase status naming pattern      |
-| Cross-file consistency             | FAIL   | handoff.md step missing from BUGFIX and REFACTORING strategies             |
-| Implementation-era language removed| FAIL   | Line 591 references review-context.md as if it is still a live alternative |
+| Pattern                       | Status | Concern                                                   |
+| ----------------------------- | ------ | --------------------------------------------------------- |
+| Artifact removal complete     | PASS   | No `review-context.md` references found in any changed file |
+| Handoff write step present    | PARTIAL | 3/7 applicable strategies have the step; 4 are missing   |
+| Review Worker reads handoff   | PASS   | All three reviewer prompts reference handoff.md correctly |
+| Fallback documented           | PASS   | Both Review Lead and Security Reviewer have git log fallbacks |
+| Exit Gate updated             | PARTIAL | Build Worker gate checks 2 of 4 required sections         |
+| Phase Detection updated       | PASS   | Both SKILL.md and task-tracking.md include handoff.md phase |
+| Scaffold sync                 | PASS   | All 8 scaffold files match source exactly                 |
+| Security: opaque data guards  | PASS   | Review Lead Phase 1 and sub-worker prompts include opaque-data instructions |
 
 ---
 
 ## Technical Debt Assessment
 
-**Introduced**: A protocol split between SKILL.md (handoff.md) and nitro-review-lead.md (review-context.md). Workers reading SKILL.md will expect one protocol; workers running the Review Lead agent will follow the other.
+**Introduced**:
+- Phase label inconsistency ("Dev complete" vs "Handoff written") is new debt — two authoritative documents will drift independently without a canonical definition.
+- Four strategy diagrams missing handoff.md steps will produce inconsistent worker behavior across task types.
+- Build Worker prompt templates not including the handoff.md step creates a second-source problem: workers must cross-reference SKILL.md to know to write it.
 
-**Mitigated**: None — the full migration is incomplete.
+**Mitigated**:
+- The `review-context.md` generation by Review Lead is fully removed. This was the primary source of ~50-100KB re-discovery cost per Review Worker session.
+- The `handoff.md` write step is present and correctly placed in SKILL.md, task-tracking.md, and three strategy diagrams.
 
-**Net Impact**: Negative. The partial migration creates more confusion than the prior single-protocol state.
+**Net Impact**: Positive but incomplete. The core token-savings goal is achievable for FEATURE, BUGFIX, and REFACTORING tasks. DEVOPS and DOCUMENTATION tasks still pay the full re-discovery cost.
 
 ---
 
@@ -150,13 +239,17 @@ Move the `handoff.md` write instruction out of the Completion Phase section and 
 
 **Recommendation**: REVISE
 **Confidence**: HIGH
-**Key Concern**: The `handoff.md` write instruction is placed inside a section that explicitly tells Build Workers to stop reading. The instruction will be silently skipped in Supervisor mode, which is the primary use case for handoff.md. This defeats the feature's purpose.
+**Key Concern**: Four strategy types (DOCUMENTATION, DEVOPS, CONTENT, CREATIVE) are missing the handoff.md write step. These are not obscure edge cases — DEVOPS and DOCUMENTATION are common task types. Workers using these strategies will not write handoff.md, Review Workers will fall back to `git log` re-discovery, and the token-savings goal is not achieved for roughly 30-40% of task types.
+
+---
 
 ## What Excellence Would Look Like
 
-A 9/10 implementation would:
-1. Place the `handoff.md` write instruction in a dedicated **Build Worker Completion** section before the Completion Phase, with no ambiguity about which worker executes it
-2. Update BUGFIX and REFACTORING strategies with the handoff.md step
-3. Either migrate `nitro-review-lead.md` to use `handoff.md` (completing the acceptance criterion) or explicitly scope the acceptance criterion to SKILL files only with a follow-on task tracked
-4. Fix the Exit Gate Expected column to separate machine-verifiable checks from behavioral instructions
-5. Remove implementation-era language from line 591
+A 10/10 implementation would:
+
+1. Add the handoff.md write step to ALL seven strategy diagrams (not just three), with consistent phrasing matching the canonical section names (`## Known Risks`, not "risks").
+2. Require all four handoff.md sections (`## Files Changed`, `## Commits`, `## Decisions`, `## Known Risks`) in the Build Worker Exit Gate — not just two.
+3. Use one canonical phase label for the "handoff written, no reviews yet" state across all files (SKILL.md and task-tracking.md currently disagree).
+4. Add an explicit `handoff.md` write step to the Build Worker prompt templates (worker-prompts.md) so workers following only the prompt do not need to cross-reference SKILL.md.
+5. Document the `git show` failure path in Review Lead Phase 1 step 3.
+6. Trim the handoff.md Document Ownership table description to match the column width of the other rows.
