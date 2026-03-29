@@ -85,10 +85,10 @@ Phase 8: nitro-modernization-detector --> Creates future-enhancements.md
          v
 nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
          |
-         USER CHOOSES QA
+         Build Worker writes handoff.md (files changed, commits, decisions, risks)
          |
          v
-[QA agents] --> Git --> nitro-modernization-detector
+[QA agents — Review Worker reads handoff.md as first action] --> Git --> nitro-modernization-detector
 ```
 
 ### Decision Points
@@ -111,10 +111,10 @@ nitro-software-architect --> Creates plan.md
          v
 nitro-team-leader MODE 1 --> MODE 2 (loop) --> MODE 3
          |
-         USER CHOOSES QA
+         Build Worker writes handoff.md (files changed, commits, decisions, risks)
          |
          v
-[QA agents] --> Git --> nitro-modernization-detector
+[QA agents — Review Worker reads handoff.md as first action] --> Git --> nitro-modernization-detector
 ```
 
 ### Why Skip PM
