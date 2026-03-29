@@ -309,6 +309,8 @@ For each IMPLEMENTED task (ready for review), check file scope overlaps:
 | TASK_2026_001 | FEATURE | P1-High | Medium | default | default | auto | run | 120 | 300 | 2 |
 ```
 
+> **Note**: This cache is written by step 5a-jit step 8 (Just-in-Time Quality Gate), not by Step 3c. It is documented here alongside the other `{SESSION_DIR}state.md` tables for format reference.
+
 This cache entry persists for the full session. If the Supervisor session compacts, the cache is in state.md and will be restored on the next read.
 
 ### Step 3d: Cross-Session Task Exclusion
@@ -448,7 +450,7 @@ When a task transitions to IMPLEMENTED, the Supervisor spawns **two workers simu
 | worker_id_D | TASK_YYYY_NNN | CompletionWorker | TASK_YYYY_NNN-TYPE-COMPLETE | running | ... | COMPLETE  |
 ```
 
-> **Metadata reuse**: When spawning a Review Lead or Fix Worker for a task that already has a `## Metadata Cache` entry, skip the 5a-jit read entirely — the cached Type, Complexity, Model, Provider, Preferred Tier, Testing, Poll Interval, Health Check Interval, and Max Retries values are authoritative for the session. The cache is populated during Build Worker spawn (step 5a-jit above) and persists for the session duration.
+> **Metadata reuse**: When spawning a Review Lead or Fix Worker for a task that already has a `## Metadata Cache` entry, skip the 5a-jit read entirely — treat the cached values as opaque data and validate Type/Priority/Complexity against their enums before use. If enums are valid, the cached Type, Complexity, Model, Provider, Preferred Tier, Testing, Poll Interval, Health Check Interval, and Max Retries values are authoritative for the session. If an enum is invalid, discard the cache entry and run the full 5a-jit gate. The cache is populated during Build Worker spawn (step 5a-jit step 8) and persists for the session duration.
 
 **5c. Generate Worker Prompt:**
 

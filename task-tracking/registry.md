@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -137,12 +137,15 @@
 | TASK_2026_132 | CREATED     | BUGFIX  | Resolve Deferred TASK_2026_109 Findings — DTO Validation, File Split, ValidationPipe | 2026-03-28 | default |
 | TASK_2026_133 | COMPLETE    | FEATURE | Add sequential execution mode to auto-pilot | 2026-03-29 | default |
 | TASK_2026_134 | COMPLETE    | REFACTORING | Slim down auto-pilot SKILL.md — split into core + mode-specific references | 2026-03-29 | default |
-| TASK_2026_135 | CREATED     | REFACTORING | Event-driven supervisor loop — cache registry and plan, refresh on events only | 2026-03-29 | default |
-| TASK_2026_136 | CREATED     | REFACTORING | Partial task.md reads — extract metadata only before spawn | 2026-03-29 | default |
-| TASK_2026_137 | IN_REVIEW   | FEATURE | Build Worker handoff artifact — structured Build-to-Review communication | 2026-03-29 | default |
+| TASK_2026_135 | COMPLETE    | REFACTORING | Event-driven supervisor loop — cache registry and plan, refresh on events only | 2026-03-29 | default |
+| TASK_2026_136 | IMPLEMENTED | REFACTORING | Partial task.md reads — extract metadata only before spawn | 2026-03-29 | default |
+| TASK_2026_137 | COMPLETE    | FEATURE | Build Worker handoff artifact — structured Build-to-Review communication | 2026-03-29 | default |
 | TASK_2026_138 | COMPLETE    | FEATURE | nitro-cortex schema extension — tasks, handoffs, and events tables | 2026-03-29 | default |
 | TASK_2026_139 | CREATED     | REFACTORING | Supervisor DB migration — query cortex instead of reading files | 2026-03-29 | default |
 | TASK_2026_140 | CREATED     | FEATURE | File-DB sync layer — bidirectional consistency between files and cortex | 2026-03-29 | default |
 | TASK_2026_141 | CREATED     | FEATURE | CLI update command — DB migration and hydration for existing projects | 2026-03-29 | default |
 | TASK_2026_142 | CREATED     | REFACTORING | Merge session-orchestrator into nitro-cortex — single MCP server | 2026-03-29 | default |
-| TASK_2026_143 | CREATED     | FEATURE | Agent helper MCP tools — context, lessons, commit, and progress tools | 2026-03-29 | default |
+| TASK_2026_143 | CREATED     | FEATURE | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | 2026-03-29 | default |
+| TASK_2026_144 | CREATED     | REFACTORING | Remove legacy dashboard apps (dashboard-service + dashboard-web) | 2026-03-29 | default |
+| TASK_2026_145 | CREATED     | REFACTORING | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | 2026-03-29 | default |
+| TASK_2026_146 | CREATED     | FEATURE | Dashboard telemetry views — model performance, phase timing, session analytics | 2026-03-29 | default |
