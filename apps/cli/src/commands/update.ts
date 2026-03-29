@@ -1,6 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, sep } from 'node:path';
-import { copyFileSync, mkdirSync } from 'node:fs';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
 import { resolveScaffoldRoot, walkScaffoldFiles } from '../utils/scaffold.js';
@@ -277,6 +276,9 @@ export default class Update extends BaseCommand {
       console.log('Checking cortex database...');
       const cortexResult = runCortexStep(cwd, 'init-or-migrate');
       if (cortexResult !== null) {
+        if (cortexResult.migrationsApplied > 0) {
+          console.log(`  Applied ${cortexResult.migrationsApplied} schema migration${cortexResult.migrationsApplied !== 1 ? 's' : ''}`);
+        }
         if (cortexResult.tasks.imported > 0 || cortexResult.sessions.imported > 0) {
           console.log(`  Hydrated ${cortexResult.tasks.imported} tasks, ${cortexResult.sessions.imported} sessions`);
         }

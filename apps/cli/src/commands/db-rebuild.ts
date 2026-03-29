@@ -21,6 +21,9 @@ export default class DbRebuild extends BaseCommand {
       return;
     }
 
+    if (result.migrationsApplied > 0) {
+      console.log(`Applied:  ${result.migrationsApplied} schema migration${result.migrationsApplied !== 1 ? 's' : ''}`);
+    }
     console.log(`Imported: ${result.tasks.imported} tasks, ${result.sessions.imported} sessions, ${result.handoffs.imported} handoffs`);
     if (result.tasks.skipped > 0) {
       console.log(`Skipped:  ${result.tasks.skipped} task folders (missing task.md)`);

@@ -4,33 +4,54 @@
 
 import type Database from 'better-sqlite3';
 import BetterSqlite3 from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
+import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+
+/** Column names returned by PRAGMA table_info(). */
+interface ColumnInfoRow { name: string }
+
+/**
+ * Known table names — used as an allowlist in applyMigrations to prevent
+ * SQL injection via PRAGMA table_info() string interpolation.
+ */
+const KNOWN_TABLES = ['tasks', 'sessions', 'workers', 'handoffs', 'events', 'phases', 'reviews', 'fix_cycles'] as const;
+type KnownTable = typeof KNOWN_TABLES[number];
 
 function applyMigrations(
   db: Database.Database,
-  table: string,
+  table: KnownTable,
   migrations: Array<{ column: string; ddl: string }>,
-): void {
-  interface ColumnInfoRow { name: string }
+): number {
+  // KNOWN_TABLES allowlist prevents SQL injection via PRAGMA string interpolation
+  if (!(KNOWN_TABLES as readonly string[]).includes(table)) {
+    throw new Error(`applyMigrations: unknown table "${table}"`);
+  }
   const existingColumns = new Set(
     (db.prepare(`PRAGMA table_info(${table})`).all() as ColumnInfoRow[]).map((r) => r.name),
   );
+  let applied = 0;
   for (const { column, ddl } of migrations) {
     if (!existingColumns.has(column)) {
       db.exec(ddl);
+      applied++;
     }
   }
+  return applied;
 }
 
 /**
  * Opens (or creates) the cortex SQLite DB at dbPath. Applies all schema
  * table definitions, indexes, and column migrations. Idempotent — safe
  * to call on an existing DB. Mirrors packages/mcp-cortex/src/db/schema.ts.
+ *
+ * @returns An object containing the open DB handle and the count of schema
+ *          migrations applied, so callers can log "Applied N migrations".
  */
-export function initCortexDatabase(dbPath: string): Database.Database {
+export function initCortexDatabase(dbPath: string): { db: Database.Database; migrationsApplied: number } {
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
   const db = new BetterSqlite3(dbPath);
+  // Restrict DB file to owner read/write (0o600) — matches the directory permission intent.
+  chmodSync(dbPath, 0o600);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
@@ -111,27 +132,29 @@ export function initCortexDatabase(dbPath: string): Database.Database {
     created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )`);
 
+  // CHECK constraints copied verbatim from packages/mcp-cortex/src/db/schema.ts
   db.exec(`CREATE TABLE IF NOT EXISTS phases (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     worker_run_id    TEXT NOT NULL,
     task_id          TEXT REFERENCES tasks(id),
-    phase            TEXT NOT NULL,
+    phase            TEXT NOT NULL CHECK(phase IN ('PM','Architect','Dev','Review','Fix','Completion','other')),
     model            TEXT,
     start_time       TEXT,
     end_time         TEXT,
     duration_minutes REAL,
     input_tokens     INTEGER,
     output_tokens    INTEGER,
-    outcome          TEXT,
+    outcome          TEXT CHECK(outcome IN ('COMPLETE','FAILED','SKIPPED','STUCK') OR outcome IS NULL),
     metadata         TEXT,
     created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )`);
 
+  // CHECK constraints copied verbatim from packages/mcp-cortex/src/db/schema.ts
   db.exec(`CREATE TABLE IF NOT EXISTS reviews (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id               TEXT NOT NULL REFERENCES tasks(id),
     phase_id              INTEGER REFERENCES phases(id),
-    review_type           TEXT NOT NULL,
+    review_type           TEXT NOT NULL CHECK(review_type IN ('code-style','code-logic','security','visual','other')),
     score                 REAL NOT NULL,
     findings_count        INTEGER NOT NULL DEFAULT 0,
     critical_count        INTEGER NOT NULL DEFAULT 0,
@@ -177,12 +200,14 @@ export function initCortexDatabase(dbPath: string): Database.Database {
     'CREATE INDEX IF NOT EXISTS idx_reviews_task ON reviews(task_id)',
     'CREATE INDEX IF NOT EXISTS idx_reviews_model_built ON reviews(model_that_built)',
     'CREATE INDEX IF NOT EXISTS idx_fix_cycles_task ON fix_cycles(task_id)',
-  ];
+  ] as const;
   for (const idx of INDEXES) {
     db.exec(idx);
   }
 
-  applyMigrations(db, 'tasks', [
+  let migrationsApplied = 0;
+
+  migrationsApplied += applyMigrations(db, 'tasks', [
     { column: 'complexity',          ddl: 'ALTER TABLE tasks ADD COLUMN complexity TEXT' },
     { column: 'model',               ddl: 'ALTER TABLE tasks ADD COLUMN model TEXT' },
     { column: 'dependencies',        ddl: "ALTER TABLE tasks ADD COLUMN dependencies TEXT NOT NULL DEFAULT '[]'" },
@@ -193,7 +218,7 @@ export function initCortexDatabase(dbPath: string): Database.Database {
     { column: 'claimed_at',          ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
   ]);
 
-  applyMigrations(db, 'sessions', [
+  migrationsApplied += applyMigrations(db, 'sessions', [
     { column: 'supervisor_model',     ddl: 'ALTER TABLE sessions ADD COLUMN supervisor_model TEXT' },
     { column: 'supervisor_launcher',  ddl: 'ALTER TABLE sessions ADD COLUMN supervisor_launcher TEXT' },
     { column: 'mode',                 ddl: 'ALTER TABLE sessions ADD COLUMN mode TEXT' },
@@ -202,10 +227,10 @@ export function initCortexDatabase(dbPath: string): Database.Database {
     { column: 'total_output_tokens',  ddl: 'ALTER TABLE sessions ADD COLUMN total_output_tokens INTEGER' },
   ]);
 
-  applyMigrations(db, 'workers', [
+  migrationsApplied += applyMigrations(db, 'workers', [
     { column: 'outcome',      ddl: 'ALTER TABLE workers ADD COLUMN outcome TEXT' },
     { column: 'retry_number', ddl: 'ALTER TABLE workers ADD COLUMN retry_number INTEGER NOT NULL DEFAULT 0' },
   ]);
 
-  return db;
+  return { db, migrationsApplied };
 }
