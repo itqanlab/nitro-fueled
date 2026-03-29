@@ -502,6 +502,16 @@ This call is best-effort — failure never blocks the spawn.
 
 **5d. Resolve Provider and Model:**
 
+**Provider switch on repeated failure (applies to Build Workers only):**
+
+Before running Config-Driven Routing, check `retry_count` for this task in `{SESSION_DIR}state.md`:
+
+- **If `retry_count >= 2` AND the previously used provider was NOT `claude`**: force provider to `claude` (anthropic launcher) for this retry. Skip Config-Driven Routing and use `claude` with the same tier. Log: `"PROVIDER SWITCH — TASK_X: {previous_provider} failed {N} times, switching to claude"`. Record the switch in the worker entry in state.md (`forced_provider_switch: true`).
+- **If `retry_count >= 2` AND the previously used provider WAS already `claude`**: proceed normally (all retries already on claude, no switch to make).
+- **If `retry_count < 2`**: proceed to Config-Driven Routing as normal.
+
+This ensures non-claude providers (e.g. glm, openai) get at most 2 attempts before the supervisor falls back to claude.
+
 If the task's Provider field is `default` or absent, use the **Config-Driven Routing** procedure below to select the provider and tier based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. The model is always determined by the resolver from the provider's entry in config — never hardcoded here.
 
 **Reading `preferred_tier`**: Before routing, read the task's `preferred_tier` field from task.md (match `| preferred_tier | <value> |`). Valid values: `light`, `balanced`, `heavy`. If the field is absent, empty, or set to `auto`, fall back to the Complexity field for routing (Simple → light, Medium → balanced, Complex → heavy).
@@ -680,6 +690,12 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 1. **Wait 30 seconds** (fast event poll interval). Implement this as `Bash: sleep 30` — do NOT yield control to the user or ask for input. The supervisor loop must be fully autonomous between monitoring cycles.
 
+   **Heartbeat**: Before sleeping, print a one-line status to the user:
+   ```
+   [HH:MM:SS] Monitoring: {N} worker(s) active — {TASK_X (Build), TASK_Y (Review), ...}. Next event poll in 30s.
+   ```
+   This keeps the session visibly alive. Do not print during the sleep itself.
+
 2. **Drain the event queue:** Call MCP `get_pending_events()`.
    - For each event returned: trigger the completion handler (Step 7) for that worker immediately.
    - Log: `"EVENT — TASK_X: {event_label} received, triggering completion handler"`
@@ -715,6 +731,12 @@ After this re-check (in either outcome), continue to the normal mode steps below
 #### Step 6 — Polling Mode (`event_driven_mode = false`)
 
 1. **Wait** for the configured monitoring interval (default: 5 minutes). Implement this as `Bash: sleep N` (where N is the interval in seconds, e.g., `sleep 300` for 5 minutes) — do NOT yield control to the user, ask for input, or suggest the user send a message to trigger the next check. The supervisor loop must run autonomously until the backlog is drained or `--limit` is reached.
+
+   **Heartbeat**: Before sleeping, print a one-line status to the user:
+   ```
+   [HH:MM:SS] Monitoring: {N} worker(s) active — {TASK_X (Build/provider/model), TASK_Y (Review/provider/model), ...}. Next health check in {interval}.
+   ```
+   Include provider and model in the heartbeat so the user can see which model is running each task. Do not print during the sleep itself.
 
 2. For each active worker in `{SESSION_DIR}state.md`:
 
@@ -809,8 +831,8 @@ If the registry shows a state that does not match the expected transition for th
 
 - If new state is **COMPLETE** (FixWorker or CompletionWorker succeeded):
   - Remove worker from active workers in state.
-  - Move task from active to completed list in state.
-  - Record: task_id, completion_timestamp (format: `YYYY-MM-DD HH:MM:SS +ZZZZ`)
+  - Append a row to `## Completed Tasks This Session` in `{SESSION_DIR}state.md`:
+    `| {task_id} | COMPLETE | {worker_type} | {YYYY-MM-DD HH:MM:SS +ZZZZ} |`
   - Log: `"FIX DONE — TASK_X: COMPLETE"` (FixWorker) or `"COMPLETION DONE — TASK_X: COMPLETE"` (CompletionWorker)
   - **With cortex_available = true**: call `release_task(task_id, "COMPLETE")` to release the claim and update DB status atomically. If `release_task` fails: log `"RELEASE FAILED — TASK_X: {error}"` and continue. The status file is the authoritative state — a DB sync failure is non-fatal.
 
@@ -873,7 +895,9 @@ Note: Test Lead does NOT block the decision. If test-report.md is missing after 
   - Log: `"TASK_X: {worker_type} failed {N} times — marked BLOCKED"`
 - **ELSE**:
   - Log: `"TASK_X: {worker_type} finished without state transition — will retry (attempt {N}/{retry_limit})"`
-- Move worker from active to failed list in state
+- Append a row to `## Failed Tasks This Session` in `{SESSION_DIR}state.md`:
+  `| {task_id} | {reason: "no state transition after N attempts"} | {retry_count} |`
+- Remove worker from `## Active Workers` table in `{SESSION_DIR}state.md`.
 
 **7f. After processing all completions**, perform an incremental dependency re-evaluation:
 
