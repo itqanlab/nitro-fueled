@@ -2,11 +2,13 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  ServiceUnavailableException,
   Logger,
 } from '@nestjs/common';
 import {
@@ -14,10 +16,12 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { PipelineService } from './pipeline.service';
 import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
+import { CortexService } from './cortex.service';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
@@ -35,6 +39,7 @@ export class DashboardController {
     private readonly pipelineService: PipelineService,
     private readonly sessionsService: SessionsService,
     private readonly analyticsService: AnalyticsService,
+    private readonly cortexService: CortexService,
   ) {}
 
   // === Health ===
@@ -273,5 +278,160 @@ export class DashboardController {
       this.logger.error('Analytics sessions failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
     }
+  }
+
+  // === Cortex Tasks ===
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex tasks', description: 'Returns task list from the cortex SQLite DB' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by task status' })
+  @ApiQuery({ name: 'type', required: false, description: 'Filter by task type' })
+  @ApiResponse({ status: 200, description: 'Cortex task list' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/tasks')
+  public getCortexTasks(
+    @Query('status') status?: string,
+    @Query('type') type?: string,
+  ): ReturnType<CortexService['getTasks']> {
+    const result = this.cortexService.getTasks({ status, type });
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
+  }
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex task context', description: 'Returns one cortex task with full context by ID' })
+  @ApiParam({ name: 'id', description: 'Task ID', example: 'TASK_2026_001' })
+  @ApiResponse({ status: 200, description: 'Cortex task context' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/tasks/:id')
+  public getCortexTask(@Param('id') id: string): ReturnType<CortexService['getTaskContext']> {
+    const result = this.cortexService.getTaskContext(id);
+    if (result === null && !this.isCortexAvailable()) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    if (result === null) {
+      throw new NotFoundException({ error: 'Task not found' });
+    }
+    return result;
+  }
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex task trace', description: 'Returns full task trace: workers, phases, reviews, fix_cycles, events' })
+  @ApiParam({ name: 'id', description: 'Task ID', example: 'TASK_2026_001' })
+  @ApiResponse({ status: 200, description: 'Cortex task trace' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/tasks/:id/trace')
+  public getCortexTaskTrace(@Param('id') id: string): ReturnType<CortexService['getTaskTrace']> {
+    const result = this.cortexService.getTaskTrace(id);
+    if (result === null && !this.isCortexAvailable()) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    if (result === null) {
+      throw new NotFoundException({ error: 'Task not found' });
+    }
+    return result;
+  }
+
+  // === Cortex Sessions ===
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex sessions', description: 'Returns sessions list from the cortex SQLite DB' })
+  @ApiResponse({ status: 200, description: 'Cortex session list' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/sessions')
+  public getCortexSessions(): ReturnType<CortexService['getSessions']> {
+    const result = this.cortexService.getSessions();
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
+  }
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex session summary', description: 'Returns full cortex session summary including workers breakdown and cost' })
+  @ApiParam({ name: 'id', description: 'Session ID' })
+  @ApiResponse({ status: 200, description: 'Cortex session summary' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/sessions/:id')
+  public getCortexSession(@Param('id') id: string): ReturnType<CortexService['getSessionSummary']> {
+    const result = this.cortexService.getSessionSummary(id);
+    if (result === null && !this.isCortexAvailable()) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    if (result === null) {
+      throw new NotFoundException({ error: 'Session not found' });
+    }
+    return result;
+  }
+
+  // === Cortex Workers ===
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex workers', description: 'Returns workers list from the cortex SQLite DB' })
+  @ApiQuery({ name: 'sessionId', required: false, description: 'Filter by session ID' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by worker status' })
+  @ApiResponse({ status: 200, description: 'Cortex worker list' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/workers')
+  public getCortexWorkers(
+    @Query('sessionId') sessionId?: string,
+    @Query('status') status?: string,
+  ): ReturnType<CortexService['getWorkers']> {
+    const result = this.cortexService.getWorkers({ sessionId, status });
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
+  }
+
+  // === Cortex Analytics ===
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex model performance', description: 'Returns aggregated model performance stats from phases and reviews' })
+  @ApiQuery({ name: 'taskType', required: false, description: 'Filter by task type' })
+  @ApiQuery({ name: 'model', required: false, description: 'Filter by model name' })
+  @ApiResponse({ status: 200, description: 'Cortex model performance data' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/analytics/model-performance')
+  public getCortexModelPerformance(
+    @Query('taskType') taskType?: string,
+    @Query('model') model?: string,
+  ): ReturnType<CortexService['getModelPerformance']> {
+    const result = this.cortexService.getModelPerformance({ taskType, model });
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
+  }
+
+  @ApiTags('cortex')
+  @ApiOperation({ summary: 'Get cortex phase timing', description: 'Returns aggregated phase timing statistics' })
+  @ApiResponse({ status: 200, description: 'Cortex phase timing data' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('cortex/analytics/phase-timing')
+  public getCortexPhaseTiming(): ReturnType<CortexService['getPhaseTiming']> {
+    const result = this.cortexService.getPhaseTiming();
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
+  }
+
+  // ============================================================
+  // Private helpers
+  // ============================================================
+
+  /**
+   * Checks whether the cortex DB is reachable (file exists).
+   * Used to disambiguate null returns: DB unavailable vs. record not found.
+   */
+  private isCortexAvailable(): boolean {
+    // Probe with a lightweight call — getEventsSince(0) returns [] or null
+    return this.cortexService.getEventsSince(Number.MAX_SAFE_INTEGER) !== null;
   }
 }

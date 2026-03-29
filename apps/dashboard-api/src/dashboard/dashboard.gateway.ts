@@ -10,6 +10,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
 import { WatcherService } from './watcher.service';
+import { CortexService } from './cortex.service';
 import type { DashboardEvent, FileChangeEvent } from './dashboard.types';
 
 /**
@@ -31,11 +32,14 @@ export class DashboardGateway
 
   private readonly logger = new Logger(DashboardGateway.name);
   private watcherUnsubscribe: (() => void) | null = null;
+  private cortexPollInterval: ReturnType<typeof setInterval> | null = null;
+  private lastCortexEventId = 0;
 
   constructor(
     private readonly sessionsService: SessionsService,
     private readonly analyticsService: AnalyticsService,
     private readonly watcherService: WatcherService,
+    private readonly cortexService: CortexService,
   ) {}
 
   /**
@@ -45,6 +49,7 @@ export class DashboardGateway
   public afterInit(): void {
     this.logger.log('WebSocket gateway initialized');
     this.setupWatcherSubscription();
+    this.startCortexPolling();
   }
 
   /**
@@ -76,6 +81,11 @@ export class DashboardGateway
       this.watcherUnsubscribe();
       this.watcherUnsubscribe = null;
       this.logger.log('Watcher subscription cleaned up');
+    }
+    if (this.cortexPollInterval !== null) {
+      clearInterval(this.cortexPollInterval);
+      this.cortexPollInterval = null;
+      this.logger.log('Cortex event polling stopped');
     }
   }
 
@@ -132,5 +142,38 @@ export class DashboardGateway
       return;
     }
     this.server.emit('dashboard-event', event);
+  }
+
+  /**
+   * Start polling the cortex events table every 3 seconds.
+   * Emits 'cortex-event' to all connected clients for each new event.
+   */
+  private startCortexPolling(): void {
+    this.cortexPollInterval = setInterval(() => {
+      this.pollCortexEvents();
+    }, 3000);
+  }
+
+  /**
+   * Poll cortex for new events since the last seen event ID.
+   * Skips silently when cortex is unavailable (DB not found).
+   */
+  private pollCortexEvents(): void {
+    const events = this.cortexService.getEventsSince(this.lastCortexEventId);
+    if (events === null) {
+      // Cortex DB unavailable — skip silently
+      return;
+    }
+    if (events.length === 0) {
+      return;
+    }
+    for (const event of events) {
+      if (event.id > this.lastCortexEventId) {
+        this.lastCortexEventId = event.id;
+      }
+      if (!this.server) continue;
+      this.server.emit('cortex-event', event);
+    }
+    this.logger.debug(`Emitted ${events.length} cortex event(s); lastEventId=${this.lastCortexEventId}`);
   }
 }
