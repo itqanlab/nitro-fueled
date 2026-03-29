@@ -351,24 +351,44 @@ Select the appropriate prompt template from the Worker Prompt Templates section 
 
 **5d. Resolve Provider and Model:**
 
-If the task's Provider field is `default` or absent, use the **Provider Routing Table** below to select the best-fit provider and model based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. Similarly, if the task's Model field is `default` or absent, use the routing table default for the resolved provider.
+If the task's Provider field is `default` or absent, use the **Config-Driven Routing** procedure below to select the provider and tier based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. The model is always determined by the resolver from the provider's entry in config — never hardcoded here.
 
 **Reading `preferred_tier`**: Before routing, read the task's `preferred_tier` field from task.md (match `| preferred_tier | <value> |`). Valid values: `light`, `balanced`, `heavy`. If the field is absent, empty, or set to `auto`, fall back to the Complexity field for routing (Simple → light, Medium → balanced, Complex → heavy).
 
-> **Cost escalation note**: `preferred_tier` is a user-controlled field. Any user with write access to a task file can set `preferred_tier: heavy` to force `claude-opus-4-6` regardless of actual complexity. This is an accepted risk — access control to the task repository is the intended mitigation. When `preferred_tier=heavy` is set on a task with `Complexity=Simple`, log a warning: `"[warn] TASK_X: preferred_tier=heavy overrides Simple complexity — verify this is intentional"`.
+> **Cost escalation note**: `preferred_tier` is a user-controlled field. Any user with write access to a task file can set `preferred_tier: heavy` to force a heavy-tier provider regardless of actual complexity. This is an accepted risk — access control to the task repository is the intended mitigation. When `preferred_tier=heavy` is set on a task with `Complexity=Simple`, log a warning: `"[warn] TASK_X: preferred_tier=heavy overrides Simple complexity — verify this is intentional"`.
 
-**Provider Routing Table** (used when Provider is `default` or absent):
+**Config-Driven Routing** (used when Provider is `default` or absent):
 
-| Condition | Provider | Model | Reason |
-|-----------|----------|-------|--------|
-| Review Worker + Type=logic (code-logic-reviewer) | `claude` | `claude-opus-4-6` | Deep reasoning needed for logic review |
-| Review Worker + Type=style (code-style-reviewer) | `glm` | `glm-4.7` | Full tool access, saves Claude quota |
-| Review Worker + Type=simple (checklist, unit test) | `opencode` | `openai/gpt-4.1-mini` | Single-shot, cheapest for simple checks |
-| Build Worker + preferred_tier=heavy | `claude` | `claude-opus-4-6` | Top quality for critical/novel decisions |
-| Build Worker + preferred_tier=balanced | `glm` | `glm-5` | Full orchestration, saves Claude quota |
-| Build Worker + preferred_tier=light | `glm` | `glm-4.7` | Good enough, full tool access |
-| Build Worker + Type=DOCUMENTATION or RESEARCH | `opencode` | `openai/gpt-4.1-mini` | Single-shot focused tasks |
-| *(unrecognized combination)* | `claude` | `claude-opus-4-6` | Safe fallback |
+Resolution reads `~/.nitro-fueled/config.json` (merged with project-level `.nitro-fueled/config.json` — project values win). The `routing` section maps each slot to a provider name; the `providers` section maps provider names to launcher and models. The resolver (`resolveProviderForSpawn`) handles launcher selection, model resolution, and fallback chain.
+
+**Condition → Routing Slot → Provider Name → Tier** mapping:
+
+| Condition | Routing Slot | Tier | Notes |
+|-----------|-------------|------|-------|
+| Review Worker + Type=logic (code-logic-reviewer) | `routing['review-logic']` | `heavy` | Deep reasoning for logic review |
+| Review Worker + Type=style (code-style-reviewer) | `routing['review-style']` | `balanced` | Full tool access |
+| Review Worker + Type=simple (checklist, unit test) | `routing['review-simple']` | `light` | Single-shot, cheapest for simple checks |
+| Build Worker + preferred_tier=heavy | `routing['heavy']` | `heavy` | Top quality for critical/novel decisions |
+| Build Worker + preferred_tier=balanced | `routing['balanced']` or `routing['default']` | `balanced` | Standard build tasks |
+| Build Worker + preferred_tier=light | `routing['light']` | `light` | Lightweight tasks |
+| Build Worker + Type=DOCUMENTATION or RESEARCH | `routing['documentation']` | `light` | Single-shot focused tasks |
+| *(unrecognized combination)* | resolver's last-resort | `balanced` | `anthropic/claude-sonnet-4-6` via `claude` launcher |
+
+**Resolution procedure:**
+1. Look up the routing slot value from config `routing` section → get `providerName`
+2. Look up `config.providers[providerName]` → get launcher and models
+3. Select model for the resolved tier (e.g., `entry.models['heavy']`); fallback within the entry: `balanced` → `heavy` → `light`
+4. Validate launcher availability (`found: true`, `authenticated: true` in `config.launchers`)
+5. If unavailable, walk the resolver fallback chain; last resort is always `anthropic/claude-sonnet-4-6` via `claude` launcher
+6. Pass `{ provider: providerName, tier }` to `spawn_worker` — the session-orchestrator's Phase 2 re-validation (`resolveProviderForSpawn`) verifies availability again immediately before spawn
+
+**Valid provider names in config** (examples — not exhaustive):
+- `anthropic` → `claude` launcher (always the last-resort fallback)
+- `zai` → `opencode` launcher with `zai-coding-plan/` model prefix
+- `openai-opencode` → `opencode` launcher with `openai/` model prefix
+- `openai-codex` → `codex` launcher (calls `codex exec --model <model> <prompt>`, non-interactive)
+
+> The `codex` launcher and `openai-codex` provider are valid routing targets. Example config that routes simple review tasks to codex: `"review-simple": "openai-codex"`. The `openai-codex` and `openai-opencode` providers both use OpenAI models but differ in harness behavior: `openai-codex` calls `codex exec` (non-interactive); `openai-opencode` calls the opencode CLI with OpenAI OAuth.
 
 If an explicit Provider is set in task.md, always honor it — no routing table override.
 
@@ -456,13 +476,13 @@ On **provider failure**:
 `release_task(task_id, 'CREATED')` to release the DB claim so other sessions can pick
 up the task if this session ultimately fails to spawn it.
 
-- IF the resolved provider (from step 5d) is NOT `claude`:
-  1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error truncated to 200 chars}), retrying with claude/claude-sonnet-4-6"`
-  2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet |`
-  3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override: `provider=claude`, `model=claude-sonnet-4-6`
-  4. **If retry succeeds**: Re-claim the task with `claim_task(task_id, session_id)` before recording the worker. Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5f** (state.md recording and `subscribe_worker`).
+- IF the resolved provider (from step 5d) is NOT the resolver's last-resort provider:
+  1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error truncated to 200 chars}), retrying with resolver last-resort"`
+  2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with last-resort |`
+  3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override with the resolver's last-resort provider (always `anthropic/claude-sonnet-4-6` via `claude` launcher — the resolver owns this fallback, not this file)
+  4. **If retry succeeds**: Re-claim the task with `claim_task(task_id, session_id)` before recording the worker. Record the worker in `{SESSION_DIR}state.md` using the last-resort provider and model returned by the resolver (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5f** (state.md recording and `subscribe_worker`).
   5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error truncated to 200 chars}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
-- IF the resolved provider is already `claude`:
+- IF the resolved provider is already the resolver's last-resort (i.e., all fallbacks exhausted):
   - Log: `"Failed to spawn worker for TASK_X: {error truncated to 200 chars}"`
   - Leave task status as-is (will retry next loop iteration)
   - Continue with remaining tasks
