@@ -202,6 +202,16 @@ export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
     ],
   },
   {
+    title: 'Telemetry',
+    type: 'management',
+    items: [
+      { label: 'Model Performance', icon: '\u{1F4CA}', route: '/telemetry/model-performance' },
+      { label: 'Phase Timing',      icon: '\u23F1',    route: '/telemetry/phase-timing' },
+      { label: 'Session Comparison',icon: '\u21C4',    route: '/telemetry/session-comparison' },
+      { label: 'Task Trace',        icon: '\u{1F50D}', route: '/telemetry/task-trace' },
+    ],
+  },
+  {
     title: 'Providers',
     type: 'provider',
     items: [

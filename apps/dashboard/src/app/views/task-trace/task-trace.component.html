@@ -1,0 +1,224 @@
+<div class="task-trace-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Task Trace</h1>
+    <p class="page-subtitle">Full execution chain for a selected task: workers, phases, reviews, and fix cycles</p>
+  </div>
+
+  <!-- Task Selector -->
+  <div class="selector-bar">
+    <label class="selector-label" for="task-select">Select Task</label>
+    <nz-select
+      id="task-select"
+      [nzShowSearch]="true"
+      [(ngModel)]="selectedTaskId"
+      (ngModelChange)="onTaskSelect($event)"
+      nzPlaceHolder="Search and select a task..."
+      [nzLoading]="taskOptions().length === 0"
+      aria-label="Select a task to trace"
+      class="task-selector"
+    >
+      @for (option of taskOptions(); track option.value) {
+        <nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+      }
+    </nz-select>
+  </div>
+
+  <!-- No task selected -->
+  @if (!selectedTaskId) {
+    <nz-empty nzNotFoundContent="Select a task to view its trace"></nz-empty>
+  }
+
+  <!-- Task selected, loading -->
+  @if (selectedTaskId && traceLoading) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }"></nz-skeleton>
+  }
+
+  <!-- Task selected, data loaded -->
+  @if (selectedTaskId && viewModel) {
+
+    <!-- Summary Stats -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <nz-statistic
+          nzTitle="Total Cost"
+          [nzValue]="totalCost()"
+          nzPrefix="$"
+          [nzValueStyle]="{ color: 'var(--accent)' }"
+        ></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic
+          nzTitle="Total Tokens"
+          [nzValue]="totalTokens()"
+        ></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic
+          nzTitle="Workers"
+          [nzValue]="viewModel.workers.length"
+        ></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic
+          nzTitle="Phases"
+          [nzValue]="viewModel.phases.length"
+        ></nz-statistic>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    @if (viewModel.timelineEvents.length > 0) {
+      <div class="section-title">Timeline</div>
+      <div class="timeline" aria-label="Task execution timeline">
+        @for (event of viewModel.timelineEvents; track $index) {
+          <div class="timeline-item">
+            <div class="tl-dot" [ngClass]="timelineTypeClass(event.type)"></div>
+            <span class="tl-time">{{ event.time | slice:0:19 }}</span>
+            <div class="tl-content">
+              <span class="tl-label">{{ event.label }}</span>
+              <span class="tl-detail">{{ event.detail }}</span>
+              @if (event.cost !== undefined) {
+                <span class="tl-cost">${{ event.cost | number:'1.4-4' }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Workers Table -->
+    @if (viewModel.workers.length > 0) {
+      <div class="section-title">Workers</div>
+      <nz-table [nzData]="viewModel.workers" [nzShowPagination]="false" nzSize="small">
+        <thead>
+          <tr>
+            <th scope="col">Worker ID</th>
+            <th scope="col">Type</th>
+            <th scope="col">Model</th>
+            <th scope="col">Launcher</th>
+            <th scope="col">Status</th>
+            <th scope="col">Cost ($)</th>
+            <th scope="col">Tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of viewModel.workers; track w.id) {
+            <tr>
+              <td class="id-cell" [title]="w.id">{{ w.id | slice:0:12 }}...</td>
+              <td>{{ w.workerType }}</td>
+              <td class="model-cell">{{ w.model }}</td>
+              <td>{{ w.launcher }}</td>
+              <td>
+                <nz-tag [nzColor]="w.status === 'complete' ? 'green' : w.status === 'failed' ? 'red' : 'blue'">
+                  {{ w.status }}
+                </nz-tag>
+              </td>
+              <td>${{ w.cost | number:'1.4-4' }}</td>
+              <td>{{ (w.inputTokens + w.outputTokens) | number }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+
+    <!-- Phases Table -->
+    @if (viewModel.phases.length > 0) {
+      <div class="section-title">Phases</div>
+      <nz-table [nzData]="viewModel.phases" [nzShowPagination]="false" nzSize="small">
+        <thead>
+          <tr>
+            <th scope="col">Phase</th>
+            <th scope="col">Model</th>
+            <th scope="col">Duration (min)</th>
+            <th scope="col">Input Tokens</th>
+            <th scope="col">Output Tokens</th>
+            <th scope="col">Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of viewModel.phases; track p.id) {
+            <tr>
+              <td>{{ p.phase }}</td>
+              <td class="model-cell">{{ p.model }}</td>
+              <td>{{ p.durationMinutes !== null ? (p.durationMinutes | number:'1.1-1') : '—' }}</td>
+              <td>{{ p.inputTokens | number }}</td>
+              <td>{{ p.outputTokens | number }}</td>
+              <td>{{ p.outcome ?? '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+
+    <!-- Reviews Table -->
+    @if (viewModel.reviews.length > 0) {
+      <div class="section-title">Reviews</div>
+      <nz-table [nzData]="viewModel.reviews" [nzShowPagination]="false" nzSize="small">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Score</th>
+            <th scope="col">Findings</th>
+            <th scope="col">Critical</th>
+            <th scope="col">Built By</th>
+            <th scope="col">Reviewed By</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of viewModel.reviews; track r.id) {
+            <tr>
+              <td>{{ r.reviewType }}</td>
+              <td>
+                <nz-tag [nzColor]="r.score >= 4 ? 'green' : r.score >= 3 ? 'orange' : 'red'">
+                  {{ r.score }}
+                </nz-tag>
+              </td>
+              <td>{{ r.findingsCount }}</td>
+              <td>{{ r.criticalCount }}</td>
+              <td class="model-cell">{{ r.modelThatBuilt }}</td>
+              <td class="model-cell">{{ r.modelThatReviewed }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+
+    <!-- Fix Cycles Table -->
+    @if (viewModel.fixCycles.length > 0) {
+      <div class="section-title">Fix Cycles</div>
+      <nz-table [nzData]="viewModel.fixCycles" [nzShowPagination]="false" nzSize="small">
+        <thead>
+          <tr>
+            <th scope="col">Fixes Applied</th>
+            <th scope="col">Fixes Skipped</th>
+            <th scope="col">Manual Required</th>
+            <th scope="col">Fixed By</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of viewModel.fixCycles; track f.id) {
+            <tr>
+              <td>{{ f.fixesApplied }}</td>
+              <td>{{ f.fixesSkipped }}</td>
+              <td>
+                <nz-tag [nzColor]="f.requiredManual ? 'red' : 'green'">
+                  {{ f.requiredManual ? 'Yes' : 'No' }}
+                </nz-tag>
+              </td>
+              <td class="model-cell">{{ f.modelThatFixed }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+
+  }
+
+  <!-- Task selected, no data returned -->
+  @if (selectedTaskId && !viewModel && !traceLoading) {
+    <nz-empty nzNotFoundContent="No trace data found for this task"></nz-empty>
+  }
+
+</div>

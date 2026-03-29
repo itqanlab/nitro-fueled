@@ -38,6 +38,34 @@ export const APP_ROUTES: Routes = [
           ),
       },
       { path: 'providers', component: ProviderHubComponent },
+      {
+        path: 'telemetry/model-performance',
+        loadComponent: () =>
+          import('./views/model-performance/model-performance.component').then(
+            (m) => m.ModelPerformanceComponent,
+          ),
+      },
+      {
+        path: 'telemetry/phase-timing',
+        loadComponent: () =>
+          import('./views/phase-timing/phase-timing.component').then(
+            (m) => m.PhaseTimingComponent,
+          ),
+      },
+      {
+        path: 'telemetry/session-comparison',
+        loadComponent: () =>
+          import('./views/session-comparison/session-comparison.component').then(
+            (m) => m.SessionComparisonComponent,
+          ),
+      },
+      {
+        path: 'telemetry/task-trace',
+        loadComponent: () =>
+          import('./views/task-trace/task-trace.component').then(
+            (m) => m.TaskTraceComponent,
+          ),
+      },
     ],
   },
 ];
