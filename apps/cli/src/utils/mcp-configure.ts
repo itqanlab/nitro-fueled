@@ -32,7 +32,7 @@ function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): boo
   }
 
   try {
-    writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n', 'utf-8');
+    writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n', { encoding: 'utf-8', mode: 0o600 });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`Error: Could not write ${filePath}: ${msg}`);
@@ -41,10 +41,12 @@ function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): boo
   return true;
 }
 
-export async function configureMcp(
+async function configureMcpServer(
   cwd: string,
   serverPath: string,
-  location: 'project' | 'global'
+  location: 'project' | 'global',
+  serverName: string,
+  entryBuilder: (realPath: string) => Record<string, unknown>
 ): Promise<boolean> {
   const expandedPath = expandTilde(serverPath);
   const resolvedServerPath = resolve(expandedPath);
@@ -64,12 +66,12 @@ export async function configureMcp(
 
   const entryPoint = resolve(realPath, 'dist', 'index.js');
   if (!existsSync(entryPoint)) {
-    console.error(`Error: Server entry point not found at ${entryPoint}`);
-    console.error('Make sure session-orchestrator is built (npm run build).');
+    console.error(`Error: ${serverName} entry point not found at ${entryPoint}`);
+    console.error(`Make sure ${serverName} is built (npm run build).`);
     return false;
   }
 
-  const mcpEntry = buildMcpConfigEntry(realPath);
+  const mcpEntry = entryBuilder(realPath);
 
   if (location === 'project') {
     console.warn('Note: Project-level config uses an absolute path that may not be portable across machines.');
@@ -81,9 +83,17 @@ export async function configureMcp(
 
   const success = mergeJsonFile(targetPath, mcpEntry);
   if (success) {
-    console.log(`  MCP session-orchestrator configured in ${targetPath}`);
+    console.log(`  MCP ${serverName} configured in ${targetPath}`);
   }
   return success;
+}
+
+export async function configureMcp(
+  cwd: string,
+  serverPath: string,
+  location: 'project' | 'global'
+): Promise<boolean> {
+  return configureMcpServer(cwd, serverPath, location, 'session-orchestrator', buildMcpConfigEntry);
 }
 
 export async function configureNitroCortex(
@@ -91,38 +101,5 @@ export async function configureNitroCortex(
   serverPath: string,
   location: 'project' | 'global'
 ): Promise<boolean> {
-  const expandedPath = expandTilde(serverPath);
-  const resolvedServerPath = resolve(expandedPath);
-
-  if (!existsSync(resolvedServerPath)) {
-    console.error(`Error: Directory not found: ${resolvedServerPath}`);
-    return false;
-  }
-
-  let realPath: string;
-  try {
-    realPath = realpathSync(resolvedServerPath);
-  } catch {
-    console.error(`Error: Could not resolve path: ${resolvedServerPath}`);
-    return false;
-  }
-
-  const entryPoint = resolve(realPath, 'dist', 'index.js');
-  if (!existsSync(entryPoint)) {
-    console.error(`Error: nitro-cortex entry point not found at ${entryPoint}`);
-    console.error('Make sure nitro-cortex is built (npm run build).');
-    return false;
-  }
-
-  const mcpEntry = buildNitroCortexConfigEntry(realPath);
-
-  const targetPath = location === 'project'
-    ? resolve(cwd, '.mcp.json')
-    : resolve(homedir(), '.claude.json');
-
-  const success = mergeJsonFile(targetPath, mcpEntry);
-  if (success) {
-    console.log(`  MCP nitro-cortex configured in ${targetPath}`);
-  }
-  return success;
+  return configureMcpServer(cwd, serverPath, location, 'nitro-cortex', buildNitroCortexConfigEntry);
 }

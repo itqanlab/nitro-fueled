@@ -1147,16 +1147,11 @@ The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions 
 
 ### nitro-cortex Availability Check (optional — soft check)
 
-After MCP validation passes (spawn_worker confirmed available), check if nitro-cortex
-tools are available:
+Detection runs at **Step 2** — see Step 2 for the `get_tasks()` soft-check and
+`cortex_available` flag logic. Calling `get_tasks()` is the authoritative detection
+method because it tests actual functionality, not just tool list presence.
 
-1. Inspect the MCP tool list for `get_tasks`.
-2. If present: set `cortex_available = true`. Log:
-   `| {HH:MM:SS} | auto-pilot | CORTEX AVAILABLE — using nitro-cortex for task state |`
-3. If absent: set `cortex_available = false`. Log:
-   `| {HH:MM:SS} | auto-pilot | CORTEX UNAVAILABLE — falling back to file-based state |`
-
-This is a **soft check** — the supervisor proceeds either way. cortex_available is a
+This is a **soft check** — the supervisor proceeds either way. `cortex_available` is a
 session flag that controls which code path is used in Steps 2-7. It is NOT re-checked
 per loop iteration.
 
@@ -1782,11 +1777,16 @@ First, distinguish provider failure from MCP-unreachable. Immediately call `list
 - **Provider failure**: `list_workers` succeeds — treat as provider failure and continue below.
 
 On **provider failure**:
+
+**If `cortex_available = true`**: Before any retry or fallback, call
+`release_task(task_id, 'CREATED')` to release the DB claim so other sessions can pick
+up the task if this session ultimately fails to spawn it.
+
 - IF the resolved provider (from step 5d) is NOT `claude`:
   1. Log: `"SPAWN FALLBACK — TASK_X: {provider} failed ({error truncated to 200 chars}), retrying with claude/claude-sonnet-4-6"`
   2. Append to `{SESSION_DIR}log.md`: `| {HH:MM:SS} | auto-pilot | SPAWN FALLBACK — TASK_X: {provider} failed, retrying with claude/sonnet |`
   3. Retry `spawn_worker` with the same `prompt`, `label`, and `working_directory`, but override: `provider=claude`, `model=claude-sonnet-4-6`
-  4. **If retry succeeds**: Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5f** (state.md recording and `subscribe_worker`).
+  4. **If retry succeeds**: Re-claim the task with `claim_task(task_id, session_id)` before recording the worker. Record the worker in `{SESSION_DIR}state.md` using `provider=claude` and `model=claude-sonnet-4-6` (NOT the originally intended provider). Do NOT increment `retry_count` — this is a fallback, not a retry of the same configuration. Proceed to **5f** (state.md recording and `subscribe_worker`).
   5. **If retry fails**: Log `"Failed to spawn fallback worker for TASK_X: {error truncated to 200 chars}"`. Leave task status as-is (will retry next loop iteration). Continue with remaining tasks.
 - IF the resolved provider is already `claude`:
   - Log: `"Failed to spawn worker for TASK_X: {error truncated to 200 chars}"`

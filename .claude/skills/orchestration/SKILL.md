@@ -333,7 +333,7 @@ invocations are visible in the same audit trail as auto-pilot-spawned workers.
    ```
 5. Register in `task-tracking/active-sessions.md` (append row with source `orchestrate`,
    Tasks `1`, path `{SESSION_DIR}`).
-6a. **nitro-cortex session registration (Supervisor mode only, best-effort)**:
+5a. **nitro-cortex session registration (Supervisor mode only, best-effort)**:
     If running as a Build Worker (WORKER_ID: line present in prompt) AND nitro-cortex
     `update_session` tool is available:
     - The session_id was created by the Supervisor via `create_session()` before spawning

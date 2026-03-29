@@ -1,11 +1,4 @@
 {
-  "mcpServers": {
-    "nitro-cortex": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["{{NITRO_CORTEX_PATH}}/dist/index.js"]
-    }
-  },
   "permissions": {
     "allow": [
       "mcp__nitro-cortex__get_tasks",
@@ -25,7 +18,8 @@
       "mcp__nitro-cortex__get_worker_activity",
       "mcp__nitro-cortex__kill_worker",
       "mcp__nitro-cortex__subscribe_worker",
-      "mcp__nitro-cortex__get_pending_events"
+      "mcp__nitro-cortex__get_pending_events",
+      "mcp__nitro-cortex__emit_event"
     ]
   }
 }

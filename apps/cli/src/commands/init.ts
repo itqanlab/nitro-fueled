@@ -278,11 +278,17 @@ async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<vo
   const projectMcp = resolve(cwd, '.mcp.json');
   if (existsSync(projectMcp)) {
     try {
-      const cfg = JSON.parse(readFileSync(projectMcp, 'utf-8')) as Record<string, unknown>;
-      const servers = (cfg['mcpServers'] ?? {}) as Record<string, unknown>;
-      if ('nitro-cortex' in servers) {
-        console.log('MCP nitro-cortex: already configured');
-        return;
+      const parsed: unknown = JSON.parse(readFileSync(projectMcp, 'utf-8'));
+      if (parsed !== null && typeof parsed === 'object') {
+        const cfg = parsed as Record<string, unknown>;
+        const maybeServers = cfg['mcpServers'];
+        if (maybeServers !== null && typeof maybeServers === 'object') {
+          const servers = maybeServers as Record<string, unknown>;
+          if ('nitro-cortex' in servers) {
+            console.log('MCP nitro-cortex: already configured');
+            return;
+          }
+        }
       }
     } catch {
       // parse error — fall through to configure
@@ -390,14 +396,15 @@ function printSummary(mcpConfigured: boolean, skipMcp: boolean, skipCortex: bool
   console.log('  CLAUDE.md              Project conventions');
   console.log('');
   console.log('Next steps:');
-  console.log('  1. npx nitro-fueled create     Create your first task');
-  console.log('  2. npx nitro-fueled run         Run the orchestration pipeline');
-  console.log('  3. npx nitro-fueled status      Check project status');
+  let step = 1;
+  console.log(`  ${step++}. npx nitro-fueled create     Create your first task`);
+  console.log(`  ${step++}. npx nitro-fueled run         Run the orchestration pipeline`);
+  console.log(`  ${step++}. npx nitro-fueled status      Check project status`);
   if (!mcpConfigured && skipMcp) {
-    console.log('  4. npx nitro-fueled init --mcp-path <path>   Configure MCP server');
+    console.log(`  ${step++}. npx nitro-fueled init --mcp-path <path>   Configure MCP server`);
   }
   if (skipCortex) {
-    console.log('  4. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server');
+    console.log(`  ${step++}. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server`);
   }
   console.log('');
 }
