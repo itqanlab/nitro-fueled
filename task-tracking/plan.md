@@ -300,6 +300,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_139 | Supervisor DB migration — query cortex instead of reading files | COMPLETE | P1-High |
 | TASK_2026_140 | File-DB sync layer — bidirectional consistency between files and cortex | COMPLETE | P1-High |
 | TASK_2026_142 | Merge session-orchestrator into nitro-cortex — single MCP server | COMPLETE | P1-High |
+| TASK_2026_143 | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | COMPLETE | P1-High |
 
 ## Current Focus
 
