@@ -161,7 +161,11 @@ function tryResolveSlot(
   if (entry === undefined) return null;
   if (!isLauncherAvailable(entry.launcher, config)) return null;
 
-  const model = entry.models[modelTier];
+  // Chain through tier alternatives if the primary tier is not filled in the config entry
+  const model = entry.models[modelTier]
+    ?? entry.models['balanced']
+    ?? entry.models['heavy']
+    ?? entry.models['light'];
   if (model === undefined || model === '') return null;
 
   return { providerName, model, launcher: entry.launcher };

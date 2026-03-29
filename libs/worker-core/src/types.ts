@@ -41,6 +41,8 @@ export type Provider = 'claude' | 'glm' | 'opencode' | 'codex';
 
 // ---------------------------------------------------------------------------
 // Provider config types (for Phase 2 re-validation in session-orchestrator)
+// NOTE: These types mirror apps/cli/src/utils/provider-config.ts — keep in sync.
+// LauncherInfo here is a subset (no AuthMethod import to avoid cross-app deps).
 // ---------------------------------------------------------------------------
 
 export type LauncherName = 'claude' | 'opencode' | 'codex';
@@ -49,6 +51,8 @@ export type ModelTier = 'heavy' | 'balanced' | 'light';
 export interface LauncherInfo {
   found: boolean;
   authenticated: boolean;
+  /** Optional list of supported auth methods (e.g. 'oauth', 'api-key') */
+  authMethods?: string[];
   models: string[];
 }
 

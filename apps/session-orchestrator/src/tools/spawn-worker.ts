@@ -18,7 +18,7 @@ export const spawnWorkerSchema = {
   prompt: z.string().describe('Full prompt to send to the worker session'),
   working_directory: z.string().describe('Project directory to run in'),
   label: z.string().describe('Label for the worker (e.g., "TASK_2026_003-FEATURE-BUILD")'),
-  model: z.string().optional().describe(`Model to use (default: ${DEFAULT_MODEL})`),
+  model: z.string().max(256).optional().describe(`Model to use (default: ${DEFAULT_MODEL})`),
   provider: z.enum(['claude', 'glm', 'opencode', 'codex']).optional().describe(
     'Provider to use: claude (default), glm (Z.AI via claude CLI), opencode (single-shot CLI), or codex',
   ),
@@ -42,30 +42,39 @@ export async function handleSpawnWorker(
   let p: Provider = args.provider ?? 'claude';
   let m = args.model ?? DEFAULT_MODEL;
 
-  // Phase 2 re-validation: check launcher availability and run fallback chain if needed
-  if (args.provider !== undefined && args.model !== undefined) {
+  // Phase 2 re-validation: check launcher availability and run fallback chain if needed.
+  // Runs whenever provider is specified (model is optional — DEFAULT_MODEL is used as the check input).
+  if (args.provider !== undefined) {
+    const modelToCheck = args.model ?? DEFAULT_MODEL;
     const config = readProviderConfig(args.working_directory);
     if (config !== null) {
-      const resolved = resolveProviderForSpawn(args.provider, args.model, config);
-      if (resolved !== null) {
-        if (resolved.providerName !== args.provider || resolved.model !== args.model) {
-          console.log(
-            `SPAWN FALLBACK — ${args.label}: ${args.provider}/${args.model} unavailable, trying ${resolved.providerName}/${resolved.model}`,
-          );
-        }
-        // Map resolved launcher back to Provider type
-        if (
-          resolved.providerName === 'anthropic' ||
-          resolved.launcher === 'claude'
-        ) {
-          p = 'claude';
-        } else if (resolved.launcher === 'opencode') {
+      const resolved = resolveProviderForSpawn(args.provider, modelToCheck, config);
+      if (resolved === null) {
+        throw new Error(
+          `SPAWN ABORTED — ${args.label.slice(0, 100)}: provider ${args.provider} unavailable and no fallback could be resolved.`,
+        );
+      }
+      const providerChanged = resolved.providerName !== args.provider;
+      const modelChanged = resolved.model !== modelToCheck;
+      if (providerChanged || modelChanged) {
+        console.log(
+          `SPAWN FALLBACK — ${args.label.slice(0, 100)}: ${args.provider}/${modelToCheck.slice(0, 100)} unavailable, trying ${resolved.providerName.slice(0, 100)}/${resolved.model.slice(0, 100)}`,
+        );
+      }
+      if (providerChanged) {
+        // Provider changed (fallback) — map resolved launcher to Provider type
+        if (resolved.launcher === 'opencode') {
           p = 'opencode';
         } else if (resolved.launcher === 'codex') {
           p = 'codex';
+        } else {
+          // launcher === 'claude' — use generic claude (anthropic or any claude-launcher provider)
+          p = 'claude';
         }
-        m = resolved.model;
       }
+      // If provider did not change, preserve original p (important for 'glm' — uses claude launcher
+      // but needs distinct provider type for GLM env var injection in launchWithPrint)
+      m = resolved.model;
     }
   }
 

@@ -10,6 +10,8 @@ export { resolveApiKey, testGlmConnection, type GlmTestResult } from './glm-test
 
 // ---------------------------------------------------------------------------
 // Launcher types
+// NOTE: LauncherName, ModelTier, LauncherInfo, ProviderEntry, NitroFueledConfig are
+// mirrored in libs/worker-core/src/types.ts — keep in sync (no cross-app import path).
 // ---------------------------------------------------------------------------
 
 export type LauncherName = 'claude' | 'opencode' | 'codex';

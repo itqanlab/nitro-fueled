@@ -30,6 +30,8 @@ export function launchWithCodex(opts: CodexLaunchOptions): CodexLaunchResult {
     onExit: (code, _signal, pid) => {
       if (code !== null && pid !== 0) {
         exitCodes.set(pid, code);
+        // Prune after 60 s — long enough for callers to read, prevents unbounded growth
+        setTimeout(() => exitCodes.delete(pid), 60_000);
       }
     },
   });

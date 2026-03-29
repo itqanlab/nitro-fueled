@@ -53,7 +53,10 @@ function parseConfigFile(filePath: string): unknown | null {
   if (!existsSync(filePath)) return null;
   try {
     return JSON.parse(readFileSync(filePath, 'utf8')) as unknown;
-  } catch {
+  } catch (err: unknown) {
+    const raw = err instanceof Error ? err.message : String(err);
+    const msg = raw.length > 200 ? raw.slice(0, 200) + '…' : raw;
+    console.warn(`provider-resolver: ${filePath} is unreadable (${msg}). Phase 2 re-validation skipped.`);
     return null;
   }
 }
@@ -136,23 +139,13 @@ export function resolveProviderForSpawn(
     return { providerName, model, launcher: requestedEntry.launcher };
   }
 
-  // Walk all providers in config for a fallback
+  // Walk all providers in config for a fallback (includes anthropic if present)
   for (const candidateName of Object.keys(config.providers)) {
     if (candidateName === providerName) continue;
     const result = tryProvider(candidateName, config);
     if (result !== null) return result;
   }
 
-  // Last resort: hardcoded anthropic fallback
-  const fallbackEntry = config.providers[FALLBACK_PROVIDER.providerName];
-  if (isProviderEntry(fallbackEntry) && isLauncherAvailable(fallbackEntry.launcher, config)) {
-    return {
-      providerName: FALLBACK_PROVIDER.providerName,
-      model: fallbackEntry.models['balanced'] ?? FALLBACK_PROVIDER.model,
-      launcher: fallbackEntry.launcher,
-    };
-  }
-
-  // Even anthropic is unavailable — return null
+  // All config providers (including anthropic) are unavailable — return null
   return null;
 }
