@@ -99,13 +99,42 @@ CREATE TABLE IF NOT EXISTS workers (
   progress_json      TEXT NOT NULL DEFAULT '{}'
 )`;
 
+const HANDOFFS_TABLE = `
+CREATE TABLE IF NOT EXISTS handoffs (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id      TEXT NOT NULL REFERENCES tasks(id),
+  worker_type  TEXT NOT NULL CHECK(worker_type IN ('build','review')),
+  files_changed TEXT NOT NULL DEFAULT '[]',
+  commits      TEXT NOT NULL DEFAULT '[]',
+  decisions    TEXT NOT NULL DEFAULT '[]',
+  risks        TEXT NOT NULL DEFAULT '[]',
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const EVENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS events (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id   TEXT NOT NULL,
+  task_id      TEXT,
+  source       TEXT NOT NULL,
+  event_type   TEXT NOT NULL,
+  data         TEXT NOT NULL DEFAULT '{}',
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_claimed ON tasks(session_claimed)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type)',
   'CREATE INDEX IF NOT EXISTS idx_workers_session ON workers(session_id)',
   'CREATE INDEX IF NOT EXISTS idx_workers_task ON workers(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_workers_status ON workers(status)',
   'CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(loop_status)',
+  'CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)',
 ];
 
 export function initDatabase(dbPath: string): Database.Database {
@@ -118,6 +147,8 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(TASKS_TABLE);
   db.exec(SESSIONS_TABLE);
   db.exec(WORKERS_TABLE);
+  db.exec(HANDOFFS_TABLE);
+  db.exec(EVENTS_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }

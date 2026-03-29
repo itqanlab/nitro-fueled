@@ -5,13 +5,15 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { join } from 'node:path';
 import { initDatabase } from './db/schema.js';
-import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask } from './tools/tasks.js';
+import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles } from './tools/sync.js';
 import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession } from './tools/sessions.js';
 import { handleSpawnWorker, handleListWorkers, handleGetWorkerStats, handleGetWorkerActivity, handleKillWorker } from './tools/workers.js';
 import { FileWatcher, handleSubscribeWorker, handleGetPendingEvents } from './events/subscriptions.js';
 import { JsonlWatcher } from './process/jsonl-watcher.js';
+import { handleWriteHandoff, handleReadHandoff } from './tools/handoffs.js';
+import { handleLogEvent, handleQueryEvents } from './tools/events.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -85,6 +87,71 @@ server.registerTool('get_next_wave', {
 server.registerTool('sync_tasks_from_files', {
   description: 'Bootstrap: scan task-tracking/TASK_*/ folders, import into DB. Safe to re-run (upsert).',
 }, () => handleSyncTasksFromFiles(db, projectRoot));
+
+server.registerTool('upsert_task', {
+  description: 'Create or update a task record. If task_id exists, updates provided fields. If not, inserts a new row (title, type, priority required for insert).',
+  inputSchema: {
+    task_id: z.string().describe('Task ID (e.g. TASK_2026_001)'),
+    fields: z.string().describe('JSON string of task fields to set'),
+  },
+}, (args) => {
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(args.fields) as Record<string, unknown>;
+  } catch {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] };
+  }
+  return handleUpsertTask(db, { task_id: args.task_id, fields: parsed });
+});
+
+// --- Handoff tools ---
+
+server.registerTool('write_handoff', {
+  description: 'Record a Build-to-Review handoff: files changed, commits, decisions, and risks for a task.',
+  inputSchema: {
+    task_id: z.string().describe('Task ID this handoff belongs to'),
+    worker_type: z.enum(['build', 'review']).describe('Worker type writing the handoff'),
+    files_changed: z.array(z.object({
+      path: z.string().describe('File path'),
+      action: z.string().describe('new | modified | deleted'),
+      lines: z.number().optional().describe('Line count or diff size'),
+    })).describe('Files changed in this work unit'),
+    commits: z.array(z.string()).describe('Commit hashes included in this handoff'),
+    decisions: z.array(z.string()).describe('Key architectural or implementation decisions'),
+    risks: z.array(z.string()).describe('Known risks, edge cases, or areas needing extra review'),
+  },
+}, (args) => handleWriteHandoff(db, args));
+
+server.registerTool('read_handoff', {
+  description: 'Return the most recent handoff record for a task (parsed JSON fields).',
+  inputSchema: {
+    task_id: z.string().describe('Task ID to retrieve handoff for'),
+  },
+}, (args) => handleReadHandoff(db, args));
+
+// --- Event tools ---
+
+server.registerTool('log_event', {
+  description: 'Append a structured event to the events log. Replaces log.md for queryable event history.',
+  inputSchema: {
+    session_id: z.string().describe('Session ID this event belongs to'),
+    task_id: z.string().optional().describe('Task ID this event relates to (optional)'),
+    source: z.string().describe("Event source: 'auto-pilot', 'orchestrate', or a worker_id"),
+    event_type: z.string().describe("Event type: SPAWNED, HEALTH_CHECK, STATE_TRANSITIONED, PM_COMPLETE, etc."),
+    data: z.record(z.string(), z.unknown()).optional().describe('Optional JSON payload'),
+  },
+}, (args) => handleLogEvent(db, args));
+
+server.registerTool('query_events', {
+  description: 'Query the events log with optional filters. Returns events ordered by id ASC.',
+  inputSchema: {
+    session_id: z.string().optional().describe('Filter by session ID'),
+    task_id: z.string().optional().describe('Filter by task ID'),
+    event_type: z.string().optional().describe('Filter by event type'),
+    since: z.string().optional().describe('ISO timestamp — return events at or after this time'),
+    limit: z.number().optional().describe('Max events to return (default 500, max 1000)'),
+  },
+}, (args) => handleQueryEvents(db, args));
 
 // --- Session tools ---
 

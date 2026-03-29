@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import type { ToolResult } from './types.js';
 
 const UPDATABLE_COLUMNS = new Set([
   'title', 'type', 'priority', 'status', 'complexity', 'model',
@@ -85,6 +86,71 @@ export function handleReleaseTask(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }] };
   }
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true }) }] };
+}
+
+const UPSERTABLE_COLUMNS = new Set([
+  'title', 'type', 'priority', 'status', 'complexity', 'model',
+  'dependencies', 'description', 'acceptance_criteria', 'file_scope',
+]);
+
+export function handleUpsertTask(
+  db: Database.Database,
+  args: { task_id: string; fields: Record<string, unknown> },
+): ToolResult {
+  const now = new Date().toISOString();
+
+  const existing = db.prepare('SELECT id FROM tasks WHERE id = ?').get(args.task_id) as { id: string } | undefined;
+
+  if (existing) {
+    // UPDATE path — same whitelist as update_task
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    for (const [key, value] of Object.entries(args.fields)) {
+      if (!UPDATABLE_COLUMNS.has(key)) {
+        return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: `column '${key}' not updatable` }) }] };
+      }
+      sets.push(`${key} = ?`);
+      const serialized = typeof value === 'object' && value !== null ? JSON.stringify(value) : value;
+      params.push(serialized);
+    }
+
+    if (sets.length > 0) {
+      sets.push('updated_at = ?');
+      params.push(now);
+      params.push(args.task_id);
+      db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    }
+
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, action: 'updated' }) }] };
+  }
+
+  // INSERT path — title, type, priority, status are required
+  const f = args.fields as Record<string, unknown>;
+  const title = f.title as string | undefined;
+  const type = f.type as string | undefined;
+  const priority = f.priority as string | undefined;
+  const status = (f.status as string | undefined) ?? 'CREATED';
+
+  if (!title || !type || !priority) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'title, type, and priority are required for insert' }) }] };
+  }
+
+  const complexity = f.complexity as string | null ?? null;
+  const model = f.model as string | null ?? null;
+  const dependencies = typeof f.dependencies === 'object' && f.dependencies !== null
+    ? JSON.stringify(f.dependencies) : (f.dependencies as string | null ?? '[]');
+  const description = f.description as string | null ?? null;
+  const acceptanceCriteria = f.acceptance_criteria as string | null ?? null;
+  const fileScope = typeof f.file_scope === 'object' && f.file_scope !== null
+    ? JSON.stringify(f.file_scope) : (f.file_scope as string | null ?? '[]');
+
+  db.prepare(
+    `INSERT INTO tasks (id, title, type, priority, status, complexity, model, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(args.task_id, title, type, priority, status, complexity, model, dependencies, description, acceptanceCriteria, fileScope, now, now);
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, action: 'inserted' }) }] };
 }
 
 export function handleUpdateTask(
