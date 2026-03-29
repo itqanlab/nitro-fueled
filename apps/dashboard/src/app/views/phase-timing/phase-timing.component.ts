@@ -50,6 +50,7 @@ export class PhaseTimingComponent {
   );
 
   public rows: PhaseTimingRow[] = [];
+  /** True while the initial HTTP request has not yet emitted any value. */
   public loading = true;
   public unavailable = false;
 
@@ -57,12 +58,14 @@ export class PhaseTimingComponent {
     effect(() => {
       const raw = this.phaseTimingSignal();
       if (raw === null) {
-        this.unavailable = true;
-        this.loading = false;
-        this.rows = FALLBACK_PHASE_TIMING_ROWS;
+        // Only mark unavailable once the request has completed (loading = false).
+        if (!this.loading) {
+          this.unavailable = true;
+          this.rows = FALLBACK_PHASE_TIMING_ROWS;
+        }
       } else {
-        this.unavailable = false;
         this.loading = false;
+        this.unavailable = false;
         this.rows = this.rowsComputed();
       }
     });

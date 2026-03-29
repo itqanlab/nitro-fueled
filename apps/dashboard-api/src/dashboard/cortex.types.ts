@@ -130,12 +130,16 @@ export interface CortexTaskTrace {
 export interface CortexModelPerformance {
   model: string;
   task_type: string | null;
+  complexity: string | null;
   phase_count: number;
   review_count: number;
   avg_duration_minutes: number | null;
   total_input_tokens: number;
   total_output_tokens: number;
   avg_review_score: number | null;
+  avg_cost_usd: number | null;
+  failure_rate: number | null;
+  last_run: string | null;
 }
 
 export interface CortexPhaseTiming {
@@ -245,12 +249,16 @@ export interface RawEvent {
 export interface ModelPerfRow {
   model: string;
   task_type: string | null;
+  complexity: string | null;
   phase_count: number;
   review_count: number;
   avg_duration_minutes: number | null;
   total_input_tokens: number;
   total_output_tokens: number;
   avg_review_score: number | null;
+  avg_cost_usd: number | null;
+  failure_rate: number | null;
+  last_run: string | null;
 }
 
 export interface PhaseTimingRow {

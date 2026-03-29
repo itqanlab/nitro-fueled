@@ -49,40 +49,72 @@ export class ModelPerformanceComponent {
     { initialValue: null as CortexModelPerformance[] | null },
   );
 
+  /** Single adapted signal — shared by rowsComputed and taskTypeOptions to avoid double execution. */
+  private readonly adaptedSignal = computed<ModelPerfRow[]>(() =>
+    adaptModelPerformance(this.modelPerfSignal()),
+  );
+
   private readonly rowsComputed = computed<ModelPerfRow[]>(() => {
-    const adapted = adaptModelPerformance(this.modelPerfSignal());
-    if (this.selectedTaskType === 'all') return adapted;
-    return adapted.filter(r => r.taskType === this.selectedTaskType);
+    const adapted = this.adaptedSignal();
+    let filtered = adapted;
+    if (this.selectedTaskType !== 'all') {
+      filtered = filtered.filter(r => r.taskType === this.selectedTaskType);
+    }
+    if (this.selectedComplexity !== 'all') {
+      filtered = filtered.filter(r => r.complexity === this.selectedComplexity);
+    }
+    if (this.dateFrom) {
+      filtered = filtered.filter(r => r.lastRun !== null && r.lastRun >= this.dateFrom);
+    }
+    if (this.dateTo) {
+      filtered = filtered.filter(r => r.lastRun !== null && r.lastRun <= this.dateTo);
+    }
+    return filtered;
   });
 
   public readonly taskTypeOptions = computed<string[]>(() => {
-    const raw = adaptModelPerformance(this.modelPerfSignal());
-    const types = new Set(raw.map(r => r.taskType));
+    const types = new Set(this.adaptedSignal().map(r => r.taskType));
     return Array.from(types).sort();
   });
 
+  public readonly complexityOptions = computed<string[]>(() => {
+    const values = new Set(
+      this.adaptedSignal()
+        .map(r => r.complexity)
+        .filter((c): c is string => c !== null),
+    );
+    return Array.from(values).sort();
+  });
+
   public selectedTaskType: string = 'all';
-  public sortColumn: string = '';
+  public selectedComplexity: string = 'all';
+  public dateFrom: string = '';
+  public dateTo: string = '';
+  public sortColumn: keyof ModelPerfRow | '' = '';
   public sortDirection: 'asc' | 'desc' = 'asc';
   public rows: ModelPerfRow[] = [];
+  /** True while the initial HTTP request has not yet emitted any value. */
   public loading = true;
   public unavailable = false;
 
   constructor() {
     effect(() => {
       const raw = this.modelPerfSignal();
-      this.loading = raw === null && !this.unavailable;
       if (raw === null) {
-        this.unavailable = true;
-        this.rows = FALLBACK_MODEL_PERF_ROWS;
+        // Only set unavailable once loading has completed (i.e. a real null response).
+        if (!this.loading) {
+          this.unavailable = true;
+          this.rows = FALLBACK_MODEL_PERF_ROWS;
+        }
       } else {
+        this.loading = false;
         this.unavailable = false;
         this.rows = this.rowsComputed();
       }
     });
   }
 
-  public sortBy(col: string): void {
+  public sortBy(col: keyof ModelPerfRow): void {
     if (this.sortColumn === col) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -90,8 +122,8 @@ export class ModelPerformanceComponent {
       this.sortDirection = 'asc';
     }
     this.rows = [...this.rowsComputed()].sort((a, b) => {
-      const aVal = (a as Record<string, unknown>)[col];
-      const bVal = (b as Record<string, unknown>)[col];
+      const aVal = a[col];
+      const bVal = b[col];
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
       const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
@@ -99,7 +131,7 @@ export class ModelPerformanceComponent {
     });
   }
 
-  public onTaskTypeChange(): void {
+  public onFilterChange(): void {
     this.rows = this.rowsComputed();
   }
 

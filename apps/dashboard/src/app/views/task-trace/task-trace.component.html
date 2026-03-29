@@ -15,7 +15,7 @@
       [(ngModel)]="selectedTaskId"
       (ngModelChange)="onTaskSelect($event)"
       nzPlaceHolder="Search and select a task..."
-      [nzLoading]="taskOptions().length === 0"
+      [nzLoading]="tasksLoading"
       aria-label="Select a task to trace"
       class="task-selector"
     >
@@ -75,7 +75,9 @@
         @for (event of viewModel.timelineEvents; track $index) {
           <div class="timeline-item">
             <div class="tl-dot" [ngClass]="timelineTypeClass(event.type)"></div>
-            <span class="tl-time">{{ event.time | slice:0:19 }}</span>
+            @if (event.time) {
+              <span class="tl-time">{{ event.time | slice:0:19 }}</span>
+            }
             <div class="tl-content">
               <span class="tl-label">{{ event.label }}</span>
               <span class="tl-detail">{{ event.detail }}</span>

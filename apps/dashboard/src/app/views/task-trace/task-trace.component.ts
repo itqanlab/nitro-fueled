@@ -7,9 +7,7 @@ import {
 } from '@angular/core';
 import { NgClass, DecimalPipe, SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BehaviorSubject } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { BehaviorSubject, switchMap, catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzSelectModule } from 'ng-zorro-antd/select';
@@ -22,10 +20,8 @@ import type {
   CortexTask,
   CortexTaskTrace,
 } from '../../../../../dashboard-api/src/dashboard/cortex.types';
-import {
-  adaptTaskTrace,
-  TaskTraceViewModel,
-} from './task-trace.adapters';
+import type { TaskTraceViewModel } from './task-trace.model';
+import { adaptTaskTrace } from './task-trace.adapters';
 
 @Component({
   selector: 'app-task-trace',
@@ -62,6 +58,9 @@ export class TaskTraceComponent {
     return tasks.map(t => ({ value: t.id, label: `${t.id} — ${t.title}` }));
   });
 
+  /** True only while the tasks HTTP request is still in-flight (initial null). */
+  public tasksLoading = true;
+
   private readonly selectedTaskId$ = new BehaviorSubject<string | null>(null);
 
   private readonly traceSignal = toSignal(
@@ -86,6 +85,13 @@ export class TaskTraceComponent {
   public traceLoading = false;
 
   constructor() {
+    effect(() => {
+      const tasks = this.tasksSignal();
+      if (tasks !== null) {
+        this.tasksLoading = false;
+      }
+    });
+
     effect(() => {
       this.viewModel = this.viewModelComputed();
       this.traceLoading = this.selectedTaskId !== null && this.traceSignal() === null;

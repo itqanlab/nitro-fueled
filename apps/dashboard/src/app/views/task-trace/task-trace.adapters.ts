@@ -7,77 +7,19 @@ import type {
   CortexEvent,
 } from '../../../../../dashboard-api/src/dashboard/cortex.types';
 import { mapWorker, mapPhase, mapReview, mapFixCycle } from './task-trace.mappers';
+import type {
+  TimelineEvent,
+  TaskTraceViewModel,
+} from './task-trace.model';
 
-export interface WorkerRow {
-  id: string;
-  sessionId: string;
-  taskId: string;
-  workerType: string;
-  label: string;
-  status: string;
-  model: string;
-  provider: string;
-  launcher: string;
-  spawnTime: string;
-  outcome: string | null;
-  retryNumber: number;
-  cost: number;
-  inputTokens: number;
-  outputTokens: number;
-  durationMin: number | null;
-}
-
-export interface PhaseRow {
-  id: number;
-  workerRunId: string;
-  taskId: string;
-  phase: string;
-  model: string;
-  startTime: string;
-  endTime: string | null;
-  durationMinutes: number | null;
-  inputTokens: number;
-  outputTokens: number;
-  outcome: string | null;
-}
-
-export interface ReviewRow {
-  id: number;
-  taskId: string;
-  reviewType: string;
-  score: number;
-  findingsCount: number;
-  criticalCount: number;
-  modelThatBuilt: string;
-  modelThatReviewed: string;
-}
-
-export interface FixCycleRow {
-  id: number;
-  taskId: string;
-  fixesApplied: number;
-  fixesSkipped: number;
-  requiredManual: boolean;
-  modelThatFixed: string;
-}
-
-export interface TimelineEvent {
-  time: string;
-  label: string;
-  type: 'worker' | 'phase' | 'review' | 'fix' | 'event';
-  detail: string;
-  cost?: number;
-  tokens?: number;
-}
-
-export interface TaskTraceViewModel {
-  taskId: string;
-  workers: WorkerRow[];
-  phases: PhaseRow[];
-  reviews: ReviewRow[];
-  fixCycles: FixCycleRow[];
-  timelineEvents: TimelineEvent[];
-}
+export type {
+  WorkerRow,
+  PhaseRow,
+  ReviewRow,
+  FixCycleRow,
+  TimelineEvent,
+  TaskTraceViewModel,
+} from './task-trace.model';
 
 function buildTimeline(
   workers: CortexWorker[],
@@ -115,14 +57,14 @@ function buildTimeline(
     });
   }
 
-  for (const e of events) {
+  for (const e of (events ?? [])) {
     timed.push({
       time: e.created_at,
       event: {
         time: e.created_at,
-        label: `Event: ${e.event_type}`,
+        label: `Event: ${e.event_type.slice(0, 80)}`,
         type: 'event',
-        detail: `source: ${e.source}`,
+        detail: `source: ${e.source.slice(0, 80)}`,
       },
     });
   }
@@ -132,7 +74,7 @@ function buildTimeline(
 
   for (const r of [...reviews].sort((a, b) => a.id - b.id)) {
     result.push({
-      time: '',
+      time: null,
       label: `Review: ${r.review_type}`,
       type: 'review',
       detail: `score ${r.score} — ${r.findings_count} findings, ${r.critical_count} critical`,
@@ -141,7 +83,7 @@ function buildTimeline(
 
   for (const f of [...fixCycles].sort((a, b) => a.id - b.id)) {
     result.push({
-      time: '',
+      time: null,
       label: 'Fix Cycle',
       type: 'fix',
       detail: `applied: ${f.fixes_applied}, skipped: ${f.fixes_skipped}, manual: ${f.required_manual}`,

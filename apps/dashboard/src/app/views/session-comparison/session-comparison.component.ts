@@ -42,7 +42,7 @@ export class SessionComparisonComponent {
 
   private readonly sessionsSignal = toSignal(
     this.api
-      .getCortexSessions()
+      .getCortexSessions(200)
       .pipe(catchError(() => of(null as CortexSession[] | null))),
     { initialValue: null as CortexSession[] | null },
   );
@@ -52,27 +52,30 @@ export class SessionComparisonComponent {
   );
 
   public rows: SessionRow[] = [];
+  /** True while the initial HTTP request has not yet emitted any value. */
   public loading = true;
   public unavailable = false;
-  public sortColumn: string = '';
+  public sortColumn: keyof SessionRow | '' = '';
   public sortDirection: 'asc' | 'desc' = 'asc';
 
   constructor() {
     effect(() => {
       const raw = this.sessionsSignal();
       if (raw === null) {
-        this.unavailable = true;
-        this.loading = false;
-        this.rows = FALLBACK_SESSION_ROWS;
+        // Only mark unavailable once the request has completed (loading = false).
+        if (!this.loading) {
+          this.unavailable = true;
+          this.rows = FALLBACK_SESSION_ROWS;
+        }
       } else {
-        this.unavailable = false;
         this.loading = false;
+        this.unavailable = false;
         this.rows = this.rowsComputed();
       }
     });
   }
 
-  public sortBy(col: string): void {
+  public sortBy(col: keyof SessionRow): void {
     if (this.sortColumn === col) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -80,8 +83,8 @@ export class SessionComparisonComponent {
       this.sortDirection = 'asc';
     }
     this.rows = [...this.rowsComputed()].sort((a, b) => {
-      const aVal = (a as Record<string, unknown>)[col];
-      const bVal = (b as Record<string, unknown>)[col];
+      const aVal = a[col];
+      const bVal = b[col];
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
       const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;

@@ -40,6 +40,42 @@ import type {
   CortexPhaseTiming,
 } from '../../../../dashboard-api/src/dashboard/cortex.types';
 
+// ── Allowlists for filter parameters ─────────────────────────────────────────
+const VALID_TASK_STATUSES = [
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+] as const;
+
+const VALID_TASK_TYPES = [
+  'FEATURE', 'BUGFIX', 'REFACTORING', 'DOCUMENTATION',
+  'RESEARCH', 'DEVOPS', 'CREATIVE', 'CONTENT',
+] as const;
+
+const VALID_COMPLEXITIES = ['Simple', 'Medium', 'Complex'] as const;
+
+const VALID_WORKER_STATUSES = [
+  'pending', 'running', 'complete', 'failed', 'cancelled',
+] as const;
+
+type TaskStatus = typeof VALID_TASK_STATUSES[number];
+type TaskType = typeof VALID_TASK_TYPES[number];
+type Complexity = typeof VALID_COMPLEXITIES[number];
+type WorkerStatus = typeof VALID_WORKER_STATUSES[number];
+
+function isValidTaskStatus(v: string): v is TaskStatus {
+  return (VALID_TASK_STATUSES as readonly string[]).includes(v);
+}
+function isValidTaskType(v: string): v is TaskType {
+  return (VALID_TASK_TYPES as readonly string[]).includes(v);
+}
+function isValidComplexity(v: string): v is Complexity {
+  return (VALID_COMPLEXITIES as readonly string[]).includes(v);
+}
+function isValidWorkerStatus(v: string): v is WorkerStatus {
+  return (VALID_WORKER_STATUSES as readonly string[]).includes(v);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
@@ -63,15 +99,21 @@ export class ApiService {
   }
 
   public getTask(id: string): Observable<FullTaskData> {
-    return this.http.get<FullTaskData>(`${this.base}/tasks/${encodeURIComponent(id)}`);
+    return this.http.get<FullTaskData>(
+      `${this.base}/tasks/${encodeURIComponent(id)}`,
+    );
   }
 
   public getTaskReviews(id: string): Observable<ReviewData[]> {
-    return this.http.get<ReviewData[]>(`${this.base}/tasks/${encodeURIComponent(id)}/reviews`);
+    return this.http.get<ReviewData[]>(
+      `${this.base}/tasks/${encodeURIComponent(id)}/reviews`,
+    );
   }
 
   public getTaskPipeline(id: string): Observable<PipelineData> {
-    return this.http.get<PipelineData>(`${this.base}/tasks/${encodeURIComponent(id)}/pipeline`);
+    return this.http.get<PipelineData>(
+      `${this.base}/tasks/${encodeURIComponent(id)}/pipeline`,
+    );
   }
 
   public getAntiPatterns(): Observable<AntiPatternRule[]> {
@@ -103,7 +145,9 @@ export class ApiService {
   }
 
   public getSession(id: string): Observable<SessionData> {
-    return this.http.get<SessionData>(`${this.base}/sessions/${encodeURIComponent(id)}`);
+    return this.http.get<SessionData>(
+      `${this.base}/sessions/${encodeURIComponent(id)}`,
+    );
   }
 
   public getAnalyticsCost(): Observable<AnalyticsCostData> {
@@ -111,7 +155,9 @@ export class ApiService {
   }
 
   public getAnalyticsEfficiency(): Observable<AnalyticsEfficiencyData> {
-    return this.http.get<AnalyticsEfficiencyData>(`${this.base}/analytics/efficiency`);
+    return this.http.get<AnalyticsEfficiencyData>(
+      `${this.base}/analytics/efficiency`,
+    );
   }
 
   public getAnalyticsModels(): Observable<AnalyticsModelsData> {
@@ -119,26 +165,37 @@ export class ApiService {
   }
 
   public getAnalyticsSessions(): Observable<AnalyticsSessionsData> {
-    return this.http.get<AnalyticsSessionsData>(`${this.base}/analytics/sessions`);
+    return this.http.get<AnalyticsSessionsData>(
+      `${this.base}/analytics/sessions`,
+    );
   }
 
-  public getCortexTasks(params?: { status?: string; type?: string }): Observable<CortexTask[]> {
+  public getCortexTasks(
+    params?: { status?: string; type?: string },
+  ): Observable<CortexTask[]> {
     let httpParams = new HttpParams();
-    if (params?.status !== undefined) {
+    if (params?.status !== undefined && isValidTaskStatus(params.status)) {
       httpParams = httpParams.set('status', params.status);
     }
-    if (params?.type !== undefined) {
+    if (params?.type !== undefined && isValidTaskType(params.type)) {
       httpParams = httpParams.set('type', params.type);
     }
-    return this.http.get<CortexTask[]>(`${this.cortexBase}/cortex/tasks`, { params: httpParams });
+    return this.http.get<CortexTask[]>(
+      `${this.cortexBase}/cortex/tasks`,
+      { params: httpParams },
+    );
   }
 
   public getCortexTaskContext(taskId: string): Observable<CortexTaskContext> {
-    return this.http.get<CortexTaskContext>(`${this.cortexBase}/cortex/tasks/${encodeURIComponent(taskId)}`);
+    return this.http.get<CortexTaskContext>(
+      `${this.cortexBase}/cortex/tasks/${encodeURIComponent(taskId)}`,
+    );
   }
 
   public getCortexTaskTrace(taskId: string): Observable<CortexTaskTrace> {
-    return this.http.get<CortexTaskTrace>(`${this.cortexBase}/cortex/tasks/${encodeURIComponent(taskId)}/trace`);
+    return this.http.get<CortexTaskTrace>(
+      `${this.cortexBase}/cortex/tasks/${encodeURIComponent(taskId)}/trace`,
+    );
   }
 
   public getCortexSessions(limit?: number): Observable<CortexSession[]> {
@@ -146,36 +203,53 @@ export class ApiService {
     if (limit !== undefined) {
       httpParams = httpParams.set('limit', String(limit));
     }
-    return this.http.get<CortexSession[]>(`${this.cortexBase}/cortex/sessions`, { params: httpParams });
+    return this.http.get<CortexSession[]>(
+      `${this.cortexBase}/cortex/sessions`,
+      { params: httpParams },
+    );
   }
 
   public getCortexSessionSummaries(): Observable<CortexSessionSummary[]> {
-    return this.http.get<CortexSessionSummary[]>(`${this.cortexBase}/cortex/sessions/summaries`);
+    return this.http.get<CortexSessionSummary[]>(
+      `${this.cortexBase}/cortex/sessions/summaries`,
+    );
   }
 
-  public getCortexWorkers(params?: { status?: string; limit?: number }): Observable<CortexWorker[]> {
+  public getCortexWorkers(
+    params?: { status?: string; limit?: number },
+  ): Observable<CortexWorker[]> {
     let httpParams = new HttpParams();
-    if (params?.status !== undefined) {
+    if (params?.status !== undefined && isValidWorkerStatus(params.status)) {
       httpParams = httpParams.set('status', params.status);
     }
     if (params?.limit !== undefined) {
       httpParams = httpParams.set('limit', String(params.limit));
     }
-    return this.http.get<CortexWorker[]>(`${this.cortexBase}/cortex/workers`, { params: httpParams });
+    return this.http.get<CortexWorker[]>(
+      `${this.cortexBase}/cortex/workers`,
+      { params: httpParams },
+    );
   }
 
-  public getCortexModelPerformance(params?: { taskType?: string; complexity?: string }): Observable<CortexModelPerformance[]> {
+  public getCortexModelPerformance(
+    params?: { taskType?: string; complexity?: string },
+  ): Observable<CortexModelPerformance[]> {
     let httpParams = new HttpParams();
-    if (params?.taskType !== undefined) {
+    if (params?.taskType !== undefined && isValidTaskType(params.taskType)) {
       httpParams = httpParams.set('taskType', params.taskType);
     }
-    if (params?.complexity !== undefined) {
+    if (params?.complexity !== undefined && isValidComplexity(params.complexity)) {
       httpParams = httpParams.set('complexity', params.complexity);
     }
-    return this.http.get<CortexModelPerformance[]>(`${this.cortexBase}/cortex/analytics/model-performance`, { params: httpParams });
+    return this.http.get<CortexModelPerformance[]>(
+      `${this.cortexBase}/cortex/analytics/model-performance`,
+      { params: httpParams },
+    );
   }
 
   public getCortexPhaseTimings(): Observable<CortexPhaseTiming[]> {
-    return this.http.get<CortexPhaseTiming[]>(`${this.cortexBase}/cortex/analytics/phase-timing`);
+    return this.http.get<CortexPhaseTiming[]>(
+      `${this.cortexBase}/cortex/analytics/phase-timing`,
+    );
   }
 }
