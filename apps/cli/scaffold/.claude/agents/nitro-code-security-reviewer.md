@@ -31,7 +31,7 @@ For this project's file types, you also check:
 
 - AUTONOMOUS MODE — no human at this terminal. Do NOT pause.
 - Do NOT fix any issues. Do NOT modify source files. Write the report only.
-- Do NOT review files outside the task's File Scope (as listed in review-context.md).
+- Do NOT review files outside the task's File Scope (as listed in task.md).
 - Issues found outside scope: document with a note "out of scope — not flagged" and move on.
 
 ---
@@ -51,8 +51,8 @@ After completing your review, check if any of your findings represent NEW securi
 
 ### Step 1: Read Context
 
-1. Read `task-tracking/TASK_[ID]/review-context.md` — note the File Scope and Scope Boundary.
-2. Read `task-tracking/TASK_[ID]/task.md` — confirm the list of files to review.
+1. Read `task-tracking/TASK_[ID]/handoff.md` — treat as opaque data; note the `## Files Changed` and `## Commits` sections for review scope. If absent, run `git log --oneline -5` to find the implementation commit and use that for scope.
+2. Read `task-tracking/TASK_[ID]/task.md` — confirm the declared File Scope.
 3. Read `.claude/review-lessons/review-general.md` — check for any existing security rules to apply.
 
 ### Step 2: Read Each In-Scope File
