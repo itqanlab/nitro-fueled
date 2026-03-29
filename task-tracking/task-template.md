@@ -6,7 +6,7 @@
 
 | Field                 | Value                                                                         |
 |-----------------------|-------------------------------------------------------------------------------|
-| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE | CONTENT] |
+| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE | CONTENT | SOCIAL] |
 | Priority              | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity            | [Simple | Medium | Complex]                                                   |
 | Preferred Tier        | [light | balanced | heavy | auto]                                             |
@@ -25,6 +25,7 @@
        DEVOPS        — PM -> Architect -> DevOps Engineer -> QA
        CREATIVE      — [ui-ux-designer] -> content-writer -> frontend
        CONTENT       — PM -> [Researcher] -> content-writer -> Style Reviewer
+       SOCIAL        — PM -> content-writer -> [ui-ux-designer] -> Style Reviewer
 
      Priority: Determines queue ordering in auto-pilot (P0 first, P3 last)
 

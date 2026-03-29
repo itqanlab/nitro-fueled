@@ -16,6 +16,7 @@ Detailed workflow diagrams and guidance for all 6 execution strategies plus crea
 | DEVOPS        | Infrastructure | PM, Architect, DevOps Engineer, QA   | Requirements, Architecture, QA        |
 | CREATIVE      | Design-first   | UI/UX Designer, Content Writer, Dev  | Scope, Design System, Content         |
 | CONTENT       | Text-first     | PM, [Researcher], Content Writer, Style Reviewer | Scope, Requirements, QA   |
+| SOCIAL        | Platform-first | PM, Content Writer, [UI/UX Designer], Style Reviewer | Scope, Requirements, QA |
 
 ---
 
@@ -539,6 +540,90 @@ Invoke CONTENT strategy when the request contains any of:
 
 ---
 
+
+## SOCIAL (Multi-Platform Social Media)
+
+**When to use**: Social media campaigns, platform posts, content calendars, hashtag strategies, carousels, threads
+
+**Key distinction from CONTENT**: SOCIAL is platform-first (deliverable is platform-specific copy with visual specs and scheduling); CONTENT is text-first (deliverable is a standalone written document like a blog or email).
+
+```
+Phase 1: nitro-project-manager --> Creates task-description.md
+         |
+         USER VALIDATES ("APPROVED" or feedback)
+         |
+         v
+Phase 2: nitro-technical-content-writer --> Creates platform-specific copy
+         (Twitter/X thread, LinkedIn post, Instagram caption, etc.)
+         |
+         v
+Phase 3: [IF visual assets needed] nitro-ui-ux-designer --> Creates visual-design-specification.md
+         (carousel layouts, image specs, brand-consistent visuals)
+         |
+         v
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
+         |
+         USER CHOOSES QA (style/skip)
+         |
+         v
+Phase 4: [QA agents — Review Worker reads handoff.md as first action] --> Git
+```
+
+### SOCIAL Trigger Keywords
+
+Invoke SOCIAL strategy when the request contains any of:
+
+- "social media", "social campaign", "social calendar"
+- "twitter post", "tweet", "thread", "x post"
+- "linkedin post", "linkedin article"
+- "instagram", "instagram caption", "reel"
+- "carousel post", "carousel"
+- "hashtag strategy", "hashtag"
+- "posting schedule", "content calendar"
+
+### SOCIAL Review Criteria
+
+| Criterion                     | Reviewer                  |
+| ----------------------------- | ------------------------- |
+| Character limits per platform | nitro-code-style-reviewer |
+| Hashtag strategy              | nitro-code-style-reviewer |
+| Visual specs per platform     | nitro-code-style-reviewer |
+| Engagement hooks              | nitro-code-style-reviewer |
+| Brand consistency             | nitro-code-style-reviewer |
+| Posting schedule feasibility  | nitro-code-style-reviewer |
+
+### SOCIAL vs CONTENT Decision
+
+| User Says                               | Workflow |
+| --------------------------------------- | -------- |
+| "Write a LinkedIn post about..."        | SOCIAL   |
+| "Create a Twitter thread for..."        | SOCIAL   |
+| "Plan our Instagram content calendar"  | SOCIAL   |
+| "Design a carousel post for..."        | SOCIAL   |
+| "Write a blog post about..."           | CONTENT  |
+| "Write a newsletter for..."            | CONTENT  |
+| "Write ad copy for..."                 | CONTENT  |
+
+**Key signal**: If the deliverable is tied to a specific social platform with platform constraints (character limits, image dimensions, hashtags, engagement tactics), use SOCIAL. If the deliverable is long-form, platform-agnostic written copy, use CONTENT.
+
+### Conditional Visual Asset Trigger
+
+| Condition                                | Action                                     |
+| ---------------------------------------- | ------------------------------------------ |
+| Carousel post or visual content requested | Invoke nitro-ui-ux-designer for visual specs |
+| Text-only post (tweet, caption, thread)  | Skip nitro-ui-ux-designer, go to QA directly |
+
+### SOCIAL Output Locations
+
+| Deliverable             | Output Path                                        |
+| ----------------------- | -------------------------------------------------- |
+| Social copy             | `docs/content/social-[platform]-[name].md`         |
+| Visual specs            | `task-tracking/TASK_[ID]/visual-design-specification.md` |
+| Campaign plan           | `task-tracking/TASK_[ID]/content-specification.md` |
+| Content specification   | `task-tracking/TASK_[ID]/content-specification.md` |
+
+---
+
 ## Strategy Selection Summary
 
 Use this decision tree for quick strategy selection:
@@ -554,6 +639,10 @@ Is task CREATIVE (landing page, brand, marketing, theme design)?
 
 Is task CONTENT (blog post, email campaign, newsletter, ad copy)?
     YES -> CONTENT strategy
+    NO  -> continue
+
+Is task SOCIAL (social media, twitter/linkedin/instagram posts, campaigns, carousels)?
+    YES -> SOCIAL strategy
     NO  -> continue
 
 Is task a new FEATURE?

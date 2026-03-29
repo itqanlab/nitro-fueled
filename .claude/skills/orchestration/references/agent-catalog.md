@@ -47,6 +47,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Landing page     | nitro-ui-ux-designer -> nitro-technical-content-writer         | Marketing pages             |
 | Brand/visual     | nitro-ui-ux-designer                                     | Design system               |
 | Content          | nitro-project-manager -> [nitro-researcher-expert] -> nitro-technical-content-writer -> nitro-code-style-reviewer | Blog, email, newsletter, ad copy (CONTENT flow) |
+| Social media     | nitro-project-manager -> nitro-technical-content-writer -> [nitro-ui-ux-designer] -> nitro-code-style-reviewer | Social posts, campaigns, carousels (SOCIAL flow) |
 | Design content   | nitro-technical-content-writer                           | Blogs, docs, video (CREATIVE flow) |
 | Infrastructure   | nitro-devops-engineer                                    | CI/CD, packaging            |
 | Planning         | nitro-planner                                            | Roadmap, backlog, task creation |
@@ -722,6 +723,7 @@ See nitro-modernization-detector.md for detailed instructions.`,
 **Triggers**:
 
 - CREATIVE workflow (design system creation)
+- SOCIAL workflow (Phase 3 — carousel/visual asset specs, conditional)
 - FEATURE with UI components (Phase 3)
 - Visual redesigns, brand work
 - Landing page design
@@ -768,9 +770,11 @@ See nitro-ui-ux-designer.md for detailed instructions.`,
 
 - CONTENT workflow (Phase 3 — primary content producer)
 - CREATIVE workflow (after design system exists)
+- SOCIAL workflow (Phase 2 — platform-specific copy)
 - Landing page content creation
 - Blog post writing
 - Email campaign / newsletter / ad copy creation
+- Social media posts (Twitter/X, LinkedIn, Instagram, etc.)
 - Documentation creation
 - Video script development
 

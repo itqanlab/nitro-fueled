@@ -35,6 +35,7 @@ This reference documents all user validation checkpoints in the orchestration wo
 | DEVOPS        | Yes   | Yes          | No           | Yes          | Yes       | Yes     | Yes        | Yes          |
 | CREATIVE      | Yes   | No           | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | CONTENT       | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
+| SOCIAL        | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
 
 ---
 
