@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { NgClass } from '@angular/common';
 
 type StatusType = 'running' | 'completed' | 'paused' | 'failed' | 'offline';
@@ -7,6 +7,7 @@ type StatusSize = 'sm' | 'md';
 @Component({
   selector: 'app-status-indicator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass],
   template: `
     <span

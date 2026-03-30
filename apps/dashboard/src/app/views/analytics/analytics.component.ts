@@ -3,7 +3,7 @@ import { NgClass, DecimalPipe } from '@angular/common';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api.service';
-import { AnalyticsData, FilterPeriod, DailyCostBar, TeamCardView, AgentRow, ClientBar } from '../../models/analytics.model';
+import { AnalyticsData, FilterPeriod, DailyCostBar, TeamCardView, ClientBar } from '../../models/analytics.model';
 import type {
   AnalyticsCostData,
   AnalyticsModelsData,
@@ -39,11 +39,12 @@ export class AnalyticsComponent {
     buildAnalyticsData(this.costSignal(), this.modelsSignal()),
   );
 
-  // Filter state — visual toggle only; data filtering requires real data integration
   public selectedPeriod: FilterPeriod = '30d';
   public selectedClient = 'All Clients';
   public selectedTeam = 'All Teams';
   public selectedProject = 'All Projects';
+
+  private sourceData: AnalyticsData = FALLBACK_ANALYTICS_DATA;
 
   public data: AnalyticsData = FALLBACK_ANALYTICS_DATA;
 
@@ -51,7 +52,7 @@ export class AnalyticsComponent {
 
   public teamCardsView: readonly TeamCardView[] = [];
 
-  public agentRows: readonly AgentRow[] = [];
+  public agentRows: AnalyticsData['agentPerformance'] = [];
 
   public clientBars: readonly ClientBar[] = [];
 
@@ -59,24 +60,28 @@ export class AnalyticsComponent {
 
   constructor() {
     effect(() => {
-      this.data = this.dataSignal();
+      this.sourceData = this.dataSignal();
       this.recomputeDerived();
     });
   }
 
   private recomputeDerived(): void {
-    const maxDaily = this.data.dailyCosts.length
-      ? Math.max(...this.data.dailyCosts.map(e => e.amount))
+    const data = this.getFilteredData();
+
+    this.data = data;
+
+    const maxDaily = data.dailyCosts.length
+      ? Math.max(...data.dailyCosts.map(e => e.amount))
       : 0;
 
-    this.dailyCostBars = this.data.dailyCosts.map(e => ({
+    this.dailyCostBars = data.dailyCosts.map(e => ({
       day: e.day,
       amount: e.amount,
       heightPercent: maxDaily > 0 ? Math.min(100, (e.amount / maxDaily) * 100) : 0,
-      colorClass: e.amount > this.data.dailyBudgetLimit ? 'bar-over-budget' : 'bar-normal',
+      colorClass: e.amount > data.dailyBudgetLimit ? 'bar-over-budget' : 'bar-normal',
     }));
 
-    this.teamCardsView = this.data.teamBreakdowns.map(t => {
+    this.teamCardsView = data.teamBreakdowns.map(t => {
       const ratio = t.budgetTotal > 0 ? t.budgetUsed / t.budgetTotal : 0;
       return {
         ...t,
@@ -86,37 +91,64 @@ export class AnalyticsComponent {
       };
     });
 
-    this.agentRows = this.data.agentPerformance.map(a => ({
-      ...a,
-      badgeClass:
-        a.successRate >= 90 ? 'badge-high' : a.successRate >= 80 ? 'badge-medium' : 'badge-low',
-    }));
+    this.agentRows = data.agentPerformance;
 
-    this.clientBars = this.data.clientCosts.map(c => ({
+    this.clientBars = data.clientCosts.map(c => ({
       ...c,
       budgetPercent: c.budget > 0 ? Math.min(100, (c.amount / c.budget) * 100) : 0,
     }));
 
     this.budgetLineBottom = Math.min(
       100,
-      DAILY_BUDGET_MAX > 0 ? (this.data.dailyBudgetLimit / DAILY_BUDGET_MAX) * 100 : 0,
+      DAILY_BUDGET_MAX > 0 ? (data.dailyBudgetLimit / DAILY_BUDGET_MAX) * 100 : 0,
     );
+  }
+
+  private getFilteredData(): AnalyticsData {
+    const dailyCosts =
+      this.selectedPeriod === '7d'
+        ? this.sourceData.dailyCosts.slice(-7)
+        : this.selectedPeriod === '30d'
+          ? this.sourceData.dailyCosts.slice(-30)
+          : this.sourceData.dailyCosts;
+
+    const clientCosts =
+      this.selectedClient === 'All Clients'
+        ? this.sourceData.clientCosts
+        : this.sourceData.clientCosts.filter(client => client.name === this.selectedClient);
+
+    const teamBreakdowns =
+      this.selectedTeam === 'All Teams'
+        ? this.sourceData.teamBreakdowns
+        : this.sourceData.teamBreakdowns.filter(team => team.name === this.selectedTeam);
+
+    return {
+      ...this.sourceData,
+      dailyCosts,
+      clientCosts,
+      teamBreakdowns,
+      filterOptions: this.sourceData.filterOptions,
+    };
   }
 
   public selectPeriod(period: FilterPeriod): void {
     this.selectedPeriod = period;
+    this.recomputeDerived();
   }
 
   public onClientChange(event: Event): void {
     this.selectedClient = (event.target as HTMLSelectElement).value;
+    this.recomputeDerived();
   }
 
   public onTeamChange(event: Event): void {
     this.selectedTeam = (event.target as HTMLSelectElement).value;
+    this.recomputeDerived();
   }
 
   public onProjectChange(event: Event): void {
     this.selectedProject = (event.target as HTMLSelectElement).value;
+    this.recomputeDerived();
   }
 
   public getTrendClass(card: AnalyticsData['statCards'][number]): string {
