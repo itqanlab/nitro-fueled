@@ -69,7 +69,7 @@ export interface SettingsState {
   readonly mappings: readonly ModelMapping[];
 }
 
-export type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping';
+export type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping' | 'quota';
 
 export interface SettingsTabDefinition {
   readonly id: SettingsTab;
@@ -104,4 +104,5 @@ export const SETTINGS_TABS: readonly SettingsTabDefinition[] = [
   { id: 'launchers', label: 'Launchers', icon: '🚀' },
   { id: 'subscriptions', label: 'Subscriptions', icon: '📡' },
   { id: 'mapping', label: 'Mapping', icon: '🗺️' },
+  { id: 'quota', label: 'Provider Quota', icon: '📊' },
 ];

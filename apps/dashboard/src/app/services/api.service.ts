@@ -55,6 +55,9 @@ import type {
   CommandSuggestion,
   CommandExecuteRequest,
   CommandExecuteResult,
+  SessionHistoryListItem,
+  SessionHistoryDetail,
+  ProviderQuotaItem,
 } from '../models/api.types';
 import type { ReportsOverview } from '../models/reports.model';
 
@@ -381,5 +384,23 @@ export class ApiService {
 
   public executeCommand(req: CommandExecuteRequest): Observable<CommandExecuteResult> {
     return this.http.post<CommandExecuteResult>(`${this.base}/command-console/execute`, req);
+  }
+
+  // ── Provider Quota ────────────────────────────────────────────────────────
+
+  public getProviderQuota(): Observable<ProviderQuotaItem[]> {
+    return this.http.get<ProviderQuotaItem[]>(`${this.base}/providers/quota`);
+  }
+
+  // ── Sessions History ──────────────────────────────────────────────────────
+
+  public getSessionHistory(): Observable<SessionHistoryListItem[]> {
+    return this.http.get<SessionHistoryListItem[]>(`${this.base}/sessions`);
+  }
+
+  public getSessionHistoryDetail(sessionId: string): Observable<SessionHistoryDetail> {
+    return this.http.get<SessionHistoryDetail>(
+      `${this.base}/sessions/${encodeURIComponent(sessionId)}`,
+    );
   }
 }

@@ -5,7 +5,7 @@
 
 ## Batch 1 — Backend: ProvidersModule
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 **Summary:** Create the NestJS `ProvidersModule` with controller, service, and register it in `AppModule`. Implement the fan-out logic, in-process cache, and per-provider API calls.
 
@@ -34,7 +34,7 @@
 
 ## Batch 2 — Frontend: Types + Service
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 **Summary:** Add `ProviderQuotaItem` types to `api.types.ts` and `getProviderQuota()` to `api.service.ts`. Add `'quota'` tab to `SETTINGS_TABS` and wire `SettingsComponent`.
 
@@ -58,7 +58,7 @@
 
 ## Batch 3 — Frontend: ProviderQuotaComponent
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 **Summary:** Implement the `ProviderQuotaComponent` — card layout, usage bar, "Not configured" state, 5-min auto-refresh.
 

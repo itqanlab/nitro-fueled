@@ -551,6 +551,30 @@ export interface CortexPhaseTiming {
   max_duration_minutes: number | null;
 }
 
+// ── Provider Quota types ──────────────────────────────────────────────────────
+
+export type ProviderId = 'glm' | 'anthropic' | 'openai';
+
+export interface ProviderQuotaAvailable {
+  readonly provider: ProviderId;
+  readonly unavailable: false;
+  readonly plan: string;
+  readonly used: number;
+  readonly limit: number;
+  readonly remaining: number;
+  readonly resetAt: string | null;
+  readonly currency: string;
+  readonly costThisPeriod: number;
+}
+
+export interface ProviderQuotaUnavailable {
+  readonly provider: ProviderId;
+  readonly unavailable: true;
+  readonly reason: string;
+}
+
+export type ProviderQuotaItem = ProviderQuotaAvailable | ProviderQuotaUnavailable;
+
 // ── Logs types ─────────────────────────────────────────────────────────────────
 
 export interface LogsEventFilters {
@@ -640,3 +664,73 @@ export interface CommandExecuteResult {
   readonly output: string;
   readonly data?: Record<string, unknown>;
 }
+
+export type SessionEndStatus = 'completed' | 'killed' | 'crashed' | 'running';
+
+export interface SessionHistoryListItem {
+  readonly id: string;
+  readonly source: string;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  readonly endStatus: SessionEndStatus;
+  readonly durationMinutes: number | null;
+  readonly tasksCompleted: number;
+  readonly tasksFailed: number;
+  readonly tasksBlocked: number;
+  readonly totalTasks: number;
+  readonly totalCost: number;
+  readonly models: readonly string[];
+  readonly supervisorModel: string;
+  readonly mode: string;
+}
+
+export interface SessionHistoryTaskResult {
+  readonly taskId: string;
+  readonly outcome: string;
+  readonly cost: number;
+  readonly durationMinutes: number | null;
+  readonly model: string;
+  readonly reviewScore: number | null;
+}
+
+export interface SessionHistoryTimelineEvent {
+  readonly id: number;
+  readonly type: string;
+  readonly source: string;
+  readonly timestamp: string;
+  readonly description: string;
+}
+
+export interface SessionHistoryWorker {
+  readonly id: string;
+  readonly taskId: string;
+  readonly workerType: string;
+  readonly label: string;
+  readonly status: string;
+  readonly model: string;
+  readonly provider: string;
+  readonly cost: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+}
+
+export interface SessionHistoryDetail {
+  readonly id: string;
+  readonly source: string;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  readonly endStatus: SessionEndStatus;
+  readonly durationMinutes: number | null;
+  readonly totalCost: number;
+  readonly mode: string;
+  readonly supervisorModel: string;
+  readonly workerCount: number;
+  readonly taskResults: readonly SessionHistoryTaskResult[];
+  readonly timeline: readonly SessionHistoryTimelineEvent[];
+  readonly workers: readonly SessionHistoryWorker[];
+  readonly logContent: string | null;
+}
+
+
+
+
