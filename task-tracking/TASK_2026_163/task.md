@@ -22,11 +22,17 @@ The `/nitro-create-task` skill currently uses raw bash commands (`mkdir`, `ls`) 
 
 1. **`create_task`** — Full lifecycle task creation:
    - Accepts: `{ title, description, type, priority, complexity, model, dependencies, acceptanceCriteria, fileScope, parallelism }`
-   - Auto-generates next task ID by scanning `task-tracking/` folders (same collision-guard logic as current skill)
+   - **Sizing validation MANDATORY** — before creating any files, validate against `task-tracking/sizing-rules.md`:
+     - Description > 150 lines → reject with `{ error: 'oversized', reason: '...', suggestion: 'use bulk_create_tasks to split' }`
+     - Acceptance criteria > 5 groups → reject
+     - File scope > 7 files → reject
+     - Multiple unrelated functional areas → reject
+   - If sizing passes: auto-generate next task ID by scanning `task-tracking/` folders (collision-guard)
    - Creates `task-tracking/TASK_YYYY_NNN/` directory
    - Writes `task.md` populated from `task-tracking/task-template.md` template
    - Writes `status` file with `CREATED`
    - Upserts task into cortex SQLite DB
+   - Git commits the new task folder
    - Returns `{ taskId, folder, status: 'CREATED' }`
 
 2. **`get_next_task_id`** — Utility tool:
@@ -36,8 +42,16 @@ The `/nitro-create-task` skill currently uses raw bash commands (`mkdir`, `ls`) 
 
 3. **`bulk_create_tasks`** — For auto-split scenarios:
    - Accepts array of task definitions
+   - **Each task individually validated** against sizing rules before creation
    - Creates all tasks with sequential IDs and proper dependency wiring between them
+   - Git commits all created tasks in a single commit
    - Returns array of `{ taskId, folder, status }` summaries
+
+4. **`validate_task_sizing`** — Standalone sizing check:
+   - Accepts: `{ description, acceptanceCriteria, fileScope, complexity }`
+   - Reads `task-tracking/sizing-rules.md` and validates
+   - Returns `{ valid: boolean, violations: string[], suggestedSplitCount?: number }`
+   - Called by `create_task` internally, also available standalone for the skill to pre-check before calling create
 
 **After building tools:** Update `.claude/commands/nitro-create-task.md` to prefer MCP `create_task` tool when available, falling back to file operations if cortex is unavailable.
 
@@ -47,9 +61,12 @@ The `/nitro-create-task` skill currently uses raw bash commands (`mkdir`, `ls`) 
 
 ## Acceptance Criteria
 
-- [ ] `create_task` MCP tool creates folder, task.md, status file, and DB record in one call
+- [ ] `create_task` MCP tool creates folder, task.md, status file, DB record, and git commit in one call
+- [ ] `create_task` rejects oversized tasks with sizing violation details
+- [ ] `validate_task_sizing` standalone tool checks against sizing-rules.md
 - [ ] `get_next_task_id` returns correct next ID by scanning task-tracking/ folders
-- [ ] `bulk_create_tasks` creates multiple tasks with sequential IDs and wired dependencies
+- [ ] `bulk_create_tasks` creates multiple tasks with sequential IDs, wired dependencies, and single git commit
+- [ ] `bulk_create_tasks` validates each task individually against sizing rules
 - [ ] Collision guard: if folder exists, auto-increment ID
 - [ ] `/nitro-create-task` command updated to use MCP tools when available with file fallback
 
