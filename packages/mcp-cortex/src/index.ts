@@ -17,6 +17,7 @@ import { handleLogEvent, handleQueryEvents } from './tools/events.js';
 import { handleGetTaskContext, handleGetReviewLessons, handleGetRecentChanges, handleGetCodebasePatterns, handleStageAndCommit, handleReportProgress } from './tools/context.js';
 import { handleLogPhase, handleLogReview, handleLogFixCycle, handleGetModelPerformance, handleGetTaskTrace, handleGetSessionSummary } from './tools/telemetry.js';
 import { handleGetAvailableProviders, handleGetProviderStats } from './tools/providers.js';
+import { handleGetNextTaskId, handleValidateTaskSizing, handleCreateTask, handleBulkCreateTasks } from './tools/task-creation.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -466,6 +467,56 @@ server.registerTool('get_provider_stats', {
     worker_type: z.string().max(50).optional().describe('Filter by worker type pattern in label (e.g., "BUILD", "REVIEW"). Omit for all.'),
   },
 }, (args) => handleGetProviderStats(args, db));
+
+// --- Task creation tools ---
+
+server.registerTool('get_next_task_id', {
+  description: 'Scan task-tracking/ for highest TASK_YYYY_NNN folder and return the next sequential ID.',
+}, () => handleGetNextTaskId(projectRoot));
+
+server.registerTool('validate_task_sizing', {
+  description: 'Validate a task definition against sizing-rules.md limits. Returns valid/invalid with violation details.',
+  inputSchema: {
+    description: z.string().max(50000).describe('Task description text'),
+    acceptanceCriteria: z.array(z.string().max(2000)).max(20).optional().describe('Acceptance criteria groups'),
+    fileScope: z.array(z.string().max(1000)).max(20).optional().describe('Files in scope'),
+    complexity: z.string().max(50).optional().describe('Task complexity (Simple, Medium, Complex)'),
+  },
+}, (args) => handleValidateTaskSizing(args));
+
+server.registerTool('create_task', {
+  description: 'Full lifecycle task creation: validates sizing, auto-generates next task ID, creates folder + task.md + status file, upserts into DB, and git commits.',
+  inputSchema: {
+    title: z.string().min(1).max(500).describe('Task title'),
+    description: z.string().max(50000).describe('Task description'),
+    type: z.enum(['FEATURE', 'BUG', 'BUGFIX', 'REFACTOR', 'REFACTORING', 'DOCS', 'DOCUMENTATION', 'TEST', 'CHORE', 'DEVOPS', 'RESEARCH', 'CREATIVE']).describe('Task type'),
+    priority: z.enum(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']).describe('Task priority'),
+    complexity: z.enum(['Simple', 'Medium', 'Complex']).optional().describe('Task complexity'),
+    model: z.string().max(100).optional().describe('Model to use'),
+    dependencies: z.array(z.string().max(200)).max(20).optional().describe('Task IDs this depends on'),
+    acceptanceCriteria: z.array(z.string().max(2000)).max(20).optional().describe('Acceptance criteria'),
+    fileScope: z.array(z.string().max(1000)).max(20).optional().describe('Files in scope'),
+    parallelism: z.string().max(500).optional().describe('Parallelism constraints'),
+  },
+}, (args) => handleCreateTask(db, projectRoot, args));
+
+server.registerTool('bulk_create_tasks', {
+  description: 'Create multiple tasks with sequential IDs, individual sizing validation, dependency wiring, and a single git commit.',
+  inputSchema: {
+    tasks: z.array(z.object({
+      title: z.string().min(1).max(500),
+      description: z.string().max(50000),
+      type: z.enum(['FEATURE', 'BUG', 'BUGFIX', 'REFACTOR', 'REFACTORING', 'DOCS', 'DOCUMENTATION', 'TEST', 'CHORE', 'DEVOPS', 'RESEARCH', 'CREATIVE']),
+      priority: z.enum(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']),
+      complexity: z.enum(['Simple', 'Medium', 'Complex']).optional(),
+      model: z.string().max(100).optional(),
+      dependencies: z.array(z.string().max(200)).max(20).optional(),
+      acceptanceCriteria: z.array(z.string().max(2000)).max(20).optional(),
+      fileScope: z.array(z.string().max(1000)).max(20).optional(),
+      parallelism: z.string().max(500).optional(),
+    })).min(1).max(20).describe('Array of task definitions to create'),
+  },
+}, (args) => handleBulkCreateTasks(db, projectRoot, args));
 
 // --- Start ---
 
