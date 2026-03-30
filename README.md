@@ -230,7 +230,8 @@ nitro-fueled/
 │   ├── commands/            # 12 slash commands
 │   ├── anti-patterns.md     # QA-derived rules
 │   └── review-lessons/      # Per-domain learned patterns
-├── apps/                    # Nx workspace apps (cli, dashboard, dashboard-api, docs, session-orchestrator)
+├── apps/                    # Nx workspace apps (cli, dashboard, dashboard-api, docs)
+├── packages/                # Shared packages (mcp-cortex)
 ├── libs/                    # Shared libraries
 ├── task-tracking/           # Registry, plan, state, task folders
 ├── docs/                    # Design docs + landing page

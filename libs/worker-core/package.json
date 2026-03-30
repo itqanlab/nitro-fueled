@@ -1,7 +1,7 @@
 {
   "name": "@nitro-fueled/worker-core",
   "version": "1.0.0",
-  "description": "Reusable worker types and core business logic for session-orchestrator",
+  "description": "Reusable worker types and core business logic for nitro-cortex",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

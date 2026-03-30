@@ -21,5 +21,5 @@ task-tracking/active-sessions.md
 .nitro-fueled/
 .nitro/
 
-# Agent worktrees (ephemeral, created by MCP session-orchestrator)
+# Agent worktrees (ephemeral, created by MCP nitro-cortex)
 .claude/worktrees/

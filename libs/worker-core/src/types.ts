@@ -40,7 +40,7 @@ export type LauncherMode = 'print' | 'opencode' | 'codex';
 export type Provider = 'claude' | 'glm' | 'opencode' | 'codex';
 
 // ---------------------------------------------------------------------------
-// Provider config types (for Phase 2 re-validation in session-orchestrator)
+// Provider config types (for Phase 2 re-validation in nitro-cortex)
 // NOTE: These types mirror apps/cli/src/utils/provider-config.ts — keep in sync.
 // LauncherInfo here is a subset (no AuthMethod import to avoid cross-app deps).
 // ---------------------------------------------------------------------------

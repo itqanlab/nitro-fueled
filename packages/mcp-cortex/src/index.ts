@@ -16,6 +16,7 @@ import { handleWriteHandoff, handleReadHandoff } from './tools/handoffs.js';
 import { handleLogEvent, handleQueryEvents } from './tools/events.js';
 import { handleGetTaskContext, handleGetReviewLessons, handleGetRecentChanges, handleGetCodebasePatterns, handleStageAndCommit, handleReportProgress } from './tools/context.js';
 import { handleLogPhase, handleLogReview, handleLogFixCycle, handleGetModelPerformance, handleGetTaskTrace, handleGetSessionSummary } from './tools/telemetry.js';
+import { handleGetAvailableProviders, handleGetProviderStats } from './tools/providers.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -448,13 +449,31 @@ server.registerTool('get_session_summary', {
   },
 }, (args) => handleGetSessionSummary(db, args));
 
+// --- Provider tools ---
+
+server.registerTool('get_available_providers', {
+  description: 'Discover which providers are configured and available. Reads ~/.nitro-fueled/config.json, probes each launcher, returns availability, models, and routing.',
+  inputSchema: {
+    working_directory: z.string().max(500).optional().describe('Project root to find .nitro-fueled/config.json. Falls back to ~/.nitro-fueled/config.json if omitted.'),
+  },
+}, (args) => handleGetAvailableProviders(args));
+
+server.registerTool('get_provider_stats', {
+  description: 'Aggregate worker history by provider/model — success rate, avg cost, avg tokens, avg compactions.',
+  inputSchema: {
+    provider: z.string().max(50).optional().describe('Filter by provider name (e.g., "anthropic", "zai"). Omit for all.'),
+    model: z.string().max(100).optional().describe('Filter by model name. Omit for all.'),
+    worker_type: z.string().max(50).optional().describe('Filter by worker type pattern in label (e.g., "BUILD", "REVIEW"). Omit for all.'),
+  },
+}, (args) => handleGetProviderStats(args, db));
+
 // --- Start ---
 
 jsonlWatcher.start();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-console.error('[nitro-cortex] MCP server connected via stdio (v0.5.0 — sessions + workers + handoffs + events + agent-context + telemetry)');
+console.error('[nitro-cortex] MCP server connected via stdio (v0.6.0 — sessions + workers + handoffs + events + agent-context + telemetry + providers)');
 
 process.on('SIGINT', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
 process.on('SIGTERM', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });

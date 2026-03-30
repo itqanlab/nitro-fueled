@@ -85,7 +85,7 @@ export function preflightChecks(cwd: string, taskId: string | undefined): Prefli
     return null;
   }
 
-  console.log(`MCP session-orchestrator: configured (${mcpConfig.location}, ${mcpConfig.configPath})`);
+  console.log(`MCP nitro-cortex: configured (${mcpConfig.location}, ${mcpConfig.configPath})`);
 
   const rows = parseRegistry(cwd);
 

@@ -5,15 +5,14 @@ export function displayMcpSetupGuide(): void {
   const globalConfigPath = resolve(homedir(), '.claude.json');
 
   console.log('');
-  console.log('MCP Session Orchestrator is not configured.');
+  console.log('MCP nitro-cortex is not configured.');
   console.log('The Supervisor requires this MCP server to spawn and manage worker sessions.');
   console.log('');
   console.log('Setup Instructions:');
   console.log('-------------------');
   console.log('');
-  console.log('1. Install session-orchestrator:');
-  console.log('   Obtain the session-orchestrator package and place it in a local directory.');
-  console.log('   cd <session-orchestrator-dir> && npm install && npm run build');
+  console.log('1. Build nitro-cortex:');
+  console.log('   cd packages/mcp-cortex && npm install && npm run build');
   console.log('');
   console.log('2. Add to your Claude Code MCP config.');
   console.log('');
@@ -21,38 +20,26 @@ export function displayMcpSetupGuide(): void {
   console.log('');
   console.log('   {');
   console.log('     "mcpServers": {');
-  console.log('       "session-orchestrator": {');
+  console.log('       "nitro-cortex": {');
   console.log('         "type": "stdio",');
   console.log('         "command": "node",');
-  console.log('         "args": ["/path/to/session-orchestrator/dist/index.js"]');
+  console.log('         "args": ["packages/mcp-cortex/dist/index.js"]');
   console.log('       }');
   console.log('     }');
   console.log('   }');
   console.log('');
   console.log(`   Option B: Global (${globalConfigPath}):`);
   console.log('');
-  console.log('   Add "session-orchestrator" to the "mcpServers" object.');
+  console.log('   Add "nitro-cortex" to the "mcpServers" object.');
   console.log('');
   console.log('3. Verify it works:');
-  console.log('   Restart Claude Code, then check that session-orchestrator');
-  console.log('   tools (list_workers, spawn_worker) are available.');
+  console.log('   Restart Claude Code, then check that nitro-cortex');
+  console.log('   tools (list_workers, spawn_worker, get_tasks) are available.');
   console.log('');
   console.log('Run `npx nitro-fueled init` to configure this interactively.');
 }
 
 export function buildMcpConfigEntry(serverPath: string): Record<string, unknown> {
-  return {
-    mcpServers: {
-      'session-orchestrator': {
-        type: 'stdio',
-        command: 'node',
-        args: [resolve(serverPath, 'dist', 'index.js')],
-      },
-    },
-  };
-}
-
-export function buildNitroCortexConfigEntry(serverPath: string): Record<string, unknown> {
   return {
     mcpServers: {
       'nitro-cortex': {

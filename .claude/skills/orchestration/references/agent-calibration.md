@@ -61,7 +61,7 @@ Exactly 4 failure tags are defined. Every failure entry in a record must use one
 
 **Examples**:
 
-- `code-logic-reviewer` used the `mcp__session-orchestrator__spawn_worker` tool to spawn a sub-agent to help with the review — reviewers are not authorized to spawn workers
+- `code-logic-reviewer` used the `mcp__nitro-cortex__spawn_worker` tool to spawn a sub-agent to help with the review — reviewers are not authorized to spawn workers
 - `researcher-expert` used the `Edit` tool to modify source files during a research task — researcher's workflow is read-only investigation and reporting
 
 ---

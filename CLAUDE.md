@@ -23,17 +23,18 @@ docs/                      # Design docs and architecture
   anti-patterns.md         # Starter checklist
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure
-apps/                      # Nx workspace apps (cli, dashboard, dashboard-api, docs, session-orchestrator)
+packages/                  # Shared packages (mcp-cortex)
+apps/                      # Nx workspace apps (cli, dashboard, dashboard-api, docs)
 libs/                      # Shared libraries
 ```
 
 ## Key Docs
 - `docs/nitro-fueled-design.md` — Full design doc
-- `docs/mcp-session-orchestrator-design.md` — MCP server for spawning/monitoring workers
+- `docs/mcp-session-orchestrator-design.md` — MCP cortex design (worker management + task DB)
 - `docs/task-template-guide.md` — Task template usage and orchestration integration
 
 ## Dependencies
-- Session Orchestrator MCP Server: `/Volumes/SanDiskSSD/mine/session-orchestrator/`
+- nitro-cortex MCP Server: `packages/mcp-cortex/` (worker management + task DB)
 - Claude Code CLI
 
 ## Current State

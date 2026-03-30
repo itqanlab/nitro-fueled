@@ -50,11 +50,10 @@ Agents are split into two categories:
 
 Note: `nitro-frontend-developer` and `nitro-backend-developer` are **core** agents that ship with the package — they carry the `nitro-` prefix and are always overwritable by `update`. They provide generic developer patterns; the project-generated agents override them with stack-specific depth at `init` time.
 
-### MCP Server
+### MCP Server (nitro-cortex)
 
-- Lives in its own repo (existing `/Volumes/SanDiskSSD/mine/session-orchestrator/`)
-- Referenced/linked from the Nx workspace, not duplicated
-- No npm publishing needed — local path reference
+- Lives in `packages/mcp-cortex/` within the Nx workspace
+- Combines worker management + task DB (SQLite) in a single MCP server
 - See `docs/mcp-session-orchestrator-design.md` for full design
 
 ## Task Structure

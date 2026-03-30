@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { buildMcpConfigEntry, buildNitroCortexConfigEntry } from './mcp-setup-guide.js';
+import { buildMcpConfigEntry } from './mcp-setup-guide.js';
 
 export function expandTilde(inputPath: string): string {
   if (inputPath.startsWith('~/') || inputPath === '~') {
@@ -93,13 +93,5 @@ export async function configureMcp(
   serverPath: string,
   location: 'project' | 'global'
 ): Promise<boolean> {
-  return configureMcpServer(cwd, serverPath, location, 'session-orchestrator', buildMcpConfigEntry);
-}
-
-export async function configureNitroCortex(
-  cwd: string,
-  serverPath: string,
-  location: 'project' | 'global'
-): Promise<boolean> {
-  return configureMcpServer(cwd, serverPath, location, 'nitro-cortex', buildNitroCortexConfigEntry);
+  return configureMcpServer(cwd, serverPath, location, 'nitro-cortex', buildMcpConfigEntry);
 }

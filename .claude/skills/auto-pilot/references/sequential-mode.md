@@ -24,7 +24,7 @@ When `--sequential` is passed, the supervisor processes tasks inline in the same
 
 **2. Skip MCP validation**
 
-Do NOT check MCP session-orchestrator availability. Do NOT validate MCP tools. Proceed directly to pre-flight validation (Step 4 in the command entry point) — but SKIP Step 3c (MCP check). All other pre-flight checks still run.
+Do NOT check MCP nitro-cortex availability. Do NOT validate MCP tools. Proceed directly to pre-flight validation (Step 4 in the command entry point) — but SKIP Step 3c (MCP check). All other pre-flight checks still run.
 
 **3. Session setup**
 

@@ -37,7 +37,7 @@ The Team-Leader agent (inside the Build Worker) owns all git commits. Each batch
 
 ## Worker Health States
 
-The `session-orchestrator` MCP server monitors each worker's token usage and activity in real time by watching the worker's JSONL conversation file. Health is assessed on every monitoring interval (default: 5 minutes):
+The `nitro-cortex` MCP server monitors each worker's token usage and activity in real time by watching the worker's JSONL conversation file. Health is assessed on every monitoring interval (default: 5 minutes):
 
 | Health State | Condition | Supervisor Action |
 |-------------|-----------|------------------|
@@ -62,7 +62,7 @@ If the retry counter reaches the configured limit (default: 2, max: 5), the task
 
 ## Worker Context Window
 
-Each worker starts with a full 1 million token context window. The `session-orchestrator` tracks context usage as a percentage and reports it on every health check. When context usage exceeds 80%, Claude Code's automatic context compaction may activate.
+Each worker starts with a full 1 million token context window. The `nitro-cortex` tracks context usage as a percentage and reports it on every health check. When context usage exceeds 80%, Claude Code's automatic context compaction may activate.
 
 The Supervisor detects compaction events by monitoring for a significant drop in token count between conversation turns (a drop of more than 30% signals compaction). The compaction count is tracked in worker stats and reported in `orchestrator-state.md`.
 
@@ -70,7 +70,7 @@ The Supervisor detects compaction events by monitoring for a significant drop in
 
 ## Spawning a Worker Manually
 
-The Supervisor spawns workers automatically via the MCP `spawn_worker` tool, but you can also spawn one manually using the session-orchestrator tools or by running the command directly:
+The Supervisor spawns workers automatically via the MCP `spawn_worker` tool, but you can also spawn one manually using nitro-cortex tools or by running the command directly:
 
 ```bash
 # Run a Build Worker for a single task

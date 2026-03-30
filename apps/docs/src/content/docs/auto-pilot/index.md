@@ -57,7 +57,7 @@ Before spawning any workers, the Supervisor validates:
 
 1. `task-tracking/registry.md` exists and is readable
 2. At least one task is in an actionable state (`CREATED` or `IMPLEMENTED`)
-3. The `session-orchestrator` MCP server responds to a test call
+3. The `nitro-cortex` MCP server responds to a test call
 4. No circular dependencies exist in the task dependency graph
 5. iTerm2 is running and accepts AppleScript commands
 6. The `task-tracking/` directory is writable

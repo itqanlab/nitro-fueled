@@ -3,7 +3,7 @@ title: Supervisor
 description: The Auto-Pilot Supervisor that coordinates workers end-to-end.
 ---
 
-The **Supervisor** is the orchestrator-of-orchestrators. It reads your task backlog, builds a dependency graph, spawns Build Workers and Review Workers via the `session-orchestrator` MCP server, monitors their health, handles failures, and loops until all tasks are complete or blocked. You do not need to watch it — it runs autonomously.
+The **Supervisor** is the orchestrator-of-orchestrators. It reads your task backlog, builds a dependency graph, spawns Build Workers and Review Workers via the `nitro-cortex` MCP server, monitors their health, handles failures, and loops until all tasks are complete or blocked. You do not need to watch it — it runs autonomously.
 
 ---
 
@@ -63,7 +63,7 @@ Before the first worker is spawned, the Supervisor performs these checks:
 
 1. `task-tracking/registry.md` exists and is readable
 2. At least one task is in `CREATED` or `IMPLEMENTED` state
-3. The `session-orchestrator` MCP server is reachable
+3. The `nitro-cortex` MCP server is reachable
 4. No circular dependencies exist in the dependency graph
 5. iTerm2 is running (required for worker tab spawning)
 6. The `task-tracking/` directory is writable

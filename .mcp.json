@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "session-orchestrator": {
+    "nitro-cortex": {
       "command": "node",
-      "args": ["/Volumes/SanDiskSSD/mine/session-orchestrator/dist/index.js"],
+      "args": ["packages/mcp-cortex/dist/index.js"],
       "env": {}
     }
   }

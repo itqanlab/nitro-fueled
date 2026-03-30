@@ -46,7 +46,7 @@ function extractMcpEntry(data: Record<string, unknown>): McpServerEntry | null {
   if (!isPlainObject(servers)) {
     return null;
   }
-  const entry = servers['session-orchestrator'];
+  const entry = servers['nitro-cortex'] ?? servers['session-orchestrator'];
   if (!isPlainObject(entry)) {
     return null;
   }

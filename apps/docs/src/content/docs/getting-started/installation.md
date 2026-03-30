@@ -31,18 +31,18 @@ The installer runs the following steps automatically:
 - Creates `task-tracking/` with `registry.md`, `task-template.md`, and a starter `plan.md`
 - Reads your project files to detect the tech stack
 - Generates project-specific developer agents tailored to your framework
-- Configures `.mcp.json` with the `session-orchestrator` server reference
+- Configures `.mcp.json` with the `nitro-cortex` server reference
 
-**4. Configure the session-orchestrator path:**
+**4. Configure nitro-cortex path:**
 
 Open `.mcp.json` and set the path to the compiled session-orchestrator server:
 
 ```json
 {
   "mcpServers": {
-    "session-orchestrator": {
+    "nitro-cortex": {
       "command": "node",
-      "args": ["/absolute/path/to/session-orchestrator/dist/index.js"],
+      "args": ["/absolute/path/to/packages/mcp-cortex/dist/index.js"],
       "env": {
         "CLAUDE_HOME": "~/.claude",
         "DEFAULT_MODEL": "claude-sonnet-4-6"
@@ -90,27 +90,27 @@ When a stack is detected, `init` generates a tailored developer agent. A React +
 
 ---
 
-## Setting Up the session-orchestrator
+## Setting Up nitro-cortex
 
-The `session-orchestrator` is a standalone MCP server that enables the Supervisor to spawn and monitor worker sessions in iTerm2 tabs. It lives in a separate repository.
+The `nitro-cortex` is a standalone MCP server that enables the Supervisor to spawn and monitor worker sessions in iTerm2 tabs. It lives in a separate repository.
 
 **Clone and build:**
 
 ```bash
-git clone https://github.com/your-org/nitro-fueled-session-orchestrator /path/to/session-orchestrator
-cd /path/to/session-orchestrator
+git clone https://github.com/your-org/nitro-fueled packages/mcp-cortex
+cd packages/mcp-cortex
 npm install
 npm run build
 ```
 
 :::note
-The `session-orchestrator` repository URL will be published alongside the Nitro-Fueled package. Check the main Nitro-Fueled repository README for the authoritative clone URL.
+The `nitro-cortex` repository URL will be published alongside the Nitro-Fueled package. Check the main Nitro-Fueled repository README for the authoritative clone URL.
 :::
 
 **Verify the build:**
 
 ```bash
-node /path/to/session-orchestrator/dist/index.js
+node /path/to/packages/mcp-cortex/dist/index.js
 # Should print: MCP server listening on stdio
 ```
 
@@ -122,7 +122,7 @@ Then update `.mcp.json` in your project as shown above.
 
 **MCP server not found**
 
-Check that `.mcp.json` points to the compiled `dist/index.js` file, not the source `src/index.ts`. Run `npm run build` in the session-orchestrator repo if `dist/` is missing.
+Check that `.mcp.json` points to the compiled `dist/index.js` file, not the source `src/index.ts`. Run `npm run build` in nitro-cortex repo if `dist/` is missing.
 
 **iTerm2 not running**
 

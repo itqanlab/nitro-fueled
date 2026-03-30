@@ -354,7 +354,7 @@ export default class Run extends BaseCommand {
     }
 
     if (!opts['skip-connectivity']) {
-      console.log('Verifying MCP session-orchestrator connectivity...');
+      console.log('Verifying MCP nitro-cortex connectivity...');
       const connectivity = testMcpConnectivity(result.mcpConfig);
       if (connectivity.status !== 'ok') {
         console.error(`Error: ${connectivity.message}`);

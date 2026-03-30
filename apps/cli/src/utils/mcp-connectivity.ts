@@ -10,7 +10,7 @@ export interface ConnectivityResult {
 
 export function testMcpConnectivity(mcpConfig: McpConfigResult): ConnectivityResult {
   if (!mcpConfig.found || mcpConfig.entry === null) {
-    return { status: 'error', message: 'MCP session-orchestrator is not configured.' };
+    return { status: 'error', message: 'MCP nitro-cortex is not configured.' };
   }
 
   const entry = mcpConfig.entry;
@@ -52,7 +52,7 @@ export function testMcpConnectivity(mcpConfig: McpConfigResult): ConnectivityRes
         return { status: 'error', message: `MCP server command not found: ${command}` };
       }
       if (msg.includes('ETIMEDOUT') || msg.includes('timed out')) {
-        return { status: 'unavailable', message: 'MCP session-orchestrator timed out. Ensure the server is built and runnable.' };
+        return { status: 'unavailable', message: 'MCP nitro-cortex timed out. Ensure the server is built and runnable.' };
       }
       return { status: 'error', message: `MCP connectivity check failed: ${msg.split('\n')[0] ?? 'unknown error'}` };
     }
@@ -60,12 +60,12 @@ export function testMcpConnectivity(mcpConfig: McpConfigResult): ConnectivityRes
     const stdout = result.stdout ?? '';
     // Check for a JSON-RPC response with a result field (MCP initialize response)
     if (stdout.includes('"result"') && stdout.includes('"serverInfo"')) {
-      return { status: 'ok', message: 'MCP session-orchestrator is reachable.' };
+      return { status: 'ok', message: 'MCP nitro-cortex is reachable.' };
     }
 
     // Server started but didn't respond with expected MCP protocol
     if (result.status === 0 || stdout.length > 0) {
-      return { status: 'ok', message: 'MCP session-orchestrator process is available (server started successfully).' };
+      return { status: 'ok', message: 'MCP nitro-cortex process is available (server started successfully).' };
     }
 
     return {
