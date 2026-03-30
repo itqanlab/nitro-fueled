@@ -80,6 +80,21 @@
   &:hover { background: rgba(16, 185, 129, 0.1); border-color: var(--success); color: var(--success); }
 }
 
+.auto-pilot-note {
+  margin: -8px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.auto-pilot-note--error {
+  border-color: var(--error);
+  color: var(--error);
+}
+
 /* ---- Toolbar ---- */
 .toolbar {
   display: flex;

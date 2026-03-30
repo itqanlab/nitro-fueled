@@ -63,12 +63,16 @@ All mock responses for now. No real MCP calls or CLI spawning.
 
 ## File Scope
 
+- `apps/dashboard-api/src/auto-pilot/auto-pilot.model.ts` (new)
 - `apps/dashboard-api/src/auto-pilot/auto-pilot.controller.ts` (new)
 - `apps/dashboard-api/src/auto-pilot/auto-pilot.service.ts` (new)
 - `apps/dashboard-api/src/auto-pilot/auto-pilot.module.ts` (new)
 - `apps/dashboard-api/src/app/app.module.ts` (modified — import module)
+- `apps/dashboard/src/app/models/api.types.ts` (modified — add auto-pilot contracts)
 - `apps/dashboard/src/app/services/api.service.ts` (modified — add methods)
 - `apps/dashboard/src/app/views/project/project.component.ts` (modified — wire button)
+- `apps/dashboard/src/app/views/project/project.component.html` (modified — reflect start and running states)
+- `apps/dashboard/src/app/views/project/project.component.scss` (modified — add auto-pilot status note styles)
 
 ## Parallelism
 

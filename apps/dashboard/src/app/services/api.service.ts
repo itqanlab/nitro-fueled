@@ -37,6 +37,11 @@ import type {
   CortexPhaseTiming,
   CreateTaskRequest,
   CreateTaskResponse,
+  StartAutoPilotRequest,
+  StartAutoPilotResponse,
+  StopAutoPilotRequest,
+  StopAutoPilotResponse,
+  AutoPilotStatusResponse,
 } from '../models/api.types';
 
 // ── Allowlists for filter parameters ─────────────────────────────────────────
@@ -254,5 +259,17 @@ export class ApiService {
 
   public createTask(req: CreateTaskRequest): Observable<CreateTaskResponse> {
     return this.http.post<CreateTaskResponse>(`${this.base}/tasks/create`, req);
+  }
+
+  public startAutoPilot(req: StartAutoPilotRequest = {}): Observable<StartAutoPilotResponse> {
+    return this.http.post<StartAutoPilotResponse>(`${this.base}/auto-pilot/start`, req);
+  }
+
+  public stopAutoPilot(req: StopAutoPilotRequest): Observable<StopAutoPilotResponse> {
+    return this.http.post<StopAutoPilotResponse>(`${this.base}/auto-pilot/stop`, req);
+  }
+
+  public getAutoPilotStatus(sessionId: string): Observable<AutoPilotStatusResponse> {
+    return this.http.get<AutoPilotStatusResponse>(`${this.base}/auto-pilot/status/${encodeURIComponent(sessionId)}`);
   }
 }

@@ -236,6 +236,35 @@ export interface SessionData {
   readonly log: ReadonlyArray<LogEntry>;
 }
 
+export type AutoPilotSessionStatus = 'starting' | 'running' | 'stopped';
+
+export interface StartAutoPilotRequest {
+  readonly taskIds?: ReadonlyArray<string>;
+  readonly options?: {
+    readonly dryRun?: boolean;
+  };
+}
+
+export interface StartAutoPilotResponse {
+  readonly sessionId: string;
+  readonly status: 'starting';
+}
+
+export interface StopAutoPilotRequest {
+  readonly sessionId: string;
+}
+
+export interface StopAutoPilotResponse {
+  readonly sessionId: string;
+  readonly stopped: true;
+}
+
+export interface AutoPilotStatusResponse {
+  readonly sessionId: string;
+  readonly status: AutoPilotSessionStatus;
+  readonly updatedAt: string;
+}
+
 // ── Graph types ──────────────────────────────────────────────────────────────
 
 export interface GraphNode {

@@ -15,20 +15,31 @@
     <button
       class="btn btn-primary"
       type="button"
-      [class.btn-running]="isAutoPilotRunning()"
-      [disabled]="isAutoPilotRunning()"
-      [attr.aria-label]="isAutoPilotRunning() ? 'Auto-Pilot is running' : 'Start Auto-Pilot'"
+      [class.btn-running]="autoPilotState() === 'running'"
+      [disabled]="isAutoPilotBusy()"
+      [attr.aria-label]="autoPilotState() === 'running' ? 'Auto-Pilot is running' : autoPilotState() === 'starting' ? 'Auto-Pilot is starting' : 'Start Auto-Pilot'"
       (click)="onStartAutoPilot()"
     >
-      @if (isAutoPilotRunning()) {
+      @if (autoPilotState() === 'running') {
         <span class="btn-dot running-dot--small"></span>
         Auto-Pilot Running
+      } @else if (autoPilotState() === 'starting') {
+        <span class="btn-dot running-dot--small"></span>
+        Starting Auto-Pilot...
       } @else {
         &#x25B6; Start Auto-Pilot
       }
     </button>
   </div>
 </div>
+
+@if (autoPilotError()) {
+  <div class="auto-pilot-note auto-pilot-note--error" role="status">{{ autoPilotError() }}</div>
+} @else if (autoPilotSessionId()) {
+  <div class="auto-pilot-note" role="status">
+    Session {{ autoPilotSessionId() }} is {{ autoPilotState() === 'running' ? 'running' : 'starting' }}.
+  </div>
+}
 
 <!-- Toolbar: Filters + View Toggle -->
 <div class="toolbar">
