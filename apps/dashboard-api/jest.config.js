@@ -2,6 +2,7 @@ export default {
   moduleFileExtensions: ['ts', 'js'],
   testEnvironment: 'node',
   testRegex: '.spec.ts$',
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
