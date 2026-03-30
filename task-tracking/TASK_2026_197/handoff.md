@@ -10,7 +10,7 @@
 - `apps/cli/scaffold/.claude/skills/auto-pilot/references/parallel-mode.md` (scaffold sync)
 
 ## Commits
-- Pending
+- `18a4b33`: `fix(cortex): prevent get_tasks COMPLETE overflow for TASK_2026_197`
 
 ## Decisions
 - Implemented `limit` as a bounded integer (`1..200`) to prevent oversized payloads while preserving existing tool behavior.
