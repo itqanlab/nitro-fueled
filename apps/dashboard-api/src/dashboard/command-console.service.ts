@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { PipelineService } from './pipeline.service';
-import { CortexService } from './cortex.service';
 
 export interface CommandCatalogEntry {
   readonly name: string;
@@ -172,41 +171,22 @@ const SUGGESTION_MAP: Record<string, readonly CommandSuggestion[]> = {
 export class CommandConsoleService {
   private readonly logger = new Logger(CommandConsoleService.name);
   private readonly commandsDir: string;
+  private readonly catalog: readonly CommandCatalogEntry[];
 
-  public constructor(
-    private readonly pipelineService: PipelineService,
-    private readonly cortexService: CortexService,
-  ) {
+  public constructor(private readonly pipelineService: PipelineService) {
     this.commandsDir = path.resolve(process.cwd(), '.claude', 'commands');
+    this.catalog = this.loadCatalog();
   }
 
   public getCatalog(): readonly CommandCatalogEntry[] {
-    const enriched = COMMAND_CATALOG.map((entry) => {
-      const mdPath = path.join(this.commandsDir, `${entry.name}.md`);
-      let description = entry.description;
-      try {
-        const content = fs.readFileSync(mdPath, 'utf-8');
-        const lines = content.split('\n');
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed && !trimmed.startsWith('#') && trimmed.length > 0) {
-            description = trimmed.replace(/^[-*>]+\s*/, '').slice(0, 120);
-            break;
-          }
-        }
-      } catch {
-        this.logger.debug(`Command md not found for ${entry.name}, using static description`);
-      }
-      return { ...entry, description };
-    });
-    return enriched;
+    return this.catalog;
   }
 
   public getSuggestions(route?: string, taskId?: string): readonly CommandSuggestion[] {
     const results: CommandSuggestion[] = [];
 
     if (route) {
-      const normalizedRoute = route.replace(/\/$/, '');
+      const normalizedRoute = route.replace(/\/$/, '') || '/';
       for (const [pattern, suggestions] of Object.entries(SUGGESTION_MAP)) {
         if (normalizedRoute === pattern || normalizedRoute.startsWith(pattern)) {
           results.push(...suggestions);
@@ -257,6 +237,27 @@ export class CommandConsoleService {
     }
   }
 
+  private loadCatalog(): readonly CommandCatalogEntry[] {
+    return COMMAND_CATALOG.map((entry) => {
+      const mdPath = path.join(this.commandsDir, `${entry.name}.md`);
+      let description = entry.description;
+      try {
+        const content = fs.readFileSync(mdPath, 'utf-8');
+        const lines = content.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#') && trimmed.length > 0) {
+            description = trimmed.replace(/^[-*>]+\s*/, '').slice(0, 120);
+            break;
+          }
+        }
+      } catch {
+        this.logger.debug(`Command md not found for ${entry.name}, using static description`);
+      }
+      return { ...entry, description };
+    });
+  }
+
   private executeStatus(): CommandExecuteResult {
     try {
       const registry = this.pipelineService.getRegistry();
@@ -283,7 +284,7 @@ export class CommandConsoleService {
         lines.push('| Task ID | Status | Type | Description |');
         lines.push('|---------|--------|------|-------------|');
         for (const t of active) {
-          lines.push(`| ${t.id} | ${t.status} | ${t.type} | ${t.description.slice(0, 50)} |`);
+          lines.push(`| ${this.escapeMarkdownCell(t.id)} | ${this.escapeMarkdownCell(t.status)} | ${this.escapeMarkdownCell(t.type)} | ${this.escapeMarkdownCell(t.description.slice(0, 50))} |`);
         }
       }
 
@@ -328,5 +329,13 @@ export class CommandConsoleService {
         output: `Failed to retrieve burn data: ${err instanceof Error ? err.message : String(err)}`,
       };
     }
+  }
+
+  private escapeMarkdownCell(value: string): string {
+    return value
+      .replace(/\\/g, '\\\\')
+      .replace(/\|/g, '\\|')
+      .replace(/[`*_{}\[\]()#+.!-]/g, '\\$&')
+      .replace(/[\r\n]+/g, ' ');
   }
 }

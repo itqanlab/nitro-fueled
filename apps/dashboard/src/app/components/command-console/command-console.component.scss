@@ -146,6 +146,11 @@ $radius: var(--radius);
     border-color: $accent;
     color: $text-primary;
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .console-suggestions {
@@ -382,6 +387,10 @@ $radius: var(--radius);
   &:hover {
     background: rgba(255, 255, 255, 0.06);
   }
+}
+
+.autocomplete-item.autocomplete-active {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .autocomplete-cmd {

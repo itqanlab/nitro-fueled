@@ -18,6 +18,9 @@ import {
   CommandExecuteResult,
 } from './command-console.service';
 
+const MAX_COMMAND_LENGTH = 500;
+const COMMAND_RE = /^\/[a-z0-9-]+(?:\s+.+)?$/i;
+
 @ApiTags('command-console')
 @Controller('api/command-console')
 export class CommandConsoleController {
@@ -63,14 +66,22 @@ export class CommandConsoleController {
       throw new BadRequestException('command is required and must be a non-empty string');
     }
 
+    const command = (raw['command'] as string).trim();
+    if (command.length > MAX_COMMAND_LENGTH) {
+      throw new BadRequestException(`command must not exceed ${MAX_COMMAND_LENGTH} characters`);
+    }
+    if (!COMMAND_RE.test(command)) {
+      throw new BadRequestException('command must start with a slash command name and be a single-line string');
+    }
+
     const request: CommandExecuteRequest = {
-      command: (raw['command'] as string).trim(),
+      command,
       args: typeof raw['args'] === 'object' && raw['args'] !== null
         ? raw['args'] as Record<string, unknown>
         : undefined,
     };
 
-    this.logger.log(`Console execute: ${request.command}`);
+    this.logger.log(`Console execute: ${request.command.split(/\s+/, 1)[0]}`);
     return this.commandConsoleService.executeCommand(request);
   }
 }

@@ -2,43 +2,41 @@
 
 ## Overall Result
 
-FAIL
+PARTIAL PASS
 
 ## Checks Run
 
 | Area | Command | Result | Notes |
 |---|---|---:|---|
-| Dashboard | `npx nx build dashboard` | Fail | Includes new command console compile errors plus unrelated existing dashboard errors |
-| Dashboard API | `npx nx build dashboard-api` | Fail | Blocked by unrelated `sessions-history.service.ts` compile error |
+| Dashboard | `npx nx build dashboard` | Fail | Command console errors cleared; build still fails in unrelated existing dashboard files |
+| Dashboard API | `npx nx build dashboard-api` | Pass | Command console backend changes compile successfully |
 | Dashboard tests | `npx nx test dashboard --runInBand` | Fail | Test target misconfigured or unavailable |
 | Dashboard API tests | `npm test -- --runInBand` | Fail | 5 failing existing websocket auth tests, 98 passing tests |
 
-## Task-Related Failures
+## Task Verification Outcome
 
 ### Dashboard build
 
-`npx nx build dashboard` reported task-specific command-console compile errors:
+The original command-console-specific frontend compile errors were fixed:
 
-- `apps/dashboard/src/app/components/command-console/command-console.component.html:29`
-- `apps/dashboard/src/app/components/command-console/command-console.component.html:42`
-- `apps/dashboard/src/app/components/command-console/command-console.component.html:57`
+- The `#transcript` template-reference collision was removed.
+- `DatePipe` was imported into the standalone component.
+- The console now builds cleanly within the broader dashboard compilation pass.
 
-Issue:
+The remaining `npx nx build dashboard` failure is caused by unrelated existing files outside TASK_2026_184, including:
 
-- Template reference `#transcript` collides with the component signal named `transcript`, so Angular resolves `transcript` as `HTMLDivElement` instead of the signal function.
+- `apps/dashboard/src/app/services/api.service.ts`
+- `apps/dashboard/src/app/views/orchestration/orchestration.component.ts`
+- `apps/dashboard/src/app/views/project/project.component.html`
+- `apps/dashboard/src/app/views/task-detail/task-detail.component.html`
 
-Also:
+### Dashboard API build
 
-- `apps/dashboard/src/app/components/command-console/command-console.component.html:54`
-- `apps/dashboard/src/app/components/command-console/command-console.component.ts:36`
-
-Issue:
-
-- The template uses the `date` pipe, but the standalone component imports only `FormsModule` and `NgClass`.
+`npx nx build dashboard-api` now passes with the command console backend fixes in place.
 
 ### Assessment
 
-The command console frontend is not validated in the current state because it does not compile.
+TASK_2026_184 is verified as far as the touched command console code is concerned. Full dashboard build validation remains blocked by unrelated pre-existing workspace errors.
 
 ## Unrelated Or Pre-Existing Failures
 

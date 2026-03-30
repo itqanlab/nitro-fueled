@@ -3,12 +3,21 @@
     class="console-toggle"
     (click)="toggleOpen()"
     [title]="isOpen() ? 'Close Console' : 'Open Command Console'"
+    [attr.aria-expanded]="isOpen()"
+    aria-controls="command-console-panel"
+    aria-label="Toggle command console"
   >
     <span class="console-toggle-icon">&gt;_</span>
   </button>
 
   @if (isOpen()) {
-    <div class="console-panel">
+    <div
+      id="command-console-panel"
+      class="console-panel"
+      role="dialog"
+      aria-modal="false"
+      aria-label="Nitro command console"
+    >
       <div class="console-header">
         <div class="console-header-title">Command Console</div>
         <div class="console-header-actions">
@@ -20,10 +29,8 @@
       </div>
 
       <div class="console-quick-actions">
-        <button class="quick-action-btn" (click)="executeQuickAction('/nitro-status')">Status</button>
-        <button class="quick-action-btn" (click)="executeQuickAction('/nitro-burn')">Costs</button>
-        <button class="quick-action-btn" (click)="executeQuickAction('/nitro-create-task')">Create Task</button>
-        <button class="quick-action-btn" (click)="executeQuickAction('/nitro-auto-pilot')">Auto-Pilot</button>
+        <button class="quick-action-btn" (click)="executeQuickAction('/nitro-status')" [disabled]="isExecuting()">Status</button>
+        <button class="quick-action-btn" (click)="executeQuickAction('/nitro-burn')" [disabled]="isExecuting()">Costs</button>
       </div>
 
       @if (suggestions().length > 0 && !isExecuting() && transcript().length === 0) {
@@ -38,7 +45,7 @@
         </div>
       }
 
-      <div class="console-transcript" #transcript>
+      <div class="console-transcript" #transcriptContainer>
         @for (entry of transcript(); track entry.id) {
           <div class="transcript-entry" [ngClass]="'transcript-' + entry.type">
             <span class="transcript-prompt">
@@ -64,9 +71,9 @@
 
       <div class="console-input-area">
         @if (showAutocomplete() && filteredCommands().length > 0) {
-          <div class="autocomplete-list">
-            @for (cmd of filteredCommands(); track cmd.name) {
-              <button class="autocomplete-item" (click)="selectAutocomplete(cmd)">
+          <div id="command-console-autocomplete" class="autocomplete-list" role="listbox" aria-label="Command suggestions">
+            @for (cmd of filteredCommands(); track cmd.name; let idx = $index) {
+              <button class="autocomplete-item" [class.autocomplete-active]="idx === activeAutocompleteIndex()" (click)="selectAutocomplete(cmd)" role="option" [attr.aria-selected]="idx === activeAutocompleteIndex()">
                 <span class="autocomplete-cmd">{{ cmd.slashCommand }}</span>
                 <span class="autocomplete-desc">{{ cmd.description }}</span>
               </button>
@@ -80,6 +87,11 @@
             class="console-input"
             type="text"
             placeholder="Type a command... (/nitro-status, /nitro-burn, ...)"
+            role="combobox"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="showAutocomplete()"
+            aria-controls="command-console-autocomplete"
+            aria-label="Command input"
             [ngModel]="inputText()"
             (ngModelChange)="inputText.set($event); onInputChange()"
             (keydown)="onInputKeydown($event)"
