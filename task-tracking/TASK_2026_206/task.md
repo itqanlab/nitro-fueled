@@ -32,9 +32,10 @@ Update the auto-pilot Supervisor to route tasks through Prep → Implement → R
 
 ## Dependencies
 
-- TASK_2026_204 — needs new statuses in cortex
+- TASK_2026_207 — needs new statuses in cortex MCP
+- TASK_2026_208 — needs Worker Mode field and PREPPED/IMPLEMENTING in docs
 - TASK_2026_205 — needs Prep Worker prompt
-- TASK_2026_206 — needs Implement Worker prompt
+- TASK_2026_209 — needs Implement Worker prompt
 
 ## Acceptance Criteria
 

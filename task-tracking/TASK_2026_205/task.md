@@ -35,7 +35,8 @@ Define exit gate: plan.md exists, tasks.md has batches, prep-handoff.md has all 
 
 ## Dependencies
 
-- TASK_2026_204 — needs PREPPED status and prep handoff schema
+- TASK_2026_208 — needs PREPPED status and Worker Mode field in template/docs
+- TASK_2026_207 — needs prep handoff schema in cortex MCP
 
 ## Acceptance Criteria
 
