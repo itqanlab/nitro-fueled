@@ -18,7 +18,7 @@
 - task-tracking/TASK_2026_171/tasks.md (new, completed build batches)
 
 ## Commits
-- pending: feat(dashboard): add reports overview and exports for TASK_2026_171
+- ea6f5ee: feat(dashboard): add reports overview and exports for TASK_2026_171
 
 ## Decisions
 - Built a single reports overview endpoint so the Angular page can load all five reports with one request and one date-range filter.
