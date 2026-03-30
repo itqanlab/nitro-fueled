@@ -4,7 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { join } from 'node:path';
-import { initDatabase } from './db/schema.js';
+import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
 import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
@@ -482,14 +482,14 @@ server.registerTool('validate_task_sizing', {
     fileScope: z.array(z.string().max(1000)).max(20).optional().describe('Files in scope'),
     complexity: z.string().max(50).optional().describe('Task complexity (Simple, Medium, Complex)'),
   },
-}, (args) => handleValidateTaskSizing(args));
+}, (args) => handleValidateTaskSizing(projectRoot, args));
 
 server.registerTool('create_task', {
   description: 'Full lifecycle task creation: validates sizing, auto-generates next task ID, creates folder + task.md + status file, upserts into DB, and git commits.',
   inputSchema: {
     title: z.string().min(1).max(500).describe('Task title'),
     description: z.string().max(50000).describe('Task description'),
-    type: z.enum(['FEATURE', 'BUG', 'BUGFIX', 'REFACTOR', 'REFACTORING', 'DOCS', 'DOCUMENTATION', 'TEST', 'CHORE', 'DEVOPS', 'RESEARCH', 'CREATIVE']).describe('Task type'),
+    type: z.enum(CANONICAL_TASK_TYPES).describe('Task type'),
     priority: z.enum(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']).describe('Task priority'),
     complexity: z.enum(['Simple', 'Medium', 'Complex']).optional().describe('Task complexity'),
     model: z.string().max(100).optional().describe('Model to use'),
@@ -506,7 +506,7 @@ server.registerTool('bulk_create_tasks', {
     tasks: z.array(z.object({
       title: z.string().min(1).max(500),
       description: z.string().max(50000),
-      type: z.enum(['FEATURE', 'BUG', 'BUGFIX', 'REFACTOR', 'REFACTORING', 'DOCS', 'DOCUMENTATION', 'TEST', 'CHORE', 'DEVOPS', 'RESEARCH', 'CREATIVE']),
+      type: z.enum(CANONICAL_TASK_TYPES),
       priority: z.enum(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']),
       complexity: z.enum(['Simple', 'Medium', 'Complex']).optional(),
       model: z.string().max(100).optional(),

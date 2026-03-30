@@ -19,7 +19,18 @@ Scaffold a new task folder with a pre-filled `task.md` from the canonical templa
 
 Read `task-tracking/task-template.md` as the source of truth for task structure. This file defines all fields, valid values, and inline guidance. **Never hardcode template content — always read the file.**
 
-### Step 2: Determine Task ID
+### Step 2: Prefer MCP Task Creation Tools
+
+If the cortex MCP tools `create_task`, `bulk_create_tasks`, `validate_task_sizing`, and `get_next_task_id` are available in the current session, use them as the primary path.
+
+- Use `validate_task_sizing` for the pre-write sizing check
+- Use `get_next_task_id` only for previews or user-facing summaries
+- Use `create_task` for the single-task happy path
+- Use `bulk_create_tasks` when auto-splitting is required
+
+Only fall back to the manual file-creation steps below if those MCP tools are unavailable.
+
+### Step 2a: Determine Task ID (fallback)
 
 Run this command to find the highest existing task folder:
 
@@ -90,13 +101,15 @@ This analysis is **mandatory** — every task must have a Parallelism section.
 
 When a count is indeterminate (e.g., ambiguous description structure), skip that check — do not block based on uncertainty alone.
 
+When MCP tools are available, call `validate_task_sizing` first and treat its violations as the authoritative sizing result.
+
 **If any check fails — auto-split:**
 
 Do NOT ask the user whether to split. Do NOT create the oversized task. Instead, **automatically split** the work into properly-sized tasks:
 
 1. Analyze the task and determine the natural split boundaries (by functional area, by type, by layer, etc.)
 2. Log: `[AUTO-SPLIT] — Task too large for a single worker. Splitting into N tasks.`
-3. Create N separate task folders and task.md files, each within sizing limits
+3. If MCP tools are available, call `bulk_create_tasks` to create the split tasks in one operation. Otherwise create N separate task folders and task.md files manually, each within sizing limits
 4. Each split task gets:
    - Its own sequential Task ID (TASK_YYYY_NNN, NNN+1, NNN+2, ...)
    - Dependencies on prior split tasks where order matters
@@ -110,6 +123,8 @@ Do NOT ask the user whether to split. Do NOT create the oversized task. Instead,
 
 ### Step 4: Create Task Folder and File
 
+If MCP tools are available, call `create_task` with the gathered task fields and stop here unless the tool is unavailable or returns an infrastructure error that requires the fallback path.
+
 1. Create directory: `task-tracking/TASK_YYYY_NNN/`
 2. Generate `task.md` by populating the template structure with the user's answers
 3. Strip HTML guidance comments from the output (they're for template reference, not individual tasks)
@@ -119,7 +134,7 @@ Do NOT ask the user whether to split. Do NOT create the oversized task. Instead,
 
 Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no trailing newline, no extra whitespace).
 
-> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/nitro-project-status`. The Task ID for the new task is still determined by scanning `registry.md` for the highest existing NNN in Step 2 — that read remains valid.
+> The registry is no longer appended to during task creation. It is regenerated on demand by `nitro-fueled status` and `/nitro-project-status`. The Task ID for the new task is determined by the Step 2 folder scan or the MCP `create_task`/`bulk_create_tasks` tools, not by reading `registry.md`.
 >
 > **Canonical registry row format** (for reference when regenerating): `Task ID | Status | Type | Description | Priority | Dependencies | Created | Model`
 > - Priority: the task's Priority field value (e.g., `P1-High`)
@@ -203,7 +218,7 @@ Task created successfully.
 ## Important Rules
 
 1. **ALWAYS read `task-template.md` first** — never hardcode template structure
-2. **ALWAYS scan task folders to determine the next ID** — never read registry.md for this, it may be stale
+2. **ALWAYS use MCP task-creation tools when available**; otherwise scan task folders to determine the next ID — never read registry.md for this, it may be stale
 3. **Write status file immediately after creating the task folder**: `task-tracking/TASK_YYYY_NNN/status` containing `CREATED` (no trailing newline)
 4. **Enum values MUST match the template exactly** — extract Type, Priority, and Complexity values from `task-template.md`, never hardcode them
 5. **Pre-flight check** — before proceeding, verify that `task-tracking/` directory, `task-tracking/registry.md`, and `task-tracking/task-template.md` all exist. If any are missing, tell the user to run `/nitro-initialize-workspace` first

@@ -3,7 +3,28 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED';
-export type TaskType = 'FEATURE' | 'BUG' | 'BUGFIX' | 'REFACTOR' | 'REFACTORING' | 'DOCS' | 'DOCUMENTATION' | 'TEST' | 'CHORE' | 'DEVOPS' | 'RESEARCH' | 'CREATIVE';
+export const CANONICAL_TASK_TYPES = [
+  'FEATURE',
+  'BUGFIX',
+  'REFACTORING',
+  'DOCUMENTATION',
+  'RESEARCH',
+  'DEVOPS',
+  'OPS',
+  'CREATIVE',
+  'CONTENT',
+  'SOCIAL',
+  'DESIGN',
+] as const;
+const DB_TASK_TYPES = [
+  ...CANONICAL_TASK_TYPES,
+  'BUG',
+  'REFACTOR',
+  'DOCS',
+  'TEST',
+  'CHORE',
+] as const;
+export type TaskType = typeof DB_TASK_TYPES[number];
 export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
 export type WorkerType = 'build' | 'review';
 export type WorkerStatus = 'active' | 'completed' | 'failed' | 'killed';
@@ -40,11 +61,15 @@ export interface WorkerProgress {
   elapsed_minutes: number;
 }
 
+function sqlEnum(values: readonly string[]): string {
+  return values.map(value => `'${value}'`).join(',');
+}
+
 const TASKS_TABLE = `
 CREATE TABLE IF NOT EXISTS tasks (
   id               TEXT PRIMARY KEY,
   title            TEXT NOT NULL,
-  type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','BUGFIX','REFACTOR','REFACTORING','DOCS','DOCUMENTATION','TEST','CHORE','DEVOPS','RESEARCH','CREATIVE')),
+  type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
   priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
   status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
   complexity       TEXT,
@@ -240,7 +265,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
   if (!tableInfo) return; // Table doesn't exist yet, CREATE TABLE will handle it
 
   const needsStatusMigration = !tableInfo.sql.includes("'FIXING'");
-  const needsTypeMigration = !tableInfo.sql.includes("'BUGFIX'");
+  const needsTypeMigration = !tableInfo.sql.includes("'OPS'") || !tableInfo.sql.includes("'DESIGN'");
   if (!needsStatusMigration && !needsTypeMigration) return; // Already up to date
 
   // Disable foreign keys during table recreation to avoid FK constraint failures
@@ -254,7 +279,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
       CREATE TABLE tasks_new (
         id               TEXT PRIMARY KEY,
         title            TEXT NOT NULL,
-        type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','BUGFIX','REFACTOR','REFACTORING','DOCS','DOCUMENTATION','TEST','CHORE','DEVOPS','RESEARCH','CREATIVE')),
+        type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
         priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
         status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
         complexity       TEXT,
