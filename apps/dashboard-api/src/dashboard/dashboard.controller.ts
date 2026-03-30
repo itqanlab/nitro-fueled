@@ -246,7 +246,7 @@ export class DashboardController {
     @Query('ttl') ttl?: string,
   ): { closed_sessions: number } {
     const ttlMinutes = ttl !== undefined ? Number(ttl) : 30;
-    const safeTtl = Number.isFinite(ttlMinutes) && ttlMinutes > 0 ? Math.min(ttlMinutes, 1440) : 30;
+    const safeTtl = Number.isFinite(ttlMinutes) && ttlMinutes >= 1 ? Math.min(ttlMinutes, 1440) : 30;
     const result = this.cortexService.closeStaleSession(safeTtl);
     if (result === null) {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });

@@ -223,14 +223,17 @@ export class CortexService {
       ).all(cutoffTime) as Array<{ id: string }>;
       let closedCount = 0;
       if (staleSessions.length > 0) {
-        const now = new Date().toISOString();
-        const updateStmt = db.prepare(
-          `UPDATE sessions SET loop_status = 'stopped', ended_at = ?, summary = ?, updated_at = ? WHERE id = ?`,
-        );
-        for (const session of staleSessions) {
-          updateStmt.run(now, 'stale: no heartbeat', now, session.id);
-          closedCount++;
-        }
+        const updateMultiple = db.transaction(() => {
+          const now = new Date().toISOString();
+          const updateStmt = db!.prepare(
+            `UPDATE sessions SET loop_status = 'stopped', ended_at = ?, summary = ?, updated_at = ? WHERE id = ?`,
+          );
+          for (const session of staleSessions) {
+            updateStmt.run(now, 'stale: no heartbeat', now, session.id);
+          }
+          return staleSessions.length;
+        });
+        closedCount = updateMultiple() as number;
       }
       return { closed_sessions: closedCount };
     } catch (err) {

@@ -10,6 +10,7 @@ import type {
   SessionPhase,
   SessionStatus,
 } from '../../../models/sessions-panel.model';
+import type { CortexSession } from '../../../models/api.types';
 
 const MAX_ACTIVITY_LENGTH = 40;
 
@@ -31,6 +32,7 @@ export class SessionsPanelComponent {
   public readonly recentSessions = signal<ActiveSessionSummary[]>([]);
   public readonly loading = signal(true);
   public readonly now = signal(Date.now());
+  private readonly cortexSessions = signal<CortexSession[]>([]);
 
   public readonly statusClassMap: Record<SessionStatus, string> = {
     running: 'status-running',
@@ -70,19 +72,26 @@ export class SessionsPanelComponent {
   public readonly heartbeatStatusMap = computed(() => {
     const nowMs = this.now();
     const map = new Map<string, { label: string; cssClass: string }>();
+    // Build a lookup map: cortex session id → last_heartbeat
+    const cortexHbMap = new Map<string, string | null>(
+      this.cortexSessions().map(s => [s.id, s.last_heartbeat]),
+    );
     const allSessions = [...this.sessions(), ...this.recentSessions()];
     for (const session of allSessions) {
       if (session.status !== 'running') continue;
-      const hb = session.lastHeartbeat;
+      const hb = session.lastHeartbeat ?? cortexHbMap.get(session.sessionId) ?? null;
       if (!hb) {
         map.set(session.sessionId, { label: 'No heartbeat', cssClass: 'heartbeat-stale' });
         continue;
       }
-      const ageMs = nowMs - new Date(hb).getTime();
+      const hbMs = new Date(hb).getTime();
+      if (Number.isNaN(hbMs)) {
+        map.set(session.sessionId, { label: 'No heartbeat', cssClass: 'heartbeat-stale' });
+        continue;
+      }
+      const ageMs = nowMs - hbMs;
       const ageMinutes = Math.floor(ageMs / 60_000);
-      if (ageMs < 0) {
-        map.set(session.sessionId, { label: 'just now', cssClass: '' });
-      } else if (ageMinutes < 1) {
+      if (ageMinutes < 1) {
         map.set(session.sessionId, { label: 'just now', cssClass: '' });
       } else if (ageMinutes < 2) {
         map.set(session.sessionId, { label: `${ageMinutes}m ago`, cssClass: '' });
@@ -95,7 +104,7 @@ export class SessionsPanelComponent {
     return map;
   });
 
-  public truncatedActivities = computed(() => {
+  public readonly truncatedActivities = computed(() => {
     const active = this.sessions();
     const recent = this.recentSessions();
     const all = [...active, ...recent];
@@ -129,6 +138,13 @@ export class SessionsPanelComponent {
         this.loadMockData();
         this.loading.set(false);
       },
+    });
+
+    this.apiService.getCortexSessions().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (sessions) => this.cortexSessions.set(sessions),
+      error: () => { /* best-effort — silently ignore */ },
     });
   }
 

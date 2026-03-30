@@ -408,71 +408,71 @@ export interface OrchestrationFlow {
 // ── Cortex types ─────────────────────────────────────────────────────────────
 
 export interface CortexTask {
-  id: string;
-  title: string;
-  type: string;
-  priority: string;
-  status: string;
-  complexity: string;
-  dependencies: string[];
-  created_at: string;
-  updated_at: string;
+  readonly id: string;
+  readonly title: string;
+  readonly type: string;
+  readonly priority: string;
+  readonly status: string;
+  readonly complexity: string;
+  readonly dependencies: string[];
+  readonly created_at: string;
+  readonly updated_at: string;
 }
 
 export interface CortexTaskContext extends CortexTask {
-  description: string;
-  acceptance_criteria: string;
-  file_scope: string[];
+  readonly description: string;
+  readonly acceptance_criteria: string;
+  readonly file_scope: string[];
 }
 
 export interface CortexSession {
-  id: string;
-  source: string;
-  started_at: string;
-  ended_at: string | null;
-  loop_status: string;
-  tasks_terminal: number;
-  supervisor_model: string;
-  supervisor_launcher: string;
-  mode: string;
-  total_cost: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
-  last_heartbeat: string | null;
+  readonly id: string;
+  readonly source: string;
+  readonly started_at: string;
+  readonly ended_at: string | null;
+  readonly loop_status: string;
+  readonly tasks_terminal: number;
+  readonly supervisor_model: string;
+  readonly supervisor_launcher: string;
+  readonly mode: string;
+  readonly total_cost: number;
+  readonly total_input_tokens: number;
+  readonly total_output_tokens: number;
+  readonly last_heartbeat: string | null;
 }
 
 export interface CortexSessionWorker {
-  id: string;
-  task_id: string;
-  worker_type: string;
-  label: string;
-  status: string;
-  model: string;
-  cost: number;
-  input_tokens: number;
-  output_tokens: number;
+  readonly id: string;
+  readonly task_id: string;
+  readonly worker_type: string;
+  readonly label: string;
+  readonly status: string;
+  readonly model: string;
+  readonly cost: number;
+  readonly input_tokens: number;
+  readonly output_tokens: number;
 }
 
 export interface CortexSessionSummary extends CortexSession {
-  workers: CortexSessionWorker[];
+  readonly workers: CortexSessionWorker[];
 }
 
 export interface CortexWorker {
-  id: string;
-  session_id: string;
-  task_id: string;
-  worker_type: string;
-  label: string;
-  status: string;
-  model: string;
-  provider: string;
-  launcher: string;
-  spawn_time: string;
-  outcome: string | null;
-  retry_number: number;
-  cost: number;
-  input_tokens: number;
-  output_tokens: number;
+  readonly id: string;
+  readonly session_id: string;
+  readonly task_id: string;
+  readonly worker_type: string;
+  readonly label: string;
+  readonly status: string;
+  readonly model: string;
+  readonly provider: string;
+  readonly launcher: string;
+  readonly spawn_time: string;
+  readonly outcome: string | null;
+  readonly retry_number: number;
+  readonly cost: number;
+  readonly input_tokens: number;
+  readonly output_tokens: number;
 }
 
 export interface CortexPhase {

@@ -18,6 +18,7 @@ The supervisor startup follows this exact order:
 1. **MCP validation** (see ## MCP Requirement in SKILL.md) — HARD FAIL if MCP unavailable
 2. **Concurrent Session Guard** (see below) — warns/aborts if another supervisor is running
 3. **Stale Session Archive Check** (see below) — stage artifacts from ended sessions, never auto-commit
+3a. **Flush zombie sessions** — call `close_stale_sessions({ ttl_minutes: 5 })` before creating the new session. This marks any previously crashed supervisor sessions (no heartbeat for 5+ minutes) as `stopped` so the dashboard does not show ghost "running" sessions. Best-effort: if the call fails or the tool is unavailable, log a warning and continue.
 4. **Create session in nitro-cortex DB** — call `create_session(source='auto-pilot', task_count=N, config=JSON)` and treat the returned `session_id` as canonical for the rest of the run
 5. **Session Directory creation** — create `task-tracking/sessions/{session_id}/`, create log.md, register in active-sessions.md
 6. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
@@ -166,6 +167,7 @@ After the Session Directory is created (Step 4 of Startup Sequence), append one 
 | Staged stale history | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — staged stale orchestrator-history.md for later user commit \|` |
 | No stale artifacts | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — no stale session artifacts found \|` |
 | Git error (non-fatal) | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE WARNING — git error: {reason[:200]} \|` |
+| Zombie flush | `\| {HH:MM:SS} \| auto-pilot \| ZOMBIE FLUSH — {N} stale sessions closed \|` |
 
 ---
 
