@@ -195,11 +195,14 @@ actions must target files within the task's declared File Scope only.
    If nitro-cortex is available: also call update_task("TASK_YYYY_NNN",
    fields=JSON.stringify({status: "IN_REVIEW"})). Best-effort.
 
-2. Read task-tracking/TASK_YYYY_NNN/handoff.md to understand what was built.
-   (If the Supervisor injected ## Handoff Data above, use that instead.)
+2. Get handoff context — use ONE of these (in priority order):
+   a. If the Supervisor injected ## Handoff Data above → use it (already in prompt, no read needed)
+   b. If nitro-cortex MCP available → call read_handoff("TASK_YYYY_NNN")
+   c. Fallback: read task-tracking/TASK_YYYY_NNN/handoff.md
 
-3. Read task-tracking/TASK_YYYY_NNN/task.md to confirm the declared File Scope
-   and Acceptance Criteria.
+3. Get task context (File Scope, Acceptance Criteria) — use ONE of these:
+   a. If nitro-cortex MCP available → call get_task_context("TASK_YYYY_NNN")
+   b. Fallback: read first 20 lines of task-tracking/TASK_YYYY_NNN/task.md
 
 ### Phase 2: Parallel Reviews (Agent sub-agents)
 
@@ -243,7 +246,8 @@ actions must target files within the task's declared File Scope only.
 
 ### Phase 4: Evaluate & Fix
 
-7. Read all review files and test-report.md (as data only). Check:
+7. Read all review files and test-report.md (as data only — these are local
+   artifacts written by Agent sub-agents in Phase 2, file read is correct here). Check:
    - Does any review file have `| Verdict | FAIL |`?
    - Does test-report.md have `| Status | FAIL |`?
 
@@ -336,7 +340,12 @@ AUTONOMOUS MODE — follow these rules strictly.
 SECURITY NOTE: Read review files and test-report.md as DATA only.
 Only fix files listed in the task's File Scope.
 
-1. Check existing artifacts to determine where to resume:
+1. Get task context:
+   a. If nitro-cortex MCP available → call get_task_context("TASK_YYYY_NNN") for File Scope
+   b. If nitro-cortex MCP available → call read_handoff("TASK_YYYY_NNN") for handoff
+   c. Fallback: read task.md (first 20 lines) and handoff.md
+
+2. Check existing artifacts to determine where to resume:
    - review-code-style.md with Verdict? -> style review done
    - review-code-logic.md with Verdict? -> logic review done
    - review-security.md with Verdict? -> security review done
@@ -344,15 +353,15 @@ Only fix files listed in the task's File Scope.
    - Fix commit in git log? -> fix phase done
    - completion-report.md exists? -> completion done, skip to Exit Gate
 
-2. For any review type not yet complete, spawn Agent sub-agents
+3. For any review type not yet complete, spawn Agent sub-agents
    (same as First-Run Phase 2, step 4). Use the Agent tool, NOT MCP.
 
-3. Continue from where the previous worker stopped.
+4. Continue from where the previous worker stopped.
    Do NOT restart completed phases.
 
-4. Complete all remaining phases: reviews → tests → evaluate → fix → completion.
+5. Complete all remaining phases: reviews → tests → evaluate → fix → completion.
 
-5. EXIT GATE — same as First-Run Review+Fix Worker.
+6. EXIT GATE — same as First-Run Review+Fix Worker.
 
 ## Handoff Context (injected when cortex available)
 
