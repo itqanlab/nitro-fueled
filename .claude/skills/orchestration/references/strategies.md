@@ -194,7 +194,11 @@ Phase 1: nitro-project-manager --> Creates task-description.md
 Phase 2: nitro-researcher-expert --> Creates research-report.md
          |
          v
-Phase 3: [IF implementation needed] --> Switch to FEATURE strategy
+Phase 3: nitro-project-manager --> Creates research-summary.md
+         (synthesizes findings, key takeaways, recommendations)
+         |
+         v
+Phase 4: [IF implementation needed] --> Switch to FEATURE strategy
          [IF research only] --> Complete
 ```
 
@@ -217,7 +221,11 @@ Phase 3: nitro-software-architect --> Reviews findings, adds architectural recom
          (appends recommendation section to research-report.md)
          |
          v
-Phase 4: [IF implementation needed] --> Switch to FEATURE strategy
+Phase 4: nitro-project-manager --> Creates research-summary.md
+         (synthesizes architect recommendation, provides decision)
+         |
+         v
+Phase 5: [IF implementation needed] --> Switch to FEATURE strategy
          [IF evaluation only] --> Complete
 ```
 

@@ -38,7 +38,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Implement X      | nitro-project-manager -> architect -> nitro-team-leader -> dev | New features                |
 | Fix bug          | nitro-team-leader -> dev -> test -> review               | Bug reports                 |
 | Orchestration    | architect -> nitro-team-leader -> nitro-systems-developer      | Agents, skills, commands    |
-| Research X       | nitro-researcher-expert -> architect                     | Technical questions         |
+| Research (FEATURE) | nitro-researcher-expert (-> architect if eval needed)  | Technical unknowns in FEATURE Phase 2 |
 | Market Research  | nitro-project-manager -> nitro-researcher-expert -> PM (close) | Market/competitor analysis |
 | Tech Eval        | nitro-project-manager -> nitro-researcher-expert -> nitro-software-architect -> PM (close) | Technology evaluation, feasibility |
 | Review style     | nitro-code-style-reviewer                                | Pattern checks              |
@@ -69,6 +69,9 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 **Triggers**:
 
 - Starting new features (FEATURE strategy Phase 1)
+- RESEARCH strategy Phase 1 (scope definition — all sub-flows)
+- RESEARCH strategy Phase 3/4 (PM close — synthesis report for Market/Competitive)
+- RESEARCH strategy Phase 4/5 (PM close — synthesis report for Tech Eval/Feasibility)
 - Documentation tasks (DOCUMENTATION strategy Phase 1)
 - DevOps tasks (DEVOPS strategy Phase 1)
 - OPS tasks (OPS strategy Phase 1)
@@ -85,6 +88,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 **Outputs**:
 
 - `task-tracking/TASK_[ID]/task-description.md`
+- `task-tracking/TASK_[ID]/research-summary.md` (RESEARCH strategy close — PM synthesizes findings and recommendations)
 
 **Dependencies**: None (first agent in most workflows)
 
@@ -130,6 +134,7 @@ See nitro-project-manager.md for detailed instructions.`,
 **Outputs**:
 
 - `task-tracking/TASK_[ID]/plan.md`
+- Appended recommendation section in `task-tracking/TASK_[ID]/research-report.md` (RESEARCH strategy only — no plan.md created)
 
 **Dependencies**: nitro-project-manager (for FEATURE), nitro-researcher-expert (optional)
 

@@ -29,7 +29,7 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 | BUGFIX        | [Research] -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker]             |
 | REFACTORING   | Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker] |
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
-| RESEARCH      | PM -> Researcher -> [Architect] -> [conditional FEATURE]   |
+| RESEARCH      | PM -> Researcher -> [Architect] -> PM (close) -> [conditional FEATURE] |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
 | OPS           | PM -> DevOps Engineer -> QA                        |
 | CREATIVE      | [nitro-ui-ux-designer] -> nitro-technical-content-writer -> nitro-frontend-developer |
