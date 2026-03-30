@@ -229,7 +229,7 @@ export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
     title: '',
     type: 'settings',
     items: [
-      { label: 'Settings', icon: '\u2699', route: '/dashboard' },
+      { label: 'Settings', icon: '\u2699', route: '/settings' },
     ],
   },
 ];

@@ -1,0 +1,115 @@
+<div class="settings-shell">
+  <div class="settings-header">
+    <h1 class="settings-title">Settings</h1>
+    <p class="settings-subtitle">Manage API keys, launchers, subscriptions, and model mappings</p>
+  </div>
+
+  <nav class="settings-tabs">
+    @for (tab of tabs; track tab.id) {
+      <button
+        class="settings-tab"
+        [ngClass]="{ 'active': activeTab() === tab.id }"
+        (click)="selectTab(tab.id)">
+        <span class="tab-icon">{{ tab.icon }}</span>
+        <span class="tab-label">{{ tab.label }}</span>
+      </button>
+    }
+  </nav>
+
+  <div class="settings-content">
+    @switch (activeTab()) {
+      @case ('api-keys') {
+        <div class="settings-tab-panel">
+          <h2 class="panel-title">API Keys</h2>
+          <p class="panel-description">Manage your provider API keys. Keys are masked for security.</p>
+          <div class="entries-list">
+            @for (key of apiKeys; track trackById($index, key)) {
+              <div class="entry-row">
+                <div class="entry-info">
+                  <span class="entry-provider">{{ key.provider }}</span>
+                  <span class="entry-key">{{ key.key }}</span>
+                  <span class="entry-status status-{{ key.status }}">{{ key.status }}</span>
+                </div>
+                <div class="entry-models">
+                  @if (key.detectedModels.length > 0) {
+                    <span class="models-count">{{ key.detectedModels.length }} models detected</span>
+                  }
+                </div>
+                <div class="entry-toggle">
+                  <span class="toggle-label">{{ key.isActive ? 'Active' : 'Inactive' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      @case ('launchers') {
+        <div class="settings-tab-panel">
+          <h2 class="panel-title">Launchers</h2>
+          <p class="panel-description">Configure AI coding tool launchers and their paths.</p>
+          <div class="entries-list">
+            @for (launcher of launchers; track trackById($index, launcher)) {
+              <div class="entry-row">
+                <div class="entry-info">
+                  <span class="entry-name">{{ launcher.name }}</span>
+                  <span class="entry-type">{{ launcher.type }}</span>
+                  <span class="entry-path">{{ launcher.path }}</span>
+                  <span class="entry-status status-{{ launcher.status }}">{{ launcher.status }}</span>
+                </div>
+                <div class="entry-toggle">
+                  <span class="toggle-label">{{ launcher.isActive ? 'Active' : 'Inactive' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      @case ('subscriptions') {
+        <div class="settings-tab-panel">
+          <h2 class="panel-title">Subscriptions</h2>
+          <p class="panel-description">View and manage provider subscription connections.</p>
+          <div class="entries-list">
+            @for (sub of subscriptions; track trackById($index, sub)) {
+              <div class="entry-row">
+                <div class="entry-info">
+                  <span class="entry-provider">{{ sub.provider }}</span>
+                  <span class="entry-status status-{{ sub.connectionStatus }}">{{ sub.connectionStatus }}</span>
+                </div>
+                <div class="entry-models">
+                  @if (sub.availableModels.length > 0) {
+                    <span class="models-count">{{ sub.availableModels.length }} models available</span>
+                  }
+                </div>
+                <div class="entry-toggle">
+                  <span class="toggle-label">{{ sub.isActive ? 'Active' : 'Inactive' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      @case ('mapping') {
+        <div class="settings-tab-panel">
+          <h2 class="panel-title">Model Mapping</h2>
+          <p class="panel-description">Map models to launchers and set defaults for each launcher.</p>
+          <div class="entries-list">
+            @for (mapping of mappings; track trackById($index, mapping)) {
+              <div class="entry-row">
+                <div class="entry-info">
+                  <span class="entry-model">{{ mapping.modelId }}</span>
+                  <span class="entry-arrow">→</span>
+                  <span class="entry-launcher">{{ mapping.launcherId }}</span>
+                </div>
+                <div class="entry-toggle">
+                  @if (mapping.isDefault) {
+                    <span class="default-badge">Default</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

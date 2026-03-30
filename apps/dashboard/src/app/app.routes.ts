@@ -66,6 +66,13 @@ export const APP_ROUTES: Routes = [
             (m) => m.TaskTraceComponent,
           ),
       },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./views/settings/settings.component').then(
+            (m) => m.SettingsComponent,
+          ),
+      },
     ],
   },
 ];
