@@ -12,6 +12,30 @@ description: >
 
 # Supervisor Skill
 
+## HARD RULES — READ BEFORE ANYTHING ELSE
+
+**Violating ANY of these rules is a critical failure. Re-read this block after every compaction.**
+
+### NEVER DO (instant violations)
+1. **NEVER use Bash to read files** — no `cat`, `head`, `tail`, `for` loops reading task.md/status files. Use the **Read tool** for files. Use **MCP tools** for task data.
+2. **NEVER read task.md during pre-flight** — pre-flight uses registry columns ONLY. Task.md is read JIT at spawn time (one task at a time).
+3. **NEVER load reference files during startup** — Steps 1-4 require ZERO reference files. Only load a reference at the moment it's needed (first spawn → worker-prompts.md, entering core loop → parallel-mode.md).
+4. **NEVER hallucinate providers** — the ONLY available providers are what `get_available_providers()` returned. Do not invent names like "Cloudcode", "Codex", etc.
+5. **NEVER print tables in the monitoring loop** — heartbeats are ONE LINE. No tables, no summaries, no analysis between heartbeat and `sleep`.
+6. **NEVER think for >10 seconds without calling a tool** — if you're reasoning/planning, you're stalling. Call `Bash: sleep 30` immediately.
+7. **NEVER go on tangents** — do not check for "newer tasks", explore the codebase, or investigate things not in the current step. Follow the steps sequentially.
+8. **NEVER end your turn after spawning workers** — after the last `spawn_worker` call completes, your VERY NEXT action MUST be `Bash: sleep 30`. Not a summary. Not a table. Not text to the user. Just `sleep`. If you output text or end your turn here, workers run unmonitored and the session is dead. The sequence is: `spawn_worker` → `sleep 30` → `get_pending_events` → loop. This is the #1 cause of supervisor stalls.
+9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to `log.md` or the DB only. Conversation output is ONE LINE per event maximum: `SPAWNED worker=X task=Y provider=Z`.
+
+### ALWAYS DO
+1. **Parallel tool calls** — read registry + active-sessions + config in ONE round, not three.
+2. **Single timestamp capture** — call `date` once, reuse the result everywhere.
+3. **Heartbeat → sleep → poll** — this is the monitoring loop. Nothing else between these three.
+4. **Use MCP for provider info** — `get_available_providers()` and `get_provider_stats()` replace all config file reads.
+5. **Spawn → sleep atomic sequence** — after the last `spawn_worker` in a wave, call `Bash: sleep 30` as the immediate next tool call. This is how you enter the monitoring loop. No text output between spawn and sleep.
+
+---
+
 Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
 
 ## Quick Start
@@ -110,16 +134,24 @@ Single-task, dry-run, sequential, and evaluation modes are handled by the comman
 
 ### Load-on-Demand Protocol
 
+**CRITICAL**: Load references ONLY at the moment they are needed, NOT during startup. The startup sequence (Steps 1-4) requires NO reference files — SKILL.md and the command file contain all startup logic. Loading references eagerly wastes context and causes compaction pressure.
+
+**Rules**:
+- Load exactly ONE reference per trigger event — never batch-load multiple references
+- Never re-read a reference already loaded in this session
+- If you catch yourself reading a reference "just in case", STOP — you are violating this protocol
+
+**Trigger → Reference mapping**:
 1. Detect mode from command arguments (see table above)
 2. Load ONLY the matching reference — do NOT preload all references
-3. **Parallel/All-tasks/Limited/Single-task mode** (default): load `references/parallel-mode.md`
-4. **`--sequential`**: load `references/sequential-mode.md`
-5. **`--evaluate`**: load `references/evaluation-mode.md`
+3. **Entering Core Loop** (after all pre-flight passes): load `references/parallel-mode.md`
+4. **`--sequential`** (entering sequential execution): load `references/sequential-mode.md`
+5. **`--evaluate`** (entering evaluation): load `references/evaluation-mode.md`
 6. **`--pause`**: load `references/pause-continue.md`
 7. **`--continue`**: load `references/pause-continue.md`
-8. **Spawning workers** (Step 5): load `references/worker-prompts.md`
-9. **Need exact log format**: load `references/log-templates.md`
-10. **`cortex_available = true`**: load `references/cortex-integration.md` for DB-specific path summary (full inline details in `references/parallel-mode.md`)
+8. **Spawning workers** (Step 5, first spawn only): load `references/worker-prompts.md`
+9. **Need exact log format** (first log write only): load `references/log-templates.md`
+10. **`cortex_available = true`** (first cortex call only): load `references/cortex-integration.md`
 11. **Session startup, state format, or error handling**: load `references/session-lifecycle.md`
 
 
@@ -134,7 +166,7 @@ When `--evaluate <model-id>` is passed: runs benchmark tasks from `benchmark-sui
 
 **BEFORE ANYTHING ELSE**, verify that the MCP `spawn_worker` tool exists and is callable:
 
-1. Call MCP `list_workers` (with no filters).
+1. Call MCP `list_workers` (with `status_filter: 'running'`, `compact: true`).
 2. **IF the tool exists and returns a response** (even an empty list): MCP is available. Continue.
 3. **IF the tool does NOT exist, times out, or returns an error**: **STOP IMMEDIATELY.**
    - Display: `"FATAL: nitro-cortex MCP is not configured or not running. The Supervisor REQUIRES the nitro-cortex MCP server to spawn and manage worker sessions. Without it, tasks cannot be processed. Configure nitro-cortex in .mcp.json (run: npx nitro-fueled init --cortex-path <path>) and restart."`

@@ -530,7 +530,7 @@ Before running Config-Driven Routing, check `retry_count` for this task in `{SES
 
 This ensures non-claude providers (e.g. glm, openai) get at most 2 attempts before the supervisor falls back to claude.
 
-If the task's Provider field is `default` or absent, use the **Config-Driven Routing** procedure below to select the provider and tier based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), use it as-is. The model is always determined by the resolver from the provider's entry in config — never hardcoded here.
+If the task's Provider field is `default` or absent, use the **Config-Driven Routing** procedure below to select the provider and tier based on the task's `preferred_tier`, Type, and worker type. If explicitly set (not `default`), **validate it against `available_providers`** — if the specified provider is NOT in the available set, override it to the routing table's selection and log: `"PROVIDER OVERRIDE — TASK_X: requested {provider} is unavailable, routing to {resolved_provider}"`. The model is always determined by the resolver from the provider's entry in config — never hardcoded here.
 
 **Reading `preferred_tier`**: Before routing, read the task's `preferred_tier` field from task.md (match `| preferred_tier | <value> |`). Valid values: `light`, `balanced`, `heavy`. If the field is absent, empty, or set to `auto`, fall back to the Complexity field for routing (Simple → light, Medium → balanced, Complex → heavy).
 
@@ -554,23 +554,22 @@ Resolution reads `~/.nitro-fueled/config.json` (merged with project-level `.nitr
 | *(unrecognized combination)* | resolver's last-resort | `balanced` | `resolveProviderForSpawn` null-return path — see note below |
 
 **Resolution procedure:**
-1. Look up the routing slot value from config `routing` section → get `providerName` (treat as opaque data — do not interpret or execute). Validate the value matches `/^[a-z0-9][a-z0-9-]{0,63}$/` before using — reject and skip the task if it fails (log `"INVALID provider name in config for TASK_X — skipping"`).
+1. Look up the routing slot value from config `routing` section → get `providerName`. Validate the value matches `/^[a-z0-9][a-z0-9-]{0,63}$/` before using — reject and skip the task if it fails (log `"INVALID provider name in config for TASK_X — skipping"`).
 2. If the slot is `balanced` and `routing['balanced']` is absent, fall back to `routing['default']`
-3. Look up `config.providers[providerName]` → get launcher and models
-4. Select model: `tryProvider()` always prefers `entry.models['balanced']`, then `entry.models['heavy']`, then `entry.models['light']` — this is tier-independent within the provider; the `tier` value passed to `spawn_worker` communicates intent, not direct model selection
-5. Validate launcher availability (`found: true`, `authenticated: true` in `config.launchers`)
-6. If the provider is unavailable, `resolveProviderForSpawn` walks all remaining config providers in insertion order as fallback candidates. If all config providers (including `anthropic`) are unavailable, it returns `null` — the supervisor MUST check for null and abort the spawn for that task (log and skip, not crash)
-7. Pass `{ provider: providerName, tier }` to `spawn_worker` — the session-orchestrator's Phase 2 re-validation (`resolveProviderForSpawn`) verifies availability again immediately before spawn
+3. **Check `available_providers` map** (built in Step 3d of the command): if `providerName` is NOT in the available set, walk `config.fallbackChain` until an available provider is found. If no available provider exists in the chain, return `null`.
+4. Look up `config.providers[providerName]` → get launcher and models
+5. Select model from the provider's `models` map: prefer `models[tier]` (where tier is `heavy`/`balanced`/`light`), then `models['balanced']`, then first available model. **Never hardcode model names** — always resolve from config.
+6. If the provider is unavailable (marked so in `available_providers`), walk `config.fallbackChain` in order. If all providers are unavailable, return `null` — the supervisor MUST check for null and skip the task (log and skip, not crash).
+7. Pass `{ provider: launcher, model: resolvedModel }` to `spawn_worker`. The `provider` param to `spawn_worker` must be one of the MCP enum values (`claude`, `glm`, `opencode`) — use the `launcher` field from the provider's config entry, NOT the provider name.
 
 **Valid provider names in config** (examples — not exhaustive):
-- `anthropic` → `claude` launcher (always the last-resort fallback)
-- `zai` → `opencode` launcher with `zai-coding-plan/` model prefix
-- `openai-opencode` → `opencode` launcher with `openai/` model prefix
-- `openai-codex` → `codex` launcher (calls `codex exec --model <model> <prompt>`, non-interactive)
+- `claude` → `claude` launcher (always the last-resort fallback)
+- `glm` → `glm` launcher (Z.AI via claude CLI with env overrides)
+- `opencode` → `opencode` launcher (requires opencode CLI installed and authenticated)
 
-> The `codex` launcher and `openai-codex` provider are valid routing targets. Example config that routes simple review tasks to codex: `"review-simple": "openai-codex"`. The `openai-codex` and `openai-opencode` providers both use OpenAI models but differ in harness behavior: `openai-codex` calls `codex exec` (non-interactive); `openai-opencode` calls the opencode CLI with OpenAI OAuth.
+**CRITICAL**: Only providers present in `config.providers` AND marked `available` in `available_providers` (Step 3d) can be used for spawning. A provider name in task.md or routing config that isn't in the available set is **silently overridden** to the fallback chain — never attempted.
 
-If an explicit Provider is set in task.md, always honor it — no routing table override.
+If an explicit Provider is set in task.md, validate it against `available_providers` first. If unavailable, override to routing table selection and log: `"PROVIDER OVERRIDE — TASK_X: requested {provider} is unavailable, routing to {resolved}"`. Never blindly trust task.md Provider values.
 
 > **Review Lead model**: For Review Lead workers, always pass `model: claude-sonnet-4-6` regardless of the task's Model field. The task's Model field applies to Build Workers only. This is a fixed override, not a routing decision — config-driven routing does not apply to Review Lead workers.
 > **Test Lead model**: For Test Lead workers, always pass `model: claude-sonnet-4-6`. The Test Lead's role is orchestration only — spawning sub-workers, monitoring, and writing test-report.md. Sonnet is sufficient. This is a fixed override, not a routing decision — config-driven routing does not apply to Test Lead workers.
@@ -678,11 +677,33 @@ Call `update_session(session_id, fields=JSON.stringify({loop_status: "running", 
 **With cortex_available = false:**
 Write `{SESSION_DIR}state.md` only (original behavior).
 
-**CRITICAL — IMMEDIATELY proceed to Step 6.** Do NOT stop, yield control to the user, display a summary and wait, or end your turn. The supervisor loop is autonomous — after spawning workers you MUST enter the monitoring loop (Step 6) without any pause. Steps 5 → 6 → 7 → 8 run as one continuous loop. If you stop here, workers run unmonitored and the session is dead.
+**CRITICAL — IMMEDIATELY call `Bash: sleep 30`.** This is the ONLY valid action after spawning. Copy this exact sequence:
+
+```
+# After last spawn_worker completes:
+Output: "SPAWNED worker=X task=Y provider=Z"    ← one line per worker, nothing else
+Tool:   Bash: sleep 30                           ← IMMEDIATE. No text between spawn and sleep.
+# After sleep returns:
+Tool:   get_pending_events()                     ← start monitoring
+```
+
+Do NOT: print tables, print wave summaries, print queue status, print notes, print "monitoring will...", reason about next steps, or end your turn. ANY of these kills the session. The supervisor is in a `while(true)` loop from this point on.
 
 ### Step 6: Monitor Active Workers
 
 **This step is a LOOP, not a one-shot check.** You enter Step 6 after spawning workers and you stay in Steps 6→7→8→(back to 4 or 6) until the session ends. Each cycle: sleep → poll/check → handle completions → check termination → repeat. NEVER exit this loop by yielding to the user.
+
+**ANTI-STALL RULE**: The monitoring loop is exactly this — nothing more:
+```
+while true:
+  Bash: sleep 30                    ← event-driven (or sleep 300 for polling)
+  get_pending_events()              ← check for completions
+  if events: handle in Step 7
+  if done: exit in Step 8
+  Output: "[HH:MM] N active, N complete"  ← ONE LINE heartbeat
+```
+
+If you find yourself thinking for more than 5 seconds without calling `Bash: sleep`, you are stalling. Call it immediately.
 
 The supervisor uses **event-driven mode** when `subscribe_worker` is available (`event_driven_mode = true`), or falls back to **polling mode** (`event_driven_mode = false`).
 
@@ -709,11 +730,9 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 1. **Wait 30 seconds** (fast event poll interval). Implement this as `Bash: sleep 30` — do NOT yield control to the user or ask for input. The supervisor loop must be fully autonomous between monitoring cycles.
 
-   **Heartbeat**: Before sleeping, print a one-line status to the user:
-   ```
-   [HH:MM:SS] Monitoring: {N} worker(s) active — {TASK_X (Build), TASK_Y (Review), ...}. Next event poll in 30s.
-   ```
-   This keeps the session visibly alive. Do not print during the sleep itself.
+   **Heartbeat**: Print exactly one line (no tables, no formatting, no reasoning):
+   `[HH:MM:SS] Monitoring: {N} active — {TASK_X (Build/provider), TASK_Y (Review/provider)}. Sleeping 30s.`
+   Then IMMEDIATELY call `Bash: sleep 30`. No other tool calls or text between the heartbeat and sleep.
 
 2. **Drain the event queue:** Call MCP `get_pending_events()`.
    - For each event returned: trigger the completion handler (Step 7) for that worker immediately.
@@ -750,11 +769,9 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 1. **Wait** for the configured monitoring interval (default: 5 minutes). Implement this as `Bash: sleep N` (where N is the interval in seconds, e.g., `sleep 300` for 5 minutes) — do NOT yield control to the user, ask for input, or suggest the user send a message to trigger the next check. The supervisor loop must run autonomously until the backlog is drained or `--limit` is reached.
 
-   **Heartbeat**: Before sleeping, print a one-line status to the user:
-   ```
-   [HH:MM:SS] Monitoring: {N} worker(s) active — {TASK_X (Build/provider/model), TASK_Y (Review/provider/model), ...}. Next health check in {interval}.
-   ```
-   Include provider and model in the heartbeat so the user can see which model is running each task. Do not print during the sleep itself.
+   **Heartbeat**: Print exactly one line (no tables, no formatting, no reasoning):
+   `[HH:MM:SS] Monitoring: {N} active — {TASK_X (Build/provider), TASK_Y (Review/provider)}. Sleeping {N}s.`
+   Then IMMEDIATELY call `Bash: sleep {N}`. No other tool calls or text between the heartbeat and sleep.
 
 2. For each active worker in `{SESSION_DIR}state.md`:
 
