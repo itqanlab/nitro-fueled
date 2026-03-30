@@ -105,6 +105,7 @@ describe('HttpAuthGuard', () => {
       '/api/docs',
       '/api/docs-json',
       '/api/docs-yaml',
+      '/api/docs-css',
       '/api/docs/',
       '/api/docs/some-asset',
     ];
