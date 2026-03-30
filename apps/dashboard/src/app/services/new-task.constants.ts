@@ -1,4 +1,29 @@
-import { ProviderGroup } from '../models/new-task.model';
+import type { TaskCreationComplexity, TaskPriority, TaskType } from '../models/api.types';
+import type { ProviderGroup } from '../models/new-task.model';
+
+export const TASK_TYPES: readonly TaskType[] = [
+  'FEATURE',
+  'BUGFIX',
+  'REFACTORING',
+  'DOCUMENTATION',
+  'RESEARCH',
+  'DEVOPS',
+  'CREATIVE',
+  'CONTENT',
+];
+
+export const TASK_PRIORITIES: readonly TaskPriority[] = [
+  'P0-Critical',
+  'P1-High',
+  'P2-Medium',
+  'P3-Low',
+];
+
+export const TASK_COMPLEXITIES: readonly TaskCreationComplexity[] = [
+  'Simple',
+  'Medium',
+  'Complex',
+];
 
 export const MOCK_PROVIDER_GROUPS: readonly ProviderGroup[] = [
   {

@@ -9,16 +9,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
-import type { CreateTaskOverrides, CreatedTask } from '../../models/api.types';
-
-type TaskType = 'FEATURE' | 'BUGFIX' | 'REFACTORING' | 'DOCUMENTATION' | 'RESEARCH' | 'DEVOPS' | 'CREATIVE' | 'CONTENT';
-type Priority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
-type Complexity = 'Simple' | 'Medium' | 'Complex';
+import type { CreateTaskOverrides, CreatedTask, TaskCreationComplexity, TaskPriority, TaskType } from '../../models/api.types';
+import { TASK_COMPLEXITIES, TASK_PRIORITIES, TASK_TYPES } from '../../services/new-task.constants';
 
 interface AdvancedOverrides {
   type: TaskType | '';
-  priority: Priority | '';
-  complexity: Complexity | '';
+  priority: TaskPriority | '';
+  complexity: TaskCreationComplexity | '';
   model: string;
   dependencies: string;
 }
@@ -50,22 +47,11 @@ export class NewTaskComponent {
     dependencies: '',
   };
 
-  public readonly canSubmit = computed(
-    () => this.description().trim().length > 0 && !this.isSubmitting(),
-  );
+  public readonly canSubmit = computed(() => this.description().trim().length > 0 && !this.isSubmitting());
 
-  public readonly taskTypes: readonly TaskType[] = [
-    'FEATURE', 'BUGFIX', 'REFACTORING', 'DOCUMENTATION',
-    'RESEARCH', 'DEVOPS', 'CREATIVE', 'CONTENT',
-  ];
-
-  public readonly priorities: readonly Priority[] = [
-    'P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low',
-  ];
-
-  public readonly complexities: readonly Complexity[] = [
-    'Simple', 'Medium', 'Complex',
-  ];
+  public readonly taskTypes = TASK_TYPES;
+  public readonly priorities = TASK_PRIORITIES;
+  public readonly complexities = TASK_COMPLEXITIES;
 
   public castToInput(target: EventTarget | null): HTMLTextAreaElement | null {
     return target instanceof HTMLTextAreaElement ? target : null;
@@ -145,8 +131,8 @@ export class NewTaskComponent {
 
     return {
       ...(o.type !== '' ? { type: o.type as TaskType } : {}),
-      ...(o.priority !== '' ? { priority: o.priority as Priority } : {}),
-      ...(o.complexity !== '' ? { complexity: o.complexity as Complexity } : {}),
+      ...(o.priority !== '' ? { priority: o.priority as TaskPriority } : {}),
+      ...(o.complexity !== '' ? { complexity: o.complexity as TaskCreationComplexity } : {}),
       ...(o.model.trim() !== '' ? { model: o.model.trim() } : {}),
       ...(deps.length > 0 ? { dependencies: deps } : {}),
     };

@@ -1,21 +1,17 @@
 # Handoff — TASK_2026_127
 
 ## Files Changed
-- No source-file changes were required in this worker session.
-- `task-tracking/TASK_2026_127/context.md` (new, orchestration context reconstructed)
-- `task-tracking/TASK_2026_127/task-description.md` (new, requirements reconstructed)
-- `task-tracking/TASK_2026_127/plan.md` (new, implementation plan reconstructed)
-- `task-tracking/TASK_2026_127/tasks.md` (new, completed task list recorded)
-- `task-tracking/TASK_2026_127/handoff.md` (new, build handoff recorded)
-- `task-tracking/TASK_2026_127/session-analytics.md` (new, worker session analytics recorded)
+- `apps/dashboard/src/app/services/new-task.constants.ts` (modified, 25 lines added: TASK_TYPES, TASK_PRIORITIES, TASK_COMPLEXITIES exports with typed imports from api.types.ts)
+- `apps/dashboard/src/app/views/new-task/new-task.component.ts` (modified, 14 lines removed: type aliases TaskType, Priority, Complexity deleted; inline arrays taskTypes, priorities, complexities deleted; imports updated to use TaskCreationComplexity, TaskPriority, TaskType from api.types.ts and constant arrays from new-task.constants.ts)
 
 ## Commits
 - Pending implementation commit for TASK_2026_127
 
 ## Decisions
-- Verified that `HEAD` already contains the constants extraction required by `TASK_2026_127`, so this worker only needed to complete the missing orchestration artifacts.
-- Kept the task focused on status closure instead of making unnecessary no-op source edits.
+- Reused the existing `new-task.constants.ts` file instead of creating a second constants module.
+- Imported canonical types (TaskType, TaskPriority, TaskCreationComplexity) from api.types.ts instead of redefining them in the component.
+- Exported three constant arrays (TASK_TYPES, TASK_PRIORITIES, TASK_COMPLEXITIES) for potential reuse across the dashboard app.
 
 ## Known Risks
-- Full monorepo build still has unrelated pre-existing failures outside this task's file scope.
-- `AdvancedOverrides` remains in the component file; this task only closes the constant-extraction follow-up, not the interface-extraction follow-up.
+- Full monorepo build still has unrelated pre-existing failures outside this task's file scope (analytics.model.ts has type conflict unrelated to this task).
+- `AdvancedOverrides` interface remains in the component file; this task only addressed the constant extraction needed to meet the file-size limit.
