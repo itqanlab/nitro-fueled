@@ -84,3 +84,14 @@ export interface TaskDetailViewModel {
   cortexAvailable: boolean;
   pipelineAvailable: boolean;
 }
+
+export interface PhaseBarEntry {
+  phase: string;
+  durationMinutes: number;
+  widthPercent: number;
+}
+
+export interface WorkerIdDisplay {
+  id: string;
+  truncated: string;
+}

@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { NgClass, DecimalPipe, SlicePipe, DatePipe } from '@angular/common';
+import { NgClass, DecimalPipe, DatePipe } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, catchError, switchMap } from 'rxjs';
@@ -27,7 +27,7 @@ import type {
   PipelineData,
 } from '../../models/api.types';
 import { adaptTaskDetail } from './task-detail.adapters';
-import type { TaskDetailViewModel } from './task-detail.model';
+import type { TaskDetailViewModel, PhaseBarEntry, WorkerIdDisplay } from './task-detail.model';
 
 type TaskDataBundle = {
   taskData: FullTaskData | null;
@@ -36,13 +36,18 @@ type TaskDataBundle = {
   pipelineData: PipelineData | null;
 } | null;
 
+function formatTokenCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  return String(n);
+}
+
 @Component({
   selector: 'app-task-detail',
   standalone: true,
   imports: [
     NgClass,
     DecimalPipe,
-    SlicePipe,
     DatePipe,
     NzTagModule,
     NzEmptyModule,
@@ -92,8 +97,8 @@ export class TaskDetailComponent {
     return adaptTaskDetail(id, data.taskData, data.traceData, data.contextData, data.pipelineData);
   });
 
-  public vm: TaskDetailViewModel | null = null;
-  public loading = true;
+  public readonly vm = signal<TaskDetailViewModel | null>(null);
+  public readonly loading = signal(true);
 
   public readonly statusColorMap: Record<string, string> = {
     CREATED: 'default',
@@ -114,13 +119,48 @@ export class TaskDetailComponent {
     'P3-Low': 'default',
   };
 
+  public readonly formattedInputTokens = computed(() => {
+    const model = this.vm();
+    return model ? formatTokenCount(model.totalInputTokens) : '0';
+  });
+
+  public readonly formattedOutputTokens = computed(() => {
+    const model = this.vm();
+    return model ? formatTokenCount(model.totalOutputTokens) : '0';
+  });
+
+  public readonly phaseBars = computed<PhaseBarEntry[]>(() => {
+    const model = this.vm();
+    if (!model || model.phases.length === 0) return [];
+    const maxDuration = model.phases.reduce(
+      (acc, p) => Math.max(acc, p.durationMinutes ?? 0),
+      0,
+    ) || 1;
+    return model.phases
+      .filter(p => p.durationMinutes !== null)
+      .map(p => ({
+        phase: p.phase,
+        durationMinutes: p.durationMinutes!,
+        widthPercent: (p.durationMinutes! / maxDuration) * 100,
+      }));
+  });
+
+  public readonly workerIdDisplays = computed<WorkerIdDisplay[]>(() => {
+    const model = this.vm();
+    if (!model) return [];
+    return model.workers.map(w => ({
+      id: w.id,
+      truncated: w.id.length > 12 ? w.id.slice(0, 12) + '\u2026' : w.id,
+    }));
+  });
+
   constructor() {
     effect(() => {
       const data = this.dataSignal();
       if (data !== null) {
-        this.loading = false;
+        this.loading.set(false);
       }
-      this.vm = this.viewModelComputed();
+      this.vm.set(this.viewModelComputed());
     });
   }
 
@@ -130,25 +170,5 @@ export class TaskDetailComponent {
 
   public navigateToTask(taskId: string): void {
     void this.router.navigate(['/project/task', taskId]);
-  }
-
-  public formatTokens(n: number): string {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-    return String(n);
-  }
-
-  public maxPhaseDuration(): number {
-    if (!this.vm) return 1;
-    const max = this.vm.phases.reduce(
-      (acc, p) => Math.max(acc, p.durationMinutes ?? 0),
-      0,
-    );
-    return max || 1;
-  }
-
-  public phaseBarWidth(durationMinutes: number | null): number {
-    if (durationMinutes === null) return 0;
-    return (durationMinutes / this.maxPhaseDuration()) * 100;
   }
 }
