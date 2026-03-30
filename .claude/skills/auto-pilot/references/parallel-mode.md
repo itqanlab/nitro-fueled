@@ -641,9 +641,18 @@ Immediately after recording the worker, call MCP `subscribe_worker` to register 
 
 On success: log `"SUBSCRIBED {worker_id} for TASK_X — watching {N} condition(s)"` and set `event_driven_mode = true` if not already set.
 
-**5g. On spawn failure (MCP error):**
+**5g. On spawn failure (MCP error or DB error):**
 
-First, distinguish provider failure from MCP-unreachable. Immediately call `list_workers` after the failed `spawn_worker`:
+**Step 5g-i. Parse the spawn_worker response.** Before distinguishing failure types, check if `spawn_worker` returned a structured error (`ok: false`):
+
+| `reason` value | Meaning | Action |
+|----------------|---------|--------|
+| `session_not_found` | Session ID doesn't exist in DB (DB was wiped or session was never created) | **Systemic failure** — log `"SPAWN FATAL — session {session_id} not found in DB. Session may have been lost. Stopping."`, write state.md, set `loop_status: STOPPED`, EXIT. |
+| `task_not_found` | Task ID doesn't exist in DB (task was never synced to cortex) | Call `sync_tasks_from_files()` once to re-import tasks, then retry spawn. If retry also returns `task_not_found`, log `"SPAWN SKIP — TASK_X: not found in DB even after sync"`, skip task, continue. |
+| `working_directory must be an absolute path` | Bug in prompt/path construction | Log `"SPAWN BUG — TASK_X: bad working_directory"`, skip task, continue. |
+| Any other `ok: false` reason | Unknown DB error | Treat as provider failure (continue below). |
+
+**Step 5g-ii. Distinguish provider failure from MCP-unreachable.** Immediately call `list_workers` after the failed `spawn_worker`:
 - **MCP unreachable**: `list_workers` fails, times out, or returns an error — apply global MCP failure handler (Step 3b) and EXIT. (String markers "connection refused" / "ECONNREFUSED" in the original error are a secondary signal only — `list_workers` failure is the authoritative check.)
 - **Provider failure**: `list_workers` succeeds — treat as provider failure and continue below.
 
@@ -688,6 +697,31 @@ Tool:   get_pending_events()                     ← start monitoring
 ```
 
 **Per-Phase Output Budget** applies here: `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` is the ONLY conversation output for this phase. Do NOT print tables, wave summaries, queue status, notes, "monitoring will..." explanations, or any other text. ANY output beyond the SPAWNED line kills the session.
+
+**5i. Wave Failure Guard (PENDING escape hatch):**
+
+After processing all tasks in a wave (Step 5a through 5h), check if **zero workers were successfully spawned** in this wave:
+
+1. **Track `wave_spawn_failures`**: Increment a counter for each wave where zero workers were spawned. Reset to 0 on any successful spawn.
+
+2. **If `wave_spawn_failures >= 3` (three consecutive waves with zero spawns)**:
+   - Log: `"WAVE FAILURE — {wave_spawn_failures} consecutive waves produced zero workers. Systemic spawn failure detected."`
+   - Write state to `{SESSION_DIR}state.md` and/or `update_session()`.
+   - Set `loop_status: STOPPED`.
+   - Log: `"SESSION STOPPED — all spawn attempts failed. Investigate MCP/DB errors and re-run /auto-pilot."`
+   - **EXIT** the loop. Do NOT stay in PENDING forever.
+
+3. **If `wave_spawn_failures >= 1` but `< 3`**:
+   - Log: `"WAVE WARNING — zero workers spawned in wave {N}. Retrying next cycle. ({wave_spawn_failures}/3 before abort)"`
+   - Continue to Step 6 (monitoring existing workers, if any) or back to Step 4 if no active workers.
+
+4. **If the session is still in PENDING state** (no worker has EVER been spawned) **AND no active workers exist**:
+   - Do NOT enter the monitoring loop (Step 6). Instead, sleep 30 seconds and return to Step 4 to retry spawning.
+   - This prevents the supervisor from entering a monitoring loop with nothing to monitor.
+
+5. **PENDING timeout**: If `loop_status` is still `PENDING` after **5 minutes** (measured from session start), force transition to `STOPPED`:
+   - Log: `"PENDING TIMEOUT — session has been in PENDING state for 5+ minutes with no workers spawned. Stopping."`
+   - Write state, set `loop_status: STOPPED`, EXIT.
 
 ### Step 6: Monitor Active Workers
 

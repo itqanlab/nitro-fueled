@@ -37,8 +37,11 @@ The supervisor startup follows this exact order:
 **On startup**:
 
 0. (Run after MCP validation and Concurrent Session Guard — see those sections for prerequisites.)
-1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` using current timestamp.
-   When writing datetime values to state.md or worker logs, use local time with timezone offset (`YYYY-MM-DD HH:MM:SS +ZZZZ`). To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
+1. **Capture timestamp ONCE**: Run `date '+%Y-%m-%d_%H-%M-%S %Y-%m-%d %H:%M:%S %z'` in a single Bash call. Parse the output to extract:
+   - `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` (first token, underscored)
+   - `SESSION_DATETIME = {YYYY-MM-DD HH:MM:SS +ZZZZ}` (remaining tokens, for state.md and log entries)
+   - `SESSION_TIME = {HH:MM:SS}` (extracted from SESSION_DATETIME, for log timestamps)
+   Reuse these variables for ALL subsequent writes — do NOT call `date` again.
 2. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
 3. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
    ```markdown
@@ -122,26 +125,31 @@ Runs at supervisor startup **before MCP validation** (Step 0 of Startup Sequence
 4. Read `task-tracking/active-sessions.md` (if missing, treat as empty — all sessions are ended).
 5. For each uncommitted file under `task-tracking/sessions/{SESSION_ID}/`:
    - Check active-sessions.md for the session row.
-   - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'all', compact: true)` and check if any worker belongs to this session). If MCP confirms workers exist for this session → skip (live session). If MCP shows no workers but the row exists → it is a crashed supervisor; treat as ended (commit its artifacts).
+   - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'running', compact: true)` and check if any worker belongs to this session). If MCP confirms running workers exist for this session → skip (live session). If MCP shows no running workers but the row exists → it is a crashed supervisor; treat as ended (stage its artifacts).
    - If the row has **Source `orchestrate`** (Build/Review Worker): these rows are always stale (workers can be killed at any time per the design). Commit their artifacts.
-   - If the session has **no row** in active-sessions.md → treat as ended. Commit its artifacts.
-   > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT commit `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still commit `orchestrate`-source sessions (always safe).
-6. **For each ended session with uncommitted artifacts**:
+   - If the session has **no row** in active-sessions.md → treat as ended. Stage its artifacts.
+   > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT stage `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still stage `orchestrate`-source sessions (always safe).
+5b. **Clean stale rows from active-sessions.md**: For each session determined to be ended (step 5), remove its row from `task-tracking/active-sessions.md`. Read the file, remove matching rows, write back. This ensures crashed sessions do not leave ghost entries that confuse the Concurrent Session Guard.
+6. **For each ended session with uncommitted artifacts** — **stage only, do NOT commit**:
    ```
    git add task-tracking/sessions/{SESSION_ID}/log.md
    git add task-tracking/sessions/{SESSION_ID}/analytics.md
    git add "task-tracking/sessions/{SESSION_ID}/worker-logs/" (only if directory exists)
-   git commit -m "chore(session): archive {SESSION_ID} — recovered from previous session"
    ```
-   Print: `STALE ARCHIVE — archived {SESSION_ID}`
+   Print: `STALE ARCHIVE — staged {SESSION_ID} (awaiting user commit)`
+   Collect all staged SESSION_IDs into `stale_staged[]` for the Pre-Flight Report.
 7. **If `orchestrator-history.md` has uncommitted changes** and no active session is currently writing it:
    ```
    git add task-tracking/orchestrator-history.md
-   git commit -m "chore(session): commit stale orchestrator-history.md"
    ```
-   Print: `STALE ARCHIVE — committed stale orchestrator-history.md`
+   Print: `STALE ARCHIVE — staged stale orchestrator-history.md (awaiting user commit)`
 8. If no stale artifacts found: Print `STALE ARCHIVE — no stale session artifacts found`
-9. All git operations here are **best-effort**: if a commit fails (nothing to commit, lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
+9. **Do NOT run `git commit`**. The stale archive check stages files only. The actual commit happens later:
+   - If `stale_staged[]` is non-empty, the Pre-Flight Report (Step 4g) displays:
+     `"Stale session artifacts staged: {list of SESSION_IDs}. These will be committed when you next run /commit or git commit."`
+   - The supervisor proceeds regardless — staged files do not block startup.
+   - **Rationale**: Git commits require explicit user instruction. The supervisor must not commit autonomously.
+10. All git staging operations here are **best-effort**: if staging fails (lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
 
 ### Session Log Entries
 
@@ -178,19 +186,21 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 ```markdown
 # Orchestrator State
 
-**Loop Status**: RUNNING | STOPPED
+**Loop Status**: PENDING | RUNNING | STOPPED | PAUSED | ABORTED
 **Last Updated**: YYYY-MM-DD HH:MM:SS +ZZZZ
 **Session Started**: YYYY-MM-DD HH:MM:SS +ZZZZ
 **Session Directory**: task-tracking/sessions/SESSION_2026-03-24_22-00-00/
 
 ## Configuration
 
-| Parameter           | Value      |
-|---------------------|------------|
-| Concurrency Limit   | 3          |
-| Monitoring Interval | 5 minutes  |
-| Retry Limit         | 2          |
-| MCP Empty Threshold | 2          |
+| Parameter              | Value      |
+|------------------------|------------|
+| Concurrency Limit      | 3          |
+| Monitoring Interval    | 5 minutes  |
+| Retry Limit            | 2          |
+| MCP Empty Threshold    | 2          |
+| Wave Spawn Failures    | 0          |
+| Session Start Epoch    | 1711288800 |
 
 ## Active Workers
 
@@ -301,3 +311,28 @@ On any unexpected error:
 - Write `BLOCKED` to `task-tracking/TASK_YYYY_NNN/status` for all tasks in the cycle.
 - Log the cycle chain (e.g., `"Dependency cycle: TASK_A -> TASK_B -> TASK_A"`).
 - Continue processing non-cyclic tasks.
+
+### Session Stuck Prevention (PENDING / No-Progress Guards)
+
+Sessions must never stay in a non-terminal state indefinitely. The following guards apply:
+
+**PENDING timeout**: If `loop_status` remains `PENDING` (no worker has ever been spawned) for more than **5 minutes** from session start:
+- Log: `"PENDING TIMEOUT — session stuck in PENDING for 5+ minutes. No workers spawned. Stopping."`
+- Write state to `{SESSION_DIR}state.md` and/or `update_session()`.
+- Set `loop_status: STOPPED`.
+- EXIT.
+
+**Wave failure circuit breaker**: If **3 consecutive spawn waves** produce zero workers:
+- Log: `"WAVE FAILURE — 3 consecutive waves with zero spawns. Systemic issue. Stopping."`
+- Write state, set `loop_status: STOPPED`, EXIT.
+- This catches DB errors (FK failures, constraint mismatches), provider outages, and config issues that would otherwise cause the session to loop forever.
+
+**No-progress guard**: If the session is in `RUNNING` state but **no task has changed state** (no COMPLETE, FAILED, or BLOCKED transitions) for **30 minutes** AND no active workers exist:
+- Log: `"NO PROGRESS — 30 minutes with no state transitions and no active workers. Stopping."`
+- Write state, set `loop_status: STOPPED`, EXIT.
+
+**Spawn result validation**: After every `spawn_worker` call, check the response:
+- If `ok: false` with `reason: session_not_found` — the session was lost from the DB. STOP immediately.
+- If `ok: false` with `reason: task_not_found` — re-sync tasks with `sync_tasks_from_files()` and retry once.
+- If `ok: true` — proceed normally. Increment successful spawn counter.
+- These checks prevent silent failures where spawn appears to succeed but no worker was created.
