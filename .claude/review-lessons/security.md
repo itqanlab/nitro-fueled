@@ -268,3 +268,11 @@ Auto-updated after each security review. Append new findings — do not remove e
 ## Cache Path Security Parity
 
 - **Cache-hit code paths must carry the same security guards as cache-miss paths** — when a system has both a "read from DB/cache" path and a "read from file" path, security guards (opaque data treatment, input validation, Zod parsing) applied on the file path must also appear on the cache path. Four tasks (133, 135, 136, 138) shipped cache-hit paths that bypassed guards present on the cache-miss path. [RETRO_2026-03-30_2_since-2026-03-29]
+
+## NestJS Endpoints — Numeric Parameter Bounds
+
+- **TTL-style numeric query parameters must have both a maximum cap AND a minimum floor** — a guard like `value > 0 ? Math.min(value, MAX) : DEFAULT` accepts fractional values (e.g., `0.001`) that pass `> 0` but produce an effective cutoff of milliseconds ago, which will match nearly every row. For time-window parameters expressed in minutes, a floor of `>= 1` is a safe minimum; anything less has no legitimate use case when the underlying polling interval is measured in seconds. Apply `value >= MINIMUM && value <= MAXIMUM` and reject to the default on any out-of-range input. (TASK_2026_203)
+
+## SQLite Service — Read-Write Factory Isolation
+
+- **Services that open a DB in read-only mode by default must isolate the write-mode open path as a named private method** — when a service has an `openDb()` factory that enforces `{ readonly: true }` and all read methods call it, a write operation that bypasses this factory with an inline `new Database(path)` creates two divergent open-mode patterns. A future refactor that merges the paths or copies the inline pattern can silently remove the `readonly` flag from a read path. Extract the write-mode open as a separate named method (`openDbWritable()`) so both patterns are visible, named, and independently maintainable. (TASK_2026_203)
