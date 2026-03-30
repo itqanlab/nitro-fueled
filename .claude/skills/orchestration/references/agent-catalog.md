@@ -738,7 +738,7 @@ See nitro-modernization-detector.md for detailed instructions.`,
 **Outputs**:
 
 - `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md`
-- `task-tracking/TASK_[ID]/visual-design-specification.md`
+- `task-tracking/TASK_[ID]/design-spec.md`
 
 **Dependencies**: nitro-project-manager (optional context)
 

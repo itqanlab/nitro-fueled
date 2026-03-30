@@ -557,7 +557,7 @@ Phase 2: nitro-technical-content-writer --> Creates platform-specific copy
          (Twitter/X thread, LinkedIn post, Instagram caption, etc.)
          |
          v
-Phase 3: [IF visual assets needed] nitro-ui-ux-designer --> Creates visual-design-specification.md
+Phase 3: [IF visual assets needed] nitro-ui-ux-designer --> Creates design-spec.md
          (carousel layouts, image specs, brand-consistent visuals)
          |
          v
@@ -618,7 +618,7 @@ Invoke SOCIAL strategy when the request contains any of:
 | Deliverable             | Output Path                                        |
 | ----------------------- | -------------------------------------------------- |
 | Social copy             | `docs/content/social-[platform]-[name].md`         |
-| Visual specs            | `task-tracking/TASK_[ID]/visual-design-specification.md` |
+| Visual specs            | `task-tracking/TASK_[ID]/design-spec.md` |
 | Campaign plan           | `task-tracking/TASK_[ID]/campaign-plan.md`          |
 | Content specification   | `task-tracking/TASK_[ID]/content-specification.md`  |
 

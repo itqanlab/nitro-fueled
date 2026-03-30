@@ -189,7 +189,7 @@ Glob(task-tracking/TASK_[ID]/*.md)
 | No context.md                    | **Invalid**            | ERROR: Task doesn't exist             |
 | context.md only                  | Initialized            | Invoke project-manager                |
 | + task-description.md            | PM done                | User validate OR next agent           |
-| + visual-design-specification.md | Designer done          | Invoke software-architect             |
+| + design-spec.md | Designer done          | Invoke software-architect             |
 | + plan.md (or legacy: implementation-plan.md) | Architect done         | User validate OR team-leader MODE 1   |
 | + tasks.md (all PENDING)         | Decomposition done     | team-leader MODE 2 (first assignment) |
 | + tasks.md (has IN PROGRESS)     | Dev in progress        | team-leader MODE 2 (verify + next)    |
