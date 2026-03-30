@@ -58,17 +58,7 @@ export { SessionSummaryDto, SessionDataDto } from './session.dto';
 export { WorkerTreeNodeDto, WorkerTreeDto } from './worker-tree.dto';
 
 // Analytics DTOs
-export {
-  SessionAnalyticsDto,
-  SessionCostPointDto,
-  EfficiencyPointDto,
-  ModelUsagePointDto,
-  SessionComparisonRowDto,
-  AnalyticsCostDataDto,
-  AnalyticsEfficiencyDataDto,
-  AnalyticsModelsDataDto,
-  AnalyticsSessionsDataDto,
-} from './analytics.dto';
+export * from './analytics';
 
 // Knowledge DTOs
 export { AntiPatternRuleDto } from './anti-patterns.dto';

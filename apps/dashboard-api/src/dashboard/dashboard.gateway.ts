@@ -14,12 +14,6 @@ import { CortexService } from './cortex.service';
 import type { DashboardEvent, FileChangeEvent } from './dashboard.types';
 import { WsAuthGuard } from './auth/ws-auth.guard';
 
-/**
- * DashboardGateway provides real-time WebSocket broadcasting of dashboard events.
- * Migrated from dashboard-service/src/server/websocket.ts to NestJS Socket.IO.
- * Maintains protocol compatibility with existing clients.
- * WebSocket authentication guard added (TASK_2026_131).
- */
 @WebSocketGateway({
   cors: {
     origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4200'],
@@ -44,10 +38,6 @@ export class DashboardGateway
     private readonly cortexService: CortexService,
   ) {}
 
-  /**
-   * Called after the gateway is initialized.
-   * Seeds lastCortexEventId with the current DB max so we don't replay history on restart.
-   */
   public afterInit(): void {
     this.logger.log('WebSocket gateway initialized');
     // Seed with current max event ID to avoid replaying full event history on restart
@@ -60,10 +50,6 @@ export class DashboardGateway
     this.startCortexPolling();
   }
 
-  /**
-   * Handle new WebSocket client connections.
-   * Emits a connection acknowledgment matching existing ws protocol format.
-   */
   @UseGuards(WsAuthGuard)
   public handleConnection(client: Socket): void {
     this.logger.debug(`Client connected: ${client.id}`);
@@ -75,16 +61,10 @@ export class DashboardGateway
     });
   }
 
-  /**
-   * Handle client disconnections.
-   */
   public handleDisconnect(client: Socket): void {
     this.logger.debug(`Client disconnected: ${client.id}`);
   }
 
-  /**
-   * Clean up the watcher subscription on module destroy.
-   */
   public onModuleDestroy(): void {
     if (this.watcherUnsubscribe) {
       this.watcherUnsubscribe();
@@ -98,10 +78,6 @@ export class DashboardGateway
     }
   }
 
-  /**
-   * Subscribe to WatcherService for file change events.
-   * Triggers broadcasts when files in task-tracking change.
-   */
   private setupWatcherSubscription(): void {
     this.watcherUnsubscribe = this.watcherService.subscribe(
       async (_path: string, _event: FileChangeEvent): Promise<void> => {
@@ -110,10 +86,6 @@ export class DashboardGateway
     );
   }
 
-  /**
-   * Broadcast session and analytics updates to all connected clients.
-   * Wraps service calls in try-catch to prevent broadcast failures from crashing the gateway.
-   */
   private async broadcastChanges(): Promise<void> {
     // Broadcast session updates
     try {
@@ -142,9 +114,6 @@ export class DashboardGateway
     }
   }
 
-  /**
-   * Broadcast a dashboard event to all connected clients.
-   */
   private broadcastEvent(event: DashboardEvent): void {
     if (!this.server) {
       this.logger.warn('Server not initialized, skipping broadcast');
@@ -153,20 +122,12 @@ export class DashboardGateway
     this.server.emit('dashboard-event', event);
   }
 
-  /**
-   * Start polling the cortex events table every 3 seconds.
-   * Emits 'cortex-event' to all connected clients for each new event.
-   */
   private startCortexPolling(): void {
     this.cortexPollInterval = setInterval(() => {
       this.pollCortexEvents();
     }, 3000);
   }
 
-  /**
-   * Poll cortex for new events since the last seen event ID.
-   * Skips silently when cortex is unavailable (DB not found).
-   */
   private pollCortexEvents(): void {
     const events = this.cortexService.getEventsSince(this.lastCortexEventId);
     if (events === null) {

@@ -202,6 +202,7 @@ export function queryModelPerformance(
     model: r.model, task_type: r.task_type, phase_count: r.phase_count, review_count: r.review_count,
     avg_duration_minutes: r.avg_duration_minutes, total_input_tokens: r.total_input_tokens,
     total_output_tokens: r.total_output_tokens, avg_review_score: r.avg_review_score,
+    complexity: null, avg_cost_usd: null, failure_rate: null, last_run: null,
   }));
 }
 

@@ -112,6 +112,8 @@ export function toggleActiveInState(state: SettingsState, type: ToggleType, id: 
           entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
         ),
       };
+    default:
+      return state;
   }
 }
 
