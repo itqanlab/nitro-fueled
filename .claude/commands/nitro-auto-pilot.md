@@ -28,7 +28,7 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --force                            # Override stale RUNNING state
 /nitro-auto-pilot --pause                            # Run one monitoring cycle then stop cleanly (workers keep running)
 /nitro-auto-pilot --continue                         # Resume most recent paused/stopped session
-/nitro-auto-pilot --continue SESSION_2026-03-28_14-00-00  # Resume specific session
+/nitro-auto-pilot --continue SESSION_2026-03-28T14-00-00  # Resume specific session
 /nitro-auto-pilot --evaluate claude-opus-4-6          # Evaluate a model against the benchmark suite
 /nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6  # A/B comparison
 /nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role reviewer  # Test as reviewer
@@ -77,9 +77,9 @@ Parse $ARGUMENTS for:
 - `--pause` flag -> pause after current monitoring cycle (see Pause Mode in SKILL.md)
 - `--continue [SESSION_ID]` -> resume mode: if the next whitespace-separated argument does
   not start with `--`, treat it as the SESSION_ID token and validate it against the regex
-  `^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$` before use. If the token does NOT match,
+  `^SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}$` before use. If the token does NOT match,
   **STOP IMMEDIATELY** — do not strip or modify the token. Display:
-  `ERROR: Invalid SESSION_ID format. Expected SESSION_YYYY-MM-DD_HH-MM-SS (e.g. SESSION_2026-03-28_14-00-00). Refusing to proceed to prevent path traversal.`
+  `ERROR: Invalid SESSION_ID format. Expected SESSION_YYYY-MM-DDTHH-MM-SS (e.g. SESSION_2026-03-28T14-00-00). Refusing to proceed to prevent path traversal.`
   **EXIT.**
   If the token matches, or no SESSION_ID was provided, use the validated SESSION_ID as the
   target session, or auto-detect the most recent paused/stopped session if no SESSION_ID was
@@ -164,7 +164,7 @@ If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
    - The only pre-flight validations are: dependency checks (4c), circular dependency detection (4d), and registry-level completeness (4b uses registry columns only).
 4. Use `sizing-rules.md` (already read in step 1). If it was not found, use the inline fallback limits in Validation D below.
 5. Initialize two collections: `blocking_issues = []`, `warnings = []`.
-6. **Initialize session directory**: Capture timestamp once (see session-lifecycle.md Step 1). Create directory `task-tracking/sessions/{SESSION_ID}/`. Create `{SESSION_DIR}state.md` with `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command.
+6. **Initialize session directory**: Capture the startup timestamp once (see session-lifecycle.md Step 1), then call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Create `{SESSION_DIR}state.md` with `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command.
 7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `{SESSION_DIR}`. Then skip to Step 6 (dry-run handler).
 
 **4b. Validation A: Task Completeness — Registry-Only (Warning)**

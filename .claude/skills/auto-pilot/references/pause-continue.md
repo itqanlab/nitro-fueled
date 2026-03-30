@@ -31,7 +31,7 @@ When `--continue [SESSION_ID]` is passed:
 ### Finding the Session to Resume
 
 1. **If SESSION_ID is provided**: look for `task-tracking/sessions/{SESSION_ID}/state.md`. If not found, print error and exit.
-2. **If SESSION_ID is omitted**: scan `task-tracking/sessions/` for all directories matching `SESSION_{YYYY-MM-DD}_{HH-MM-SS}`. Read each `state.md` and look for any `Loop Status` that is NOT `COMPLETE`, `ABORTED`, or `CANCELLED` (i.e. `PAUSED`, `STOPPED`, `RUNNING`, or missing). Select the most recently created one. `RUNNING` is valid here — it means the session was killed before it could write a clean stop. If none found, print error and exit.
+2. **If SESSION_ID is omitted**: scan `task-tracking/sessions/` for all directories matching the auto-pilot session format `SESSION_YYYY-MM-DDTHH-MM-SS`. Read each `state.md` and look for any `Loop Status` that is NOT `COMPLETE`, `ABORTED`, or `CANCELLED` (i.e. `PAUSED`, `STOPPED`, `RUNNING`, or missing). Select the most recently created one. `RUNNING` is valid here — it means the session was killed before it could write a clean stop. If none found, print error and exit.
 
 ### Resume Sequence
 

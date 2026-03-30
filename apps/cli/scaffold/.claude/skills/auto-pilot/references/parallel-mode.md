@@ -88,13 +88,14 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 
 **Preferred path (`cortex_available = true`):**
 
-1. Call `list_workers(compact: true)` and derive `slots = concurrency_limit - running_workers`.
+1. Call `list_workers(session_id=SESSION_ID, status_filter: 'running', compact: true)` and derive `slots = concurrency_limit - running_workers_in_this_session`.
 2. If `slots <= 0`, skip to Step 6.
 3. Choose candidates from the Step 3 classifications, prioritizing reviewable tasks before buildable tasks.
 4. If `get_next_wave(session_id, slots)` exists, use it as the atomic selector/claimer.
-5. Otherwise, use the `get_tasks()` result plus `claim_task()` before each spawn.
-6. Apply any serialized-review exclusions from session DB state.
-7. Do **not** read `state.md` to calculate the live queue on this path.
+5. Otherwise, use the `get_tasks()` result plus `claim_task(task_id, SESSION_ID)` before each spawn.
+6. Treat `claim_task(task_id, SESSION_ID)` as the cross-session deduplication guard. If another session already claimed the task, skip it and select the next candidate.
+7. Apply any serialized-review exclusions from session DB state.
+8. Do **not** read `state.md` to calculate the live queue on this path.
 
 **Fallback path (`cortex_available = false`):**
 

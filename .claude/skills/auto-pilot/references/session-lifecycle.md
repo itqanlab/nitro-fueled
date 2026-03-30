@@ -4,10 +4,10 @@
 
 On startup, after MCP validation, Concurrent Session Guard, and the stale archive check complete, the supervisor creates a session-scoped directory for optional state and log output.
 
-**Directory path**: `task-tracking/sessions/SESSION_{YYYY-MM-DD}_{HH-MM-SS}/`
+**Directory path**: `task-tracking/sessions/{SESSION_ID}/`
 
-Timestamp is the wall-clock start time (local time, zero-padded, including seconds). Example:
-`task-tracking/sessions/SESSION_2026-03-24_22-00-00/`
+`SESSION_ID` is the canonical nitro-cortex DB session ID returned by `create_session()`. Example:
+`task-tracking/sessions/SESSION_2026-03-24T22-00-00/`
 
 All datetime fields written inside session files must use local time with timezone offset: `YYYY-MM-DD HH:MM:SS +ZZZZ` (e.g., `2026-03-24 10:00:00 +0200`). To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
 
@@ -18,9 +18,10 @@ The supervisor startup follows this exact order:
 1. **MCP validation** (see ## MCP Requirement in SKILL.md) — HARD FAIL if MCP unavailable
 2. **Concurrent Session Guard** (see below) — warns/aborts if another supervisor is running
 3. **Stale Session Archive Check** (see below) — stage artifacts from ended sessions, never auto-commit
-4. **Session Directory creation** — create dir, create log.md, register in active-sessions.md
-5. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
-6. **Enter Core Loop**
+4. **Create session in nitro-cortex DB** — call `create_session(source='auto-pilot', task_count=N, config=JSON)` and treat the returned `session_id` as canonical for the rest of the run
+5. **Session Directory creation** — create `task-tracking/sessions/{session_id}/`, create log.md, register in active-sessions.md
+6. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
+7. **Enter Core Loop**
 
 ### Files inside the session directory
 
@@ -36,23 +37,21 @@ The supervisor startup follows this exact order:
 **On startup**:
 
 0. (Run after Startup Sequence steps 1-3 complete — see those sections for prerequisites.)
-1. **Capture timestamp ONCE**: Run `date '+%Y-%m-%d_%H-%M-%S %Y-%m-%d %H:%M:%S %z'` in a single Bash call. Parse the output to extract:
-   - `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` (first token, underscored)
-   - `SESSION_DATETIME = {YYYY-MM-DD HH:MM:SS +ZZZZ}` (remaining tokens, for state.md and log entries)
-   - `SESSION_TIME = {HH:MM:SS}` (extracted from SESSION_DATETIME, for log timestamps)
-   Reuse these variables for ALL subsequent writes — do NOT call `date` again.
-2. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
-3. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
+1. **Capture timestamp ONCE**: Run `date '+%Y-%m-%d %H:%M:%S %z'` in a single Bash call. Store the result as `SESSION_DATETIME` and derive `SESSION_TIME = {HH:MM:SS}` from it for log timestamps. Reuse these variables for ALL subsequent writes — do NOT call `date` again.
+2. **Create session in the DB before writing files**: Call `create_session(source='auto-pilot', task_count=N, config=JSON.stringify({...startup_config, session_started_at: SESSION_DATETIME}))`.
+3. **Use the returned ID everywhere**: Store the returned `session_id` as `SESSION_ID`. Do not generate a local timestamp-based fallback ID when `create_session()` succeeds.
+4. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
+5. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
    ```markdown
    # Session Log — {SESSION_ID}
 
    | Timestamp | Source | Event |
    |-----------|--------|-------|
    ```
-4. Append first log entry to `log.md`:
+6. Append first log entry to `log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} |`
-5. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
-6. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
+7. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
+8. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
    subsequent state and log writes.
 
 > **When `cortex_available = true`**: After Session Directory creation and before entering the Core Loop, call:
@@ -86,7 +85,7 @@ Every session (auto-pilot or orchestrate) appends a row on startup and removes i
 
 | Session | Source | Started | Tasks | Path |
 |---------|--------|---------|-------|------|
-| SESSION_2026-03-24_22-00-00 | auto-pilot | 22:00 | 14 | task-tracking/sessions/SESSION_2026-03-24_22-00-00/ |
+| SESSION_2026-03-24T22-00-00 | auto-pilot | 22:00 | 14 | task-tracking/sessions/SESSION_2026-03-24T22-00-00/ |
 | SESSION_2026-03-24_22-05-00 | orchestrate | 22:05 | 1 | task-tracking/sessions/SESSION_2026-03-24_22-05-00/ |
 ```
 
@@ -122,7 +121,7 @@ Runs at supervisor startup **after MCP validation and Concurrent Session Guard, 
    - Lines starting with `?? task-tracking/sessions/{SESSION_ID}/` (untracked directory): record SESSION_ID from the path.
    - Lines starting with `M `, ` M`, or `??` for a specific file path: record the file and its parent SESSION_ID (if under sessions/).
    - Lines for `task-tracking/orchestrator-history.md`: record for separate handling in step 7.
-3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}` — discard any that do not match.
+3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}` for auto-pilot sessions and `SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}` for orchestration worker sessions — discard any that do not match either form.
 4. Read `task-tracking/active-sessions.md` (if missing, treat as empty — all sessions are ended).
 5. For each uncommitted file under `task-tracking/sessions/{SESSION_ID}/`:
    - Check active-sessions.md for the session row.
@@ -182,7 +181,7 @@ On startup, **after MCP validation passes, before Session Directory creation, be
 
 ## state.md Format
 
-Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24_22-00-00/state.md`) only when the supervisor chooses to materialize a debug snapshot at startup, pause, stop, or error time. It is helpful after compaction, but it is not the primary recovery source on the DB-backed path.
+Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24T22-00-00/state.md`) only when the supervisor chooses to materialize a debug snapshot at startup, pause, stop, or error time. It is helpful after compaction, but it is not the primary recovery source on the DB-backed path.
 
 ```markdown
 # Orchestrator State
@@ -190,7 +189,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 **Loop Status**: PENDING | RUNNING | STOPPED | PAUSED | ABORTED
 **Last Updated**: YYYY-MM-DD HH:MM:SS +ZZZZ
 **Session Started**: YYYY-MM-DD HH:MM:SS +ZZZZ
-**Session Directory**: task-tracking/sessions/SESSION_2026-03-24_22-00-00/
+**Session Directory**: task-tracking/sessions/SESSION_2026-03-24T22-00-00/
 
 ## Configuration
 
@@ -251,7 +250,7 @@ Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-0
 Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on session startup with the header row, then one row appended per event.
 
 ```markdown
-# Session Log — SESSION_2026-03-24_22-00-00
+# Session Log — SESSION_2026-03-24T22-00-00
 
 | Timestamp | Source | Event |
 |-----------|--------|-------|
