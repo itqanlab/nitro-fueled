@@ -55,11 +55,18 @@ libs/                      # Shared libraries
 7. CLI Maturity — nitro-* rename, scaffold sync, docs update — IN_PROGRESS (Phase 12)
 8. Test on a fresh project
 
-## Task Status Queries
-- When asked about project status, remaining tasks, what's next, or any task-related question:
-  1. **Run `npx nitro-fueled status`** first — this rebuilds `task-tracking/registry.md` from all status files on disk
-  2. **Then read `task-tracking/registry.md` ONLY** — do NOT read individual `task.md` files
-- The registry contains all task IDs, statuses, types, and descriptions — that is sufficient for status queries.
+## Task & Project Queries — ALWAYS Use Cortex MCP
+- **NEVER parse filesystem or bash-loop over status files.** The cortex MCP server (`packages/mcp-cortex/`) has all task, session, worker, and event data indexed in SQLite.
+- For ANY project data query (task counts, status breakdown, session info, worker stats, events, etc.), use the appropriate cortex MCP tool:
+  - `query_tasks` / `get_tasks` — task listings, filtering, counts, status grouping
+  - `list_sessions` / `get_session` — session data
+  - `list_workers` / `get_worker_stats` — worker data
+  - `query_events` — event logs
+  - `get_task_context` / `get_task_trace` — deep task info
+  - `get_model_performance` / `get_provider_stats` — model and provider analytics
+- This is **faster and cheaper** than filesystem parsing. One MCP call vs dozens of bash commands.
+- For task creation: use `get_next_task_id` to get the next available ID — do NOT scan folders with `ls | grep | sort | tail`
+- Only fall back to filesystem reads if cortex MCP is unavailable (tool not in session).
 
 ## Conventions
 - Git: conventional commits with scopes
