@@ -71,7 +71,7 @@ describe('TaskStatusBreakdown model', () => {
     }
   });
 
-  it('derived total equals sum of all 8 status counts', () => {
+  it('derived total equals sum of all 9 status counts', () => {
     const b = MOCK_TASK_STATUS_BREAKDOWN;
     const sum = computeTotalTasks(b);
     expect(sum).toBe(
@@ -195,7 +195,7 @@ describe('MOCK_COMMAND_CENTER_DATA', () => {
   });
 });
 
-// ── Acceptance criteria: all 7 task status variants present in breakdown ─────
+// ── Acceptance criteria: all 9 task status variants present in breakdown ─────
 
 describe('Task status breakdown covers all acceptance criteria statuses', () => {
   const statuses: TaskStatusKey[] = [

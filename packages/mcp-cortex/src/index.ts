@@ -42,7 +42,7 @@ const server = new McpServer({
 server.registerTool('get_tasks', {
   description: 'Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE.',
   inputSchema: {
-    status: z.string().optional().describe('Filter by task status'),
+    status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
@@ -54,7 +54,7 @@ server.registerTool('get_tasks', {
 server.registerTool('query_tasks', {
   description: 'Alias for get_tasks. Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE.',
   inputSchema: {
-    status: z.string().optional().describe('Filter by task status'),
+    status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),

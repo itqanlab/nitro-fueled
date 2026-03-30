@@ -264,7 +264,7 @@
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%; display: block;
   &.status-created, &.status-cancelled { background: var(--text-tertiary); }
-  &.status-implemented { background: var(--purple, #9254de); }
+  &.status-implemented { background: var(--purple); }
   &.status-in-review { background: var(--warning); }
   &.status-fixing { background: var(--warning); }
   &.status-complete { background: var(--success); }
@@ -321,7 +321,7 @@
 /* ---- Kanban View ---- */
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(7, minmax(180px, 1fr));
+  grid-template-columns: repeat(9, minmax(180px, 1fr));
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 8px;

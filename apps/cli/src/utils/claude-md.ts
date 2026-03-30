@@ -38,7 +38,7 @@ npx nitro-fueled status          # Show project status
 \`\`\`
 
 ### Task States
-CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKED/CANCELLED)
+CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> FIXING -> COMPLETE (or FAILED/BLOCKED/CANCELLED)
 
 ## Task Status Queries
 - When asked about project status, remaining tasks, what's next, or any task-related question:

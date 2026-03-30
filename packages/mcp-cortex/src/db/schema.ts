@@ -293,6 +293,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
         file_scope       TEXT NOT NULL DEFAULT '[]',
         session_claimed  TEXT,
         claimed_at       TEXT,
+        claim_timeout_ms INTEGER,
         created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
         updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       )
