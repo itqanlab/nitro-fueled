@@ -36,6 +36,7 @@ This reference documents all user validation checkpoints in the orchestration wo
 | CREATIVE      | Yes   | No           | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | CONTENT       | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | SOCIAL        | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
+| DESIGN        | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
 
 ---
 

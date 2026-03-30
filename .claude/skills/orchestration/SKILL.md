@@ -30,9 +30,11 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
 | RESEARCH      | Researcher -> [conditional implementation]         |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
+| OPS           | PM -> DevOps Engineer -> QA                        |
 | CREATIVE      | [nitro-ui-ux-designer] -> nitro-technical-content-writer -> nitro-frontend-developer |
 | CONTENT       | PM -> [nitro-researcher-expert] -> nitro-technical-content-writer -> Style Reviewer |
 | SOCIAL        | PM -> nitro-technical-content-writer -> [nitro-ui-ux-designer] -> Style Reviewer  |
+| DESIGN        | PM -> nitro-ui-ux-designer -> Style Reviewer                                       |
 
 See [strategies.md](references/strategies.md) for detailed flow diagrams.
 
@@ -95,8 +97,10 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | Keywords Present                              | Task Type     |
 | --------------------------------------------- | ------------- |
 | CI/CD, pipeline, build tool, deploy, pack     | DEVOPS        |
+| setup project, configure CI, deployment pipeline, monitoring setup, environment setup, docker setup, kubernetes config, terraform | OPS |
 | landing page, marketing, brand, visual        | CREATIVE      |
 | blog post, article, email campaign, newsletter, ad copy, marketing email, content piece, copywriting | CONTENT |
+| design system, wireframe, prototype, brand identity, UI design, UX design, UX audit, design tokens, style guide, mockup, user flow | DESIGN |
 | social media, twitter post, linkedin post, instagram, social campaign, social calendar, thread, carousel post | SOCIAL  |
 | implement, add, create, build                 | FEATURE       |
 | fix, bug, error, issue                        | BUGFIX        |
@@ -104,7 +108,7 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | document, readme, comment                     | DOCUMENTATION |
 | research, investigate, analyze                | RESEARCH      |
 
-**Priority**: DEVOPS > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
+**Priority**: DEVOPS > DESIGN > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
 
 ### Adaptive Strategy Selection
 

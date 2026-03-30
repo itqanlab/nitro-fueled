@@ -14,9 +14,11 @@ Detailed workflow diagrams and guidance for all 6 execution strategies plus crea
 | DOCUMENTATION | Minimal        | PM, Developer, Style Reviewer        | Requirements                          |
 | RESEARCH      | Investigation  | Researcher                           | None                                  |
 | DEVOPS        | Infrastructure | PM, Architect, DevOps Engineer, QA   | Requirements, Architecture, QA        |
+| OPS           | Operational    | PM, DevOps Engineer, QA              | Requirements, QA                      |
 | CREATIVE      | Design-first   | UI/UX Designer, Content Writer, Dev  | Scope, Design System, Content         |
 | CONTENT       | Text-first     | PM, [Researcher], Content Writer, Style Reviewer | Scope, Requirements, QA   |
 | SOCIAL        | Platform-first | PM, Content Writer, [UI/UX Designer], Style Reviewer | Scope, Requirements, QA |
+| DESIGN        | Artifact-only  | PM, UI/UX Designer, Style Reviewer                   | Scope, Requirements, QA |
 
 ---
 
@@ -222,6 +224,63 @@ Invoke DEVOPS strategy when task involves:
 **Key Signal**: Work is 100% infrastructure (no application business logic)
 
 **Developer**: Always use `nitro-devops-engineer` (NOT nitro-backend-developer)
+
+---
+
+## OPS (Operational Configuration)
+
+**When to use**: Operational setup following known patterns — project configuration, CI/CD setup, monitoring setup, environment setup, docker/kubernetes/terraform configuration. No novel infrastructure design required.
+
+**Disambiguation from DEVOPS**:
+- **DEVOPS** = infrastructure code that needs architectural review (`PM → Architect → DevOps → QA`)
+- **OPS** = straightforward operational setup of known patterns (`PM → DevOps → QA`)
+- If the task involves novel infrastructure design decisions → route to DEVOPS
+- If it's configuration/setup of established patterns → route to OPS
+
+```
+Phase 1: nitro-project-manager --> Creates task-description.md
+         |
+         USER VALIDATES ("APPROVED" or feedback)
+         |
+         v
+Phase 2: nitro-devops-engineer --> Implements operational configuration
+         |
+         v
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
+         |
+         USER CHOOSES QA (security/style/skip)
+         |
+         v
+Phase 3: [QA agents — Review Worker reads handoff.md as first action] --> Git --> nitro-modernization-detector
+```
+
+### OPS Trigger Keywords
+
+Invoke OPS strategy when task involves:
+
+- "setup project", "project setup"
+- "configure CI", "CI/CD", "configure pipeline"
+- "deployment pipeline", "deploy config"
+- "monitoring setup", "observability setup"
+- "environment setup", "environment config"
+- "docker setup", "docker compose", "Dockerfile"
+- "kubernetes config", "k8s config"
+- "terraform", "infrastructure as code"
+
+**Key Signal**: Work is operational configuration of known tools/patterns (not novel infrastructure design)
+
+**Developer**: Always use `nitro-devops-engineer`
+
+### OPS vs DEVOPS Decision
+
+| Signal | Route To |
+| ------ | -------- |
+| Known tool config (CI/CD templates, Docker, k8s manifests) | OPS |
+| Novel infra design (new architecture, new service topology) | DEVOPS |
+| Setup + integrate existing monitoring tool | OPS |
+| Design custom observability pipeline from scratch | DEVOPS |
+| Configure existing deployment pipeline | OPS |
+| Design new deployment strategy for first time | DEVOPS |
 
 ---
 
@@ -624,6 +683,80 @@ Invoke SOCIAL strategy when the request contains any of:
 
 ---
 
+## DESIGN (Design Artifact-Only Workflow)
+
+**When to use**: UI/UX design, wireframes, prototypes, design systems, brand identity, style guides, design tokens, mockups, user flows — when the deliverable is a design artifact, NOT implemented code.
+
+**Key distinction from CREATIVE**: CREATIVE = design + content + frontend implementation (code output). DESIGN = design artifacts only (no code output). If the user says "design and build", route to CREATIVE. If they say "design" without implementation intent, route to DESIGN.
+
+```
+Phase 1: nitro-project-manager --> Creates task-description.md
+         |
+         USER VALIDATES ("APPROVED" or feedback)
+         |
+         v
+Phase 2: nitro-ui-ux-designer --> Creates design artifacts
+         (wireframes, design-spec.md, DESIGN-SYSTEM.md, design tokens, etc.)
+         |
+         v
+Build Worker writes handoff.md (files changed, commits, decisions, risks)
+         |
+         USER CHOOSES QA (style/skip)
+         |
+         v
+Phase 3: [nitro-code-style-reviewer — review criteria below] --> Git
+```
+
+### DESIGN Trigger Keywords
+
+Invoke DESIGN strategy when the request contains any of:
+
+- "design system", "design tokens"
+- "wireframe", "wireframes"
+- "prototype", "prototypes"
+- "brand identity", "brand guidelines"
+- "UI design", "UX design", "UX audit"
+- "style guide", "visual guide"
+- "mockup", "mockups", "hi-fi", "lo-fi"
+- "user flow", "user journey", "flow diagram"
+
+### DESIGN vs CREATIVE Disambiguation
+
+| User Says                                      | Workflow |
+| ---------------------------------------------- | -------- |
+| "Design a new settings page"                   | DESIGN   |
+| "Create wireframes for checkout flow"          | DESIGN   |
+| "Build our design system"                      | DESIGN   |
+| "Design and build a landing page"              | CREATIVE |
+| "Create a landing page for our product"        | CREATIVE |
+| "Design our homepage" (implies implementation) | CREATIVE |
+| "Create a marketing site"                      | CREATIVE |
+
+**Decision rule**: If the user's request implies *implementation output* (HTML, components, live pages), route to CREATIVE. If the deliverable is *design documentation or specifications only* (Figma spec, design-spec.md, wireframe doc, design token file), route to DESIGN. When ambiguous, ask a single clarifying question: "Should this produce working code, or design specs only?"
+
+### DESIGN Review Criteria
+
+| Criterion                   | Reviewer                  |
+| --------------------------- | ------------------------- |
+| Accessibility (WCAG 2.1 AA) | nitro-code-style-reviewer |
+| Design system consistency   | nitro-code-style-reviewer |
+| Responsive specs coverage   | nitro-code-style-reviewer |
+| Color contrast ratios       | nitro-code-style-reviewer |
+| Typography hierarchy        | nitro-code-style-reviewer |
+| Component reusability       | nitro-code-style-reviewer |
+
+### DESIGN Output Locations
+
+| Deliverable         | Output Path                                              |
+| ------------------- | -------------------------------------------------------- |
+| Design spec         | `task-tracking/TASK_[ID]/design-spec.md`                 |
+| Design system       | `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md` |
+| Wireframe docs      | `task-tracking/TASK_[ID]/wireframes.md`                  |
+| User flow diagrams  | `task-tracking/TASK_[ID]/user-flows.md`                  |
+| Design tokens       | `task-tracking/TASK_[ID]/design-tokens.md`               |
+
+---
+
 ## Strategy Selection Summary
 
 Use this decision tree for quick strategy selection:
@@ -633,7 +766,15 @@ Is task DEVOPS (CI/CD, packaging, build config, deployment)?
     YES -> DEVOPS strategy
     NO  -> continue
 
-Is task CREATIVE (landing page, brand, marketing, theme design)?
+Is task OPS (known-pattern operational config: CI/CD setup, docker, k8s, terraform, environment setup)?
+    YES -> OPS strategy (if novel design is needed, prefer DEVOPS)
+    NO  -> continue
+
+Is task DESIGN (wireframe, prototype, design system, brand identity — no code output)?
+    YES -> DESIGN strategy
+    NO  -> continue
+
+Is task CREATIVE (landing page, brand, marketing, theme design — includes code output)?
     YES -> Check design system -> CREATIVE strategy
     NO  -> continue
 

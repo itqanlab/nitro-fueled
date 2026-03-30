@@ -46,6 +46,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Architecture     | nitro-software-architect                                 | Design                      |
 | Landing page     | nitro-ui-ux-designer -> nitro-technical-content-writer         | Marketing pages             |
 | Brand/visual     | nitro-ui-ux-designer                                     | Design system               |
+| Design artifacts | nitro-project-manager -> nitro-ui-ux-designer -> nitro-code-style-reviewer | Design-only (no code) |
 | Content          | nitro-project-manager -> [nitro-researcher-expert] -> nitro-technical-content-writer -> nitro-code-style-reviewer | Blog, email, newsletter, ad copy (CONTENT flow) |
 | Social media     | nitro-project-manager -> nitro-technical-content-writer -> [nitro-ui-ux-designer] -> nitro-code-style-reviewer | Social posts, campaigns, carousels (SOCIAL flow) |
 | Design content   | nitro-technical-content-writer                           | Blogs, docs, video (CREATIVE flow) |
@@ -722,6 +723,7 @@ See nitro-modernization-detector.md for detailed instructions.`,
 
 **Triggers**:
 
+- DESIGN workflow (primary agent — wireframes, design systems, prototypes, brand identity)
 - CREATIVE workflow (design system creation)
 - SOCIAL workflow (Phase 3 — carousel/visual asset specs, conditional)
 - FEATURE with UI components (Phase 3)
