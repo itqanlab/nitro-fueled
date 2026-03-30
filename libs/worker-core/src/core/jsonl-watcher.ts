@@ -10,7 +10,7 @@ import type {
   Worker,
 } from '../types.js';
 import { calculateCost } from './token-calculator.js';
-import { isProcessAlive, killProcess, closeItermSession } from './iterm-launcher.js';
+import { isProcessAlive } from './process-launcher.js';
 import { killPrintProcess } from './print-launcher.js';
 import { killOpenCodeProcess, getOpenCodeExitCode } from './opencode-launcher.js';
 import type { WorkerRegistry } from './worker-registry.js';
@@ -56,25 +56,13 @@ export class JsonlWatcher {
     for (const worker of workers) {
       // Check if process is still alive
       if (!isProcessAlive(worker.pid)) {
-        // For iTerm workers, do a final read of JSONL before marking completed
-        if (worker.launcher === 'iterm' && worker.jsonl_path && existsSync(worker.jsonl_path)) {
-          const acc = this.getOrCreateAccumulator(worker.session_id, worker.model);
-          this.readNewLines(worker.jsonl_path, worker.session_id, acc);
+        // Push final stats
+        const acc = this.accumulators.get(worker.session_id);
+        if (acc) {
           this.pushStatsToRegistry(worker.worker_id, acc);
         }
-        // Print-mode workers already have stats fed via feedMessage — just push final stats
-        if (worker.launcher === 'print') {
-          const acc = this.accumulators.get(worker.session_id);
-          if (acc) {
-            this.pushStatsToRegistry(worker.worker_id, acc);
-          }
-        }
-        // OpenCode: push final stats and mark failed on non-zero exit
+        // OpenCode: mark failed on non-zero exit
         if (worker.launcher === 'opencode') {
-          const acc = this.accumulators.get(worker.session_id);
-          if (acc) {
-            this.pushStatsToRegistry(worker.worker_id, acc);
-          }
           const exitCode = getOpenCodeExitCode(worker.pid);
           if (exitCode !== null && exitCode !== 0) {
             this.registry.updateStatus(worker.worker_id, 'failed');
@@ -84,51 +72,23 @@ export class JsonlWatcher {
         }
         this.registry.updateStatus(worker.worker_id, 'completed');
         this.accumulators.delete(worker.session_id);
-        // Close iTerm pane for auto_close workers whose process died
-        if (worker.auto_close && worker.launcher === 'iterm') {
-          closeItermSession(worker.iterm_session_id).catch(() => {});
-        }
         continue;
       }
 
-      // Print-mode and OpenCode workers get stats via feedMessage — skip JSONL polling for them
-      if (worker.launcher === 'print' || worker.launcher === 'opencode') {
-        const acc = this.accumulators.get(worker.session_id);
-        if (acc && worker.auto_close && acc.endTurnAt && !acc.autoCloseTriggered && Date.now() - acc.endTurnAt > 10_000) {
-          acc.autoCloseTriggered = true;
-          this.autoCloseWorker(worker).catch((err) => {
-            console.error(`[auto-close] Failed for ${worker.label}:`, err);
-            acc.autoCloseTriggered = false;
-          });
-        }
-        continue;
-      }
-
-      // iTerm workers: poll JSONL files
-      // Skip workers whose session/JSONL hasn't been resolved yet
-      if (worker.session_id === 'pending' || !worker.jsonl_path) continue;
-      if (!existsSync(worker.jsonl_path)) continue;
-
-      const acc = this.getOrCreateAccumulator(worker.session_id, worker.model);
-      this.readNewLines(worker.jsonl_path, worker.session_id, acc);
-      this.pushStatsToRegistry(worker.worker_id, acc);
-
-      // Auto-close: if completion detected and idle for 10s+, kill process and close pane
-      if (worker.auto_close && acc.endTurnAt && !acc.autoCloseTriggered && Date.now() - acc.endTurnAt > 10_000) {
+      // All workers get stats via feedMessage — check for auto-close
+      const acc = this.accumulators.get(worker.session_id);
+      if (acc && worker.auto_close && acc.endTurnAt && !acc.autoCloseTriggered && Date.now() - acc.endTurnAt > 10_000) {
         acc.autoCloseTriggered = true;
         this.autoCloseWorker(worker).catch((err) => {
           console.error(`[auto-close] Failed for ${worker.label}:`, err);
-          acc.autoCloseTriggered = false; // Allow retry on failure
+          acc.autoCloseTriggered = false;
         });
       }
     }
   }
 
   private async autoCloseWorker(worker: Worker): Promise<void> {
-    if (worker.launcher === 'iterm') {
-      await killProcess(worker.pid);
-      await closeItermSession(worker.iterm_session_id);
-    } else if (worker.launcher === 'opencode') {
+    if (worker.launcher === 'opencode') {
       killOpenCodeProcess(worker.pid);
     } else {
       killPrintProcess(worker.pid);

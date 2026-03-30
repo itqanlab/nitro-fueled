@@ -2,12 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { WorkerRegistry, JsonlWatcher, JsonlMessage, Provider } from '@nitro-fueled/worker-core';
 import {
-  launchInIterm,
   launchWithPrint,
   launchWithOpenCode,
   launchWithCodex,
-  resolveSessionId,
-  resolveJsonlPath,
   readProviderConfig,
   resolveProviderForSpawn,
 } from '@nitro-fueled/worker-core';
@@ -23,7 +20,6 @@ export const spawnWorkerSchema = {
     'Provider to use: claude (default), glm (Z.AI via claude CLI), opencode (single-shot CLI), or codex',
   ),
   auto_close: z.boolean().optional().describe('Auto-kill and close when the worker finishes (default: false)'),
-  use_iterm: z.boolean().optional().describe('Launch in a visible iTerm window instead of headless mode (default: false)'),
 };
 
 export async function handleSpawnWorker(
@@ -34,7 +30,6 @@ export async function handleSpawnWorker(
     model?: string;
     provider?: 'claude' | 'glm' | 'opencode' | 'codex';
     auto_close?: boolean;
-    use_iterm?: boolean;
   },
   registry: WorkerRegistry,
   watcher: JsonlWatcher,
@@ -43,7 +38,6 @@ export async function handleSpawnWorker(
   let m = args.model ?? DEFAULT_MODEL;
 
   // Phase 2 re-validation: check launcher availability and run fallback chain if needed.
-  // Runs whenever provider is specified (model is optional — DEFAULT_MODEL is used as the check input).
   if (args.provider !== undefined) {
     const modelToCheck = args.model ?? DEFAULT_MODEL;
     const config = readProviderConfig(args.working_directory);
@@ -62,13 +56,11 @@ export async function handleSpawnWorker(
         );
       }
       if (providerChanged) {
-        // Provider changed (fallback) — map resolved launcher to Provider type
         if (resolved.launcher === 'opencode') {
           p = 'opencode';
         } else if (resolved.launcher === 'codex') {
           p = 'codex';
         } else {
-          // launcher === 'claude' — use generic claude (anthropic or any claude-launcher provider)
           p = 'claude';
         }
       }
@@ -78,63 +70,7 @@ export async function handleSpawnWorker(
     }
   }
 
-  // Reject incompatible flag combination
-  if (args.use_iterm && (p === 'opencode' || p === 'codex')) {
-    throw new Error(`use_iterm=true is incompatible with provider=${p}. ${p} runs headless only.`);
-  }
-
-  if (args.use_iterm) {
-    // iTerm mode (legacy — visible window)
-    const { pid, itermSessionId } = await launchInIterm({
-      prompt: args.prompt,
-      workingDirectory: args.working_directory,
-      label: args.label,
-      model: m,
-    });
-
-    let sessionId: string | null = null;
-    let jsonlPath: string | null = null;
-    for (let i = 0; i < 10; i++) {
-      await new Promise((r) => setTimeout(r, 2000));
-      sessionId = resolveSessionId(pid);
-      if (sessionId) {
-        jsonlPath = resolveJsonlPath(sessionId, args.working_directory);
-        if (jsonlPath) break;
-      }
-    }
-
-    const worker = registry.register({
-      label: args.label,
-      pid,
-      session_id: sessionId ?? `pending-${pid}`,
-      jsonl_path: jsonlPath ?? '',
-      working_directory: args.working_directory,
-      model: m,
-      provider: p,
-      iterm_session_id: itermSessionId,
-      auto_close: args.auto_close ?? false,
-      launcher: 'iterm',
-    });
-
-    return {
-      content: [{
-        type: 'text' as const,
-        text: [
-          'Worker spawned (iTerm):',
-          `  ID: ${worker.worker_id}`,
-          `  Label: ${args.label}`,
-          `  PID: ${pid}`,
-          `  Provider: ${p}`,
-          `  Session: ${sessionId ?? 'pending'}`,
-          `  JSONL: ${jsonlPath ?? 'pending'}`,
-          `  Auto-close: ${worker.auto_close ? 'yes' : 'no'}`,
-        ].join('\n'),
-      }],
-    };
-  }
-
   if (p === 'opencode') {
-    // OpenCode mode — single-shot headless subprocess
     const workerRef: { id: string } = { id: '' };
 
     const { pid, logPath } = launchWithOpenCode({
@@ -155,7 +91,6 @@ export async function handleSpawnWorker(
       working_directory: args.working_directory,
       model: m,
       provider: p,
-      iterm_session_id: '',
       auto_close: args.auto_close ?? false,
       launcher: 'opencode',
       log_path: logPath,
@@ -179,7 +114,6 @@ export async function handleSpawnWorker(
   }
 
   if (p === 'codex') {
-    // Codex mode — single-shot headless subprocess
     const workerRef: { id: string } = { id: '' };
 
     const { pid, logPath } = launchWithCodex({
@@ -200,7 +134,6 @@ export async function handleSpawnWorker(
       working_directory: args.working_directory,
       model: m,
       provider: p,
-      iterm_session_id: '',
       auto_close: args.auto_close ?? false,
       launcher: 'codex',
       log_path: logPath,
@@ -246,7 +179,6 @@ export async function handleSpawnWorker(
     working_directory: args.working_directory,
     model: m,
     provider: p,
-    iterm_session_id: '',
     auto_close: args.auto_close ?? false,
     launcher: 'print',
     log_path: logPath,

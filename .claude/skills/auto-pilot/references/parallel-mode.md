@@ -9,8 +9,10 @@ The supervisor runs in a single Claude Code session. Every file read, tool outpu
 1. **DB is the state store, not files.** All state persistence via `update_session()`. All task queries via MCP tools (`get_tasks()`, `get_task_context()`, `get_next_wave()`). All recovery via `get_session()`.
 2. **state.md is a debug snapshot**, written once at session end (Step 8) and on explicit pause. NOT written during monitoring cycles. NOT read during normal operation.
 3. **No file reads in the core loop.** Task metadata comes from `get_task_context(task_id)`. Task status comes from `get_tasks()`. Review/test completion comes from `subscribe_worker` events. Plan guidance is cached in the session DB.
-4. **Minimize tool output.** Use `get_worker_activity()` (5-line compact summary) over `get_worker_stats()` (15+ lines) unless escalation is needed.
+4. **Minimize tool output.** Use `get_worker_activity()` (5-line compact summary) over `get_worker_stats()` (15+ lines) unless escalation is needed. Always pass `compact: true` to `list_workers()` — produces 1 line per worker instead of 5.
 5. **Never read a file to confirm what an event already told you.** If `BUILD_COMPLETE` event fired, the status IS `IMPLEMENTED` — don't re-read the status file to confirm.
+6. **NEVER run `npx nitro-fueled status`** — it spawns a subprocess, reads all task files, and wastes context. Use MCP `get_tasks()` instead.
+7. **NEVER use Bash/Read/Grep/Glob to read task data** (registry.md, task.md, status files) when MCP tools are available. File reads are only acceptable as fallback when cortex_available = false.
 
 **When `cortex_available = false`:**
 File-based fallback applies — read registry.md, status files, state.md as documented in each step's fallback path. This is the high-context-cost path and will compact sooner.
@@ -27,7 +29,7 @@ File-based fallback applies — read registry.md, status files, state.md as docu
    - Failed tasks this session
    - Retry counters for all tasks
    - Configuration (concurrency limit, monitoring interval, retry limit)
-2. Validate active workers still exist by calling MCP `list_workers`.
+2. Validate active workers still exist by calling MCP `list_workers(compact: true)`.
 3. Reconcile state vs MCP:
    - **Worker in state but NOT in MCP list**: Before triggering the completion handler, validate the task ID matches `TASK_\d{4}_\d{3}` (skip if malformed — log a warning). Then check the file system for evidence of completion:
 
@@ -603,6 +605,7 @@ Before calling `spawn_worker`, call `claim_task(task_id, session_id)`.
   - Completion Worker: `TASK_YYYY_NNN-TYPE-COMPLETE`
 - `model`: the resolved model from step 5d (omit if `default` sentinel was never resolved — should not happen after routing table lookup)
 - `provider`: the resolved provider from step 5d (omit if `claude` — that is the MCP default, so omitting is equivalent)
+- **NEVER pass `use_iterm: true`** — all workers MUST run headless. iTerm mode opens visible terminal windows, wastes resources, and doesn't support GLM env injection.
 
 **5f. On successful spawn:**
 
@@ -675,7 +678,11 @@ Call `update_session(session_id, fields=JSON.stringify({loop_status: "running", 
 **With cortex_available = false:**
 Write `{SESSION_DIR}state.md` only (original behavior).
 
+**CRITICAL — IMMEDIATELY proceed to Step 6.** Do NOT stop, yield control to the user, display a summary and wait, or end your turn. The supervisor loop is autonomous — after spawning workers you MUST enter the monitoring loop (Step 6) without any pause. Steps 5 → 6 → 7 → 8 run as one continuous loop. If you stop here, workers run unmonitored and the session is dead.
+
 ### Step 6: Monitor Active Workers
+
+**This step is a LOOP, not a one-shot check.** You enter Step 6 after spawning workers and you stay in Steps 6→7→8→(back to 4 or 6) until the session ends. Each cycle: sleep → poll/check → handle completions → check termination → repeat. NEVER exit this loop by yielding to the user.
 
 The supervisor uses **event-driven mode** when `subscribe_worker` is available (`event_driven_mode = true`), or falls back to **polling mode** (`event_driven_mode = false`).
 

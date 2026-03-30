@@ -43,16 +43,7 @@ export type {
   SpawnTrackedOptions,
   SpawnTrackedResult,
 } from './core/process-launcher.js';
-export {
-  launchInIterm,
-  killProcess,
-  closeItermSession,
-  isProcessAlive,
-} from './core/iterm-launcher.js';
-export type {
-  LaunchOptions,
-  LaunchResult,
-} from './core/iterm-launcher.js';
+export { isProcessAlive } from './core/process-launcher.js';
 export {
   launchWithPrint,
   killPrintProcess,

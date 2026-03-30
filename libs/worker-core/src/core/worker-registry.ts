@@ -64,7 +64,6 @@ export class WorkerRegistry {
     working_directory: string;
     model: string;
     provider?: Provider;
-    iterm_session_id: string;
     auto_close: boolean;
     launcher?: LauncherMode;
     log_path?: string;
@@ -83,9 +82,8 @@ export class WorkerRegistry {
       tokens: emptyTokens(),
       cost: emptyCost(),
       progress: emptyProgress(),
-      iterm_session_id: opts.iterm_session_id,
       auto_close: opts.auto_close,
-      launcher: opts.launcher ?? 'iterm',
+      launcher: opts.launcher ?? 'print',
       log_path: opts.log_path,
     };
     this.workers.set(worker.worker_id, worker);

@@ -117,6 +117,15 @@ export function killTrackedProcess(pid: number): boolean {
   }
 }
 
+export function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Cleanup all child processes on exit
 process.once('exit', () => {
   for (const [, child] of childProcesses) {

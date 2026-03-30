@@ -9,8 +9,6 @@ import { join } from 'node:path';
 import {
   WorkerRegistry,
   JsonlWatcher,
-  killProcess,
-  closeItermSession,
   isProcessAlive,
   killPrintProcess,
   killOpenCodeProcess,
@@ -42,7 +40,7 @@ const server = new McpServer({
 // --- spawn_worker ---
 server.tool(
   'spawn_worker',
-  'Spawn a new autonomous Claude Code worker session. Uses --print mode by default (headless subprocess). Set use_iterm=true for a visible iTerm window.',
+  'Spawn a new autonomous Claude Code worker session (headless subprocess).',
   spawnWorkerSchema,
   async (args) => {
     return handleSpawnWorker(args, registry, watcher);
@@ -55,11 +53,21 @@ server.tool(
   'List all tracked worker sessions with status, tokens, and cost',
   {
     status_filter: z.enum(['active', 'completed', 'failed', 'all']).optional().describe('Filter by status (default: all)'),
+    compact: z.boolean().optional().describe('Return compact 1-line-per-worker summary to minimize context usage (default: false)'),
   },
-  async ({ status_filter }) => {
+  async ({ status_filter, compact }) => {
     const workers = registry.list(status_filter ?? 'all');
     if (workers.length === 0) {
       return { content: [{ type: 'text' as const, text: 'No workers tracked.' }] };
+    }
+
+    if (compact) {
+      // Compact mode: 1 line per worker, minimal context cost
+      const lines = workers.map((w) => {
+        const elapsed = Math.round((Date.now() - w.started_at) / 60000);
+        return `${w.worker_id} | ${w.status} | ${w.label} | ${w.provider}/${w.model} | ${elapsed}m | $${w.cost.total_usd} | ${w.tokens.context_percent}%ctx`;
+      });
+      return { content: [{ type: 'text' as const, text: `${workers.length} workers:\n${lines.join('\n')}` }] };
     }
 
     const lines = workers.map((w) => {
@@ -236,12 +244,8 @@ server.tool(
     if (!w) return { content: [{ type: 'text' as const, text: `Worker ${worker_id} not found.` }], isError: true };
 
     let killed: boolean;
-    let paneClosed = false;
 
-    if (w.launcher === 'iterm') {
-      killed = await killProcess(w.pid);
-      paneClosed = await closeItermSession(w.iterm_session_id);
-    } else if (w.launcher === 'opencode') {
+    if (w.launcher === 'opencode') {
       killed = killOpenCodeProcess(w.pid);
     } else {
       killed = killPrintProcess(w.pid);
@@ -251,11 +255,10 @@ server.tool(
 
     const lines = [
       `Worker ${w.label} ${killed ? 'terminated' : 'failed to terminate'}.`,
-      `  Mode: ${w.launcher ?? 'iterm'}`,
+      `  Mode: ${w.launcher ?? 'print'}`,
       `  Provider: ${w.provider}`,
       `  Reason: ${reason ?? 'manual'}`,
     ];
-    if (w.launcher === 'iterm') lines.push(`  Pane closed: ${paneClosed ? 'yes' : 'no'}`);
     if (w.log_path) lines.push(`  Log: ${w.log_path}`);
     lines.push(`  Final cost: $${w.cost.total_usd} | Tokens: ${w.tokens.total_combined.toLocaleString()} | Ctx: ${w.tokens.context_percent}%`);
 

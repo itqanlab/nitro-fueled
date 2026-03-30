@@ -9,7 +9,7 @@ export type WorkerType = 'build' | 'review';
 export type WorkerStatus = 'active' | 'completed' | 'failed' | 'killed';
 export type LoopStatus = 'running' | 'paused' | 'stopped';
 export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished';
-export type LauncherMode = 'print' | 'iterm' | 'opencode';
+export type LauncherMode = 'print' | 'opencode' | 'codex';
 export type ProviderType = 'claude' | 'glm' | 'opencode';
 
 export interface WorkerTokenStats {
@@ -85,10 +85,9 @@ CREATE TABLE IF NOT EXISTS workers (
   working_directory  TEXT,
   model              TEXT,
   provider           TEXT CHECK(provider IN ('claude','glm','opencode')),
-  launcher           TEXT CHECK(launcher IN ('print','iterm','opencode')),
+  launcher           TEXT CHECK(launcher IN ('print','opencode','codex')),
   log_path           TEXT,
   auto_close         INTEGER NOT NULL DEFAULT 0,
-  iterm_session_id   TEXT,
   expected_end_state TEXT,
   spawn_time         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   last_health        TEXT,

@@ -36,7 +36,7 @@ export interface WorkerProgress {
 export type WorkerStatus = 'running' | 'completed' | 'failed' | 'killed';
 export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished';
 
-export type LauncherMode = 'iterm' | 'print' | 'opencode' | 'codex';
+export type LauncherMode = 'print' | 'opencode' | 'codex';
 export type Provider = 'claude' | 'glm' | 'opencode' | 'codex';
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,6 @@ export interface Worker {
   tokens: WorkerTokenStats;
   cost: WorkerCost;
   progress: WorkerProgress;
-  iterm_session_id: string;
   auto_close: boolean;
   launcher: LauncherMode;
   log_path?: string;
