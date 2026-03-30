@@ -1,6 +1,7 @@
 import {
   ApiProviderOption,
   LauncherType,
+  ModelMapping,
   SettingsState,
   SubscriptionProviderOption,
 } from '../models/settings.model';
@@ -131,5 +132,61 @@ export function buildApiKeyEntry(
     status: 'untested',
     isActive: true,
     detectedModels: provider.modelIds,
+  };
+}
+
+export function toggleMappingInState(state: SettingsState, modelId: string, launcherId: string): SettingsState {
+  const existing = state.mappings.find(
+    (m) => m.modelId === modelId && m.launcherId === launcherId,
+  );
+
+  if (existing !== undefined) {
+    return {
+      ...state,
+      mappings: state.mappings.filter((m) => m.id !== existing.id),
+    };
+  }
+
+  const newMapping: ModelMapping = {
+    id: `mapping-${Date.now()}`,
+    modelId,
+    launcherId,
+    isDefault: false,
+  };
+
+  return {
+    ...state,
+    mappings: [...state.mappings, newMapping],
+  };
+}
+
+export function updateDefaultsInState(state: SettingsState, modelId: string, launcherId: string): SettingsState {
+  let found = state.mappings.find(
+    (m) => m.modelId === modelId && m.launcherId === launcherId,
+  );
+
+  let mappings = state.mappings.map((m) => ({ ...m, isDefault: false }));
+
+  if (found === undefined) {
+    found = {
+      id: `mapping-${Date.now()}`,
+      modelId,
+      launcherId,
+      isDefault: true,
+    };
+    mappings = [...mappings, found];
+  } else {
+    mappings = mappings.map((m) =>
+      m.id === found!.id ? { ...m, isDefault: true } : m,
+    );
+  }
+
+  return { ...state, mappings };
+}
+
+export function resetMappingsInState(state: SettingsState): SettingsState {
+  return {
+    ...state,
+    mappings: MOCK_SETTINGS_STATE.mappings.map((m) => ({ ...m })),
   };
 }

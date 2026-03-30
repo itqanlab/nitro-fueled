@@ -28,28 +28,7 @@
         <app-subscriptions></app-subscriptions>
       }
       @case ('mapping') {
-        <div class="settings-tab-panel">
-          <h2 class="panel-title">Model Mapping</h2>
-          <p class="panel-description">Map models to launchers and set defaults for each launcher.</p>
-          <div class="entries-list">
-            @for (mapping of mappings(); track mapping.id) {
-              <div class="entry-row">
-                <div class="entry-info">
-                  <span class="entry-model">{{ mapping.modelId }}</span>
-                  <span class="entry-arrow">→</span>
-                  <span class="entry-launcher">{{ mapping.launcherName }}</span>
-                </div>
-                <div class="entry-toggle">
-                  @if (mapping.isDefault) {
-                    <span class="default-badge">Default</span>
-                  }
-                </div>
-              </div>
-            } @empty {
-              <p class="empty-state">No model mappings configured.</p>
-            }
-          </div>
-        </div>
+        <app-mapping></app-mapping>
       }
     }
   </div>

@@ -81,6 +81,24 @@ export interface MappingDisplayEntry extends ModelMapping {
   readonly launcherName: string;
 }
 
+export interface MappingModelEntry {
+  readonly modelId: string;
+  readonly source: 'api-key' | 'subscription';
+  readonly sourceLabel: string;
+}
+
+export interface MappingLauncherEntry {
+  readonly launcherId: string;
+  readonly launcherName: string;
+}
+
+export interface MappingMatrixCell {
+  readonly modelId: string;
+  readonly launcherId: string;
+  readonly enabled: boolean;
+  readonly isDefault: boolean;
+}
+
 export const SETTINGS_TABS: readonly SettingsTabDefinition[] = [
   { id: 'api-keys', label: 'API Keys', icon: '🔑' },
   { id: 'launchers', label: 'Launchers', icon: '🚀' },

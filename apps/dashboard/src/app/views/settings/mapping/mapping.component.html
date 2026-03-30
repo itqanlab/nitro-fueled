@@ -1,0 +1,102 @@
+<div class="mapping-panel">
+  <div class="panel-header">
+    <div>
+      <h2 class="panel-title">Default Mapping Configuration</h2>
+      <p class="panel-description">Configure default selections and map models to launchers. Only active items appear.</p>
+    </div>
+  </div>
+
+  <section class="defaults-section">
+    <h3 class="section-title">Global Defaults</h3>
+    <div class="defaults-grid">
+      <label class="field-group">
+        <span class="field-label">Default Model</span>
+        <select class="field-input" [value]="selectedDefaultModel()" (change)="onDefaultModelChange($event)">
+          <option value="">Select default model</option>
+          @for (model of modelOptions(); track model) {
+            <option [value]="model">{{ model }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field-group">
+        <span class="field-label">Default Launcher</span>
+        <select class="field-input" [value]="selectedDefaultLauncher()" (change)="onDefaultLauncherChange($event)">
+          <option value="">Select default launcher</option>
+          @for (launcher of launcherOptions(); track launcher.id) {
+            <option [value]="launcher.id">{{ launcher.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </section>
+
+  @if (hasData()) {
+    <section class="matrix-section">
+      <h3 class="section-title">Model → Launcher Mapping</h3>
+      <p class="section-hint">Toggle cells to enable/disable model-launcher combinations. Click the star to set the default.</p>
+
+      <div class="matrix-wrapper">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th class="matrix-corner">Model \ Launcher</th>
+              @for (launcher of activeLaunchers(); track launcher.launcherId) {
+                <th class="matrix-col-header">{{ launcher.launcherName }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (model of activeModels(); track model.modelId) {
+              <tr>
+                <td class="matrix-row-header">
+                  <div class="model-cell">
+                    <span class="model-name">{{ model.modelId }}</span>
+                    <span class="model-source">{{ model.sourceLabel }}</span>
+                  </div>
+                </td>
+                @for (launcher of activeLaunchers(); track launcher.launcherId) {
+                  <td class="matrix-cell">
+                    <div class="cell-content">
+                      <button
+                        class="cell-toggle"
+                        type="button"
+                        [attr.aria-pressed]="isCellEnabled(model.modelId, launcher.launcherId)"
+                        [class.cell-toggle--active]="isCellEnabled(model.modelId, launcher.launcherId)"
+                        (click)="onToggleCell(model.modelId, launcher.launcherId)">
+                      </button>
+                      @if (isCellEnabled(model.modelId, launcher.launcherId)) {
+                        <button
+                          class="cell-star"
+                          type="button"
+                          [attr.aria-label]="'Set ' + model.modelId + ' as default for ' + launcher.launcherName"
+                          [class.cell-star--active]="isCellDefault(model.modelId, launcher.launcherId)"
+                          (click)="onSetDefault(model.modelId, launcher.launcherId)">
+                          {{ isCellDefault(model.modelId, launcher.launcherId) ? '★' : '☆' }}
+                        </button>
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else {
+    <div class="empty-matrix">
+      <p class="empty-state">Enable at least one model source (API key or subscription) and one launcher to configure mappings.</p>
+    </div>
+  }
+
+  <div class="mapping-actions">
+    @if (saveMessage() !== null) {
+      <span class="save-message">{{ saveMessage() }}</span>
+    }
+    <div class="action-buttons">
+      <button class="secondary-action" type="button" (click)="onReset()">Reset to Defaults</button>
+      <button class="primary-action" type="button" (click)="onSave()">Save Configuration</button>
+    </div>
+  </div>
+</div>

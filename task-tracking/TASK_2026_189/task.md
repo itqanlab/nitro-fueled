@@ -38,5 +38,5 @@ Fields stored as JSON strings in SQLite (dependencies, acceptance_criteria, file
 
 ## File Scope
 
-- packages/mcp-cortex/src/tools/
-- packages/mcp-cortex/src/db/
+- packages/mcp-cortex/src/tools/wave.ts
+- packages/mcp-cortex/src/tools/context.ts

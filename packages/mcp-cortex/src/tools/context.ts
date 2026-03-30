@@ -70,7 +70,9 @@ export function handleGetTaskContext(
   try {
     const parsed = JSON.parse((task['file_scope'] as string) ?? '[]');
     if (Array.isArray(parsed)) fileScope = parsed as string[];
-  } catch { /* ignore */ }
+  } catch {
+    console.error(`[nitro-cortex] get_task_context: failed to parse file_scope for ${args.task_id}, defaulting to empty`);
+  }
 
   // If no file_scope in DB, try reading from task.md
   if (fileScope.length === 0) {
@@ -90,7 +92,9 @@ export function handleGetTaskContext(
   try {
     const parsed = JSON.parse((task['dependencies'] as string) ?? '[]');
     if (Array.isArray(parsed)) deps = parsed as string[];
-  } catch { /* ignore */ }
+  } catch {
+    console.error(`[nitro-cortex] get_task_context: failed to parse dependencies for ${args.task_id}, defaulting to empty`);
+  }
 
   const result = {
     ok: true,

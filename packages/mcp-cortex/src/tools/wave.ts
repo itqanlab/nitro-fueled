@@ -30,7 +30,14 @@ export function handleGetNextWave(
     for (const task of candidates) {
       if (wave.length >= args.slots) break;
 
-      const deps = JSON.parse(task.dependencies) as string[];
+      let deps: string[];
+      try {
+        const parsed = JSON.parse(task.dependencies);
+        deps = Array.isArray(parsed) ? parsed as string[] : [];
+      } catch {
+        console.error(`[nitro-cortex] get_next_wave: failed to parse dependencies for ${task.id}, treating as no deps`);
+        deps = [];
+      }
       const allDepsComplete = deps.length === 0 || deps.every(d => completeTasks.has(d));
 
       if (allDepsComplete) {
