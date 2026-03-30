@@ -41,10 +41,12 @@ The `DashboardGateway` (`apps/dashboard-api/src/dashboard/dashboard.gateway.ts`)
 
 ## File Scope
 
-- `apps/dashboard-api/src/dashboard/dashboard.gateway.ts`
-- `apps/dashboard-api/src/auth/ws-auth.guard.ts` (new)
-- `apps/dashboard-api/src/auth/auth.module.ts` (new or update)
-- `apps/dashboard-api/src/app/app.module.ts`
+- `apps/dashboard-api/src/dashboard/dashboard.gateway.ts` (modified)
+- `apps/dashboard-api/src/dashboard/auth/ws-auth.guard.ts` (new)
+- `apps/dashboard-api/src/dashboard/dashboard.module.ts` (modified)
+- `apps/dashboard-api/test/dashboard/dashboard.gateway.spec.ts` (new)
+- `apps/dashboard-api/jest.config.js` (new)
+- `apps/dashboard-api/package.json` (modified)
 
 ## Parallelism
 
