@@ -2,77 +2,88 @@
 
 ## Summary
 
-| Item | Value |
-| --- | --- |
+| Field | Value |
+|-------|-------|
 | Task | TASK_2026_163 |
-| Scope | `packages/mcp-cortex/src/tools/task-creation.ts`, `packages/mcp-cortex/src/index.ts` |
-| Status | FAIL |
+| Status | PASS |
+| Scope | `packages/mcp-cortex/src/tools/task-creation.ts`, `packages/mcp-cortex/src/index.ts`, `packages/mcp-cortex/src/db/schema.ts`, `.claude/commands/nitro-create-task.md` |
+
+## Validation Scope
+
+- Reviewed `task-tracking/TASK_2026_163/task.md` to confirm the intended acceptance criteria and file scope.
+- Verified the current implementation registers the task-creation MCP tools in `packages/mcp-cortex/src/index.ts`.
+- Verified `packages/mcp-cortex/src/tools/task-creation.ts` now reads `task-tracking/task-template.md`, enforces multi-layer sizing validation, and fails task creation when DB upsert does not succeed.
+- Verified canonical `OPS` support remains present in `packages/mcp-cortex/src/db/schema.ts`.
+- Verified `.claude/commands/nitro-create-task.md` prefers the MCP task-creation tools with fallback guidance.
 
 ## Commands Run
 
-| Command | Result |
-| --- | --- |
-| `npm test` | PASS |
-| `npm run build` | PASS |
-| Targeted Node validation against built `dist/tools/task-creation.js` in a temporary git repo | FAIL |
+```bash
+cd packages/mcp-cortex
+npm test
+npm run build
+node --input-type=module -e "...targeted smoke validation against dist/tools/task-creation.js..."
+```
 
-## Test Cases
+## Results
 
-| Test Case | Result | Notes |
-| --- | --- | --- |
-| Existing `vitest` suite for `packages/mcp-cortex` | PASS | 5 files, 66 tests passed. |
-| TypeScript build for `packages/mcp-cortex` | PASS | `tsc` completed without errors. |
-| `handleGetNextTaskId` returns next sequential ID from disk scan | PASS | Returned `TASK_2026_003` after seeding `TASK_2026_001` and `TASK_2026_002`. |
-| `handleValidateTaskSizing` rejects a Complex multi-layer task | FAIL | Returned `{ "valid": true, "violations": [] }` even though `task-tracking/sizing-rules.md` declares `Complex + multiple architectural layers` as split-required. |
-| `handleCreateTask` writes `task.md` from the canonical template | FAIL | Generated markdown came from a bespoke inline template, not `task-tracking/task-template.md`. |
-| `handleCreateTask` persists a DB row for a valid `FEATURE` task | PASS | Row existed in SQLite after creation. |
-| `handleBulkCreateTasks` auto-wires sequential dependency when omitted | PASS | Second generated task included the first task ID in its dependencies section. |
-| `handleCreateTask` supports canonical `OPS` task type end-to-end | FAIL | Tool reported success and created files, but the DB row was absent because the underlying upsert failed silently. |
+| Command | Result | Notes |
+|---------|--------|-------|
+| `npm test` | PASS | `vitest` completed successfully: 5 test files passed, 66 tests passed, 0 failed. |
+| `npm run build` | PASS | TypeScript build for `packages/mcp-cortex` completed successfully. |
+| Targeted task-creation smoke test | PASS | Temporary git repo validation passed for canonical `OPS` task creation and Complex multi-layer sizing rejection using the built implementation. |
 
-## Findings
+## Validation Details
 
-1. `validate_task_sizing` does not enforce all rules from `task-tracking/sizing-rules.md`; the Complex multi-layer rule is missing.
-2. `create_task` does not use `task-tracking/task-template.md` as the source of truth for generated `task.md`.
-3. `create_task` can report success after a failed DB upsert, demonstrated with canonical task type `OPS`.
+| Check | Result | Evidence |
+|-------|--------|----------|
+| MCP task-creation tools are registered | PASS | `packages/mcp-cortex/src/index.ts` registers `get_next_task_id`, `validate_task_sizing`, `create_task`, and `bulk_create_tasks`. |
+| `create_task` uses the canonical task template | PASS | `buildTaskMd` reads `task-tracking/task-template.md` and populates the generated `task.md` from that template. |
+| `validate_task_sizing` rejects Complex multi-layer work | PASS | Smoke test returned `valid: false` with `rule: "complexity_multiple_layers"` for an API + data-layer description. |
+| `create_task` supports canonical `OPS` type end-to-end | PASS | Smoke test created `TASK_2026_001`, wrote `task.md` and `status`, committed the folder, and inserted a DB row with `type = 'OPS'` and `status = 'CREATED'`. |
+| `create_task` treats DB upsert failure as a hard failure | PASS | Current implementation calls `assertUpsertSucceeded(...)` before commit and cleans up on failure. |
+| `/nitro-create-task` prefers MCP task-creation tools | PASS | `.claude/commands/nitro-create-task.md` directs the command to use MCP tools first and only fall back to manual file operations when unavailable. |
 
-## Evidence
-
-Targeted validation output summary:
+## Smoke Test Evidence
 
 ```json
-[
-  {
-    "name": "get_next_task_id increments from disk",
-    "pass": true
-  },
-  {
-    "name": "validate_task_sizing flags complex multi-layer task",
-    "pass": false,
-    "actual": {
-      "valid": true,
-      "violations": []
+{
+  "results": [
+    {
+      "name": "validate_task_sizing flags complex multi-layer task",
+      "pass": true,
+      "actual": {
+        "valid": false,
+        "violations": [
+          {
+            "rule": "complexity_multiple_layers",
+            "actual": "api, data",
+            "maximum": "single architectural layer"
+          }
+        ],
+        "suggestedSplitCount": 2
+      }
+    },
+    {
+      "name": "create_task supports canonical OPS task type",
+      "pass": true,
+      "actual": {
+        "create": {
+          "taskId": "TASK_2026_001",
+          "folder": "task-tracking/TASK_2026_001",
+          "status": "CREATED"
+        },
+        "dbRow": {
+          "id": "TASK_2026_001",
+          "type": "OPS",
+          "status": "CREATED"
+        }
+      }
     }
-  },
-  {
-    "name": "create_task writes task from canonical template",
-    "pass": false
-  },
-  {
-    "name": "create_task inserts database row",
-    "pass": true
-  },
-  {
-    "name": "bulk_create_tasks auto-wires sequential dependency",
-    "pass": true
-  },
-  {
-    "name": "create_task supports canonical OPS task type",
-    "pass": false,
-    "actual": {
-      "taskId": "TASK_2026_006",
-      "folder": "task-tracking/TASK_2026_006",
-      "status": "CREATED"
-    }
-  }
-]
+  ]
+}
 ```
+
+## Conclusion
+
+The previously reported failures are fixed in the current implementation. The scoped validations requested for TASK_2026_163 all passed, and the task-creation flow now reflects the expected fixed state.
