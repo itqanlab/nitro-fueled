@@ -50,6 +50,13 @@ Check these BEFORE submitting work.
 - Promises that cache initialization (`_initPromise`) MUST reset to null on failure.
 - File handles and streams opened must be closed in all exit paths (success and error).
 
+## Angular Performance & Conventions
+
+- Never use hardcoded hex/rgba colors — use CSS variable tokens or the project's design token system. [RETRO_2026-03-30_since-2026-03-27]
+- Template expressions must not call methods — use `computed()` signals or precomputed properties. Method calls re-execute on every change detection cycle. [RETRO_2026-03-30_since-2026-03-27]
+- Explicit access modifiers (`public`, `private`, `protected`) on ALL class members — never bare. [RETRO_2026-03-30_since-2026-03-27]
+- Interfaces and types must be defined at module scope in `*.model.ts` files — never inside component or function bodies. [RETRO_2026-03-30_since-2026-03-27]
+
 ## Async Error Handling (Node.js)
 
 - Async route handlers must be wrapped with error-catching middleware — unhandled promise rejections crash the process.

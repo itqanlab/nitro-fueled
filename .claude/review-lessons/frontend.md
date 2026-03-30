@@ -21,6 +21,10 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Cmd+K must check `event.target`** — skip if target is input/textarea/contentEditable. (T08)
 - **Use `navigator.userAgentData`** — `navigator.platform` is deprecated. (T08)
 
+## Change Detection
+
+- **All Angular components must use `changeDetection: ChangeDetectionStrategy.OnPush`** — default change detection causes unnecessary re-renders. Every new component must include `changeDetection: ChangeDetectionStrategy.OnPush` in its `@Component` decorator. (11 tasks: 079,081,082,083,084,115,147,148,153,155) [RETRO_2026-03-30_since-2026-03-27]
+
 ## Routing
 
 - **Routes must have default paths** — `/settings` needs redirect to `/settings/general`. (T08)
