@@ -34,6 +34,7 @@ task-tracking/
     plan.md                      # Plan (Architect output — architecture, content outline, design brief)
     tasks.md                     # Atomic task breakdown (Team-leader output)
     handoff.md                   # Build Worker handoff artifact (written before IMPLEMENTED; Review Worker reads this first)
+    prep-handoff.md              # Prep Worker handoff (split mode only — planning contract for Implement Worker)
     test-report.md               # Testing results (Tester output)
     code-style-review.md         # Style review (Code-style-reviewer output)
     code-logic-review.md         # Logic review (Code-logic-reviewer output)
@@ -151,6 +152,7 @@ Created during Phase 0 initialization:
 | plan.md | software-architect     | Plan — architecture, outline, or brief |
 | tasks.md               | team-leader (MODE 1)   | Batched atomic tasks              |
 | handoff.md             | Build Worker           | Files changed, commit hashes, architectural decisions, known risks — read by Review Worker as first action |
+| prep-handoff.md        | Prep Worker            | Implementation plan, files to touch, batches, decisions, gotchas — read by Implement Worker |
 | test-report.md         | senior-tester          | Test results, coverage            |
 | code-style-review.md   | code-style-reviewer    | Pattern compliance findings       |
 | code-logic-review.md   | code-logic-reviewer    | Business logic findings           |
@@ -191,6 +193,8 @@ Glob(task-tracking/TASK_[ID]/*.md)
 | + task-description.md            | PM done                | User validate OR next agent           |
 | + design-spec.md | Designer done          | Invoke software-architect             |
 | + plan.md (or legacy: implementation-plan.md) | Architect done         | User validate OR team-leader MODE 1   |
+| + prep-handoff.md (no tasks.md IN PROGRESS) | Prep complete (split mode) | Spawn Implement Worker |
+| + tasks.md (IN PROGRESS, prep-handoff.md present) | Implementing (split mode) | Implement Worker running |
 | + tasks.md (all PENDING)         | Decomposition done     | team-leader MODE 2 (first assignment) |
 | + tasks.md (has IN PROGRESS)     | Dev in progress        | team-leader MODE 2 (verify + next)    |
 | + tasks.md (has IMPLEMENTED)     | Dev done, await verify | team-leader MODE 2 (verify + commit)  |
@@ -230,12 +234,34 @@ Orchestrator:
 
 ## Task Status Values
 
+### Status Flow
+
+**Split Worker Mode** (Medium/Complex tasks):
+
+```
+CREATED → IN_PROGRESS → PREPPED → IMPLEMENTING → IMPLEMENTED → IN_REVIEW → COMPLETE
+                                                                    ↓
+                                                                  BLOCKED
+```
+
+**Single Worker Mode** (Simple tasks):
+
+```
+CREATED → IN_PROGRESS → IMPLEMENTED → IN_REVIEW → COMPLETE
+                                          ↓
+                                        BLOCKED
+```
+
+PREPPED and IMPLEMENTING are only used in "split" Worker Mode. In "single" mode, the task transitions directly from IN_PROGRESS to IMPLEMENTED.
+
 ### Registry Status
 
 | Status      | Meaning                                                    |
 | ----------- | ---------------------------------------------------------- |
 | CREATED     | Task defined, not yet started                              |
 | IN_PROGRESS | Build Worker actively implementing                         |
+| PREPPED     | Prep Worker complete, planning artifacts written, awaiting Implement Worker |
+| IMPLEMENTING | Implement Worker actively coding                                           |
 | IMPLEMENTED | Implementation complete, awaiting review                   |
 | IN_REVIEW   | Review Worker actively reviewing and fixing                |
 | COMPLETE    | All phases done, workflow finished                         |
