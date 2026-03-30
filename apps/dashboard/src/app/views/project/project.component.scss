@@ -68,7 +68,7 @@
   border-color: var(--accent);
   color: var(--accent);
 
-  &:hover { background: var(--accent); color: #fff; }
+  &:hover { background: var(--accent); color: var(--text-on-accent, #fff); }
 }
 
 .btn-running {

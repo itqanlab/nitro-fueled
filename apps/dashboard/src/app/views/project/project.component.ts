@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { MOCK_QUEUE_TASKS } from '../../services/project.constants';
 import type {
   QueueTask,
+  QueueTaskPriority,
   QueueTaskStatus,
   QueueViewMode,
 } from '../../models/project-queue.model';
@@ -98,7 +99,7 @@ export class ProjectComponent {
     CANCELLED: 'status-cancelled',
   };
 
-  public readonly priorityClassMap: Record<string, string> = {
+  public readonly priorityClassMap: Record<QueueTaskPriority, string> = {
     'P0-Critical': 'priority-critical',
     'P1-High': 'priority-high',
     'P2-Medium': 'priority-medium',
@@ -127,14 +128,18 @@ export class ProjectComponent {
   }
 
   public onSearchInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.searchQuery.set(target.value);
+    if (!(event.target instanceof HTMLInputElement)) return;
+    this.searchQuery.set(event.target.value);
   }
 
   public onTaskClick(task: QueueTask): void {
     if (task.status === 'IN_PROGRESS' && task.sessionId) {
-      void this.router.navigate(['/session', task.sessionId]);
+      this.router.navigate(['/session', task.sessionId]).catch(() => {
+        // /session/:id route lands in TASK_2026_157; navigation is a no-op until then
+      });
+      return;
     }
+    // Task detail view for non-running tasks deferred to TASK_2026_157
   }
 
   public onStartAutoPilot(): void {
