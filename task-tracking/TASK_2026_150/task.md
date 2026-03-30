@@ -56,9 +56,17 @@ Implement the Launchers tab and the Subscriptions/OAuth tab within the settings 
 ## File Scope
 
 - `apps/dashboard/src/app/views/settings/launchers/launchers.component.ts`
+- `apps/dashboard/src/app/views/settings/launchers/launchers.component.html`
+- `apps/dashboard/src/app/views/settings/launchers/launchers.component.scss`
 - `apps/dashboard/src/app/views/settings/subscriptions/subscriptions.component.ts`
+- `apps/dashboard/src/app/views/settings/subscriptions/subscriptions.component.html`
+- `apps/dashboard/src/app/views/settings/subscriptions/subscriptions.component.scss`
 - `apps/dashboard/src/app/views/settings/settings.component.ts` (wire tabs)
+- `apps/dashboard/src/app/views/settings/settings.component.html`
 - `apps/dashboard/src/app/services/settings.service.ts` (add launcher/subscription methods)
+- `apps/dashboard/src/app/services/settings.constants.ts`
+- `apps/dashboard/src/app/services/settings-state.utils.ts`
+- `apps/dashboard/src/app/models/settings.model.ts`
 
 ## Parallelism
 

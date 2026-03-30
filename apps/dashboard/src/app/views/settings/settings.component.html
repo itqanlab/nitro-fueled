@@ -22,53 +22,10 @@
         <app-api-keys></app-api-keys>
       }
       @case ('launchers') {
-        <div class="settings-tab-panel">
-          <h2 class="panel-title">Launchers</h2>
-          <p class="panel-description">Configure AI coding tool launchers and their paths.</p>
-          <div class="entries-list">
-            @for (launcher of launchers(); track launcher.id) {
-              <div class="entry-row">
-                <div class="entry-info">
-                  <span class="entry-name">{{ launcher.name }}</span>
-                  <span class="entry-type">{{ launcher.type }}</span>
-                  <span class="entry-path">{{ launcher.path }}</span>
-                  <span class="entry-status status-{{ launcher.status }}">{{ launcher.status }}</span>
-                </div>
-                <div class="entry-toggle">
-                  <span class="toggle-label">{{ launcher.isActive ? 'Active' : 'Inactive' }}</span>
-                </div>
-              </div>
-            } @empty {
-              <p class="empty-state">No launchers configured.</p>
-            }
-          </div>
-        </div>
+        <app-launchers></app-launchers>
       }
       @case ('subscriptions') {
-        <div class="settings-tab-panel">
-          <h2 class="panel-title">Subscriptions</h2>
-          <p class="panel-description">View and manage provider subscription connections.</p>
-          <div class="entries-list">
-            @for (sub of subscriptions(); track sub.id) {
-              <div class="entry-row">
-                <div class="entry-info">
-                  <span class="entry-provider">{{ sub.provider }}</span>
-                  <span class="entry-status status-{{ sub.connectionStatus }}">{{ sub.connectionStatus }}</span>
-                </div>
-                <div class="entry-models">
-                  @if (sub.availableModels.length > 0) {
-                    <span class="models-count">{{ sub.availableModels.length }} models available</span>
-                  }
-                </div>
-                <div class="entry-toggle">
-                  <span class="toggle-label">{{ sub.isActive ? 'Active' : 'Inactive' }}</span>
-                </div>
-              </div>
-            } @empty {
-              <p class="empty-state">No subscriptions configured.</p>
-            }
-          </div>
-        </div>
+        <app-subscriptions></app-subscriptions>
       }
       @case ('mapping') {
         <div class="settings-tab-panel">

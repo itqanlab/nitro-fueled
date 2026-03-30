@@ -1,15 +1,14 @@
 import { computed, Injectable, signal } from '@angular/core';
 import {
-  ApiKeyEntry,
   ApiProviderId,
   ApiProviderOption,
-  LauncherEntry,
-  ModelMapping,
+  LauncherType,
   SettingsState,
-  SubscriptionEntry,
+  SubscriptionProviderOption,
 } from '../models/settings.model';
 import {
-  MOCK_SETTINGS_STATE,
+  MOCK_LAUNCHER_DETECTIONS,
+  SUBSCRIPTION_PROVIDER_OPTIONS,
 } from './settings.constants';
 import {
   API_PROVIDER_OPTIONS,
@@ -18,52 +17,28 @@ import {
   getProviderByName,
   maskApiKey,
 } from './settings-provider.constants';
+import {
+  addLauncherToState,
+  buildApiKeyEntry,
+  cloneSettingsState,
+  connectSubscriptionInState,
+  disconnectSubscriptionInState,
+  toggleActiveInState,
+} from './settings-state.utils';
 
 export type ToggleType = 'apiKey' | 'launcher' | 'subscription';
 
-function cloneState(): SettingsState {
-  return {
-    apiKeys: MOCK_SETTINGS_STATE.apiKeys.map((entry) => {
-      const provider = API_PROVIDER_OPTIONS.find((option) => option.name === entry.provider);
-
-      return {
-        ...entry,
-        key: maskApiKey(entry.key),
-        label: entry.label ?? `${entry.provider} key`,
-        providerId: entry.providerId ?? provider?.id,
-      };
-    }),
-    launchers: [...MOCK_SETTINGS_STATE.launchers],
-    subscriptions: [...MOCK_SETTINGS_STATE.subscriptions],
-    mappings: [...MOCK_SETTINGS_STATE.mappings],
-  };
-}
-
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
-  private readonly state = signal<SettingsState>(cloneState());
+  private readonly state = signal<SettingsState>(cloneSettingsState());
 
   public readonly apiKeys = computed(() => this.state().apiKeys);
   public readonly launchers = computed(() => this.state().launchers);
   public readonly subscriptions = computed(() => this.state().subscriptions);
   public readonly mappings = computed(() => this.state().mappings);
+  public readonly launcherDetections = computed(() => MOCK_LAUNCHER_DETECTIONS);
   public readonly providerOptions: readonly ApiProviderOption[] = API_PROVIDER_OPTIONS;
-
-  public getApiKeys(): readonly ApiKeyEntry[] {
-    return this.state().apiKeys;
-  }
-
-  public getLaunchers(): readonly LauncherEntry[] {
-    return this.state().launchers;
-  }
-
-  public getSubscriptions(): readonly SubscriptionEntry[] {
-    return this.state().subscriptions;
-  }
-
-  public getMappings(): readonly ModelMapping[] {
-    return this.state().mappings;
-  }
+  public readonly subscriptionOptions: readonly SubscriptionProviderOption[] = SUBSCRIPTION_PROVIDER_OPTIONS;
 
   public getProviderById(providerId: ApiProviderId | null): ApiProviderOption | null {
     return getProviderById(providerId);
@@ -86,19 +61,7 @@ export class SettingsService {
 
     this.state.update((state) => ({
       ...state,
-      apiKeys: [
-        {
-          id: `key-${Date.now()}`,
-          key: maskApiKey(keyValue),
-          label,
-          providerId,
-          provider: provider.name,
-          status: 'untested',
-          isActive: true,
-          detectedModels: provider.modelIds,
-        },
-        ...state.apiKeys,
-      ],
+      apiKeys: [buildApiKeyEntry(provider, label, keyValue), ...state.apiKeys],
     }));
   }
 
@@ -140,41 +103,26 @@ export class SettingsService {
     return this.state().apiKeys.length < previousLength;
   }
 
-  public toggleActive(type: ToggleType, id: string): void {
-    switch (type) {
-      case 'apiKey':
-        this.state.update((s) => ({
-          ...s,
-          apiKeys: s.apiKeys.map((entry) =>
-            entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
-          ),
-        }));
-        break;
-      case 'launcher':
-        this.state.update((s) => ({
-          ...s,
-          launchers: s.launchers.map((entry) =>
-            entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
-          ),
-        }));
-        break;
-      case 'subscription':
-        this.state.update((s) => ({
-          ...s,
-          subscriptions: s.subscriptions.map((entry) =>
-            entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
-          ),
-        }));
-        break;
+  public addLauncher(name: string, type: LauncherType, path: string): void {
+    const trimmedName = name.trim();
+    const trimmedPath = path.trim();
+
+    if (trimmedName.length === 0 || trimmedPath.length === 0) {
+      return;
     }
+
+    this.state.update((state) => addLauncherToState(state, trimmedName, type, trimmedPath));
   }
 
-  public toggleDefault(id: string): void {
-    this.state.update((s) => ({
-      ...s,
-      mappings: s.mappings.map((entry) =>
-        entry.id === id ? { ...entry, isDefault: !entry.isDefault } : entry,
-      ),
-    }));
+  public connectSubscription(id: string): void {
+    this.state.update((state) => connectSubscriptionInState(state, id, this.subscriptionOptions));
+  }
+
+  public disconnectSubscription(id: string): void {
+    this.state.update((state) => disconnectSubscriptionInState(state, id));
+  }
+
+  public toggleActive(type: ToggleType, id: string): void {
+    this.state.update((state) => toggleActiveInState(state, type, id));
   }
 }

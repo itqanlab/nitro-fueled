@@ -2,6 +2,7 @@ export type ApiKeyStatus = 'valid' | 'invalid' | 'untested';
 export type ApiProviderId = 'anthropic' | 'openai' | 'google' | 'mistral' | 'groq';
 export type LauncherType = 'cli' | 'ide' | 'desktop';
 export type LauncherStatus = 'detected' | 'manual' | 'missing';
+export type SubscriptionProviderId = 'chatgpt-plus' | 'claude-pro' | 'antigravity' | 'github-copilot';
 export type SubscriptionConnectionStatus = 'connected' | 'disconnected' | 'expired';
 
 export interface ApiKeyEntry {
@@ -33,10 +34,25 @@ export interface LauncherEntry {
 
 export interface SubscriptionEntry {
   readonly id: string;
+  readonly providerId: SubscriptionProviderId;
   readonly provider: string;
   readonly connectionStatus: SubscriptionConnectionStatus;
   readonly isActive: boolean;
   readonly availableModels: readonly string[];
+}
+
+export interface SubscriptionProviderOption {
+  readonly id: SubscriptionProviderId;
+  readonly name: string;
+  readonly iconLabel: string;
+  readonly modelIds: readonly string[];
+}
+
+export interface LauncherDetectionEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly status: 'detected' | 'not-found';
+  readonly path: string;
 }
 
 export interface ModelMapping {
