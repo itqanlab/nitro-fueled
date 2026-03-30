@@ -5,7 +5,7 @@
 - apps/cli/scaffold/.claude/commands/nitro-burn.md (new, 136 lines — scaffold sync)
 
 ## Commits
-- (pending implementation commit)
+- eb19a13: feat(commands): add /nitro-burn token and cost analytics command
 
 ## Decisions
 - Command is read-only (no file modifications) — burn reports are display-only
