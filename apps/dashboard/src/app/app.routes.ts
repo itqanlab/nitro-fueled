@@ -73,6 +73,13 @@ export const APP_ROUTES: Routes = [
             (m) => m.SettingsComponent,
           ),
       },
+      {
+        path: 'project',
+        loadComponent: () =>
+          import('./views/project/project.component').then(
+            (m) => m.ProjectComponent,
+          ),
+      },
     ],
   },
 ];
