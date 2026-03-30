@@ -17,8 +17,7 @@ export class WsAuthGuard implements CanActivate {
 
     if (this.validTokens.size === 0) {
       this.logger.warn(
-        'No WS_API_KEYS configured — all connections will be REJECTED. ' +
-          'Set WS_API_KEYS environment variable with comma-separated API keys.'
+        'No WS_API_KEYS configured — all connections will be REJECTED. Set WS_API_KEYS environment variable with comma-separated API keys.'
       );
     } else {
       this.logger.log(`Initialized with ${this.validTokens.size} valid API key(s)`);
