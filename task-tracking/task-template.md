@@ -6,7 +6,7 @@
 
 | Field                 | Value                                                                         |
 |-----------------------|-------------------------------------------------------------------------------|
-| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE | CONTENT | SOCIAL] |
+| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE | CONTENT | SOCIAL | DESIGN] |
 | Priority              | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity            | [Simple | Medium | Complex]                                                   |
 | Preferred Tier        | [light | balanced | heavy | auto]                                             |
@@ -26,6 +26,7 @@
        CREATIVE      — [ui-ux-designer] -> content-writer -> frontend
        CONTENT       — PM -> [Researcher] -> content-writer -> Style Reviewer
        SOCIAL        — PM -> content-writer -> [ui-ux-designer] -> Style Reviewer
+       DESIGN        — PM -> UI/UX Designer -> Style Reviewer (design artifacts only, no code)
 
      Priority: Determines queue ordering in auto-pilot (P0 first, P3 last)
 

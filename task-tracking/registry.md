@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -104,12 +104,12 @@
 | TASK_2026_099 | COMPLETE    | FEATURE | Per-Task Supervisor Config + Blocked Dependency Guardrail | 2026-03-28 | default |
 | TASK_2026_100 | COMPLETE    | REFACTORING | Nitro Commit Traceability Standard | 2026-03-28 | default |
 | TASK_2026_101 | COMPLETE    | FEATURE | Add CONTENT Orchestration Flow (Blog, Email, Newsletter, Ad Copy) | 2026-03-28 | default |
-| TASK_2026_102 | CREATED     | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-28 | default |
-| TASK_2026_103 | CREATED     | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
+| TASK_2026_102 | COMPLETE    | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-28 | default |
+| TASK_2026_103 | IN_PROGRESS | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
 | TASK_2026_104 | CREATED     | FEATURE | Enhance RESEARCH Orchestration Flow (Market, Competitive, Feasibility) | 2026-03-28 | default |
 | TASK_2026_105 | CREATED     | FEATURE | Add OPS Orchestration Flow (Project Setup, CI/CD, Infrastructure) | 2026-03-28 | default |
 | TASK_2026_106 | COMPLETE    | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_107 | CREATED     | REFACTORING | Update Orchestration Examples and Agent References to Generalized Artifact Names | 2026-03-28 | default |
+| TASK_2026_107 | IN_PROGRESS | REFACTORING | Update Orchestration Examples and Agent References to Generalized Artifact Names | 2026-03-28 | default |
 | TASK_2026_108 | CANCELLED   | REFACTORING | Remove OpenAI/OpenCode Provider Support (Temporary) | 2026-03-28 | default |
 | TASK_2026_109 | COMPLETE    | FEATURE | API Contract Layer — OpenAPI Spec, Typed DTOs, Versioned Endpoints | 2026-03-28 | default |
 | TASK_2026_110 | COMPLETE    | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
@@ -147,5 +147,5 @@
 | TASK_2026_142 | COMPLETE    | REFACTORING | Merge session-orchestrator into nitro-cortex — single MCP server | 2026-03-29 | default |
 | TASK_2026_143 | COMPLETE    | FEATURE | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | 2026-03-29 | default |
 | TASK_2026_144 | COMPLETE    | REFACTORING | Remove legacy dashboard apps (dashboard-service + dashboard-web) | 2026-03-29 | default |
-| TASK_2026_145 | IN_PROGRESS | REFACTORING | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | 2026-03-29 | default |
-| TASK_2026_146 | IN_PROGRESS | FEATURE | Dashboard telemetry views — model performance, phase timing, session analytics | 2026-03-29 | default |
+| TASK_2026_145 | COMPLETE    | REFACTORING | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | 2026-03-29 | default |
+| TASK_2026_146 | COMPLETE    | FEATURE | Dashboard telemetry views — model performance, phase timing, session analytics | 2026-03-29 | default |
