@@ -119,11 +119,13 @@ Do NOT ask the user whether to split. Do NOT create the oversized task. Instead,
 
 **Only skip auto-split if the user explicitly says** words like "force", "create as-is", "don't split", or "single task". In that case, create it with a sizing warning.
 
+When MCP tools are available, this explicit force-create path uses the manual fallback flow below because `create_task` intentionally rejects oversized tasks.
+
 **If all checks pass:** proceed to Step 4.
 
 ### Step 4: Create Task Folder and File
 
-If MCP tools are available, call `create_task` with the gathered task fields and stop here unless the tool is unavailable or returns an infrastructure error that requires the fallback path.
+If MCP tools are available, call `create_task` with the gathered task fields and stop here unless the tool is unavailable, the user explicitly requested a force-create oversized task, or the tool returns an infrastructure error that requires the fallback path.
 
 1. Create directory: `task-tracking/TASK_YYYY_NNN/`
 2. Generate `task.md` by populating the template structure with the user's answers
