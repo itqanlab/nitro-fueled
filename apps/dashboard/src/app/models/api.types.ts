@@ -302,7 +302,8 @@ export type DashboardEventType =
   | 'log:entry'
   | 'state:refreshed'
   | 'session:updated'
-  | 'sessions:changed';
+  | 'sessions:changed'
+  | 'session:update';
 
 export interface DashboardEvent {
   readonly type: DashboardEventType;

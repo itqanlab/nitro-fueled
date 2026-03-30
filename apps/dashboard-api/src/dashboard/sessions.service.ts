@@ -130,4 +130,54 @@ export class SessionsService {
   public removeSession(id: string): void {
     this.sessions.delete(id);
   }
+
+  /**
+   * Get enhanced active sessions with mock task and phase data.
+   */
+  public getActiveSessionsEnhanced(): ReadonlyArray<{
+    sessionId: string;
+    taskId: string;
+    taskTitle: string;
+    startedAt: string;
+    currentPhase: 'PM' | 'Architect' | 'Team-Leader' | 'Dev' | 'QA';
+    status: 'running' | 'idle' | 'completed' | 'failed';
+    lastActivity: string;
+    duration: string;
+  }> {
+    const activeSessions = this.getSessions().filter(s => s.isActive);
+    const phases: Array<'PM' | 'Architect' | 'Team-Leader' | 'Dev' | 'QA'> = ['PM', 'Architect', 'Team-Leader', 'Dev', 'QA'];
+    const statuses: Array<'running' | 'idle' | 'completed' | 'failed'> = ['running', 'idle', 'completed', 'failed'];
+
+    return activeSessions.map(session => {
+      const started = new Date(session.started);
+      const now = new Date();
+      const diffMs = now.getTime() - started.getTime();
+      const duration = this.formatDuration(diffMs);
+
+      return {
+        sessionId: session.sessionId,
+        taskId: `TASK_${session.sessionId.slice(8, 12)}_${session.sessionId.slice(13, 16)}`,
+        taskTitle: `Auto-pilot session for ${session.source}`,
+        startedAt: session.started,
+        currentPhase: phases[Math.floor(Math.random() * phases.length)],
+        status: session.loopStatus === 'RUNNING' ? 'running' : statuses[Math.floor(Math.random() * statuses.length)],
+        lastActivity: `Processing task ${session.taskCount} items`,
+        duration,
+      };
+    });
+  }
+
+  private formatDuration(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
+  }
 }

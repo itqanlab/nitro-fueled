@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Subscription, switchMap, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { MOCK_QUEUE_TASKS } from '../../services/project.constants';
+import { SessionsPanelComponent } from './sessions-panel/sessions-panel.component';
 import type { QueueTask, QueueTaskPriority, QueueTaskStatus, QueueViewMode } from '../../models/project-queue.model';
 
 type StatusFilter = QueueTaskStatus | 'ALL';
@@ -12,7 +13,7 @@ const KANBAN_COLUMNS: readonly QueueTaskStatus[] = ['CREATED', 'IN_PROGRESS', 'I
 @Component({
   selector: 'app-project',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, SessionsPanelComponent],
   templateUrl: './project.component.html',
   styleUrl: './project.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

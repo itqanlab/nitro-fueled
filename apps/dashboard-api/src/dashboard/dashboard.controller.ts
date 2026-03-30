@@ -201,6 +201,14 @@ export class DashboardController {
   }
 
   @ApiTags('sessions')
+  @ApiOperation({ summary: 'Get active sessions with enhanced data', description: 'Returns active sessions with task title, phase, and activity' })
+  @ApiResponse({ status: 200, description: 'Enhanced active session list' })
+  @Get('sessions/active/enhanced')
+  public getActiveSessionsEnhanced(): ReturnType<SessionsService['getActiveSessionsEnhanced']> {
+    return this.sessionsService.getActiveSessionsEnhanced();
+  }
+
+  @ApiTags('sessions')
   @ApiOperation({ summary: 'Get session by ID', description: 'Returns full session data including orchestrator state and log' })
   @ApiParam({ name: 'id', description: 'Session ID (format: SESSION_YYYY-MM-DD_HH-MM-SS)', example: 'SESSION_2026-03-15_10-30-00' })
   @ApiResponse({ status: 200, description: 'Session data' })
@@ -220,6 +228,25 @@ export class DashboardController {
   @Get('sessions')
   public getSessions(): ReturnType<SessionsService['getSessions']> {
     return this.sessionsService.getSessions();
+  }
+
+  @ApiTags('sessions')
+  @ApiOperation({ summary: 'Get session detail with messages', description: 'Returns session data including recent messages' })
+  @ApiResponse({ status: 200, description: 'Session detail' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @Get('sessions/:id/detail')
+  public getSessionDetail(@Param('id') id: string): { sessionId: string; messages: Array<{ timestamp: string; type: string; content: string }> } | { error: string } {
+    const session = this.sessionsService.getSession(id);
+    if (!session) {
+      throw new NotFoundException({ error: 'Session not found' });
+    }
+    return {
+      sessionId: session.summary.sessionId,
+      messages: [
+        { timestamp: session.summary.started, type: 'info', content: 'Session started' },
+        { timestamp: session.summary.lastUpdated, type: 'status', content: session.summary.loopStatus },
+      ],
+    };
   }
 
   // === Analytics ===

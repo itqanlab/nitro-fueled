@@ -1,5 +1,24 @@
 /* Project Page — Task Queue Board */
 
+/* ---- Main Grid Layout ---- */
+.project-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.sessions-sidebar {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.task-queue-main {
+  min-width: 0;
+}
+
 /* ---- Page Header ---- */
 .page-header {
   display: flex;

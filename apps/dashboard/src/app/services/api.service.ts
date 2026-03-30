@@ -9,6 +9,8 @@ interface HealthResponse {
   timestamp: string;
 }
 
+import type { ActiveSessionSummary } from '../models/sessions-panel.model';
+
 import type {
   TaskRecord,
   FullTaskData,
@@ -152,6 +154,10 @@ export class ApiService {
     return this.http.get<SessionData>(
       `${this.base}/sessions/${encodeURIComponent(id)}`,
     );
+  }
+
+  public getActiveSessionsEnhanced(): Observable<ActiveSessionSummary[]> {
+    return this.http.get<ActiveSessionSummary[]>(`${this.base}/sessions/active/enhanced`);
   }
 
   public getAnalyticsCost(): Observable<AnalyticsCostData> {

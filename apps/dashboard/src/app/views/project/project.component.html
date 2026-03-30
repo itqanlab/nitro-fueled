@@ -41,8 +41,17 @@
   </div>
 }
 
-<!-- Toolbar: Filters + View Toggle -->
-<div class="toolbar">
+<!-- Main Content Grid -->
+<div class="project-grid">
+  <!-- Sessions Panel (Left Sidebar) -->
+  <aside class="sessions-sidebar">
+    <app-sessions-panel></app-sessions-panel>
+  </aside>
+
+  <!-- Task Queue (Main Content) -->
+  <main class="task-queue-main">
+    <!-- Toolbar: Filters + View Toggle -->
+    <div class="toolbar">
   <div class="toolbar-left">
     <!-- Search input -->
     <div class="search-wrapper">
@@ -96,9 +105,8 @@
       </button>
     </div>
   </div>
-</div>
 
-<!-- List View -->
+  <!-- List View -->
 @if (viewMode() === 'list') {
   <section class="task-list" aria-label="Task list">
     @if (filteredTasks().length === 0) {
@@ -228,4 +236,6 @@
       </div>
     }
   </div>
-}
+  </main>
+</div>
+

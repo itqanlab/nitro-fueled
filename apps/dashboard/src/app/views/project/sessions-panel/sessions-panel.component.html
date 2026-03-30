@@ -1,0 +1,91 @@
+<div class="sessions-panel">
+  <div class="sessions-panel-header">
+    <h2 class="sessions-panel-title">Active Sessions</h2>
+    @if (sessions().length > 0) {
+      <span class="sessions-badge">{{ sessions().length }} running</span>
+    }
+  </div>
+
+  @if (sessions().length === 0 && recentSessions().length === 0) {
+    <div class="sessions-empty">No active sessions</div>
+  } @else {
+    <!-- Active Sessions -->
+    @if (sessions().length > 0) {
+      <div class="sessions-list">
+        @for (session of sessions(); track session.sessionId) {
+          <div
+            class="session-card"
+            [attr.role]="'button'"
+            [attr.tabindex]="0"
+            [attr.aria-label]="'View session: ' + session.taskTitle"
+            (click)="onSessionClick(session)"
+            (keydown.enter)="onSessionClick(session)"
+            (keydown.space)="onSessionClick(session)"
+          >
+            <div class="session-card-header">
+              <div class="session-task">
+                <span class="session-task-id">{{ session.taskId }}</span>
+                <div class="session-status" [ngClass]="statusClassMap[session.status]">{{ session.status }}</div>
+              </div>
+              <span class="session-duration">{{ session.duration }}</span>
+            </div>
+
+            <div class="session-card-body">
+              <div class="session-title">{{ session.taskTitle }}</div>
+              <div class="session-meta">
+                <div class="session-phase" [ngClass]="phaseClassMap[session.currentPhase]">{{ session.currentPhase }}</div>
+                <span class="session-started">{{ session.startedAt.slice(11, 16) }}</span>
+              </div>
+              <div class="session-activity">
+                <span class="activity-label">Last activity:</span>
+                <span class="activity-text">{{ truncatedActivities().get(session.sessionId) ?? session.lastActivity }}</span>
+              </div>
+            </div>
+
+            <div class="session-card-footer">
+              <div class="session-footer-left">
+                <span class="session-id-display">{{ session.sessionId.slice(-16) }}</span>
+              </div>
+              <div class="session-footer-right" aria-hidden="true">&#x2192;</div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Recent Sessions -->
+    @if (recentSessions().length > 0) {
+      <div class="sessions-section-recent">
+        <h3 class="sessions-section-title">Recent</h3>
+        <div class="sessions-list sessions-list--compact">
+          @for (session of recentSessions(); track session.sessionId) {
+            <div
+              class="session-card session-card--compact"
+              [attr.role]="'button'"
+              [attr.tabindex]="0"
+              [attr.aria-label]="'View session: ' + session.taskTitle"
+              (click)="onSessionClick(session)"
+              (keydown.enter)="onSessionClick(session)"
+              (keydown.space)="onSessionClick(session)"
+            >
+              <div class="session-card-header session-card-header--compact">
+                <div class="session-task">
+                  <span class="session-task-id">{{ session.taskId }}</span>
+                  <div class="session-status" [ngClass]="statusClassMap[session.status]">{{ session.status }}</div>
+                </div>
+                <span class="session-duration">{{ session.duration }}</span>
+              </div>
+
+              <div class="session-card-body session-card-body--compact">
+                <div class="session-title">{{ session.taskTitle }}</div>
+                <div class="session-activity">
+                  <span class="activity-text">{{ truncatedActivities().get(session.sessionId) ?? session.lastActivity }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
