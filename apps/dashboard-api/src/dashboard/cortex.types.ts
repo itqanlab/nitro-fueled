@@ -38,6 +38,7 @@ export interface CortexSession {
   total_cost: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  last_heartbeat: string | null;
 }
 
 export interface CortexSessionWorker {
@@ -183,6 +184,7 @@ export interface RawSession {
   total_cost: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  last_heartbeat: string | null;
 }
 
 export interface RawWorker {

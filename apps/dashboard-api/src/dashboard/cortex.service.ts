@@ -207,4 +207,37 @@ export class CortexService {
       db.close();
     }
   }
+
+  // ============================================================
+  // Session Lifecycle
+  // ============================================================
+
+  public closeStaleSession(ttlMinutes = 30): { closed_sessions: number } | null {
+    if (!existsSync(this.dbPath)) return null;
+    let db: Database.Database | null = null;
+    try {
+      db = new Database(this.dbPath, { fileMustExist: true });
+      const cutoffTime = new Date(Date.now() - ttlMinutes * 60 * 1000).toISOString();
+      const staleSessions = db.prepare(
+        `SELECT id FROM sessions WHERE loop_status = 'running' AND (last_heartbeat IS NULL OR last_heartbeat < ?)`,
+      ).all(cutoffTime) as Array<{ id: string }>;
+      let closedCount = 0;
+      if (staleSessions.length > 0) {
+        const now = new Date().toISOString();
+        const updateStmt = db.prepare(
+          `UPDATE sessions SET loop_status = 'stopped', ended_at = ?, summary = ?, updated_at = ? WHERE id = ?`,
+        );
+        for (const session of staleSessions) {
+          updateStmt.run(now, 'stale: no heartbeat', now, session.id);
+          closedCount++;
+        }
+      }
+      return { closed_sessions: closedCount };
+    } catch (err) {
+      this.logger.error(`closeStaleSession failed: ${String(err)}`);
+      return null;
+    } finally {
+      db?.close();
+    }
+  }
 }

@@ -9,9 +9,12 @@ import { WorkerTreeService } from './worker-tree.service';
 import { DashboardGateway } from './dashboard.gateway';
 import { CortexService } from './cortex.service';
 import { WsAuthGuard } from './auth/ws-auth.guard';
+import { OrchestrationFlowsService } from './orchestration-flows.service';
+import { LogsController } from './logs.controller';
+import { LogsService } from './logs.service';
 
 @Module({
-  controllers: [DashboardController],
+  controllers: [DashboardController, LogsController],
   providers: [
     DiffService,
     WorkerTreeService,
@@ -25,7 +28,9 @@ import { WsAuthGuard } from './auth/ws-auth.guard';
     DashboardGateway,
     CortexService,
     WsAuthGuard,
+    OrchestrationFlowsService,
+    LogsService,
   ],
-  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, OrchestrationFlowsService, LogsService],
 })
 export class DashboardModule {}

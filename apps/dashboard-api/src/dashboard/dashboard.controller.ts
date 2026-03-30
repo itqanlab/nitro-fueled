@@ -1,8 +1,10 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Query,
+  Body,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -17,11 +19,13 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { PipelineService } from './pipeline.service';
 import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
 import { CortexService } from './cortex.service';
+import { OrchestrationFlowsService } from './orchestration-flows.service';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
@@ -40,6 +44,7 @@ export class DashboardController {
     private readonly sessionsService: SessionsService,
     private readonly analyticsService: AnalyticsService,
     private readonly cortexService: CortexService,
+    private readonly orchestrationFlowsService: OrchestrationFlowsService,
   ) {}
 
   // === Health ===
@@ -231,6 +236,25 @@ export class DashboardController {
   }
 
   @ApiTags('sessions')
+  @ApiOperation({ summary: 'Close stale sessions', description: 'Marks sessions with no heartbeat as stopped. Default TTL is 30 minutes.' })
+  @ApiQuery({ name: 'ttl', required: false, description: 'TTL in minutes (default: 30)' })
+  @ApiResponse({ status: 200, description: 'Stale sessions closed' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Post('sessions/close-stale')
+  @HttpCode(HttpStatus.OK)
+  public closeStaleSession(
+    @Query('ttl') ttl?: string,
+  ): { closed_sessions: number } {
+    const ttlMinutes = ttl !== undefined ? Number(ttl) : 30;
+    const safeTtl = Number.isFinite(ttlMinutes) && ttlMinutes > 0 ? Math.min(ttlMinutes, 1440) : 30;
+    const result = this.cortexService.closeStaleSession(safeTtl);
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
+  }
+
+  @ApiTags('sessions')
   @ApiOperation({ summary: 'Get session detail with messages', description: 'Returns session data including recent messages' })
   @ApiResponse({ status: 200, description: 'Session detail' })
   @ApiResponse({ status: 404, description: 'Session not found' })
@@ -305,6 +329,50 @@ export class DashboardController {
       this.logger.error('Analytics sessions failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
     }
+  }
+
+  // === Orchestration Flows ===
+
+  @ApiTags('orchestration')
+  @ApiOperation({ summary: 'Get orchestration flows', description: 'Returns all built-in orchestration flow definitions' })
+  @ApiResponse({ status: 200, description: 'Orchestration flow list' })
+  @Get('orchestration/flows')
+  public getOrchestrationFlows(): ReturnType<OrchestrationFlowsService['getAllFlows']> {
+    return this.orchestrationFlowsService.getAllFlows();
+  }
+
+  @ApiTags('orchestration')
+  @ApiOperation({ summary: 'Get orchestration flow by ID', description: 'Returns a single orchestration flow definition' })
+  @ApiParam({ name: 'id', description: 'Flow ID', example: 'feature' })
+  @ApiResponse({ status: 200, description: 'Orchestration flow' })
+  @ApiResponse({ status: 404, description: 'Flow not found' })
+  @Get('orchestration/flows/:id')
+  public getOrchestrationFlow(@Param('id') id: string): ReturnType<OrchestrationFlowsService['getFlowById']> {
+    const flow = this.orchestrationFlowsService.getFlowById(id);
+    if (!flow) {
+      throw new NotFoundException({ error: 'Flow not found' });
+    }
+    return flow;
+  }
+
+  @ApiTags('orchestration')
+  @ApiOperation({ summary: 'Clone orchestration flow', description: 'Creates a custom flow clone from a built-in flow' })
+  @ApiBody({ schema: { properties: { sourceFlowId: { type: 'string' }, customName: { type: 'string' } } } })
+  @ApiResponse({ status: 201, description: 'Flow cloned successfully' })
+  @ApiResponse({ status: 404, description: 'Source flow not found' })
+  @Post('orchestration/flows/clone')
+  @HttpCode(HttpStatus.CREATED)
+  public cloneOrchestrationFlow(
+    @Body() body: { sourceFlowId: string; customName: string },
+  ): { success: boolean; flow: ReturnType<OrchestrationFlowsService['cloneFlow']> } {
+    if (!body.sourceFlowId || !body.customName) {
+      throw new BadRequestException({ error: 'sourceFlowId and customName are required' });
+    }
+    const flow = this.orchestrationFlowsService.cloneFlow(body.sourceFlowId, body.customName);
+    if (!flow) {
+      throw new NotFoundException({ error: 'Source flow not found' });
+    }
+    return { success: true, flow };
   }
 
   // === Cortex Tasks ===
