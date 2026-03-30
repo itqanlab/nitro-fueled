@@ -1,237 +1,230 @@
-# Code Logic Review - TASK_2026_107
+# Code Logic Review - TASK_2026_107 (v2 — supersedes prior review)
 
 ## Review Summary
 
-| Metric              | Value                                |
-| ------------------- | ------------------------------------ |
-| Overall Score       | 6/10                                 |
-| Assessment          | NEEDS_REVISION |
-| Critical Issues     | 2                                    |
-| Serious Issues      | 1                                    |
-| Moderate Issues     | 1                                    |
-| Failure Modes Found | 4                                    |
+| Metric              | Value                                                        |
+| ------------------- | ------------------------------------------------------------ |
+| Overall Score       | 4/10                                                         |
+| Assessment          | NEEDS_REVISION                                               |
+| Critical Issues     | 1                                                            |
+| Serious Issues      | 2                                                            |
+| Moderate Issues     | 1                                                            |
+| Failure Modes Found | 3                                                            |
+| Verdict             | FAIL                                                         |
 
 ## The 5 Paranoid Questions
 
 ### 1. How does this fail silently?
 
-**Example trace becomes misleading**: The `creative-trace.md` file is a historical example trace that references task `TASK_2026_047` with the path `task-tracking/TASK_2026_047/design-spec.md`. However, if the actual task folder for TASK_2026_047 still exists and uses the old artifact name, this example trace will mislead developers who try to follow the pattern. The trace document has been updated, but there's no verification that the actual task folder it references has been renamed.
-
-**Silent scope creep**: The task acceptance criterion states "Zero references to `visual-design-specification.md` remain in the orchestration skill directory" but the implementation actually found and updated `visual-design-specification.md` occurrences, not `implementation-plan.md` as the acceptance criterion mentions. This suggests a copy-paste error in the task requirements that could lead to silent requirements gaps.
+The rename is applied only to orchestration reference docs. The agent definition files that actually execute at runtime still instruct agents to write and read `visual-design-specification.md`. When `nitro-ui-ux-designer` runs, it creates `visual-design-specification.md` on disk (per `.claude/agents/nitro-ui-ux-designer.md` line 131). The downstream agents (`nitro-technical-content-writer`, `nitro-frontend-developer`) are now prompted — via the updated `creative-trace.md` and `strategies.md` — to read `design-spec.md`. That file does not exist. No error is raised. The design spec is silently dropped from the workflow and the content/implementation is produced without visual guidance.
 
 ### 2. What user action causes unexpected behavior?
 
-**Developer follows example trace**: A developer reads `creative-trace.md` as a reference and expects to find files at the paths shown. If they copy the pattern to their own task but the actual TASK_2026_047 folder still uses old artifact names, they'll be confused about which naming convention to follow.
+Any user who runs `/orchestrate` on a CREATIVE or FEATURE task that involves UI/UX design will trigger the broken agent chain: designer writes the wrong filename, downstream agents look for the right filename, find nothing, and proceed. The user sees a "workflow complete" result but receives output that lacks design integration — the exact deliverable the CREATIVE strategy exists to produce.
 
-**Documentation inconsistency**: If a developer searches for "visual-design-specification.md" in the codebase after this task, they might find it in other locations outside the orchestration skill directory (e.g., other skills, command files, or even task folders themselves) that weren't updated, leading to inconsistent understanding of the correct naming.
+Additionally: using `/nitro-orchestrate TASK_2026_XXX` to continue a CREATIVE task that already finished the designer phase will re-invoke the designer, because the phase detection table in `task-tracking.md` now checks for `design-spec.md` on disk. The actual file is `visual-design-specification.md`. The phase is detected as "not done."
 
 ### 3. What data makes this produce wrong results?
 
-**Historical task folders not updated**: The task tracked that "creative-trace.md is an example trace (historical), so the task-specific path `TASK_2026_047/visual-design-specification.md` has been renamed even though that actual folder may still use the old name." This means if someone searches for all occurrences of the old artifact name in the entire project (not just orchestration skill directory), they'll still find it in actual task folders, leading to confusion about which convention is current.
-
-**Example-specific content**: The creative-trace.md file contains example paths like `task-tracking/TASK_2026_047/design-spec.md`. If a developer searches for this specific pattern in their codebase, they won't find matches because their task ID is different. This is expected behavior, but it's worth noting that these are example paths, not templates.
+The acceptance criterion on line 40 of `task.md` reads: "Zero references to `implementation-plan.md` remain in the orchestration skill directory." That criterion belongs to TASK_2026_106, not this task. This task renames `visual-design-specification.md`. The Build Worker verified a criterion that has no relation to the actual work performed. There is no stated acceptance criterion for `visual-design-specification.md` in the task definition, which means the task was closed against the wrong success condition.
 
 ### 4. What happens when dependencies fail?
 
-**TASK_2026_106 dependency assumption**: This task depends on TASK_2026_106 to define the artifact name mapping. If TASK_2026_106 was incomplete or had errors, this task's changes would propagate incorrect mappings throughout the examples and references. There's no verification in the handoff that TASK_2026_106 was properly completed.
-
-**File-scope assumption mismatch**: The task file scope listed 7 files to update, but the implementation only modified 4 files. The decision document notes that scope was extended to include strategies.md and task-tracking.md (which were updated), but feature-trace.md, bugfix-trace.md, team-leader-modes.md, developer-template.md, and agent-calibration.md were not modified because they didn't contain old artifact names. This is correct, but the task description should have been clearer about which files actually needed changes rather than listing all trace files.
+The live agent files in `.claude/agents/` and `.claude/skills/technical-content-writer/` were not updated. These files are the runtime source of truth for what filename an agent writes or reads. The 4 updated reference files are documentation consumed by the orchestrator when constructing agent prompts — but the agents' own definitions override anything embedded in a prompt if the agent is instructed to "see your agent definition for instructions." The mismatch is therefore not a documentation inconsistency; it is a runtime contradiction between two authoritative sources.
 
 ### 5. What's missing that the requirements didn't mention?
 
-**Verification of actual task folders**: The requirements mention updating example traces but don't require checking whether the actual historical task folders they reference (like TASK_2026_047) have been updated. This could lead to a situation where documentation points to one naming convention but actual task folders use another.
+The task's File Scope section lists only 7 files inside `.claude/skills/orchestration/`. It does not include:
 
-**Search scope limitation**: The task's acceptance criterion says "Zero references to `visual-design-specification.md` remain in the orchestration skill directory" which is correctly implemented. However, it doesn't address references in other parts of the codebase (e.g., other skills, CLI command files, test files, or documentation outside the orchestration skill). A developer searching the entire project might still find old artifact names elsewhere.
+- `.claude/agents/nitro-ui-ux-designer.md` — writes `visual-design-specification.md` (lines 117, 131)
+- `.claude/agents/nitro-frontend-developer.md` — reads and references `visual-design-specification.md` (lines 120, 121, 206, 230)
+- `.claude/agents/nitro-team-leader.md` — reads `visual-design-specification.md` (line 50)
+- `.claude/agents/nitro-software-architect.md` — globs and reads `visual-design-specification.md` (lines 126, 137)
+- `.claude/skills/technical-content-writer/LANDING-PAGES.md` — globs `visual-design-specification.md` (line 31)
+- `.claude/skills/technical-content-writer/SKILL.md` — globs `visual-design-specification.md` (line 223)
 
-**Template vs example confusion**: The trace files are examples of workflow execution, not templates for developers to copy. The task requirements treat them as if they're templates that need updating, but they're actually historical documentation. This doesn't cause a failure, but it reveals a misunderstanding of the file's purpose.
+For a mechanical rename to be complete, it must cover every file that writes, reads, or globs the artifact — not just every file that documents it.
+
+---
 
 ## Failure Mode Analysis
 
-### Failure Mode 1: Documentation Drift Between Examples and Reality
+### Failure Mode 1: Agent-Reference Filename Mismatch (Runtime Breakage)
 
-- **Trigger**: Developer reads creative-trace.md and tries to follow the same pattern
-- **Symptoms**: Example shows `design-spec.md` but actual historical task folder may still have `visual-design-specification.md`
-- **Impact**: CONFUSION about which naming convention is correct
-- **Current Handling**: Not addressed - task only updates documentation, not actual task folders
-- **Recommendation**: Either (a) update the historical task folders to match, or (b) add a note in the trace that paths are examples and actual naming may vary
+- **Trigger**: Any CREATIVE or FEATURE workflow invoking `nitro-ui-ux-designer` followed by `nitro-technical-content-writer` or `nitro-frontend-developer`.
+- **Symptoms**: Designer writes `visual-design-specification.md`; downstream agents look for `design-spec.md`; design spec is missing from the handoff; content and implementation are produced without visual integration.
+- **Impact**: CRITICAL. The core output of the CREATIVE strategy is silently broken. The user sees a completed workflow but the design-first principle is violated.
+- **Current Handling**: None. The agent definitions and reference docs are in direct contradiction. No error is raised.
+- **Recommendation**: Apply `visual-design-specification.md` → `design-spec.md` to all 6 files in `.claude/agents/` and `.claude/skills/technical-content-writer/`.
 
-### Failure Mode 2: Inconsistent Artifact Name Mapping in Requirements
+### Failure Mode 2: Continuation Mode Phase Detection Failure
 
-- **Trigger**: Acceptance criterion mentions "Zero references to `implementation-plan.md`" but task actually updates `visual-design-specification.md`
-- **Symptoms**: Copy-paste error from TASK_2026_106's acceptance criteria
-- **Impact**: Developer reading task.md might be confused about which artifact names this task should update
-- **Current Handling**: Task handoff doesn't mention this discrepancy
-- **Recommendation**: Update task.md acceptance criteria to correctly reference `visual-design-specification.md` instead of `implementation-plan.md`
+- **Trigger**: `/nitro-orchestrate TASK_2026_XXX` to continue a CREATIVE task where the designer has already run.
+- **Symptoms**: Phase detection checks for `design-spec.md` on disk. Actual file is `visual-design-specification.md`. Phase reports "Designer not done." Designer is re-invoked. User faces repeated discovery questions and potential artifact overwrite.
+- **Impact**: SERIOUS. Workflow continuation is broken for any task that went through the CREATIVE designer phase before or during this rename.
+- **Current Handling**: None.
+- **Recommendation**: Consistent filenames across agent definitions and reference docs is the fix. No separate workaround exists.
 
-### Failure Mode 3: Search Results Mislead Developers
+### Failure Mode 3: Task Verified Against the Wrong Acceptance Criterion
 
-- **Trigger**: Developer searches entire codebase for old artifact names after this task
-- **Symptoms**: Search results show old artifact names in files outside orchestration skill directory
-- **Impact**: Developer thinks renaming was incomplete or misses files
-- **Current Handling**: Task scope is limited to orchestration skill directory only
-- **Recommendation**: Either expand scope to all of `.claude/` or clearly document that orchestration skill directory is the authoritative source
+- **Trigger**: Build Worker checked task completion.
+- **Symptoms**: `task.md` line 40 states "Zero references to `implementation-plan.md` remain." This was the criterion for TASK_2026_106. The Build Worker verified it (trivially true since this task never touched `implementation-plan.md`). The actual criterion — "Zero references to `visual-design-specification.md` remain" — was never stated and therefore never checked against the full `.claude/` directory. Nine occurrences across 6 files remain.
+- **Impact**: SERIOUS. The task's definition of done is incorrect and was verified against a criterion that does not correspond to the work performed.
+- **Current Handling**: None. The handoff does not mention the criterion mismatch.
+- **Recommendation**: Correct `task.md` line 40 to reference `visual-design-specification.md` and scope the acceptance criterion to all of `.claude/`, not just the orchestration skill directory.
 
-### Failure Mode 4: File-Scope Mismatch Confusion
-
-- **Trigger**: Developer compares task.md file scope with actual changes made
-- **Symptoms**: 7 files listed in scope but only 4 modified
-- **Impact**: Developer might think some files were missed or not checked
-- **Current Handling**: Decision document explains some files didn't contain old artifact names
-- **Recommendation**: Update task.md file scope to only list files that actually need changes, or add a note that listed files will be checked for occurrences and only those with matches will be modified
+---
 
 ## Critical Issues
 
-### Issue 1: Acceptance Criteria Contains Wrong Artifact Name
+### Issue 1: Live Agent Files Not Updated — Rename Is Incomplete
 
-- **File**: task-tracking/TASK_2026_107/task.md:40
-- **Scenario**: Developer reading task requirements to understand what needs to be done
-- **Impact**: Acceptance criterion says "Zero references to `implementation-plan.md`" but task actually renames `visual-design-specification.md`. This is a copy-paste error from TASK_2026_106.
-- **Evidence**:
-  ```markdown
-  # task.md line 40 (incorrect)
-  - [ ] Zero references to `implementation-plan.md` remain in the orchestration skill directory
+- **Files**: `.claude/agents/nitro-ui-ux-designer.md` (lines 117, 131), `.claude/agents/nitro-frontend-developer.md` (lines 120, 121, 206, 230), `.claude/agents/nitro-team-leader.md` (line 50), `.claude/agents/nitro-software-architect.md` (lines 126, 137), `.claude/skills/technical-content-writer/LANDING-PAGES.md` (line 31), `.claude/skills/technical-content-writer/SKILL.md` (line 223)
+- **Scenario**: Every CREATIVE or UI-inclusive FEATURE workflow executed after this task.
+- **Impact**: `nitro-ui-ux-designer.md` line 131 instructs the agent: "Save to: `task-tracking/TASK_[ID]/visual-design-specification.md`". All downstream agents look for `design-spec.md`. The design spec is never found. The CREATIVE workflow produces unguided output.
+- **Fix**: Apply the same `visual-design-specification.md` → `design-spec.md` substitution to all 6 files. This is the identical mechanical substitution already performed on the 4 orchestration reference files.
 
-  # Actual changes made (correct)
-  - visual-design-specification.md → design-spec.md in 4 files
-  ```
-- **Fix**: Update line 40 of task.md to reference `visual-design-specification.md` instead of `implementation-plan.md`
-
-### Issue 2: No Verification of Historical Task Folders
-
-- **File**: task-tracking/TASK_2026_107/handoff.md:16
-- **Scenario**: Developer follows example from creative-trace.md which references task-tracking/TASK_2026_047/design-spec.md
-- **Impact**: Handoff acknowledges that actual task folder may still use old name but doesn't verify or update it. This creates documentation drift.
-- **Evidence**:
-  ```markdown
-  # handoff.md line 16
-  "creative-trace.md is an example trace (historical), so the task-specific path
-  TASK_2026_047/visual-design-specification.md has been renamed even though that
-  actual folder may still use the old name."
-  ```
-- **Fix**: Either (a) add a verification step to check and rename actual task folders, or (b) add a prominent note in all example traces stating that paths are illustrative and actual naming follows current conventions
+---
 
 ## Serious Issues
 
-### Issue 1: File Scope Lists Files That Don't Need Changes
+### Issue 2: Acceptance Criterion References Wrong Artifact (Copy-Paste Error)
 
-- **File**: task-tracking/TASK_2026_107/task.md:49-55
-- **Scenario**: Developer reading task to understand which files need updating
-- **Impact**: File scope lists 7 files but only 4 were modified. This could lead to confusion about whether some files were missed or not checked.
-- **Evidence**:
-  ```markdown
-  # task.md file scope (7 files listed)
-  - .claude/skills/orchestration/examples/feature-trace.md
-  - .claude/skills/orchestration/examples/bugfix-trace.md
-  - .claude/skills/orchestration/examples/creative-trace.md
-  - .claude/skills/orchestration/references/team-leader-modes.md
-  - .claude/skills/orchestration/references/agent-catalog.md
-  - .claude/skills/orchestration/references/developer-template.md
-  - .claude/skills/orchestration/references/agent-calibration.md
+- **File**: `task-tracking/TASK_2026_107/task.md` line 40
+- **Scenario**: Any reviewer or the Build Worker checking task completion against stated criteria.
+- **Impact**: The stated criterion — "Zero references to `implementation-plan.md`" — is the criterion from TASK_2026_106. The actual criterion should be "Zero references to `visual-design-specification.md`." The task was marked complete against a criterion that is trivially true and unrelated to the work performed.
+- **Fix**: Correct line 40 to: `- [ ] Zero references to \`visual-design-specification.md\` remain across the entire .claude/ directory` and re-verify.
 
-  # Actual changes (4 files)
-  - creative-trace.md
-  - agent-catalog.md
-  - strategies.md (not in original scope)
-  - task-tracking.md (not in original scope)
-  ```
-- **Fix**: Update task.md file scope to only include files that actually contained old artifact names, or add a note that files will be checked and only those with matches will be modified
+### Issue 3: Task Scope Excludes Files That Are Runtime-Critical
+
+- **File**: `task-tracking/TASK_2026_107/task.md` lines 48-55
+- **Scenario**: Any developer or agent following the task definition to determine which files to update.
+- **Impact**: The file scope lists only files inside `.claude/skills/orchestration/`. The agent definition files that produce and consume the artifact live in `.claude/agents/` and `.claude/skills/technical-content-writer/`. These are excluded by scope, not by analysis — the handoff does not mention them. The scope boundary is the source of the incomplete rename.
+- **Fix**: Expand the file scope to include all files in `.claude/agents/` and `.claude/skills/` that reference `visual-design-specification.md`.
+
+---
 
 ## Moderate Issues
 
-### Issue 1: No Cross-Reference Verification for Other Parts of Codebase
+### Issue 4: Handoff Risk Note Does Not Flag Live-Agent Gap
 
-- **File**: task-tracking/TASK_2026_107/task.md:40
-- **Scenario**: Developer searches entire codebase for old artifact names
-- **Impact**: Acceptance criterion limits scope to orchestration skill directory, but old artifact names may exist in other parts of `.claude/` (other skills, commands, test files)
-- **Evidence**:
-  ```bash
-  # This task only searches within orchestration skill directory
-  find .claude/skills/orchestration -name "*.md" -exec grep -l "visual-design-specification" {} \;
+- **File**: `task-tracking/TASK_2026_107/handoff.md` lines 15-17
+- **Scenario**: A reviewer reading the handoff to understand known risks.
+- **Impact**: The only known risk documented is the historical example path in `creative-trace.md`. The more significant gap — 9 occurrences in live agent files that break the CREATIVE workflow at runtime — is not mentioned. A reviewer reading the handoff would not know to check for this.
+- **Fix**: Add a known risk entry: "Agent definitions in `.claude/agents/` and `.claude/skills/technical-content-writer/` were not in scope and still reference `visual-design-specification.md`. These are live files. CREATIVE and FEATURE workflows with UI/UX work will silently fail to pass the visual spec between agents until those files are updated."
 
-  # But old names might exist elsewhere
-  find .claude -name "*.md" -exec grep -l "visual-design-specification" {} \;
-  ```
-- **Fix**: Either expand task scope to all of `.claude/` or add a note explaining that orchestration skill directory is the authoritative source and other locations are out of scope
+---
 
 ## Data Flow Analysis
 
 ```
-TASK_2026_106 defines artifact name mapping
-         |
+CREATIVE Workflow — Artifact Lifecycle (Post-Task State)
+
+[nitro-ui-ux-designer.md agent def]         [orchestration references]
+  Writes: visual-design-specification.md     Documents: design-spec.md
+  (unchanged by this task)                   (updated by this task)
+         |                                            ^
+         | File created on disk                       |
+         v                                            |
+  task-tracking/TASK_[ID]/              Phase detection in task-tracking.md
+  visual-design-specification.md        checks for "design-spec.md"
+         |                                            |
+         |                                   MISMATCH — file not found
          v
-TASK_2026_107 reads task.md requirements (contains copy-paste error)
+  [nitro-technical-content-writer]
+  Prompt (built from updated creative-trace.md):
+    "Read task-tracking/TASK_[ID]/design-spec.md"
          |
+         | File does not exist
          v
-Worker searches orchestration skill directory for old artifact names
-         |
-         v
-Worker modifies 4 files (not the 7 listed in scope)
-         |
-         v
-Worker writes handoff.md acknowledging historical folders not updated
-         |
-         v
-Documentation updated but historical task folders may be inconsistent
+  Proceeds without visual spec (SILENT FAILURE)
 ```
 
-### Gap Points Identified:
-1. **task.md acceptance criteria error** - references wrong artifact name, could confuse future readers
-2. **File scope mismatch** - lists 7 files but only 4 needed changes, creates confusion
-3. **Historical folder drift** - documentation updated but actual task folders not verified
-4. **Scope boundary unclear** - orchestration skill directory updated but other `.claude/` locations not checked
+### Gap Points Identified
+
+1. Agent write path and reference read path use different filenames for the same artifact.
+2. Phase detection matches the reference doc filename, not the actual filename on disk — continuation mode always re-invokes the designer.
+3. Acceptance criterion in `task.md` references `implementation-plan.md` (wrong artifact) — task was verified against the wrong condition.
+
+---
 
 ## Requirements Fulfillment
 
-| Requirement | Status | Concern |
-|-------------|--------|---------|
-| All 3 example trace files updated | PARTIAL | Only creative-trace.md had old names; feature-trace.md and bugfix-trace.md didn't need changes |
-| team-leader-modes.md updated | N/A | File didn't contain old artifact names, so no changes needed |
-| agent-catalog.md updated | COMPLETE | 1 occurrence updated correctly |
-| developer-template.md updated | N/A | File didn't contain old artifact names, so no changes needed |
-| agent-calibration.md updated | N/A | File didn't contain old artifact names, so no changes needed |
-| strategies.md updated | COMPLETE | 2 occurrences updated correctly |
-| task-tracking.md updated | COMPLETE | 1 occurrence updated correctly |
-| Zero references to `visual-design-specification.md` remain in orchestration skill directory | COMPLETE | Verified - no occurrences found in orchestration skill directory |
-| Zero references to `implementation-plan.md` remain in orchestration skill directory | COMPLETE | But this shouldn't have been this task's requirement - copy-paste error from TASK_2026_106 |
+| Requirement                                                                        | Status   | Concern                                                                              |
+| ---------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| creative-trace.md updated                                                          | COMPLETE | 3 occurrences replaced correctly                                                     |
+| agent-catalog.md updated                                                           | COMPLETE | 1 occurrence replaced correctly                                                      |
+| strategies.md updated (scope extension)                                            | COMPLETE | 2 occurrences replaced correctly                                                     |
+| task-tracking.md updated (scope extension)                                         | COMPLETE | 1 occurrence replaced correctly                                                      |
+| Zero references to `implementation-plan.md` in orchestration dir (stated criterion) | N/A    | Wrong criterion — this applied to TASK_2026_106                                      |
+| Zero references to `visual-design-specification.md` in orchestration dir           | COMPLETE | Within the 4 updated files — verified clean                                          |
+| Zero references to `visual-design-specification.md` across all of `.claude/`       | MISSING  | 9 occurrences remain in `.claude/agents/` (4 files) and `.claude/skills/technical-content-writer/` (2 files) |
 
-### Implicit Requirements NOT Addressed:
-1. Historical task folders referenced by example traces should be verified and updated if needed
-2. Search scope should either cover all of `.claude/` or clearly document why it's limited
-3. Task.md should accurately reflect which artifact names are being updated (not copy-paste from dependency task)
+### Implicit Requirements NOT Addressed
+
+1. Any file that instructs an agent to write the artifact must use the new name — the agent definition is the source of truth for the filename written to disk.
+2. Any file that instructs an agent to read or glob the artifact must use the new name — otherwise the read will silently fail.
+3. Acceptance criteria for a rename task must name the artifact being renamed, not an artifact from a sibling task.
+
+---
 
 ## Edge Case Analysis
 
-| Edge Case | Handled | How | Concern |
-|-----------|---------|-----|---------|
-| Files in scope don't contain old names | YES | Worker checked each file and only modified those with matches | File scope in task.md should have been more accurate |
-| Historical task folder still has old name | NO | Not addressed in task scope | Creates documentation drift |
-| Other parts of `.claude/` have old names | NO | Out of task scope | Could confuse developers searching entire codebase |
-| Example trace paths are not templates | NO | Not explicitly documented | Developers might misunderstand purpose of trace files |
+| Edge Case                                                | Handled | How                                                                          | Concern                                                              |
+| -------------------------------------------------------- | ------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| References in orchestration/examples                     | YES     | creative-trace.md updated correctly                                          | None                                                                 |
+| References in orchestration/references                   | YES     | 3 reference files updated correctly                                          | None                                                                 |
+| References in .claude/agents/                            | NO      | Excluded from task scope                                                     | CRITICAL — live agents still write the old filename                  |
+| References in .claude/skills/technical-content-writer/  | NO      | Excluded from task scope                                                     | SERIOUS — content-writer skill globs the old filename                |
+| Continuation mode matching after designer ran            | NO      | Phase detection updated but agent write path unchanged                       | SERIOUS — phase will never match; designer re-invoked                |
+| Acceptance criterion correctness                         | NO      | Criterion names `implementation-plan.md` instead of `visual-design-specification.md` | SERIOUS — task verified against the wrong condition            |
+
+---
 
 ## Integration Risk Assessment
 
-| Integration | Failure Probability | Impact | Mitigation |
-|-------------|---------------------|--------|------------|
-| TASK_2026_106 → TASK_2026_107 | LOW | MED | TASK_2026_106 provided correct mapping, but task.md had copy-paste error |
-| Example traces → actual task folders | LOW | LOW | Historical folders may be inconsistent but not blocking |
-| Orchestration skill directory → other `.claude/` locations | LOW | LOW | Scope limited correctly, but should be documented |
+| Integration                                              | Failure Probability | Impact                                           | Mitigation                                          |
+| -------------------------------------------------------- | ------------------- | ------------------------------------------------ | --------------------------------------------------- |
+| nitro-ui-ux-designer → nitro-technical-content-writer   | HIGH                | Silent loss of design spec in CREATIVE workflow  | Update agent definitions to use `design-spec.md`   |
+| nitro-ui-ux-designer → nitro-frontend-developer         | HIGH                | Silent loss of visual spec                       | Update agent definitions to use `design-spec.md`   |
+| Phase detection (continuation mode)                     | HIGH                | Designer re-invoked on already-completed tasks   | Consistent filename across agent defs and ref docs |
+| nitro-software-architect reading design-spec            | HIGH                | Architect skips design context                   | Update architect agent definition                  |
+
+---
 
 ## Verdict
 
 **Recommendation**: REVISE
+
 **Confidence**: HIGH
-**Top Risk**: Acceptance criteria copy-paste error from TASK_2026_106 references wrong artifact name
+
+**Top Risk**: The four reference files were updated, but the six live agent definition files that write, read, and glob the artifact were not. The CREATIVE workflow is broken at runtime: the designer writes `visual-design-specification.md`, downstream agents look for `design-spec.md`, and the design spec is silently dropped from every CREATIVE execution.
+
+---
 
 ## What Robust Implementation Would Include
 
-1. **Accurate task requirements** - No copy-paste errors from dependency tasks; acceptance criteria should reference the correct artifact names being updated (`visual-design-specification.md`, not `implementation-plan.md`)
+A complete artifact rename must cover every file that:
 
-2. **Precise file scope** - List only files that actually need changes, or clearly document that files will be checked and only those with matches will be modified
+1. Instructs an agent to **write** the artifact (`nitro-ui-ux-designer.md` line 131 — not updated).
+2. Instructs an agent to **read** the artifact (`nitro-frontend-developer.md`, `nitro-software-architect.md`, `nitro-team-leader.md` — not updated).
+3. Instructs an agent to **glob** for the artifact (`nitro-ui-ux-designer.md` line 117, `nitro-software-architect.md` line 126, `LANDING-PAGES.md` line 31, `SKILL.md` line 223 — not updated).
+4. Documents the artifact as a phase detection marker (`task-tracking.md` — correctly updated).
 
-3. **Historical folder verification** - Either update actual task folders referenced by example traces, or add prominent notes in traces explaining that paths are illustrative and current naming conventions apply
+The acceptance criteria must also reference the artifact actually being renamed. Copying criteria from a sibling task without updating the artifact name produces an unverifiable definition of done and allows the task to be closed before the work is complete.
 
-4. **Clear scope boundaries** - Document why search is limited to orchestration skill directory and whether other `.claude/` locations are intentionally out of scope
+---
 
-5. **Cross-reference search** - Run a broader search across all of `.claude/` to identify if old artifact names exist elsewhere, and either update them or document why they're excluded
+## Files Still Requiring the Rename
 
-6. **Trace documentation** - Add a header or note to all example trace files explaining they are historical workflow demonstrations, not templates to copy, and that actual task folder naming follows current conventions
+| File                                                                  | Lines          |
+| --------------------------------------------------------------------- | -------------- |
+| `.claude/agents/nitro-ui-ux-designer.md`                              | 117, 131       |
+| `.claude/agents/nitro-frontend-developer.md`                          | 120, 121, 206, 230 |
+| `.claude/agents/nitro-team-leader.md`                                 | 50             |
+| `.claude/agents/nitro-software-architect.md`                          | 126, 137       |
+| `.claude/skills/technical-content-writer/LANDING-PAGES.md`           | 31             |
+| `.claude/skills/technical-content-writer/SKILL.md`                   | 223            |
+
+| Verdict | FAIL |
+| ------- | ---- |
