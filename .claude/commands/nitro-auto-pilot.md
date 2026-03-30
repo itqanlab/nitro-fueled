@@ -37,6 +37,8 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --sequential                       # Process backlog inline (no MCP workers)
 /nitro-auto-pilot --sequential TASK_YYYY_NNN         # Process single task inline
 /nitro-auto-pilot --sequential --limit 3             # Process up to 3 tasks inline
+/nitro-auto-pilot --priority review-first            # Prioritize review tasks first
+/nitro-auto-pilot --priority balanced                # Balanced strategy with reserved slots
 ```
 
 ### Parameters
@@ -56,6 +58,7 @@ and loops until all tasks are complete or blocked.
 | --role          | builder\|reviewer\|both       | builder | Which role to test the model in. `reviewer` and `both` require `--compare` |
 | --reviewer      | model-id string              | —       | Override the reviewer model for evaluation (defaults to baseline or system default) |
 | --sequential    | flag                         | false   | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. Compatible with [TASK_ID] and --limit N. |
+| --priority      | build-first\|review-first\|balanced | build-first | Task selection strategy: `build-first` (default, prioritizes CREATED tasks), `review-first` (prioritizes IMPLEMENTED tasks), `balanced` (reserves slots for both). |
 
 ## Execution Steps
 
@@ -100,6 +103,7 @@ Parse $ARGUMENTS for:
 - `--reviewer <model-id>` -> overrides the model used for Review Workers in evaluation.
   Defaults to `--compare` model if A/B mode, or no review phase if single-model builder.
 - `--sequential` flag -> sequential mode (set `sequential_mode = true`). **If `--sequential` is present, skip Step 3c** (MCP validation) entirely — jump to Step 4 after Steps 3a and 3b. All other pre-flight checks still run. **Then skip Steps 5–6** and jump directly to the Sequential Mode sequence in SKILL.md.
+- `--priority build-first|review-first|balanced` -> task selection strategy (default: `build-first`). Changes task allocation priority: `build-first` fills CREATED tasks first, then IMPLEMENTED; `review-first` fills IMPLEMENTED tasks first, then CREATED; `balanced` reserves at least one slot for each type when both are available.
 
 ### Step 3: Pre-Flight Checks
 
@@ -320,8 +324,8 @@ Dependency Graph:
 
 Execution Order:
   Wave 1 (immediate):
-    Review: TASK_2026_005 (P1-High, FEATURE) -- Review Worker
     Build:  TASK_2026_003 (P0-Critical, FEATURE) -- Build Worker
+    Review: TASK_2026_005 (P1-High, FEATURE) -- Review Worker
   Wave 2 (after 003):
     Build:  TASK_2026_004 (P1-High, BUGFIX) -- Build Worker
   Blocked: TASK_2026_006 (dependency cycle)

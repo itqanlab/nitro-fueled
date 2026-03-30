@@ -28,10 +28,10 @@ Currently the supervisor fetches IMPLEMENTED tasks first and claims them before 
 
 ## Acceptance Criteria
 
-- [ ] Default behavior prioritizes CREATED (build) tasks over IMPLEMENTED (review) tasks
-- [ ] At least one concurrency slot is used for builds when CREATED tasks exist
-- [ ] Configurable via flag or session config
-- [ ] Documented in auto-pilot help
+- [x] Default behavior prioritizes CREATED (build) tasks over IMPLEMENTED (review) tasks
+- [x] At least one concurrency slot is used for builds when CREATED tasks exist
+- [x] Configurable via flag or session config
+- [x] Documented in auto-pilot help
 
 ## Parallelism
 
