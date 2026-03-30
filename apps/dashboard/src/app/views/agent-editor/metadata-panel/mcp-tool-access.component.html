@@ -1,0 +1,27 @@
+<div class="mcp-section">
+  <div class="mcp-section-label">MCP Tool Access</div>
+  <ul class="mcp-tool-list" role="list" aria-label="MCP tools">
+    @for (tool of tools(); track tool.name) {
+      <li
+        class="mcp-tool-row"
+        (click)="toggleTool(tool.name)"
+        (keydown.enter)="toggleTool(tool.name)"
+        (keydown.space)="toggleTool(tool.name)"
+        role="checkbox"
+        [attr.aria-checked]="tool.enabled"
+        [attr.aria-label]="tool.name + ' access ' + (tool.enabled ? 'enabled' : 'disabled')"
+        tabindex="0"
+      >
+        <span class="mcp-tool-name">{{ tool.name }}</span>
+        <span
+          class="mcp-tool-status"
+          [class.enabled]="tool.enabled"
+          [class.disabled]="!tool.enabled"
+          aria-hidden="true"
+        >
+          {{ tool.enabled ? '✓' : '×' }}
+        </span>
+      </li>
+    }
+  </ul>
+</div>

@@ -23,68 +23,8 @@ const SCOPE_BADGES: readonly ScopeBadge[] = [
   standalone: true,
   imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="scope-section">
-      <div class="scope-label">Knowledge Scope</div>
-      <div class="scope-badges" role="group" aria-label="Knowledge scope selection">
-        @for (badge of badges; track badge.value) {
-          <button
-            type="button"
-            class="scope-badge"
-            [class.active]="activeScopes().has(badge.value)"
-            role="switch"
-            [attr.aria-checked]="activeScopes().has(badge.value)"
-            [attr.aria-label]="badge.label + ' scope ' + (activeScopes().has(badge.value) ? 'enabled' : 'disabled')"
-            (click)="toggleScope(badge.value)"
-          >
-            {{ badge.label }}
-          </button>
-        }
-      </div>
-    </div>
-  `,
-  styles: [`
-    .scope-section { margin-top: 16px; }
-
-    .scope-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-tertiary);
-      margin-bottom: 8px;
-    }
-
-    .scope-badges {
-      display: flex;
-      flex-direction: row;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .scope-badge {
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--bg-tertiary);
-      color: var(--text-tertiary);
-      cursor: pointer;
-      transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-    }
-
-    .scope-badge:focus-visible {
-      outline: 2px solid var(--border-focus);
-      outline-offset: 2px;
-    }
-
-    .scope-badge.active {
-      background: var(--accent-bg);
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-  `],
+  templateUrl: './knowledge-scope.component.html',
+  styleUrl: './knowledge-scope.component.scss',
 })
 export class KnowledgeScopeComponent {
   protected readonly store = inject(AgentEditorStore);
