@@ -175,9 +175,11 @@
         (keydown.space)="toggleStatusDropdown()"
       >
         <span class="filter-dropdown-label">Status</span>
-        <span class="filter-dropdown-count" *ngIf="statusSelectedCount() > 0">
-          {{ statusSelectedCount() }}
-        </span>
+        @if (statusSelectedCount() > 0) {
+          <span class="filter-dropdown-count">
+            {{ statusSelectedCount() }}
+          </span>
+        }
         <span class="filter-dropdown-arrow">&#x25BC;</span>
       </button>
       <div class="filter-dropdown-menu" [class.open]="statusDropdownOpen()" role="listbox" aria-labelledby="status-filter">
@@ -217,9 +219,11 @@
         (keydown.space)="toggleTypeDropdown()"
       >
         <span class="filter-dropdown-label">Type</span>
-        <span class="filter-dropdown-count" *ngIf="typeSelectedCount() > 0">
-          {{ typeSelectedCount() }}
-        </span>
+        @if (typeSelectedCount() > 0) {
+          <span class="filter-dropdown-count">
+            {{ typeSelectedCount() }}
+          </span>
+        }
         <span class="filter-dropdown-arrow">&#x25BC;</span>
       </button>
       <div class="filter-dropdown-menu" [class.open]="typeDropdownOpen()" role="listbox" aria-labelledby="type-filter">
@@ -259,9 +263,11 @@
         (keydown.space)="togglePriorityDropdown()"
       >
         <span class="filter-dropdown-label">Priority</span>
-        <span class="filter-dropdown-count" *ngIf="prioritySelectedCount() > 0">
-          {{ prioritySelectedCount() }}
-        </span>
+        @if (prioritySelectedCount() > 0) {
+          <span class="filter-dropdown-count">
+            {{ prioritySelectedCount() }}
+          </span>
+        }
         <span class="filter-dropdown-arrow">&#x25BC;</span>
       </button>
       <div class="filter-dropdown-menu" [class.open]="priorityDropdownOpen()" role="listbox" aria-labelledby="priority-filter">

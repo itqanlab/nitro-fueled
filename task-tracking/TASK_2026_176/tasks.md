@@ -1,13 +1,13 @@
 # Development Tasks — TASK_2026_176
 
-## Batch 1: Migrate *ngIf to @if in project.component.html — PENDING
+## Batch 1: Migrate *ngIf to @if in project.component.html — COMPLETE
 
 **Developer**: nitro-frontend-developer
 
 ### Task 1.1: Replace 3 *ngIf directives with @if blocks
 
 **File**: `apps/dashboard/src/app/views/project/project.component.html`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Replace the 3 `*ngIf` occurrences on `<span class="filter-dropdown-count">` elements with `@if` block wrappers:
 
