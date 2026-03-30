@@ -79,14 +79,14 @@
   </div>
   <div class="sessions-list">
     @if (activeSessions().length === 0) {
-      <div class="empty-state">No active sessions</div>
+      <app-empty-state icon="&#x23F3;" message="No active sessions"></app-empty-state>
     } @else {
       @for (session of activeSessions(); track session.sessionId) {
         <div class="active-session-card">
           <div class="session-info">
-            <div class="session-status-indicator"
-               [class.status-running]="session.status === 'running'"
-               [class.status-paused]="session.status === 'paused'"></div>
+            <app-status-indicator
+              [status]="session.status === 'running' ? 'running' : 'paused'"
+              [pulse]="session.status === 'running'"></app-status-indicator>
             <div class="session-details">
               <div class="session-id">{{ session.sessionId }}</div>
               <div class="session-task">{{ session.taskTitle }}</div>
@@ -107,7 +107,7 @@
   </div>
   <div class="tasks-list">
     @if (activeTasks().length === 0) {
-      <div class="empty-state">No active tasks</div>
+      <app-empty-state icon="&#x2611;" message="No active tasks"></app-empty-state>
     } @else {
       @for (task of activeTasks(); track task.taskId) {
         <div class="active-task-card">

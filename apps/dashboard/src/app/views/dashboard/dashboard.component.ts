@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
+import { StatusIndicatorComponent } from '../../shared/status-indicator/status-indicator.component';
+import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { MockDataService } from '../../services/mock-data.service';
 import type {
   CommandCenterData,
@@ -12,7 +14,7 @@ import type {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [StatCardComponent],
+  imports: [StatCardComponent, StatusIndicatorComponent, EmptyStateComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

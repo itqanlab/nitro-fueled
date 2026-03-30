@@ -167,11 +167,9 @@
         @for (agent of agentRows; track agent.name) {
           <tr>
             <td class="agent-name-cell">
-              <span
-                class="status-dot"
-                [ngClass]="agent.online ? 'dot-online' : 'dot-offline'"
-                [attr.aria-label]="agent.online ? 'Online' : 'Offline'"
-              ></span>
+              <app-status-indicator
+                [status]="agent.online ? 'completed' : 'offline'"
+                [size]="'sm'"></app-status-indicator>
               {{ agent.name }}
             </td>
             <td>{{ agent.tasks }}</td>
@@ -179,9 +177,10 @@
             <td>{{ agent.tokensPerTask }}</td>
             <td>${{ agent.costPerTask | number:'1.2-2' }}</td>
             <td>
-              <span [ngClass]="['badge', agent.badgeClass]">
-                {{ agent.successRate }}%
-              </span>
+              <app-badge
+                [label]="agent.successRate + '%'"
+                [variant]="agent.successRate >= 90 ? 'success' : agent.successRate >= 80 ? 'warning' : 'error'"
+                [size]="'sm'"></app-badge>
             </td>
           </tr>
         }

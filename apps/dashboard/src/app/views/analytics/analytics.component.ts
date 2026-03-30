@@ -9,13 +9,15 @@ import type {
   AnalyticsModelsData,
 } from '../../models/api.types';
 import { buildAnalyticsData, FALLBACK_ANALYTICS_DATA } from './analytics.adapters';
+import { BadgeComponent } from '../../shared/badge/badge.component';
+import { StatusIndicatorComponent } from '../../shared/status-indicator/status-indicator.component';
 
 const DAILY_BUDGET_MAX = 50;
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [NgClass, DecimalPipe],
+  imports: [NgClass, DecimalPipe, BadgeComponent, StatusIndicatorComponent],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
