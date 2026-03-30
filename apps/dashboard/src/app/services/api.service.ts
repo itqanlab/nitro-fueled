@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../environments/environment';
 
 interface HealthResponse {
   status: string;
@@ -27,9 +27,6 @@ import type {
   AnalyticsEfficiencyData,
   AnalyticsModelsData,
   AnalyticsSessionsData,
-} from '../../../../dashboard-api/src/dashboard/dashboard.types';
-
-import type {
   CortexTask,
   CortexTaskContext,
   CortexTaskTrace,
@@ -38,7 +35,7 @@ import type {
   CortexWorker,
   CortexModelPerformance,
   CortexPhaseTiming,
-} from '../../../../dashboard-api/src/dashboard/cortex.types';
+} from '../models/api.types';
 
 // ── Allowlists for filter parameters ─────────────────────────────────────────
 const VALID_TASK_STATUSES = [

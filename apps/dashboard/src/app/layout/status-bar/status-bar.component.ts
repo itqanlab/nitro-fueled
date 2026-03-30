@@ -4,7 +4,7 @@ import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api.service';
 import { StatusIndicator } from '../../models/provider.model';
-import type { DashboardStats } from '../../../../dashboard-api/src/dashboard/dashboard.types';
+import type { DashboardStats } from '../../models/api.types';
 
 @Component({
   selector: 'app-status-bar',

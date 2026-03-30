@@ -5,7 +5,7 @@ import type {
   CortexReview,
   CortexFixCycle,
   CortexEvent,
-} from '../../../../../dashboard-api/src/dashboard/cortex.types';
+} from '../../models/api.types';
 import { mapWorker, mapPhase, mapReview, mapFixCycle } from './task-trace.mappers';
 import type {
   TimelineEvent,

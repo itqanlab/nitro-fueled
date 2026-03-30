@@ -1,8 +1,8 @@
 import { Injectable, DestroyRef, inject } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
-import { environment } from '../../../environments/environment';
-import type { DashboardEvent } from '../../../../dashboard-api/src/dashboard/dashboard.types';
+import { environment } from '../../environments/environment';
+import type { DashboardEvent } from '../models/api.types';
 
 function isDashboardEvent(value: unknown): value is DashboardEvent {
   return (

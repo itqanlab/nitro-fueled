@@ -1,6 +1,6 @@
 import { Task, TaskType } from '../../models/task.model';
 import { AnalyticsSummary } from '../../models/analytics-summary.model';
-import type { TaskRecord, DashboardStats, TaskType as ApiTaskType } from '../../../../dashboard-api/src/dashboard/dashboard.types';
+import type { TaskRecord, DashboardStats, TaskType as ApiTaskType } from '../../models/api.types';
 
 // FIXING is an extension status used during the fix-worker phase (see dashboard.types.ts)
 export const ACTIVE_STATUSES = [
@@ -22,6 +22,7 @@ function mapTaskType(apiType: ApiTaskType): TaskType {
     case 'RESEARCH': return 'FEATURE';
     case 'DEVOPS': return 'FEATURE';
     case 'CREATIVE': return 'FEATURE';
+    default: return 'FEATURE';
   }
 }
 

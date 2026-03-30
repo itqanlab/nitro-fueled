@@ -19,7 +19,7 @@ import { ApiService } from '../../services/api.service';
 import type {
   CortexTask,
   CortexTaskTrace,
-} from '../../../../../dashboard-api/src/dashboard/cortex.types';
+} from '../../models/api.types';
 import type { TaskTraceViewModel } from './task-trace.model';
 import { adaptTaskTrace } from './task-trace.adapters';
 

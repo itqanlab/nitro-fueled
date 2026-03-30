@@ -1,4 +1,4 @@
-import type { CortexModelPerformance } from '../../../../../dashboard-api/src/dashboard/cortex.types';
+import type { CortexModelPerformance } from '../../models/api.types';
 
 export interface ModelPerfRow {
   model: string;

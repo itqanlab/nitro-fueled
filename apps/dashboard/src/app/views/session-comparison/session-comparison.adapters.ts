@@ -1,4 +1,4 @@
-import type { CortexSession } from '../../../../../dashboard-api/src/dashboard/cortex.types';
+import type { CortexSession } from '../../models/api.types';
 
 export interface SessionRow {
   id: string;

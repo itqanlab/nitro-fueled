@@ -1,4 +1,4 @@
-import type { CortexPhaseTiming } from '../../../../../dashboard-api/src/dashboard/cortex.types';
+import type { CortexPhaseTiming } from '../../models/api.types';
 
 export interface PhaseTimingRow {
   phase: string;

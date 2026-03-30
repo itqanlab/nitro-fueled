@@ -8,7 +8,7 @@ import { Agent } from '../../models/agent.model';
 import { Task } from '../../models/task.model';
 import { Project } from '../../models/project.model';
 import { AnalyticsSummary } from '../../models/analytics-summary.model';
-import type { TaskRecord, DashboardStats } from '../../../../dashboard-api/src/dashboard/dashboard.types';
+import type { TaskRecord, DashboardStats } from '../../models/api.types';
 import {
   ACTIVE_STATUSES,
   COMPLETED_STATUSES,
@@ -92,7 +92,7 @@ export class DashboardComponent {
 
   public readonly project: Project = STATIC_PROJECT;
   public readonly agents: readonly Agent[] = [];
-  public readonly activity: readonly unknown[] = [];
+  public readonly activity: readonly { timeAgo: string; actorBold: string; text: string }[] = [];
 
   public readonly quickActions: readonly QuickAction[] = [
     { icon: '+', label: 'New Task', color: 'blue' },

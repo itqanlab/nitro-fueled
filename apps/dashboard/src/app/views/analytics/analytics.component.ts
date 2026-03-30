@@ -7,7 +7,7 @@ import { AnalyticsData, FilterPeriod } from '../../models/analytics.model';
 import type {
   AnalyticsCostData,
   AnalyticsModelsData,
-} from '../../../../dashboard-api/src/dashboard/dashboard.types';
+} from '../../models/api.types';
 import { buildAnalyticsData, FALLBACK_ANALYTICS_DATA } from './analytics.adapters';
 
 const DAILY_BUDGET_MAX = 50;

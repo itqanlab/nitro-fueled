@@ -7,7 +7,7 @@ import type {
   CortexPhase,
   CortexReview,
   CortexFixCycle,
-} from '../../../../../dashboard-api/src/dashboard/cortex.types';
+} from '../../models/api.types';
 import type { WorkerRow, PhaseRow, ReviewRow, FixCycleRow } from './task-trace.model';
 
 export function mapWorker(w: CortexWorker): WorkerRow {

@@ -2,7 +2,7 @@ import { AnalyticsData, AnalyticsStatCard, ProviderCost } from '../../models/ana
 import type {
   AnalyticsCostData,
   AnalyticsModelsData,
-} from '../../../../dashboard-api/src/dashboard/dashboard.types';
+} from '../../models/api.types';
 
 const PROVIDER_COLOR_CLASSES = ['blue', 'green', 'orange', 'gray'] as const;
 

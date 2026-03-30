@@ -15,7 +15,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { ApiService } from '../../services/api.service';
-import type { CortexModelPerformance } from '../../../../../dashboard-api/src/dashboard/cortex.types';
+import type { CortexModelPerformance } from '../../models/api.types';
 import {
   adaptModelPerformance,
   FALLBACK_MODEL_PERF_ROWS,
