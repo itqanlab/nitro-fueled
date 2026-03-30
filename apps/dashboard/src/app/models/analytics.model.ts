@@ -44,9 +44,11 @@ export interface DailyCostEntry {
   readonly amount: number;
 }
 
-export interface DailyCostBar extends DailyCostEntry {
+export interface DailyCostBar {
+  readonly day: number;
+  readonly amount: number;
   readonly heightPercent: number;
-  readonly colorClass: 'bar-over-budget' | 'bar-normal';
+  readonly colorClass: string;
 }
 
 export interface TeamBreakdown {
@@ -59,17 +61,35 @@ export interface TeamBreakdown {
   readonly budgetTotal: number;
 }
 
-export interface TeamCardView extends TeamBreakdown {
+export interface TeamCardView {
+  readonly name: string;
+  readonly cost: number;
+  readonly tasks: number;
+  readonly agents: number;
+  readonly avgCost: number;
+  readonly budgetUsed: number;
+  readonly budgetTotal: number;
   readonly budgetPercent: number;
-  readonly budgetClass: 'bar-danger' | 'bar-warn' | 'bar-normal';
+  readonly budgetClass: string;
   readonly avgCostFormatted: string;
 }
 
-export interface AgentRow extends AgentPerformance {
-  readonly badgeClass: 'badge-high' | 'badge-medium' | 'badge-low';
+export interface AgentRow {
+  readonly name: string;
+  readonly online: boolean;
+  readonly tasks: number;
+  readonly avgDuration: string;
+  readonly tokensPerTask: string;
+  readonly costPerTask: number;
+  readonly successRate: number;
+  readonly badgeClass: string;
 }
 
-export interface ClientBar extends ClientCost {
+export interface ClientBar {
+  readonly name: string;
+  readonly amount: number;
+  readonly budget: number;
+  readonly colorClass: string;
   readonly budgetPercent: number;
 }
 
