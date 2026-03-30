@@ -17,6 +17,13 @@ export const APP_ROUTES: Routes = [
       { path: 'agents', component: AgentEditorViewComponent },
       { path: 'mcp', component: McpIntegrationsComponent },
       {
+        path: 'orchestration',
+        loadComponent: () =>
+          import('./views/orchestration/orchestration.component').then(
+            (m) => m.OrchestrationComponent,
+          ),
+      },
+      {
         path: 'models',
         loadComponent: () =>
           import('./views/models/model-assignments.component').then(
@@ -78,6 +85,13 @@ export const APP_ROUTES: Routes = [
         loadComponent: () =>
           import('./views/project/project.component').then(
             (m) => m.ProjectComponent,
+          ),
+      },
+      {
+        path: 'project/task/:taskId',
+        loadComponent: () =>
+          import('./views/task-detail/task-detail.component').then(
+            (m) => m.TaskDetailComponent,
           ),
       },
       {
