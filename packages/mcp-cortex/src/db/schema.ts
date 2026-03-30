@@ -3,14 +3,14 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED';
-export type TaskType = 'FEATURE' | 'BUG' | 'REFACTOR' | 'DOCS' | 'TEST' | 'CHORE';
+export type TaskType = 'FEATURE' | 'BUG' | 'BUGFIX' | 'REFACTOR' | 'REFACTORING' | 'DOCS' | 'DOCUMENTATION' | 'TEST' | 'CHORE' | 'DEVOPS' | 'RESEARCH' | 'CREATIVE';
 export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
 export type WorkerType = 'build' | 'review';
 export type WorkerStatus = 'active' | 'completed' | 'failed' | 'killed';
 export type LoopStatus = 'running' | 'paused' | 'stopped';
 export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished';
 export type LauncherMode = 'print' | 'opencode' | 'codex';
-export type ProviderType = 'claude' | 'glm' | 'opencode';
+export type ProviderType = 'claude' | 'glm' | 'opencode' | 'codex';
 
 export interface WorkerTokenStats {
   total_input: number;
@@ -44,7 +44,7 @@ const TASKS_TABLE = `
 CREATE TABLE IF NOT EXISTS tasks (
   id               TEXT PRIMARY KEY,
   title            TEXT NOT NULL,
-  type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','REFACTOR','DOCS','TEST','CHORE')),
+  type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','BUGFIX','REFACTOR','REFACTORING','DOCS','DOCUMENTATION','TEST','CHORE','DEVOPS','RESEARCH','CREATIVE')),
   priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
   status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
   complexity       TEXT,
@@ -231,48 +231,62 @@ function applyMigrations(db: Database.Database, table: string, migrations: Array
 }
 
 /**
- * Migrate the tasks table CHECK constraint to include FIXING status.
+ * Migrate the tasks table CHECK constraints to include all valid statuses and types.
  * SQLite cannot ALTER CHECK constraints, so we recreate the table preserving data.
  */
 function migrateTasksCheckConstraint(db: Database.Database): void {
-  // Check if the tasks table exists and has the old constraint (missing FIXING)
+  // Check if the tasks table exists and has outdated constraints
   const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").get() as { sql: string } | undefined;
   if (!tableInfo) return; // Table doesn't exist yet, CREATE TABLE will handle it
-  if (tableInfo.sql.includes("'FIXING'")) return; // Already migrated
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS tasks_new (
-      id               TEXT PRIMARY KEY,
-      title            TEXT NOT NULL,
-      type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','REFACTOR','DOCS','TEST','CHORE')),
-      priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-      status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
-      complexity       TEXT,
-      model            TEXT,
-      dependencies     TEXT NOT NULL DEFAULT '[]',
-      description      TEXT,
-      acceptance_criteria TEXT,
-      file_scope       TEXT NOT NULL DEFAULT '[]',
-      session_claimed  TEXT,
-      claimed_at       TEXT,
-      created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-      updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-    )
-  `);
+  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'");
+  const needsTypeMigration = !tableInfo.sql.includes("'BUGFIX'");
+  if (!needsStatusMigration && !needsTypeMigration) return; // Already up to date
 
-  // Copy existing data — use column intersection to handle schema differences
-  const existingCols = new Set(
-    (db.prepare('PRAGMA table_info(tasks)').all() as Array<{ name: string }>).map(r => r.name),
-  );
-  const newCols = new Set(
-    (db.prepare('PRAGMA table_info(tasks_new)').all() as Array<{ name: string }>).map(r => r.name),
-  );
-  const shared = [...newCols].filter(c => existingCols.has(c));
-  const colList = shared.join(', ');
+  // Disable foreign keys during table recreation to avoid FK constraint failures
+  db.pragma('foreign_keys = OFF');
 
-  db.exec(`INSERT INTO tasks_new (${colList}) SELECT ${colList} FROM tasks`);
-  db.exec('DROP TABLE tasks');
-  db.exec('ALTER TABLE tasks_new RENAME TO tasks');
+  db.transaction(() => {
+    // Drop leftover temp table from a previous failed migration attempt
+    db.exec('DROP TABLE IF EXISTS tasks_new');
+
+    db.exec(`
+      CREATE TABLE tasks_new (
+        id               TEXT PRIMARY KEY,
+        title            TEXT NOT NULL,
+        type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','BUGFIX','REFACTOR','REFACTORING','DOCS','DOCUMENTATION','TEST','CHORE','DEVOPS','RESEARCH','CREATIVE')),
+        priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
+        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+        complexity       TEXT,
+        model            TEXT,
+        dependencies     TEXT NOT NULL DEFAULT '[]',
+        description      TEXT,
+        acceptance_criteria TEXT,
+        file_scope       TEXT NOT NULL DEFAULT '[]',
+        session_claimed  TEXT,
+        claimed_at       TEXT,
+        created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      )
+    `);
+
+    // Copy existing data — use column intersection to handle schema differences
+    const existingCols = new Set(
+      (db.prepare('PRAGMA table_info(tasks)').all() as Array<{ name: string }>).map(r => r.name),
+    );
+    const newCols = new Set(
+      (db.prepare('PRAGMA table_info(tasks_new)').all() as Array<{ name: string }>).map(r => r.name),
+    );
+    const shared = [...newCols].filter(c => existingCols.has(c));
+    const colList = shared.join(', ');
+
+    db.exec(`INSERT INTO tasks_new (${colList}) SELECT ${colList} FROM tasks`);
+    db.exec('DROP TABLE tasks');
+    db.exec('ALTER TABLE tasks_new RENAME TO tasks');
+  })();
+
+  // Re-enable foreign keys
+  db.pragma('foreign_keys = ON');
 }
 
 export function initDatabase(dbPath: string): Database.Database {
