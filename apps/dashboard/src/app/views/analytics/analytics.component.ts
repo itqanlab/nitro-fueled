@@ -3,7 +3,7 @@ import { NgClass, DecimalPipe } from '@angular/common';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api.service';
-import { AnalyticsData, FilterPeriod } from '../../models/analytics.model';
+import { AnalyticsData, FilterPeriod, DailyCostBar, TeamCardView, AgentRow, ClientBar } from '../../models/analytics.model';
 import type {
   AnalyticsCostData,
   AnalyticsModelsData,
@@ -47,27 +47,13 @@ export class AnalyticsComponent {
 
   public data: AnalyticsData = FALLBACK_ANALYTICS_DATA;
 
-  public dailyCostBars: Array<{
-    day: number;
-    amount: number;
-    heightPercent: number;
-    colorClass: string;
-  }> = [];
+  public dailyCostBars: readonly DailyCostBar[] = [];
 
-  public teamCardsView: Array<{
-    name: string; cost: number; tasks: number; agents: number;
-    avgCost: number; budgetUsed: number; budgetTotal: number;
-    budgetPercent: number; budgetClass: string; avgCostFormatted: string;
-  }> = [];
+  public teamCardsView: readonly TeamCardView[] = [];
 
-  public agentRows: Array<{
-    name: string; online: boolean; tasks: number; avgDuration: string;
-    tokensPerTask: string; costPerTask: number; successRate: number; badgeClass: string;
-  }> = [];
+  public agentRows: readonly AgentRow[] = [];
 
-  public clientBars: Array<{
-    name: string; amount: number; budget: number; colorClass: string; budgetPercent: number;
-  }> = [];
+  public clientBars: readonly ClientBar[] = [];
 
   public budgetLineBottom = 0;
 

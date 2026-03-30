@@ -49,8 +49,8 @@ Three components define interfaces or anonymous types inline, violating the "one
 
 ## File Scope
 
-- apps/dashboard/src/app/views/dashboard/dashboard.component.ts (MODIFIED — interfaces removed, imports added)
-- apps/dashboard/src/app/models/dashboard.model.ts (CREATED — QuickAction, TeamGroup)
+- apps/dashboard/src/app/views/dashboard/dashboard.component.ts (VERIFIED — already compliant; no inline `QuickAction`/`TeamGroup` remain)
+- apps/dashboard/src/app/models/dashboard.model.ts (NOT NEEDED — no dashboard model extraction required in current worktree)
 - apps/dashboard/src/app/views/analytics/analytics.component.ts (MODIFIED — inline types replaced with named types)
 - apps/dashboard/src/app/models/analytics.model.ts (MODIFIED — 4 named interfaces added)
 - apps/dashboard/src/app/views/agent-editor/agent-editor.store.ts (MODIFIED — AgentMetadata removed)

@@ -30,6 +30,18 @@ export interface AgentEditorData {
   readonly content: string;
 }
 
+export interface AgentMetadata {
+  readonly name: string;
+  readonly displayName: string;
+  readonly category: AgentCategory;
+  readonly tags: readonly string[];
+  readonly type: AgentType;
+  readonly mcpTools: readonly McpToolAccess[];
+  readonly knowledgeScope: readonly KnowledgeScope[];
+  readonly changelog: string;
+  readonly isBreakingChange: boolean;
+}
+
 export interface CursorPosition {
   readonly line: number;
   readonly col: number;

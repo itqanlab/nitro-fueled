@@ -7,20 +7,9 @@ import {
   EditorViewMode,
   McpToolAccess,
   CursorPosition,
+  AgentMetadata,
 } from '../../models/agent-editor.model';
 import { MOCK_AGENT_EDITOR_LIST } from '../../services/mock-data.constants';
-
-interface AgentMetadata {
-  readonly name: string;
-  readonly displayName: string;
-  readonly category: AgentCategory;
-  readonly tags: readonly string[];
-  readonly type: AgentType;
-  readonly mcpTools: readonly McpToolAccess[];
-  readonly knowledgeScope: readonly KnowledgeScope[];
-  readonly changelog: string;
-  readonly isBreakingChange: boolean;
-}
 
 function extractMetadata(agent: AgentEditorData): AgentMetadata {
   return {

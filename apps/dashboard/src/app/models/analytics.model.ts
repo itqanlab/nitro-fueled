@@ -44,6 +44,11 @@ export interface DailyCostEntry {
   readonly amount: number;
 }
 
+export interface DailyCostBar extends DailyCostEntry {
+  readonly heightPercent: number;
+  readonly colorClass: 'bar-over-budget' | 'bar-normal';
+}
+
 export interface TeamBreakdown {
   readonly name: string;
   readonly cost: number;
@@ -52,6 +57,20 @@ export interface TeamBreakdown {
   readonly avgCost: number;
   readonly budgetUsed: number;
   readonly budgetTotal: number;
+}
+
+export interface TeamCardView extends TeamBreakdown {
+  readonly budgetPercent: number;
+  readonly budgetClass: 'bar-danger' | 'bar-warn' | 'bar-normal';
+  readonly avgCostFormatted: string;
+}
+
+export interface AgentRow extends AgentPerformance {
+  readonly badgeClass: 'badge-high' | 'badge-medium' | 'badge-low';
+}
+
+export interface ClientBar extends ClientCost {
+  readonly budgetPercent: number;
 }
 
 export type FilterPeriod = '7d' | '30d' | 'month' | 'custom';
