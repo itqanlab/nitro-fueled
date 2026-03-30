@@ -1,0 +1,120 @@
+<div class="orchestration-container">
+  <a href="#main-content" class="skip-to-content">Skip to main content</a>
+  
+  <div class="orchestration-header">
+    <h1>Orchestration Flows</h1>
+    <p>Visualize and manage all built-in orchestration flows as interactive pipeline diagrams</p>
+  </div>
+
+  <div class="orchestration-content" id="main-content">
+    <div class="flow-sidebar" role="navigation" aria-label="Flow Types">
+      <h2>Flow Types</h2>
+      <div class="flow-filter">
+        <label for="flow-search" class="visually-hidden">Search flows:</label>
+        <input 
+          id="flow-search"
+          type="text" 
+          placeholder="Search flows..." 
+          class="flow-search"
+          [(ngModel)]="searchTerm"
+          aria-describedby="search-help"
+        >
+        <div id="search-help" class="visually-hidden">
+          Type to filter flows by name, type, or keywords
+        </div>
+      </div>
+      <div class="flow-list" role="list" aria-label="Available flows">
+        <div 
+          *ngFor="let flow of filteredFlows" 
+          class="flow-item"
+          [ngClass]="{ 'selected': selectedFlow?.id === flow.id }"
+          (click)="selectFlow(flow)"
+          role="listitem"
+          tabindex="0"
+          [attr.aria-selected]="selectedFlow?.id === flow.id"
+          [attr.aria-label]="`${flow.name} flow, type: ${flow.type}, executions: ${flow.executionCount}, success rate: ${(flow.successRate * 100).toFixed(0)}%`"
+          (keydown.enter)="selectFlow(flow)"
+          (keydown.space)="selectFlow(flow)"
+        >
+          <div class="flow-name">{{ flow.name }}</div>
+          <div class="flow-type">{{ flow.type }}</div>
+          <div class="flow-stats">
+            <div class="stat">
+              Executions: <span>{{ flow.executionCount }}</span>
+            </div>
+            <div class="stat">
+              Success: <span>{{ (flow.successRate * 100).toFixed(0) }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-main">
+      <div class="flow-diagram-container">
+        <app-flow-diagram *ngIf="selectedFlow" [flow]="selectedFlow"></app-flow-diagram>
+        <div *ngIf="!selectedFlow" class="flow-diagram-placeholder">
+          <h3>Select a flow to view diagram</h3>
+          <p>Choose a flow type from the sidebar to see its orchestration pipeline</p>
+        </div>
+      </div>
+      
+      <div class="flow-details-panel">
+        <div *ngIf="selectedFlow" class="flow-details-content">
+          <h4>{{ selectedFlow.name }}</h4>
+          <p class="flow-description">{{ selectedFlow.description }}</p>
+          
+          <div class="flow-meta">
+            <div class="meta-item">
+              <span class="meta-label">Type:</span>
+              <span class="meta-value" [style.background-color]="getFlowTypeColor(selectedFlow.type)">
+                {{ selectedFlow.type }}
+              </span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Priority:</span>
+              <span class="meta-value priority-{{ selectedFlow.priority.toLowerCase() }}">
+                {{ selectedFlow.priority }}
+              </span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Est. Duration:</span>
+              <span class="meta-value">{{ selectedFlow.estimatedTotalDuration }}h</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Success Rate:</span>
+              <span class="meta-value">{{ (selectedFlow.successRate * 100).toFixed(0) }}%</span>
+            </div>
+          </div>
+
+          <div class="flow-phases">
+            <h5>Phases ({{ selectedFlow.phases.length }})</h5>
+            <div class="phase-list">
+              <div *ngFor="let phase of selectedFlow.phases" class="phase-item">
+                <div class="phase-header">
+                  <span class="phase-number">{{ phase.order }}</span>
+                  <span class="phase-title">{{ phase.agent.title }}</span>
+                  <span class="phase-duration">{{ phase.estimatedDuration }}h</span>
+                </div>
+                <div class="phase-details">
+                  <div class="deliverables">
+                    <strong>Deliverables:</strong> {{ phase.deliverables.join(', ') }}
+                  </div>
+                  <div class="success-criteria">
+                    <strong>Success:</strong> {{ phase.successCriteria.join(', ') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="!selectedFlow" class="flow-details-placeholder">
+          <h4>Flow Details</h4>
+          <p>Flow information and metadata will appear here</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<router-outlet></router-outlet>
