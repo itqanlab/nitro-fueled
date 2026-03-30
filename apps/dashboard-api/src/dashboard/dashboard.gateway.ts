@@ -5,18 +5,20 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
 } from '@nestjs/websockets';
+import { Injectable, Logger, OnModuleDestroy, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
 import { WatcherService } from './watcher.service';
 import { CortexService } from './cortex.service';
 import type { DashboardEvent, FileChangeEvent } from './dashboard.types';
+import { WsAuthGuard } from './auth/ws-auth.guard';
 
 /**
  * DashboardGateway provides real-time WebSocket broadcasting of dashboard events.
  * Migrated from dashboard-service/src/server/websocket.ts to NestJS Socket.IO.
  * Maintains protocol compatibility with existing clients.
+ * WebSocket authentication guard added (TASK_2026_131).
  */
 @WebSocketGateway({
   cors: {
@@ -60,8 +62,9 @@ export class DashboardGateway
 
   /**
    * Handle new WebSocket client connections.
-   * Emits a connection acknowledgment matching the existing ws protocol format.
+   * Emits a connection acknowledgment matching existing ws protocol format.
    */
+  @UseGuards(WsAuthGuard)
   public handleConnection(client: Socket): void {
     this.logger.debug(`Client connected: ${client.id}`);
     // Emit connection event matching existing protocol

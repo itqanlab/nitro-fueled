@@ -8,11 +8,13 @@ import { DiffService } from './diff.service';
 import { WorkerTreeService } from './worker-tree.service';
 import { DashboardGateway } from './dashboard.gateway';
 import { CortexService } from './cortex.service';
+import { WsAuthGuard } from './auth/ws-auth.guard';
 
 /**
  * DashboardModule registers all dashboard-related services, controllers, and gateways.
  * Migrated from dashboard-service to NestJS architecture (TASK_2026_087).
  * WebSocket gateway added (TASK_2026_088).
+ * Authentication guard added (TASK_2026_131).
  */
 @Module({
   controllers: [DashboardController],
@@ -28,6 +30,7 @@ import { CortexService } from './cortex.service';
     WatcherService,
     DashboardGateway,
     CortexService,
+    WsAuthGuard,
   ],
   exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService],
 })
