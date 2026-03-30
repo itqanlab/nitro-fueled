@@ -82,14 +82,20 @@ export function handleGetTasks(
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const limit = args.limit !== undefined ? Math.min(Math.max(1, Math.trunc(args.limit)), 200) : undefined;
-  const limitClause = limit !== undefined ? ' LIMIT ?' : '';
-  const queryParams = limit !== undefined ? [...params, limit] : params;
-  const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id${limitClause}`).all(...queryParams) as Array<Record<string, unknown>>;
 
   if (args.unblocked) {
+    // When filtering for unblocked tasks, do NOT apply LIMIT in SQL — the SQL LIMIT would
+    // cap rows before dependency filtering, causing callers to get empty results when the
+    // first N rows by ID are all blocked. Instead, fetch all candidates and cap post-filter.
+    const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id`).all(...params) as Array<Record<string, unknown>>;
+
+    // Fetch IDs of all completed tasks for dependency resolution.
+    // Bounded at 1000 — this is only used for set-membership checks, so a large-but-finite
+    // limit is safe. Projects with more than 1000 COMPLETE tasks are pathological.
     const completeTasks = new Set(
-      (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE'").all() as Array<{ id: string }>).map(r => r.id),
+      (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE' LIMIT 1000").all() as Array<{ id: string }>).map(r => r.id),
     );
+
     const filtered = rows.filter(row => {
       let deps: unknown;
       try {
@@ -100,9 +106,16 @@ export function handleGetTasks(
       if (!Array.isArray(deps)) deps = [];
       return (deps as string[]).length === 0 || (deps as string[]).every(d => completeTasks.has(d));
     });
-    return { content: [{ type: 'text' as const, text: JSON.stringify(filtered, null, 2) }] };
+
+    // Apply limit to the post-filter result so callers get at most N unblocked tasks.
+    const capped = limit !== undefined ? filtered.slice(0, limit) : filtered;
+    return { content: [{ type: 'text' as const, text: JSON.stringify(capped, null, 2) }] };
   }
 
+  // When unblocked filtering is not requested, apply LIMIT in SQL for efficiency.
+  const limitClause = limit !== undefined ? ' LIMIT ?' : '';
+  const queryParams = limit !== undefined ? [...params, limit] : params;
+  const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id${limitClause}`).all(...queryParams) as Array<Record<string, unknown>>;
   return { content: [{ type: 'text' as const, text: JSON.stringify(rows, null, 2) }] };
 }
 

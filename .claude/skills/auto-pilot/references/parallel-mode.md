@@ -64,7 +64,8 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 
 **Preferred path (`cortex_available = true`):**
 
-1. Call `get_tasks(status=['CREATED', 'IMPLEMENTED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETE', 'CANCELLED'])`.
+1. Call `get_tasks(status=['CREATED', 'IMPLEMENTED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETE', 'CANCELLED'], limit=50)`.
+   Use `limit: 50` (or a project-appropriate value) to prevent the response from overflowing context on large task registries. Increase only if the project has more than 50 active tasks in a single tick.
 2. Validate each `task_id` against `^TASK_\d{4}_\d{3}$` before using it for any routing decision.
 3. Use only structured DB fields for queueing: `task_id`, `status`, `type`, `priority`, `dependencies`, `model`, `provider`, `preferred_tier`, `testing`, and retry-related metadata if present.
 4. Cache the task roster in the session DB with `update_session()` if the implementation needs a persisted copy for compaction recovery.

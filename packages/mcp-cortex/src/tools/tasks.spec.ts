@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { initDatabase } from '../db/schema.js';
 import { handleCreateSession } from './sessions.js';
+import { toLegacySessionId } from './session-id.js';
 import { handleClaimTask, handleGetTasks } from './tasks.js';
 import { handleGetNextWave } from './wave.js';
 import type Database from 'better-sqlite3';
@@ -63,7 +64,7 @@ describe('session ID normalization in task claims', () => {
 
     const result = parseText(handleClaimTask(db, {
       task_id: 'TASK_2026_900',
-      session_id: sessionId.replace('T', '_'),
+      session_id: toLegacySessionId(sessionId),
     })) as { ok: boolean };
 
     expect(result.ok).toBe(true);
@@ -76,7 +77,7 @@ describe('session ID normalization in task claims', () => {
     insertTask(db, 'TASK_2026_901');
 
     const wave = parseText(handleGetNextWave(db, {
-      session_id: sessionId.replace('T', '_'),
+      session_id: toLegacySessionId(sessionId),
       slots: 1,
     })) as Array<{ id: string }>;
 
@@ -119,5 +120,67 @@ describe('get_tasks limit support', () => {
     const rows = parseText(handleGetTasks(db, { status: 'CREATED', limit: 9999 })) as Array<{ id: string }>;
 
     expect(rows).toHaveLength(200);
+  });
+});
+
+describe('get_tasks unblocked + limit post-filter', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  function insertTaskWithDeps(taskId: string, status: string, deps: string[]): void {
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO tasks (id, title, type, priority, status, dependencies, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(taskId, `Task ${taskId}`, 'BUGFIX', 'P1-High', status, JSON.stringify(deps), now, now);
+  }
+
+  it('applies limit after dependency filtering so blocked tasks do not consume limit slots', () => {
+    // Insert two tasks with an unresolved dependency (blocked in effect) first by ID order.
+    // Then insert two genuinely unblocked tasks.
+    // Without the post-filter fix, limit=2 in SQL would grab the first two blocked rows,
+    // pass them to dependency filtering, produce an empty result, and the caller would see nothing.
+    insertTaskWithDeps('TASK_2026_920', 'CREATED', ['TASK_2026_999']); // blocked — dep not complete
+    insertTaskWithDeps('TASK_2026_921', 'CREATED', ['TASK_2026_999']); // blocked — dep not complete
+    insertTaskWithDeps('TASK_2026_922', 'CREATED', []);                 // unblocked
+    insertTaskWithDeps('TASK_2026_923', 'CREATED', []);                 // unblocked
+
+    const rows = parseText(handleGetTasks(db, { unblocked: true, limit: 1 })) as Array<{ id: string }>;
+
+    // The caller asked for 1 unblocked task. Even though the first 2 rows by ID are blocked,
+    // the result must still return exactly 1 unblocked task.
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.id).toBe('TASK_2026_922');
+  });
+
+  it('returns all unblocked tasks when limit exceeds the unblocked count', () => {
+    insertTaskWithDeps('TASK_2026_930', 'CREATED', ['TASK_2026_999']); // blocked
+    insertTaskWithDeps('TASK_2026_931', 'CREATED', []);                 // unblocked
+    insertTaskWithDeps('TASK_2026_932', 'CREATED', []);                 // unblocked
+
+    const rows = parseText(handleGetTasks(db, { unblocked: true, limit: 10 })) as Array<{ id: string }>;
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map(r => r.id)).toEqual(['TASK_2026_931', 'TASK_2026_932']);
+  });
+
+  it('Math.min/Math.max guards clamp fractional and near-zero limit values', () => {
+    // This exercises the Math.trunc + Math.max(1, ...) guards directly.
+    // A caller passing limit=0.9 (fractional) should get clamped to 1 after Math.trunc (0) -> Math.max(1, 0) = 1.
+    // We use the non-unblocked path here since the guards apply before path branching.
+    insertTaskWithStatus(db, 'TASK_2026_940', 'CREATED');
+    insertTaskWithStatus(db, 'TASK_2026_941', 'CREATED');
+
+    // limit: 0.9 -> Math.trunc = 0 -> Math.max(1, 0) = 1 -> returns 1 row, not 0
+    const rows = parseText(handleGetTasks(db, { limit: 0.9 })) as Array<{ id: string }>;
+    expect(rows).toHaveLength(1);
   });
 });
