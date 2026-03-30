@@ -16,7 +16,7 @@
 - task-tracking/sessions/SESSION_2026-03-30_05-15-40/log.md (modified, +5 -0 lines)
 
 ## Commits
-- PENDING: feat(dashboard): add settings api key management tab for TASK_2026_149
+- 8fb7eca: feat(dashboard): add settings api key management tab for TASK_2026_149
 
 ## Decisions
 - Moved the API keys tab into its own standalone component so the settings shell stays small and focused.
