@@ -23,7 +23,7 @@
           <h2 class="panel-title">API Keys</h2>
           <p class="panel-description">Manage your provider API keys. Keys are masked for security.</p>
           <div class="entries-list">
-            @for (key of apiKeys; track trackById($index, key)) {
+            @for (key of apiKeys(); track key.id) {
               <div class="entry-row">
                 <div class="entry-info">
                   <span class="entry-provider">{{ key.provider }}</span>
@@ -39,6 +39,8 @@
                   <span class="toggle-label">{{ key.isActive ? 'Active' : 'Inactive' }}</span>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-state">No API keys configured.</p>
             }
           </div>
         </div>
@@ -48,7 +50,7 @@
           <h2 class="panel-title">Launchers</h2>
           <p class="panel-description">Configure AI coding tool launchers and their paths.</p>
           <div class="entries-list">
-            @for (launcher of launchers; track trackById($index, launcher)) {
+            @for (launcher of launchers(); track launcher.id) {
               <div class="entry-row">
                 <div class="entry-info">
                   <span class="entry-name">{{ launcher.name }}</span>
@@ -60,6 +62,8 @@
                   <span class="toggle-label">{{ launcher.isActive ? 'Active' : 'Inactive' }}</span>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-state">No launchers configured.</p>
             }
           </div>
         </div>
@@ -69,7 +73,7 @@
           <h2 class="panel-title">Subscriptions</h2>
           <p class="panel-description">View and manage provider subscription connections.</p>
           <div class="entries-list">
-            @for (sub of subscriptions; track trackById($index, sub)) {
+            @for (sub of subscriptions(); track sub.id) {
               <div class="entry-row">
                 <div class="entry-info">
                   <span class="entry-provider">{{ sub.provider }}</span>
@@ -84,6 +88,8 @@
                   <span class="toggle-label">{{ sub.isActive ? 'Active' : 'Inactive' }}</span>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-state">No subscriptions configured.</p>
             }
           </div>
         </div>
@@ -93,12 +99,12 @@
           <h2 class="panel-title">Model Mapping</h2>
           <p class="panel-description">Map models to launchers and set defaults for each launcher.</p>
           <div class="entries-list">
-            @for (mapping of mappings; track trackById($index, mapping)) {
+            @for (mapping of mappings(); track mapping.id) {
               <div class="entry-row">
                 <div class="entry-info">
                   <span class="entry-model">{{ mapping.modelId }}</span>
                   <span class="entry-arrow">→</span>
-                  <span class="entry-launcher">{{ mapping.launcherId }}</span>
+                  <span class="entry-launcher">{{ launcherNames().get(mapping.launcherId) || mapping.launcherId }}</span>
                 </div>
                 <div class="entry-toggle">
                   @if (mapping.isDefault) {
@@ -106,6 +112,8 @@
                   }
                 </div>
               </div>
+            } @empty {
+              <p class="empty-state">No model mappings configured.</p>
             }
           </div>
         </div>

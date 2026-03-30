@@ -1,69 +1,71 @@
-import { Injectable } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { ApiKeyEntry, LauncherEntry, ModelMapping, SettingsState, SubscriptionEntry } from '../models/settings.model';
 import {
-  MOCK_API_KEYS,
-  MOCK_LAUNCHERS,
-  MOCK_MODEL_MAPPINGS,
   MOCK_SETTINGS_STATE,
-  MOCK_SUBSCRIPTIONS,
 } from './settings.constants';
 
-type ToggleType = 'apiKey' | 'launcher' | 'subscription' | 'mapping';
+export type ToggleType = 'apiKey' | 'launcher' | 'subscription';
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
-  private state: SettingsState = { ...MOCK_SETTINGS_STATE };
+  private readonly state = signal<SettingsState>({ ...MOCK_SETTINGS_STATE });
+
+  public readonly apiKeys = computed(() => this.state().apiKeys);
+  public readonly launchers = computed(() => this.state().launchers);
+  public readonly subscriptions = computed(() => this.state().subscriptions);
+  public readonly mappings = computed(() => this.state().mappings);
 
   public getApiKeys(): readonly ApiKeyEntry[] {
-    return this.state.apiKeys;
+    return this.state().apiKeys;
   }
 
   public getLaunchers(): readonly LauncherEntry[] {
-    return this.state.launchers;
+    return this.state().launchers;
   }
 
   public getSubscriptions(): readonly SubscriptionEntry[] {
-    return this.state.subscriptions;
+    return this.state().subscriptions;
   }
 
   public getMappings(): readonly ModelMapping[] {
-    return this.state.mappings;
+    return this.state().mappings;
   }
 
   public toggleActive(type: ToggleType, id: string): void {
     switch (type) {
       case 'apiKey':
-        this.state = {
-          ...this.state,
-          apiKeys: this.state.apiKeys.map((entry) =>
+        this.state.update((s) => ({
+          ...s,
+          apiKeys: s.apiKeys.map((entry) =>
             entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
           ),
-        };
+        }));
         break;
       case 'launcher':
-        this.state = {
-          ...this.state,
-          launchers: this.state.launchers.map((entry) =>
+        this.state.update((s) => ({
+          ...s,
+          launchers: s.launchers.map((entry) =>
             entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
           ),
-        };
+        }));
         break;
       case 'subscription':
-        this.state = {
-          ...this.state,
-          subscriptions: this.state.subscriptions.map((entry) =>
+        this.state.update((s) => ({
+          ...s,
+          subscriptions: s.subscriptions.map((entry) =>
             entry.id === id ? { ...entry, isActive: !entry.isActive } : entry,
           ),
-        };
-        break;
-      case 'mapping':
-        this.state = {
-          ...this.state,
-          mappings: this.state.mappings.map((entry) =>
-            entry.id === id ? { ...entry, isDefault: !entry.isDefault } : entry,
-          ),
-        };
+        }));
         break;
     }
+  }
+
+  public toggleDefault(id: string): void {
+    this.state.update((s) => ({
+      ...s,
+      mappings: s.mappings.map((entry) =>
+        entry.id === id ? { ...entry, isDefault: !entry.isDefault } : entry,
+      ),
+    }));
   }
 }

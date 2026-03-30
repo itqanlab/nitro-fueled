@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { SettingsService } from '../../services/settings.service';
 
@@ -31,16 +31,17 @@ export class SettingsComponent {
   public readonly tabs: readonly TabDefinition[] = SETTINGS_TABS;
   public readonly activeTab = signal<SettingsTab>('api-keys');
 
-  public readonly apiKeys = this.settingsService.getApiKeys();
-  public readonly launchers = this.settingsService.getLaunchers();
-  public readonly subscriptions = this.settingsService.getSubscriptions();
-  public readonly mappings = this.settingsService.getMappings();
+  // Computed signals from the service — OnPush will detect changes correctly
+  public readonly apiKeys = this.settingsService.apiKeys;
+  public readonly launchers = this.settingsService.launchers;
+  public readonly subscriptions = this.settingsService.subscriptions;
+  public readonly mappings = this.settingsService.mappings;
+
+  public readonly launcherNames = computed(() =>
+    new Map(this.settingsService.launchers().map((l) => [l.id, l.name])),
+  );
 
   public selectTab(tab: SettingsTab): void {
     this.activeTab.set(tab);
-  }
-
-  public trackById(_index: number, item: { readonly id: string }): string {
-    return item.id;
   }
 }
