@@ -498,3 +498,33 @@ export interface CortexPhaseTiming {
   min_duration_minutes: number | null;
   max_duration_minutes: number | null;
 }
+
+// Task creation API types
+export type TaskType = 'FEATURE' | 'BUGFIX' | 'REFACTORING' | 'DOCUMENTATION' | 'RESEARCH' | 'DEVOPS' | 'CREATIVE' | 'CONTENT';
+export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
+export type TaskComplexity = 'Simple' | 'Medium' | 'Complex';
+
+export interface CreateTaskOverrides {
+  type?: TaskType;
+  priority?: TaskPriority;
+  complexity?: TaskComplexity;
+  model?: string;
+  dependencies?: string[];
+}
+
+export interface CreateTaskRequest {
+  description: string;
+  overrides?: CreateTaskOverrides;
+}
+
+export interface CreatedTask {
+  taskId: string;
+  title: string;
+  status: 'CREATED';
+  folder: string;
+}
+
+export interface CreateTaskResponse {
+  tasks: CreatedTask[];
+  autoSplit?: boolean;
+}

@@ -35,6 +35,8 @@ import type {
   CortexWorker,
   CortexModelPerformance,
   CortexPhaseTiming,
+  CreateTaskRequest,
+  CreateTaskResponse,
 } from '../models/api.types';
 
 // ── Allowlists for filter parameters ─────────────────────────────────────────
@@ -77,7 +79,7 @@ function isValidWorkerStatus(v: string): v is WorkerStatus {
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api`;
-  private readonly cortexBase = `${environment.apiUrl}/api/v1`;
+  private readonly cortexBase = `${environment.apiUrl}/api`;
 
   public getHealth(): Observable<HealthResponse> {
     return this.http.get<HealthResponse>(`${this.base}/health`);
@@ -248,5 +250,9 @@ export class ApiService {
     return this.http.get<CortexPhaseTiming[]>(
       `${this.cortexBase}/cortex/analytics/phase-timing`,
     );
+  }
+
+  public createTask(req: CreateTaskRequest): Observable<CreateTaskResponse> {
+    return this.http.post<CreateTaskResponse>(`${this.base}/tasks/create`, req);
   }
 }
