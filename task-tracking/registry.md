@@ -173,19 +173,19 @@
 | TASK_2026_168 | IMPLEMENTED | FEATURE | Project Tasks List — Search & Filters | 2026-03-30 | default |
 | TASK_2026_169 | IN_PROGRESS | FEATURE | Logs Dashboard — Event Viewer & Worker Logs | 2026-03-30 | default |
 | TASK_2026_170 | CREATED     | FEATURE | Orchestration Flow Editor & Auto-Pilot Integration | 2026-03-30 | default |
-| TASK_2026_171 | CREATED     | FEATURE | Analytics Reports — Session, Cost, Model & Quality Reports | 2026-03-30 | default |
+| TASK_2026_171 | IMPLEMENTED | FEATURE | Analytics Reports — Session, Cost, Model & Quality Reports | 2026-03-30 | default |
 | TASK_2026_172 | COMPLETE    | BUGFIX  | Add CANCELLED Status to All Type Unions and Switch Statements | 2026-03-30 | default |
 | TASK_2026_173 | CREATED     | BUGFIX  | Add Authentication Guard to All NestJS HTTP Endpoints | 2026-03-30 | default |
-| TASK_2026_174 | CREATED     | RESEARCH | GLM-5 Reliability Investigation — Health Check Tuning | 2026-03-30 | default |
+| TASK_2026_174 | IMPLEMENTED | RESEARCH | GLM-5 Reliability Investigation — Health Check Tuning | 2026-03-30 | default |
 | TASK_2026_175 | CREATED     | FEATURE | Add Angular Route Guards | 2026-03-30 | default |
 | TASK_2026_176 | CREATED     | REFACTORING | Replace Deprecated *ngIf/*ngFor with @if/@for Control Flow | 2026-03-30 | default |
 | TASK_2026_177 | CREATED     | DEVOPS  | Scaffold-SKILL.md Sync Automation | 2026-03-30 | default |
 | TASK_2026_178 | CREATED     | REFACTORING | Add OnPush Change Detection to All Angular Components | 2026-03-30 | default |
 | TASK_2026_179 | CREATED     | REFACTORING | Replace console.log/console.error with Structured Logger | 2026-03-30 | default |
 | TASK_2026_180 | CREATED     | REFACTORING | Migrate @Input/@Output Decorators to Signal-Based input()/output() | 2026-03-30 | default |
-| TASK_2026_181 | IN_PROGRESS | BUGFIX  | Replace Stale session-orchestrator References in Scaffold with nitro-cortex | 2026-03-30 | default |
+| TASK_2026_181 | IMPLEMENTED | BUGFIX  | Replace Stale session-orchestrator References in Scaffold with nitro-cortex | 2026-03-30 | default |
 | TASK_2026_182 | CREATED     | REFACTORING | Remove Deprecated Code — getConfigPath, rxjs/operators Import, prebuild-install | 2026-03-30 | default |
-| TASK_2026_183 | CREATED     | FEATURE | Real-Time Progress Center — Live Status, Health & ETA | 2026-03-30 | default |
+| TASK_2026_183 | IMPLEMENTED | FEATURE | Real-Time Progress Center — Live Status, Health & ETA | 2026-03-30 | default |
 | TASK_2026_184 | CREATED     | FEATURE | Interactive Command Console — Embedded Terminal & Chat in Dashboard | 2026-03-30 | default |
 | TASK_2026_185 | IN_PROGRESS | REFACTORING | MCP Cortex — Health Constants & context_overflow State | 2026-03-30 | default |
 | TASK_2026_186 | CREATED     | REFACTORING | Dashboard & Docs — Align Health States with MCP Cortex | 2026-03-30 | default |
@@ -206,3 +206,9 @@
 | TASK_2026_201 | CREATED     | FEATURE | Provider Quota Panel | 2026-03-30 | default |
 | TASK_2026_202 | CREATED     | FEATURE | Graceful Session Termination | 2026-03-30 | default |
 | TASK_2026_203 | COMPLETE    | BUGFIX  | Wire Heartbeat Lifecycle | 2026-03-30 | default |
+| TASK_2026_204 | IMPLEMENTED | REFACTORING | Refactor Supervisor to Multi-Session Architecture | 2026-03-30 | default |
+| TASK_2026_205 | CREATED     | FEATURE | Write Prep Worker prompt and exit gate | 2026-03-30 | default |
+| TASK_2026_206 | CREATED     | FEATURE | Update Supervisor spawn logic for split worker mode routing | 2026-03-30 | default |
+| TASK_2026_207 | CREATED     | FEATURE | Add prep/implement worker types and prep handoff schema to cortex MCP | 2026-03-30 | default |
+| TASK_2026_208 | CREATED     | DOCUMENTATION | Add Worker Mode field and PREPPED/IMPLEMENTING statuses to template and docs | 2026-03-30 | default |
+| TASK_2026_209 | CREATED     | FEATURE | Write Implement Worker prompt and exit gate | 2026-03-30 | default |
