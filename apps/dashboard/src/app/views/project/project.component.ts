@@ -373,14 +373,56 @@ export class ProjectComponent implements OnInit {
     this.syncUrlParams();
   }
 
-  public clearAllFilters(): void {
+  public clearSearch(): void {
     this.searchQuery.set('');
+    this.syncUrlParams();
+  }
+
+  public clearStatusFilter(): void {
     this.selectedStatuses.set([]);
+    this.syncUrlParams();
+  }
+
+  public clearTypeFilter(): void {
     this.selectedTypes.set([]);
+    this.syncUrlParams();
+  }
+
+  public clearPriorityFilter(): void {
     this.selectedPriorities.set([]);
+    this.syncUrlParams();
+  }
+
+  public clearModelFilter(): void {
     this.selectedModels.set([]);
+    this.syncUrlParams();
+  }
+
+  public clearDateRange(): void {
     this.startDate.set(null);
     this.endDate.set(null);
+    this.syncUrlParams();
+  }
+
+  public setDateRange(start: string | null, end: string | null): void {
+    this.startDate.set(start);
+    this.endDate.set(end);
+    this.syncUrlParams();
+  }
+
+  public setSort(field: SortField, direction: SortDirection): void {
+    this.sortField.set(field);
+    this.sortDirection.set(direction);
+    this.syncUrlParams();
+  }
+
+  public clearAllFilters(): void {
+    this.clearSearch();
+    this.clearStatusFilter();
+    this.clearTypeFilter();
+    this.clearPriorityFilter();
+    this.clearModelFilter();
+    this.clearDateRange();
     this.syncUrlParams();
   }
 
