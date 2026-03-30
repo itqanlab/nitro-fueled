@@ -5,7 +5,8 @@
 - .claude/skills/auto-pilot/SKILL.md (modified, +4 lines)
 
 ## Commits
-- (Implementation commit will be made after handoff.md is written)
+- 7798ca1: fix(settings): remove unused NgClass import, add setTimeout cleanup in mapping component (contains orphan release step additions to SKILL.md and session-lifecycle.md)
+- 1433a67: feat(cortex): implement orphaned claim recovery and claim TTL support - TASK_2026_188 (contains the release_orphaned_claims MCP tool)
 
 ## Decisions
 - Added orphan release as an explicit step 3 in the supervisor startup sequence, after reconcile_status_files()
