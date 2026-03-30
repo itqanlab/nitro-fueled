@@ -23,7 +23,8 @@
 
 ## Commits
 - 95130dc: feat(dashboard): add real-time progress center for TASK_2026_183
-- pending: current worker finalization commit (helper split + task artifacts)
+- fc71199: refactor(dashboard): finalize progress center implementation for TASK_2026_183
+- 3740246: refactor(dashboard): extract progress center helpers for TASK_2026_183
 
 ## Decisions
 - Used a backend snapshot endpoint instead of pushing a second specialized WebSocket payload so the page can refresh off existing cortex events while keeping the API contract simple.
