@@ -31,7 +31,7 @@ This reference documents all user validation checkpoints in the orchestration wo
 | BUGFIX        | No    | No           | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | REFACTORING   | No    | No           | No           | Yes          | Yes       | Yes     | Yes        | Yes          |
 | DOCUMENTATION | Yes   | Yes          | No           | No           | No        | Yes     | Yes        | Yes          |
-| RESEARCH      | No    | No           | No           | No           | No        | Yes     | Yes        | No           |
+| RESEARCH      | Yes   | No           | No           | No           | No        | Yes     | Yes        | No           |
 | DEVOPS        | Yes   | Yes          | No           | Yes          | Yes       | Yes     | Yes        | Yes          |
 | OPS           | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | CREATIVE      | Yes   | No           | No           | No           | Yes       | Yes     | Yes        | Yes          |
@@ -243,6 +243,7 @@ After nitro-team-leader MODE 3 confirms all development complete
    - `visual` - Visual/UI reviewer
    - `all` - All reviewers
    - `skip` - Skip QA entirely
+   > **DESIGN tasks**: only `style` or `skip` are valid. `logic`, `tester`, and `visual` are not applicable to design document artifacts.
 2. **Adjust** - Request changes to implementation
 3. **Abort** - Cancel task (state preserved in task-tracking)
 

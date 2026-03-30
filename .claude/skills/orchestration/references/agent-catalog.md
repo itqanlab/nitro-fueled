@@ -39,6 +39,8 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Fix bug          | nitro-team-leader -> dev -> test -> review               | Bug reports                 |
 | Orchestration    | architect -> nitro-team-leader -> nitro-systems-developer      | Agents, skills, commands    |
 | Research X       | nitro-researcher-expert -> architect                     | Technical questions         |
+| Market Research  | nitro-project-manager -> nitro-researcher-expert -> PM (close) | Market/competitor analysis |
+| Tech Eval        | nitro-project-manager -> nitro-researcher-expert -> nitro-software-architect -> PM (close) | Technology evaluation, feasibility |
 | Review style     | nitro-code-style-reviewer                                | Pattern checks              |
 | Review logic     | nitro-code-logic-reviewer                                | Completeness checks         |
 | Review visual    | nitro-visual-reviewer                                    | UI/UX visual testing        |
@@ -46,7 +48,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Architecture     | nitro-software-architect                                 | Design                      |
 | Landing page     | nitro-ui-ux-designer -> nitro-technical-content-writer         | Marketing pages             |
 | Brand/visual     | nitro-ui-ux-designer                                     | Design system               |
-| Design artifacts | nitro-project-manager -> nitro-ui-ux-designer -> nitro-code-style-reviewer | Design-only (no code) |
+| Design (DESIGN flow) | nitro-project-manager -> nitro-ui-ux-designer -> nitro-code-style-reviewer | Design-only (no code) |
 | Content          | nitro-project-manager -> [nitro-researcher-expert] -> nitro-technical-content-writer -> nitro-code-style-reviewer | Blog, email, newsletter, ad copy (CONTENT flow) |
 | Social media     | nitro-project-manager -> nitro-technical-content-writer -> [nitro-ui-ux-designer] -> nitro-code-style-reviewer | Social posts, campaigns, carousels (SOCIAL flow) |
 | Design content   | nitro-technical-content-writer                           | Blogs, docs, video (CREATIVE flow) |
@@ -71,6 +73,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 - DevOps tasks (DEVOPS strategy Phase 1)
 - OPS tasks (OPS strategy Phase 1)
 - Content tasks (CONTENT strategy Phase 1)
+- DESIGN tasks (DESIGN strategy Phase 1 — requirements gathering)
 - Any task needing scope clarification
 
 **Inputs**:
@@ -114,6 +117,8 @@ See nitro-project-manager.md for detailed instructions.`,
 - After PM completes (FEATURE strategy Phase 4)
 - Refactoring tasks (REFACTORING strategy Phase 1)
 - DevOps tasks (DEVOPS strategy Phase 2)
+- RESEARCH strategy Phase 3 — Technology Evaluation sub-flow (reviews research findings, adds architectural recommendation)
+- RESEARCH strategy Phase 3 — Feasibility Study sub-flow (reviews findings, recommends approach)
 - When architectural decisions are needed
 
 **Inputs**:
@@ -639,7 +644,11 @@ See nitro-visual-reviewer.md for detailed instructions.`,
 **Triggers**:
 
 - FEATURE strategy Phase 2 (when technical unknowns exist)
-- RESEARCH strategy (primary agent)
+- RESEARCH strategy Phase 2 — all sub-flows (primary agent):
+  - Market Research: produces market/industry analysis report
+  - Competitive Analysis: produces competitor comparison report
+  - Technology Evaluation: produces options analysis + benchmark report
+  - Feasibility Study: produces POC findings + risk analysis report
 - BUGFIX with unknown cause
 - Technical complexity score > 3
 - API/library evaluation

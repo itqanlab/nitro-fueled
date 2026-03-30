@@ -4,7 +4,8 @@ description: >
   Development workflow orchestration for software engineering tasks.
   Use when: (1) Implementing new features, (2) Fixing bugs, (3) Refactoring code,
   (4) Creating documentation, (5) Research & investigation, (6) DevOps/infrastructure,
-  (7) Landing pages and marketing content.
+  (7) Landing pages and marketing content, (8) UI/UX design, wireframes, prototypes,
+  and design artifacts (DESIGN flow).
   Supports full (PM->Architect->Dev->QA), partial, or minimal workflows.
   Invoked via /orchestrate command or directly when task analysis suggests delegation.
 ---
@@ -28,7 +29,7 @@ Multi-phase development workflow orchestration with dynamic strategies and user 
 | BUGFIX        | [Research] -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker]             |
 | REFACTORING   | Architect -> Team-Leader -> Review Lead + Test Lead (parallel) -> [Fix Worker \| Completion Worker] |
 | DOCUMENTATION | PM -> Developer -> Style Reviewer                  |
-| RESEARCH      | Researcher -> [conditional implementation]         |
+| RESEARCH      | PM -> Researcher -> [Architect] -> [conditional FEATURE]   |
 | DEVOPS        | PM -> Architect -> DevOps Engineer -> QA           |
 | OPS           | PM -> DevOps Engineer -> QA                        |
 | CREATIVE      | [nitro-ui-ux-designer] -> nitro-technical-content-writer -> nitro-frontend-developer |
@@ -106,7 +107,7 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | fix, bug, error, issue                        | BUGFIX        |
 | refactor, improve, optimize                   | REFACTORING   |
 | document, readme, comment                     | DOCUMENTATION |
-| research, investigate, analyze                | RESEARCH      |
+| research, investigate, analyze, market research, competitive analysis, feasibility study, technology evaluation, benchmark, comparison, evaluate options | RESEARCH      |
 
 **Priority**: OPS > DEVOPS > DESIGN > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
 
@@ -209,7 +210,7 @@ If no blocked dependencies are found, continue to Phase Detection.
 | Documents Present       | Next Action                         |
 | ----------------------- | ----------------------------------- |
 | context.md only         | Invoke nitro-project-manager              |
-| task-description.md     | User validate OR invoke architect   |
+| task-description.md     | User validate OR invoke architect (for DESIGN tasks: skip architect — invoke nitro-ui-ux-designer directly) |
 | plan.md (or legacy: implementation-plan.md) | User validate OR nitro-team-leader MODE 1 |
 | tasks.md (PENDING)      | Team-leader MODE 2 (assign batch)   |
 | tasks.md (IN PROGRESS)  | Team-leader MODE 2 (verify)         |

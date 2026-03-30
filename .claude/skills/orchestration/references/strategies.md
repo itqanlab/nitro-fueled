@@ -1,6 +1,6 @@
 # Execution Strategies Reference
 
-Detailed workflow diagrams and guidance for all 6 execution strategies plus creative workflows.
+Detailed workflow diagrams and guidance for all 11 execution strategies.
 
 ---
 
@@ -12,7 +12,7 @@ Detailed workflow diagrams and guidance for all 6 execution strategies plus crea
 | BUGFIX        | Streamlined    | Team-Leader, Devs, QA                | QA                                    |
 | REFACTORING   | Focused        | Architect, Team-Leader, Devs, QA     | Architecture, QA                      |
 | DOCUMENTATION | Minimal        | PM, Developer, Style Reviewer        | Requirements                          |
-| RESEARCH      | Investigation  | Researcher                           | None                                  |
+| RESEARCH      | Variable       | PM, Researcher, [Architect]          | Scope, Blocker, Completion            |
 | DEVOPS        | Infrastructure | PM, Architect, DevOps Engineer, QA   | Requirements, Architecture, QA        |
 | OPS           | Operational    | PM, DevOps Engineer, QA              | Requirements, QA                      |
 | CREATIVE      | Design-first   | UI/UX Designer, Content Writer, Dev  | Scope, Design System, Content         |
@@ -163,17 +163,98 @@ Build Worker writes handoff.md (files changed, commits, decisions, risks)
 
 ---
 
-## RESEARCH (Investigation Only)
+## RESEARCH (Investigation)
 
-**When to use**: Technical exploration, feasibility studies, POC evaluation
+**When to use**: Market research, competitive analysis, technology evaluation, feasibility studies, benchmarking, option comparison, POC evaluation
+
+**Key distinction**: RESEARCH produces a report as its deliverable (not code). If implementation is needed, research transitions to FEATURE strategy after the report is complete.
+
+### Sub-Flow Table
+
+| Sub-Flow               | Keywords                                                                                 | Pipeline                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Market Research        | "market research", "market analysis"                                                     | PM → Researcher → PM (close)                  |
+| Competitive Analysis   | "competitive analysis", "compare competitors", "competitor comparison"                   | PM → Researcher → PM (close)                  |
+| Technology Evaluation  | "technology evaluation", "evaluate options", "benchmark", "comparison", "which library" | PM → Researcher → Architect → PM (close)      |
+| Feasibility Study      | "feasibility study", "feasibility analysis", "is it possible to", "is it feasible"      | PM → Researcher → Architect → PM (close)      |
+
+### Flow Diagrams
+
+**Market Research / Competitive Analysis**:
 
 ```
-nitro-researcher-expert --> Creates research-report.md
+Phase 0: SCOPE CLARIFICATION (sub-flow selection — required)
+         Orchestrator confirms: market research OR competitive analysis?
          |
          v
-[IF implementation needed] --> Switch to FEATURE strategy
-[IF research only] --> Complete
+Phase 1: nitro-project-manager --> Creates task-description.md
+         (research scope, questions, success criteria)
+         |
+         v
+Phase 2: nitro-researcher-expert --> Creates research-report.md
+         |
+         v
+Phase 3: [IF implementation needed] --> Switch to FEATURE strategy
+         [IF research only] --> Complete
 ```
+
+**Technology Evaluation / Feasibility Study**:
+
+```
+Phase 0: SCOPE CLARIFICATION (sub-flow selection — required)
+         Orchestrator confirms: tech eval OR feasibility?
+         |
+         v
+Phase 1: nitro-project-manager --> Creates task-description.md
+         (research questions, evaluation criteria)
+         |
+         v
+Phase 2: nitro-researcher-expert --> Creates research-report.md
+         (options analysis, POC findings, benchmarks)
+         |
+         v
+Phase 3: nitro-software-architect --> Reviews findings, adds architectural recommendation
+         (appends recommendation section to research-report.md)
+         |
+         v
+Phase 4: [IF implementation needed] --> Switch to FEATURE strategy
+         [IF evaluation only] --> Complete
+```
+
+### RESEARCH Keyword Triggers
+
+Invoke RESEARCH strategy when the request contains any of:
+
+- "research", "investigate", "analyze"
+- "market research", "market analysis"
+- "competitive analysis", "compare competitors", "competitor comparison"
+- "technology evaluation", "evaluate options", "evaluate libraries"
+- "feasibility study", "feasibility analysis", "is it feasible"
+- "benchmark", "benchmarking", "performance comparison"
+- "comparison", "compare options", "which is better"
+- "POC", "proof of concept", "prototype evaluation"
+
+### Sub-Flow Selection (Scope Clarification)
+
+When RESEARCH is detected, always run Scope Clarification (Checkpoint 0) to determine sub-flow:
+
+| User Says                                 | Sub-Flow              |
+| ----------------------------------------- | --------------------- |
+| "market research", "market analysis"      | Market Research       |
+| "competitive analysis", "compare X vs Y" | Competitive Analysis  |
+| "technology evaluation", "which library"  | Technology Evaluation |
+| "feasibility study", "is it feasible"     | Feasibility Study     |
+| Ambiguous / general "research"            | Ask user to clarify   |
+
+### RESEARCH Review Criteria
+
+| Criterion                  | What to Check                                                  |
+| -------------------------- | -------------------------------------------------------------- |
+| Source quality             | Are sources credible, recent, and cited?                       |
+| Depth                      | Does the report cover all evaluation criteria?                 |
+| Actionable recommendations | Does the report conclude with clear next steps?                |
+| Bias detection             | Are trade-offs presented fairly (not cherry-picked)?           |
+| Completeness               | Are all options/competitors covered?                           |
 
 ### Research-to-Implementation Transition
 
@@ -339,7 +420,7 @@ Batch 2 (nitro-systems-developer): Reference updates (agent-catalog, strategies,
 
 ## CREATIVE (Design-First Workflow)
 
-**When to use**: UI themes, component library design, marketing pages, brand identity
+**When to use**: UI themes, component library design, marketing pages (brand identity without code output → use DESIGN strategy instead)
 
 Creative workflows follow a **design-first principle** with specific agent sequencing.
 
@@ -733,7 +814,7 @@ Invoke DESIGN strategy when the request contains any of:
 | "Build our design system"                      | DESIGN   |
 | "Design and build a landing page"              | CREATIVE |
 | "Create a landing page for our product"        | CREATIVE |
-| "Design our homepage" (implies implementation) | CREATIVE |
+| "Design our homepage" (ambiguous — ask clarifying question) | ASK: "Should this produce working code, or design specs only?" |
 | "Create a marketing site"                      | CREATIVE |
 
 **Decision rule**: If the user's request implies *implementation output* (HTML, components, live pages), route to CREATIVE. If the deliverable is *design documentation or specifications only* (Figma spec, design-spec.md, wireframe doc, design token file), route to DESIGN. When ambiguous, ask a single clarifying question: "Should this produce working code, or design specs only?"
@@ -748,6 +829,8 @@ Invoke DESIGN strategy when the request contains any of:
 | Color contrast ratios       | nitro-code-style-reviewer |
 | Typography hierarchy        | nitro-code-style-reviewer |
 | Component reusability       | nitro-code-style-reviewer |
+
+> **QA Note**: For DESIGN tasks, valid QA options at Checkpoint 3 are  or  only.  and  are not applicable to design document artifacts.
 
 ### DESIGN Output Locations
 
