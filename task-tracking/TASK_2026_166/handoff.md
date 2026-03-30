@@ -7,7 +7,7 @@
 - apps/dashboard/src/app/views/task-detail/task-detail.model.ts (modified, +12 -0)
 
 ## Commits
-- (pending): feat(dashboard): improve task detail page for TASK_2026_166
+- d566391: feat(dashboard): improve task detail page for TASK_2026_166
 
 ## Decisions
 - Converted status timeline from vertical to horizontal layout using flexbox with overflow-x scroll for tasks with many transitions
