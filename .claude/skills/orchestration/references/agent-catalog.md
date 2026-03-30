@@ -51,7 +51,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Social media     | nitro-project-manager -> nitro-technical-content-writer -> [nitro-ui-ux-designer] -> nitro-code-style-reviewer | Social posts, campaigns, carousels (SOCIAL flow) |
 | Design content   | nitro-technical-content-writer                           | Blogs, docs, video (CREATIVE flow) |
 | Infrastructure   | nitro-devops-engineer                                    | CI/CD, packaging            |
-| Operational OPS  | nitro-project-manager -> nitro-devops-engineer                | Setup, config, known patterns |
+| OPS              | nitro-project-manager -> nitro-devops-engineer                | Setup, config, known patterns |
 | Planning         | nitro-planner                                            | Roadmap, backlog, task creation |
 
 **Default**: When uncertain, use `/orchestrate` for full workflow analysis.
@@ -69,6 +69,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 - Starting new features (FEATURE strategy Phase 1)
 - Documentation tasks (DOCUMENTATION strategy Phase 1)
 - DevOps tasks (DEVOPS strategy Phase 1)
+- OPS tasks (OPS strategy Phase 1)
 - Content tasks (CONTENT strategy Phase 1)
 - Any task needing scope clarification
 

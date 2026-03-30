@@ -248,7 +248,7 @@ Phase 2: nitro-devops-engineer --> Implements operational configuration
          v
 Build Worker writes handoff.md (files changed, commits, decisions, risks)
          |
-         USER CHOOSES QA (security/style/skip)
+         USER CHOOSES QA (reviewers/style/skip)
          |
          v
 Phase 3: [QA agents — Review Worker reads handoff.md as first action] --> Git --> nitro-modernization-detector
@@ -270,6 +270,10 @@ Invoke OPS strategy when task involves:
 **Key Signal**: Work is operational configuration of known tools/patterns (not novel infrastructure design)
 
 **Developer**: Always use `nitro-devops-engineer`
+
+**Security Note**: OPS tasks often touch CI/CD files, Docker configs, Kubernetes manifests, and environment setup — all high-risk areas for secret exposure. The devops engineer must:
+- Use environment variable references or secret manager lookups (e.g., `${{ secrets.X }}`) — never hardcode credentials in committed files
+- Verify no tokens, passwords, or API keys appear in CI/CD YAML, Dockerfiles, or manifests before committing
 
 ### OPS vs DEVOPS Decision
 

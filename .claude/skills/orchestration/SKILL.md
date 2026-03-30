@@ -97,7 +97,7 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | Keywords Present                              | Task Type     |
 | --------------------------------------------- | ------------- |
 | CI/CD, pipeline, build tool, deploy, pack     | DEVOPS        |
-| setup project, configure CI, deployment pipeline, monitoring setup, environment setup, docker setup, kubernetes config, terraform | OPS |
+| setup project, configure CI, deployment pipeline, monitoring setup, environment setup, infrastructure setup, docker setup, kubernetes config, terraform | OPS |
 | landing page, marketing, brand, visual        | CREATIVE      |
 | blog post, article, email campaign, newsletter, ad copy, marketing email, content piece, copywriting | CONTENT |
 | design system, wireframe, prototype, brand identity, UI design, UX design, UX audit, design tokens, style guide, mockup, user flow | DESIGN |
@@ -108,9 +108,9 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | document, readme, comment                     | DOCUMENTATION |
 | research, investigate, analyze                | RESEARCH      |
 
-**Priority**: DEVOPS > OPS > DESIGN > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
+**Priority**: OPS > DEVOPS > DESIGN > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
 
-**DEVOPS vs OPS**: If keywords match both DEVOPS and OPS, prefer OPS unless the task involves novel infrastructure design decisions that require architectural review.
+**OPS vs DEVOPS**: If keywords match both OPS and DEVOPS, prefer OPS unless the task involves novel infrastructure design decisions that require architectural review.
 
 ### Adaptive Strategy Selection
 
