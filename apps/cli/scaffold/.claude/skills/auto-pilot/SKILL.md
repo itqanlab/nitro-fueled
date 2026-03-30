@@ -4,15 +4,67 @@ description: >
   Supervisor loop for Nitro-Fueled orchestration.
   Use when: Running batch task execution, processing a task backlog,
   or spawning parallel workers for multiple tasks.
-  Re-queries the cortex DB each tick for task and worker state,
-  spawns Build Workers and Review Workers via MCP session-orchestrator,
+  Reads the task registry and task folders, builds a dependency graph,
+  spawns Build Workers and Review Workers via MCP nitro-cortex,
   monitors health and state transitions, and loops.
   Invoked via /auto-pilot command.
 ---
 
 # Supervisor Skill
 
-Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP session-orchestrator.
+## HARD RULES — READ BEFORE ANYTHING ELSE
+
+**Violating ANY of these rules is a critical failure. Re-read this block after every compaction.**
+
+### NEVER DO (instant violations)
+1. **NEVER use Bash to read files** — no `cat`, `head`, `tail`, `for` loops reading task.md/status files. Use the **Read tool** for files. Use **MCP tools** for task data.
+   - **Banned Bash patterns** (any of these is an instant violation):
+     - `for task in ...; do cat task.md` — looping over task folders and reading files
+     - `cat task-tracking/TASK_*/status` — reading status files via Bash
+     - `head -1 status` or `tail -5 log.md` — partial file reads via Bash
+     - `grep -r "CREATED" task-tracking/` — searching task files via Bash
+     - Any Bash command that outputs file content from `task-tracking/`
+2. **NEVER read task.md during pre-flight** — pre-flight reads registry columns ONLY — no task.md reads under any circumstance. Task.md is read JIT at spawn time (one task at a time). Reading task.md before spawn to "check dependencies" or "verify type" is a pre-flight violation even if the data would be useful.
+3. **NEVER load reference files during startup** — Steps 1-4 require ZERO reference files. Only load a reference at the moment it's needed (first spawn → worker-prompts.md, entering core loop → parallel-mode.md).
+4. **NEVER hallucinate providers** — the ONLY available providers are what `get_available_providers()` returned. Do not invent names like "Cloudcode", "Codex", etc.
+   - **Banned provider labels** (any use is an instant violation): `Cloudcode`, `Codex`, `OpenCode`, `Ollama`, `GPT`, `Gemini`, or any name not returned verbatim by `get_available_providers()`.
+   - Routing labels in state.md MUST use provider IDs returned verbatim from `get_available_providers()`. If that call returns `["claude", "glm"]`, the only valid routing labels are `claude` and `glm` — never "GLM/Cloudcode launcher" or "Codex".
+5. **NEVER print tables in the monitoring loop** — heartbeats are ONE LINE. No tables, no summaries, no analysis between heartbeat and `sleep`.
+6. **NEVER think for >10 seconds without calling a tool** — if you're reasoning/planning, you're stalling. Call `Bash: sleep 30` immediately.
+7. **NEVER go on tangents** — do not check for "newer tasks", explore the codebase, or investigate things not in the current step. Follow the steps sequentially.
+   - **Banned tangent patterns** (any of these is an instant violation):
+     - Checking for newer tasks via `git log`, `git diff`, or any VCS command
+     - Scanning git commits to find recently created task files
+     - Exploring `.claude/` or `task-tracking/` directories out of curiosity
+     - Reading reference files "just in case" or to "understand the system"
+     - Any investigation not explicitly required by the current step
+8. **NEVER end your turn after spawning workers** — after the last `spawn_worker` call completes, your VERY NEXT action MUST be `Bash: sleep 30`. Not a summary. Not a table. Not text to the user. Just `sleep`. If you output text or end your turn here, workers run unmonitored and the session is dead. The sequence is: `spawn_worker` → `sleep 30` → `get_pending_events` → loop. This is the #1 cause of supervisor stalls.
+9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to the DB event stream or optional session artifacts, never the conversation. Conversation output is ONE LINE per event maximum. See **Per-Phase Output Budget** below.
+
+### ALWAYS DO
+1. **Parallel tool calls** — read registry + active-sessions + config in ONE round, not three.
+2. **Single timestamp capture** — call `date` once, reuse the result everywhere.
+3. **Heartbeat → sleep → poll** — this is the monitoring loop. Nothing else between these three.
+4. **Use MCP for provider info** — `get_available_providers()` and `get_provider_stats()` replace all config file reads.
+5. **Spawn → sleep atomic sequence** — after the last `spawn_worker` in a wave, call `Bash: sleep 30` as the immediate next tool call. This is how you enter the monitoring loop. No text output between spawn and sleep.
+
+### Per-Phase Output Budget
+
+**Re-read this section after every compaction.** All structured data (tables, wave headers, queue summaries, routing plans, analysis, notes) goes to MCP/DB state first and may later be rendered into optional session artifacts. The conversation receives exactly ONE line per event — nothing more.
+
+| Phase | Conversation Output (EXACTLY this — nothing else) |
+|-------|---------------------------------------------------|
+| **Spawn** | `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` — one line per worker |
+| **Heartbeat** | `[HH:MM] monitoring — {N} active, {N} complete, {N} failed` |
+| **Completion (Build Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
+| **Completion (Review+Fix Worker)** | `COMPLETE task=<task_id> → COMPLETE` (or `FAILED` / `BLOCKED`) |
+| **Session end** | `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` |
+| **All structured data** | Tables, queues, state snapshots, notes, analysis — DB/session artifacts only. **Never printed to conversation.** |
+| **Explanatory text** | Any sentence explaining what the supervisor is about to do, what it decided, or how monitoring works — **banned from conversation**. Decisions go to DB/session artifacts. |
+
+---
+
+Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
 
 ## Quick Start
 
@@ -33,21 +85,36 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 1. **Re-query DB state each tick** -- `get_tasks()` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
 2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority
-3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW)
+3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
 4. **Monitor worker health** on a configurable interval
 5. **Handle completions**: react to DB events, then re-query the DB for the next tick
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
 7. **Persist session state in the DB** for compaction survival
 8. **Loop** until the backlog is drained, all remaining tasks are blocked, or `--limit` is reached
 
+Session registration and worker-slot accounting are multi-session safe only when every session uses the DB `session_id` returned by `create_session()` as its canonical identifier.
+
 ### What You Never Do
 
-- **Write code or implement tasks** -- workers do that
-- **Modify the orchestration skill** -- it is used as-is by workers
-- **Re-implement agent sequencing** -- the orchestration skill handles PM, Architect, Dev, QA
-- **Update the registry** -- workers update their own registry states
-- **Verify code quality** -- reviewers do that in the Review Worker session
-- **Handle task artifacts directly** -- workers handle all task artifacts (completion-report.md, review files, etc.)
+- Write code, implement tasks, verify code quality, or handle task artifacts — workers do all of that
+- Modify the orchestration skill or re-implement agent sequencing
+- Update the registry — workers update their own states
+
+### CRITICAL: Data Access Rules
+
+**NEVER use Bash, Read, Grep, or Glob to read task data when MCP tools are available.**
+
+| Need | Use THIS | NEVER use |
+|------|----------|-----------|
+| Task list/status | `get_tasks()` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
+| Task list/status during pre-flight | `get_tasks()` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
+| Task metadata before spawn | `get_task_context(task_id)` MCP | `cat task.md`, `Read task.md`, `Bash` on task files |
+| Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
+| Task state transitions | `get_pending_events()` and `get_tasks()` MCP | Per-task `status` files, `registry.md`, task-folder polling |
+
+**File reads are ONLY acceptable when:** MCP tools are confirmed unavailable (`cortex_available = false`). Inside the DB-backed loop, `registry.md`, task `status` files, and `task.md` are all banned.
+
+**`npx nitro-fueled status` is PROHIBITED** inside the supervisor loop — it spawns a subprocess, reads all task files, and wastes context. Use MCP tools instead.
 
 ---
 
@@ -60,37 +127,21 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 | Retry limit         | 2           | --retries N      | Maximum retry attempts for a failed task. Maximum allowed value: 5. Values above 5 are clamped to 5. |
 | Task limit          | 0 (unlimited) | --limit N      | Stop gracefully after N tasks reach a terminal state (COMPLETE/FAILED/BLOCKED). 0 = process entire backlog. **Sequential mode**: cap the task queue to N tasks at startup (different semantic — see ## Sequential Mode). |
 | Sequential mode     | false       | --sequential     | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. |
+| Escalate to user    | false       | --escalate       | When true: supervisor checks for NEED_INPUT signals from workers at phase boundaries (after each TASK_STATE_CHANGE event). Requires cortex_available = true. When false (default): workers fail autonomously, supervisor retries or blocks. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
 
-> **Note on stuck detection**: Stuck detection is server-side -- the MCP session-orchestrator determines the `stuck` health state based on worker inactivity (hardcoded at 120 seconds). The supervisor does not configure this threshold; it reacts to the `stuck` health state via two-strike detection.
+> Stuck detection is server-side (120s inactivity). `escalate_to_user` requires cortex_available=true — auto-disabled otherwise. Merge overrides with defaults and write to `{SESSION_DIR}state.md` at startup.
 
-When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `{SESSION_DIR}state.md`. Written as part of Session Lifecycle startup (after Session Directory is created).
-
-> **Concurrency and Review+Test phase**: Spawning a Review Lead + Test Lead for one task consumes 2 concurrency slots (one per worker). A task in the review/test phase uses 2 of the available slots. Example: `concurrency_limit=3`, one task reaches IMPLEMENTED → spawn both workers (2 slots used) → 1 slot remains for a Build Worker.
->
-> If `concurrency_limit == 1`: spawn Review Lead first (higher priority — it owns state
-> transitions). Note: with concurrency_limit == 1, the Test Lead will likely never execute —
-> once Review Lead sets the registry to COMPLETE, the Supervisor closes the task before
-> a slot opens for the Test Lead. Users with concurrency_limit == 1 should accept that
-> test coverage may be skipped for tasks that complete in a single review cycle.
+> **2-session worker model**: Build Worker (CREATED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). Each worker = 1 concurrency slot.
 
 ---
 
-## Registry Write Safety
+## Registry & Log
 
-Workers write their state update to `task-tracking/TASK_YYYY_NNN/status` as their LAST action before exiting. Each worker writes only to its own task folder — no cross-task conflicts, no re-read-before-write needed. The race condition described here no longer applies.
-
-The registry (`task-tracking/registry.md`) is a generated artifact regenerated by `nitro-fueled status` or `/project-status`. On the DB-backed path, the Supervisor does not read registry.md, task `status` files, or `task.md` inside the monitoring loop. Those files remain fallback-only artifacts.
-
----
-
-## Session Log
-
-The supervisor may render significant events to `{SESSION_DIR}log.md` using the pipe-table format (see `references/log-templates.md`), but on the DB-backed path the live loop should prefer MCP/DB event logging and materialize `log.md` later.
-
-> **Load full template list**: Read `references/log-templates.md` for all event types and their exact log row formats.
-
-The log lives at `{SESSION_DIR}log.md` as an optional rendered artifact. On the DB-backed path, loop events are emitted through MCP and materialized later; `state.md` is a debug snapshot, not the live loop state source.
+- **Registry** (`registry.md`) is a generated artifact — the Supervisor does NOT read it inside the DB-backed loop.
+- **Session log** (`{SESSION_DIR}log.md`) is an optional rendered artifact from DB events. The loop itself uses MCP logging when available.
+- **State** (`{SESSION_DIR}state.md`) is an optional debug snapshot written outside the monitoring loop. Compaction recovery comes from DB re-query, not from `state.md`.
+- **Session identity** comes from `create_session()`. Use the returned DB session ID for `SESSION_DIR`, `state.md`, `log.md`, `active-sessions.md`, and all per-session MCP calls.
 
 ---
 
@@ -115,46 +166,30 @@ Single-task, dry-run, sequential, and evaluation modes are handled by the comman
 
 ### Load-on-Demand Protocol
 
+**CRITICAL**: Load references ONLY at the moment they are needed, NOT during startup. The startup sequence (Steps 1-4) requires NO reference files — SKILL.md and the command file contain all startup logic. Loading references eagerly wastes context and causes compaction pressure.
+
+**Rules**:
+- Load exactly ONE reference per trigger event — never batch-load multiple references
+- **NEVER batch-load two references in one round** — one trigger event, one file load. Loading `parallel-mode.md` and `worker-prompts.md` simultaneously (or any two references in a single tool-call round) is a violation of this protocol regardless of whether both will be needed eventually. Each reference load must be its own distinct round triggered by a specific need.
+- Never re-read a reference already loaded in this session
+- If you catch yourself reading a reference "just in case", STOP — you are violating this protocol
+
+**Trigger → Reference mapping**:
 1. Detect mode from command arguments (see table above)
 2. Load ONLY the matching reference — do NOT preload all references
-3. **Parallel/All-tasks/Limited/Single-task mode** (default): load `references/parallel-mode.md`
-4. **`--sequential`**: load `references/sequential-mode.md`
-5. **`--evaluate`**: load `references/evaluation-mode.md`
+3. **Entering Core Loop** (after all pre-flight passes): load `references/parallel-mode.md`
+4. **`--sequential`** (entering sequential execution): load `references/sequential-mode.md`
+5. **`--evaluate`** (entering evaluation): load `references/evaluation-mode.md`
 6. **`--pause`**: load `references/pause-continue.md`
 7. **`--continue`**: load `references/pause-continue.md`
-8. **Spawning workers** (Step 5): load `references/worker-prompts.md`
-9. **Need exact log format**: load `references/log-templates.md`
-10. **`cortex_available = true`**: load `references/cortex-integration.md` for DB-specific path summary (full inline details in `references/parallel-mode.md`)
+8. **Spawning workers** (Step 5, first spawn only): load `references/worker-prompts.md`
+9. **Need exact log format** (first log write only): load `references/log-templates.md`
+10. **`cortex_available = true`** (first cortex call only): load `references/cortex-integration.md`
+11. **Session startup, state format, or error handling**: load `references/session-lifecycle.md`
 
----
 
-## Pause Mode
 
-> **Load reference**: Read `references/pause-continue.md` for the full Pause Mode flow.
-
-When `--pause` is passed: sets `pause_requested = true`. At the END of each monitoring cycle, if true: write `Loop Status: PAUSED` to state.md, remove from active-sessions, display pause summary, and exit without running Step 8.
-
----
-
-## Continue Mode
-
-> **Load reference**: Read `references/pause-continue.md` for the full Continue Mode flow.
-
-When `--continue [SESSION_ID]` is passed: locate the paused session's state.md, restore all state, re-register in active-sessions, and enter the Core Loop. Skips pre-flight and session-directory creation — reuses existing SESSION_DIR.
-
----
-
-## Sequential Mode
-
-> **Load reference**: Read `references/sequential-mode.md` for the full sequential mode flow.
-
-When `--sequential` is passed: process tasks inline in the same session — no MCP workers spawned. Reads registry once, builds dependency graph, invokes orchestration skill via Agent tool for each task. Supports `--limit N` and single-task mode.
-
----
-
-## Evaluation Mode
-
-> **Load reference**: Read `references/evaluation-mode.md` for the full evaluation flow (Steps E1-E10).
+All mode-specific details are in the matching reference file — see Load-on-Demand Protocol above.
 
 When `--evaluate <model-id>` is passed: runs benchmark tasks from `benchmark-suite/` in isolated worktrees. Does NOT process the task registry. Results stored in `evaluations/<date>-<model>/`. Supports `--compare`, `--role`, and A/B modes. Exits after Step E10 — does NOT enter the Core Loop.
 
@@ -164,21 +199,20 @@ When `--evaluate <model-id>` is passed: runs benchmark tasks from `benchmark-sui
 
 **BEFORE ANYTHING ELSE**, verify that the MCP `spawn_worker` tool exists and is callable:
 
-1. Call MCP `list_workers` (with no filters).
+1. Call MCP `list_workers` (with `status_filter: 'running'`, `compact: true`).
 2. **IF the tool exists and returns a response** (even an empty list): MCP is available. Continue.
 3. **IF the tool does NOT exist, times out, or returns an error**: **STOP IMMEDIATELY.**
-   - Display: `"FATAL: MCP session-orchestrator is not configured or not running. The Supervisor REQUIRES the MCP session-orchestrator to spawn separate worker sessions. Without it, tasks cannot be processed. Please configure the MCP server in .claude/settings.json and restart."`
+   - Display: `"FATAL: nitro-cortex MCP is not configured or not running. The Supervisor REQUIRES the nitro-cortex MCP server to spawn and manage worker sessions. Without it, tasks cannot be processed. Configure nitro-cortex in .mcp.json (run: npx nitro-fueled init --cortex-path <path>) and restart."`
    - **Do NOT fall back to the Agent tool, sub-agents, or any other mechanism.**
    - **Do NOT attempt to process tasks inline.**
    - **EXIT.**
 
 The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions with fresh context windows. Using the Agent tool (sub-agents) defeats the entire architecture — sub-agents share the parent's context, have no isolation, and break the Build Worker / Review Worker separation. This is not a suggestion — it is a hard requirement.
 
-### nitro-cortex Availability Check (optional — soft check)
+### nitro-cortex Availability Check
 
-Detection runs at **Step 2** — see Step 2 for the `get_tasks()` soft-check and
-`cortex_available` flag logic. Calling `get_tasks()` is the authoritative detection
-method because it tests actual functionality, not just tool list presence.
+Detection runs at **Step 2**: call `get_tasks()`. Calling `get_tasks()` is the authoritative
+detection method because it tests actual DB functionality, not just tool list presence.
 
 **Default behavior** (allowFileFallback not set, or set to false):
 If `get_tasks()` fails, **STOP IMMEDIATELY** and display:
@@ -203,184 +237,9 @@ but allows the Supervisor to run without the cortex DB.
 
 ---
 
-## Session Directory
+## Session Lifecycle
 
-On startup, after MCP validation, Concurrent Session Guard, and the stale archive check complete, the supervisor creates a session-scoped directory for optional state and log output.
-
-**Directory path**: `task-tracking/sessions/{SESSION_ID}/`
-
-`SESSION_ID` is the canonical nitro-cortex DB session ID returned by `create_session()`. Example:
-`task-tracking/sessions/SESSION_2026-03-24T22-00-00/`
-
-All datetime fields written inside session files must use local time with timezone offset: `YYYY-MM-DD HH:MM:SS +ZZZZ` (e.g., `2026-03-24 10:00:00 +0200`). To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
-
-### Startup Sequence
-
-The supervisor startup follows this exact order:
-
-1. **MCP validation** (see ## MCP Requirement) — HARD FAIL if MCP unavailable
-2. **Concurrent Session Guard** (see ## Concurrent Session Guard) — warns/aborts if another supervisor is running
-3. **Stale Session Archive Check** (see ## Stale Session Archive Check) — stage artifacts from ended sessions, never auto-commit
-4. **Create session in nitro-cortex DB** — call `create_session(source='auto-pilot', task_count=N, config=JSON)` and treat the returned `session_id` as canonical for the rest of the run
-5. **Session Directory creation** — create `task-tracking/sessions/{session_id}/`, create log.md, register in active-sessions.md
-6. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
-7. **Enter Core Loop**
-
-Every per-session artifact and MCP call must reuse that exact DB `session_id`. Do not create a separate timestamp-based fallback ID and do not rename session directories after startup.
-
-### Files inside the session directory
-
-| File | Written by | Purpose |
-|------|-----------|---------|
-| `state.md` | auto-pilot | Optional debug snapshot. Written at startup and optionally at pause/stop, not on every loop tick. |
-| `log.md` | auto-pilot + orchestration skill | Optional rendered event log. On the DB-backed path, loop events are emitted through MCP and materialized later. |
-| `analytics.md` | auto-pilot | Post-session analytics generated at supervisor stop (Step 8c). |
-| `worker-logs/` | auto-pilot | Per-worker log files written at each worker completion (Step 7h). |
-
-### Session Lifecycle
-
-**On startup**:
-
-0. (Run after Startup Sequence steps 1-3 complete — see those sections for prerequisites.)
-1. Capture timestamp ONCE: run `date '+%Y-%m-%d %H:%M:%S %z'` and reuse it for `SESSION_DATETIME` and log rows.
-2. Call `create_session(source='auto-pilot', task_count=N, config=JSON.stringify({...startup_config, session_started_at: SESSION_DATETIME}))`.
-3. Store the returned DB `session_id` as `SESSION_ID` and use it everywhere that follows.
-4. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
-5. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
-   ```markdown
-   # Session Log — {SESSION_ID}
-
-   | Timestamp | Source | Event |
-   |-----------|--------|-------|
-   ```
-6. Append first log entry to `log.md`:
-   `| {HH:MM:SS} | auto-pilot | SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} |`
-7. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
-8. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
-     subsequent state and log writes.
-
-The `active-sessions.md` row, session directory name, and any later `list_workers(session_id=...)` calls must all use the same `SESSION_ID` value returned by `create_session()`.
-
-> **When `cortex_available = true`**: After Session Directory creation and before entering the Core Loop, call:
-> 1. `sync_tasks_from_files()` — full task metadata import (bootstrap; safe to re-run)
-> 2. `reconcile_status_files()` — status-only drift fix (runs every startup; file wins)
->
-> Both calls are best-effort. On failure: log a warning and continue. Do not abort.
->
-> On this path, steady-state loop persistence lives in the DB via `update_session()`. `state.md` is not rewritten during monitoring.
-
-**On stop** (normal completion, compaction limit, MCP unreachable, manual):
-
-1. Optionally write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED`.
-2. Append final log entry to `{SESSION_DIR}log.md`:
-   `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
-3. Remove this session's row from `task-tracking/active-sessions.md`.
-4. **Render log.md from events (when cortex available)**: When `cortex_available = true`, at session end, call `query_events(session_id=SESSION_ID)` and render the results as a pipe-table to `{SESSION_DIR}log.md`. This ensures log.md is a complete DB-derived artifact. If `query_events` fails, keep any existing file as-is or skip writing it. This is best-effort.
-5. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (optional staging/cleanup bookkeeping only — never auto-commit).
-
----
-
-## Active Sessions File
-
-`task-tracking/active-sessions.md` is a live registry of currently running sessions.
-Every session (auto-pilot or orchestrate) appends a row on startup and removes it on stop.
-
-### Format
-
-```markdown
-# Active Sessions
-
-| Session | Source | Started | Tasks | Path |
-|---------|--------|---------|-------|------|
-| SESSION_2026-03-24T22-00-00 | auto-pilot | 22:00 | 14 | task-tracking/sessions/SESSION_2026-03-24T22-00-00/ |
-| SESSION_2026-03-24_22-05-00 | orchestrate | 22:05 | 1 | task-tracking/sessions/SESSION_2026-03-24_22-05-00/ |
-```
-
-### Write Rules
-
-- **On session start** (after Concurrent Session Guard passes): read the file, append one row, write back. If the file does not exist, create it with the header and first row.
-- **On session stop** (normal, compaction limit, MCP unreachable, manual): read the file, remove the row whose `Session` matches this session's `SESSION_ID`, write back.
-- **On crash/kill**: the row is left as stale. Stale rows from source `orchestrate` (Build/Review Workers) are expected and acceptable — workers can be killed at any time. The Concurrent Session Guard filters by source `auto-pilot` only, so stale `orchestrate` rows do not cause false positives.
-- If writing fails (permissions), log a warning and continue — the file is advisory.
-
-### Row Format
-
-Auto-pilot row:
-`| {SESSION_ID} | auto-pilot | {HH:MM} | {N tasks at startup} | task-tracking/sessions/{SESSION_ID}/ |`
-
-Orchestration skill row:
-`| {SESSION_ID} | orchestrate | {HH:MM} | 1 | task-tracking/sessions/{SESSION_ID}/ |`
-
-> The `Started` column uses `HH:MM` (display-only; the authoritative timestamp is the SESSION_ID itself).
-
-The `Tasks` column is static (set at startup, not updated as tasks complete).
-
----
-
-## Stale Session Archive Check
-
-Runs at supervisor startup **after MCP validation and Concurrent Session Guard, before Session Directory creation** (Step 3 of Startup Sequence). Detects and stages session artifacts from ended sessions that were not committed due to a crash or kill.
-
-### Algorithm
-
-1. Run: `git status --short task-tracking/sessions/ task-tracking/orchestrator-history.md`
-2. Parse output lines:
-   - Lines starting with `?? task-tracking/sessions/{SESSION_ID}/` (untracked directory): record SESSION_ID from the path.
-   - Lines starting with `M `, ` M`, or `??` for a specific file path: record the file and its parent SESSION_ID (if under sessions/).
-   - Lines for `task-tracking/orchestrator-history.md`: record for separate handling in step 7.
-3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}` for auto-pilot sessions and `SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}` for orchestration worker sessions — discard any that do not match either form.
-4. Read `task-tracking/active-sessions.md` (if missing, treat as empty — all sessions are ended).
-5. For each uncommitted file under `task-tracking/sessions/{SESSION_ID}/`:
-    - Check active-sessions.md for the session row.
-    - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'running', compact: true)` and check if any worker belongs to this session). If MCP confirms running workers exist for this session → skip (live session). If MCP shows no running workers but the row exists → it is a crashed supervisor; treat as ended (stage its artifacts).
-    - If the row has **Source `orchestrate`** (Build/Review Worker): these rows are always stale (workers can be killed at any time per the design). Stage their artifacts.
-    - If the session has **no row** in active-sessions.md → treat as ended. Stage its artifacts.
-    > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT stage `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still stage `orchestrate`-source sessions (always safe).
-6. **For each ended session with uncommitted artifacts** — **stage only, do NOT commit**:
-   ```
-   git add task-tracking/sessions/{SESSION_ID}/log.md
-   git add task-tracking/sessions/{SESSION_ID}/analytics.md
-   git add "task-tracking/sessions/{SESSION_ID}/worker-logs/" (only if directory exists)
-    ```
-    Print: `STALE ARCHIVE — staged {SESSION_ID} (awaiting user commit)`
-7. **If `orchestrator-history.md` has uncommitted changes** and no active session is currently writing it:
-    ```
-    git add task-tracking/orchestrator-history.md
-    ```
-    Print: `STALE ARCHIVE — staged stale orchestrator-history.md (awaiting user commit)`
-8. If no stale artifacts found: Print `STALE ARCHIVE — no stale session artifacts found`
-9. **Do NOT run `git commit`**. The stale archive check stages files only. The actual commit happens later:
-   - If `stale_staged[]` is non-empty, the Pre-Flight Report (Step 4g) displays:
-     `"Stale session artifacts staged: {list of SESSION_IDs}. These will be committed when you next run /commit or git commit."`
-   - The supervisor proceeds regardless — staged files do not block startup.
-   - **Rationale**: Git commits require explicit user instruction. The supervisor must not commit autonomously.
-10. All git staging operations here are **best-effort**: if staging fails (lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
-
-### Session Log Entries
-
-After the Session Directory is created (Step 4 of Startup Sequence), append one log entry per action taken during the stale archive check:
-
-| Event | Log Row |
-|-------|---------|
-| Staged stale session | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — staged {SESSION_ID} for later user commit \|` |
-| Staged stale history | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — staged stale orchestrator-history.md for later user commit \|` |
-| No stale artifacts | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — no stale session artifacts found \|` |
-| Git error (non-fatal) | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE WARNING — git error: {reason[:200]} \|` |
-
----
-
-## Concurrent Session Guard
-
-On startup, **after MCP validation passes, before Session Directory creation, before entering the loop**:
-
-1. Read `task-tracking/active-sessions.md` (if it exists).
-2. If any row with Source `auto-pilot` is present:
-   - Log: `"INFO: Another supervisor session is running: {SESSION_ID} — concurrent mode enabled (DB task claiming active)"`
-   - Continue without prompting. Concurrent sessions are safe on the DB-backed path because task claiming and worker ownership come from MCP/DB state, preventing double-spawning without reading other sessions' `state.md` files.
-   - **Only abort** if `--no-concurrent` flag is passed. In that case, display: `"ABORT: Another supervisor is running ({SESSION_ID}). Pass --force to override or wait for it to finish."` and exit.
-3. Proceed to Session Directory startup (create dir, register in active-sessions.md).
-
-> **Concurrency is safe by design**: Each session operates on its own `SESSION_DIR`, writes to separate worker IDs, and relies on DB-backed task claiming for cross-session exclusion. Multiple supervisors can process different tasks in parallel without conflict on the DB-backed path.
+> **Load reference**: Read `references/session-lifecycle.md` for session directory structure, startup sequence, active-sessions.md format, stale archive check, and concurrent session guard.
 
 ---
 
@@ -398,6 +257,16 @@ The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
 7. Handle completions and re-query the DB
 8. Stop or continue; write optional artifacts only after the loop tick ends
 
+## Compaction Survival
+
+When compaction happens, recovery is:
+
+1. `list_workers(compact: true)`
+2. `get_tasks()`
+3. `get_session(session_id)` if session counters are needed
+
+Do **not** recover by reading `state.md` on the DB-backed path.
+
 ---
 
 ## Worker Prompt Templates
@@ -406,206 +275,27 @@ The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
 
 ---
 
-## state.md Format
+## State & Log Formats, Error Handling
 
-Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24T22-00-00/state.md`) only when the supervisor chooses to materialize a debug snapshot at startup, pause, stop, or error time. It is helpful after compaction, but it is not the primary recovery source on the DB-backed path.
-
-```markdown
-# Orchestrator State
-
-**Loop Status**: RUNNING | STOPPED
-**Last Updated**: YYYY-MM-DD HH:MM:SS +ZZZZ
-**Session Started**: YYYY-MM-DD HH:MM:SS +ZZZZ
-**Session Directory**: task-tracking/sessions/SESSION_2026-03-24T22-00-00/
-
-## Configuration
-
-| Parameter           | Value      |
-|---------------------|------------|
-| Concurrency Limit   | 3          |
-| Monitoring Interval | 5 minutes  |
-| Retry Limit         | 2          |
-| MCP Empty Threshold | 2          |
-
-## Active Workers
-
-| Worker ID | Task ID       | Worker Type | Label                        | Status  | Spawn Time          | Last Health | Stuck Count | Compaction Count | Expected End State |
-|-----------|---------------|-------------|------------------------------|---------|---------------------|-------------|-------------|------------------|-------------------|
-| abc-123   | TASK_2026_003 | Build            | TASK_2026_003-FEATURE-BUILD    | running | 2026-03-24 10:00:00 +0200 | healthy     | 0           | 0                | IMPLEMENTED        |
-| def-456   | TASK_2026_004 | ReviewLead       | TASK_2026_004-BUGFIX-REVIEW    | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | 0                | REVIEW_DONE        |
-| ghi-789   | TASK_2026_004 | TestLead         | TASK_2026_004-BUGFIX-TEST      | running | 2026-03-24 10:05:00 +0200 | healthy     | 0           | 0                | TEST_DONE          |
-| jkl-012   | TASK_2026_005 | FixWorker        | TASK_2026_005-FEATURE-FIX      | running | 2026-03-24 10:10:00 +0200 | healthy     | 0           | 0                | COMPLETE           |
-| mno-345   | TASK_2026_006 | CompletionWorker | TASK_2026_006-FEATURE-COMPLETE | running | 2026-03-24 10:10:00 +0200 | healthy     | 0           | 0                | COMPLETE           |
+> **Load reference**: Read `references/session-lifecycle.md` for state.md format (with example tables), log.md format, and all error handling rules (worker failure, MCP unreachable, malformed data, dependency cycles).
 
 
-## Serialized Reviews
+## MCP Tool Quick Reference
 
-| Task ID | Reason |
-|---------|---------|
-| TASK_2026_001 | Overlaps with TASK_2026_002 on index.html |
-| TASK_2026_002 | Overlaps with TASK_2026_001 on index.html |
+| Tool | When | Context Cost |
+|------|------|-------------|
+| `spawn_worker(prompt, working_directory, label, model?, provider?)` | Step 5 | ~6 lines |
+| `list_workers(status_filter?, compact: true)` | Step 1, recovery | ~1 line/worker |
+| `get_worker_activity(worker_id)` | Step 6 (default) | ~5 lines |
+| `get_worker_stats(worker_id)` | Step 6 (escalation only) | ~15 lines |
+| `subscribe_worker(worker_id, conditions)` | Step 5f | ~3 lines |
+| `get_pending_events()` | Step 6 | varies |
+| `kill_worker(worker_id, reason?)` | Step 6/7 | ~4 lines |
 
-## Completed Tasks
-
-| Task ID       | Completed At         |
-|---------------|----------------------|
-| TASK_2026_001 | 2026-03-24 10:45:00 +0200  |
-
-## Failed Tasks
-
-| Task ID       | Reason                    | Retry Count |
-|---------------|---------------------------|-------------|
-| TASK_2026_005 | No state transition (x2)  | 2           |
-
-## Task Queue (Next Actionable)
-
-| Task ID       | Priority    | Type    | Worker Type |
-|---------------|-------------|---------|-------------|
-| TASK_2026_007 | P1-High     | FEATURE | Review      |
-| TASK_2026_004 | P1-High     | FEATURE | Build       |
-| TASK_2026_006 | P2-Medium   | BUGFIX  | Build       |
-
-## Retry Tracker
-
-| Task ID       | Retry Count |
-|---------------|-------------|
-| TASK_2026_005 | 2           |
-
-## Runtime Counters
-
-| Counter          | Value |
-|------------------|-------|
-| MCP Empty Count  | 0     |
-```
-
-### log.md Format
-
-Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on session startup with the header row, then one row appended per event.
-
-```markdown
-# Session Log — SESSION_2026-03-24T22-00-00
-
-| Timestamp | Source | Event |
-|-----------|--------|-------|
-| 10:00:00 | auto-pilot | SUPERVISOR STARTED — 6 tasks, 3 unblocked, concurrency 3 |
-| 10:00:05 | auto-pilot | SPAWNED abc-123 for TASK_2026_003 (Build: FEATURE) |
-| 10:05:00 | orchestrate | PM phase complete for TASK_2026_010 |
-| 10:10:00 | auto-pilot | HEALTH CHECK — TASK_2026_003: healthy |
-| 10:15:00 | orchestrate | Architect phase complete for TASK_2026_010 |
-| 10:20:00 | auto-pilot | STATE TRANSITIONED — TASK_2026_003: IN_PROGRESS -> IMPLEMENTED |
-```
-
-**Key design properties**:
-
-- **Snapshot, not live loop memory**: `state.md` is a materialized debug snapshot, not the steady-state source of truth on the DB-backed path.
-- **Standard markdown**: All tables use standard markdown syntax, parseable by any agent after compaction.
-- **Retry persistence**: Retry counters should persist in the DB session record; `state.md` may mirror them for debugging.
-- **Task Queue is informational**: Any queue snapshot is informational only; the live queue is rebuilt from DB state each tick.
-- **Split state/log**: `state.md` is an optional structured snapshot. `log.md` is an optional rendered event stream. Keep them separate.
+Always use `compact: true` on `list_workers`. Default to `get_worker_activity` for monitoring — only escalate to `get_worker_stats` when health is unclear.
 
 ---
 
-## MCP Tool Usage Reference
-
-| Tool                  | Used In       | Purpose                                               |
-|-----------------------|---------------|-------------------------------------------------------|
-| `spawn_worker`        | Step 5        | Launch a new worker session for a task                |
-| `subscribe_worker`    | Step 5f-ii    | Register file-system completion conditions (event-driven) |
-| `get_pending_events`  | Step 6        | Drain completion events queue (30s poll, event-driven) |
-| `list_workers`        | Step 1        | Reconcile state after compaction/recovery              |
-| `get_worker_activity` | Step 6        | Routine monitoring (compact, context-efficient)        |
-| `get_worker_stats`    | Step 6        | Detailed check when stuck/finished suspected           |
-| `kill_worker`         | Step 6, 7     | Terminate stuck or post-completion workers             |
-
-### MCP Tool Signatures
-
-```
-spawn_worker(prompt: string, working_directory: string, label: string, model?: string, provider?: string, allowed_tools?: string[])
-  // provider: omit if `claude` — that is the MCP default; listing it explicitly is also accepted
-  -> { worker_id: string, pid: number, session_id: string, iterm_tab: string }
-
-subscribe_worker(worker_id: string, conditions: WatchCondition[])
-  -> { subscribed: boolean, watched_paths: string[] }
-  // working_directory is taken from the worker's registry entry — not a parameter
-
-emit_event(worker_id: string, label: string, data?: Record<string, unknown>)
-  -> { ok: boolean, worker_id: string, label: string }
-  // Called by workers (orchestration skill) to push phase-transition events to the supervisor queue.
-  // The supervisor never calls emit_event — only workers do.
-
-get_pending_events()
-  -> { events: Array<WatchEvent | EmittedEvent> }
-  // WatchEvent shape:    { worker_id, event_label, triggered_at, condition }
-  // EmittedEvent shape:  { worker_id, event_label, emitted_at, data?, source: 'emit_event' }
-  // Returns merged events from both file-watcher (subscribe_worker) and emit_event sources.
-  // Distinguish by checking source field: present and 'emit_event' for emitted events, absent for watch events.
-
-list_workers(status_filter?: 'active' | 'completed' | 'failed' | 'all')
-  -> { workers: [{ worker_id, label, status, pid, started_at, duration_minutes, total_tokens, context_percent, cost_estimate_usd }] }
-
-get_worker_activity(worker_id: string, last_n_messages?: number)
-  -> { summary: string }
-
-get_worker_stats(worker_id: string)
-  -> { worker_id, label, status, tokens: {...}, cost: {...}, progress: {...}, health: 'healthy' | 'high_context' | 'compacting' | 'stuck' | 'finished' }
-
-kill_worker(worker_id: string, reason?: string)
-  -> { success: boolean, final_stats: {...} }
-```
-
-### Context Efficiency Rule
-
-- **DEFAULT** to `get_worker_activity` for routine checks (returns ~5-10 lines).
-- **ESCALATE** to `get_worker_stats` only when activity summary indicates issues (stuck, finished, or health unclear).
-- **NEVER** call `get_worker_stats` on every worker every interval -- this wastes supervisor context.
-
----
-
-## Error Handling
-
-### Worker Failure
-
-A single worker failure **NEVER** stops the loop. Log the failure, update the task status (leave at current state for retry, or BLOCKED if retries exhausted), and continue with remaining tasks.
-
-### MCP Unreachable
-
-If an MCP call fails, apply scoped retry logic:
-
-**Per-worker MCP failure** (e.g., `get_worker_activity` or `get_worker_stats` for a specific worker):
-1. Retry up to **3 times** with **30-second backoff**.
-2. If still failing: log warning, skip that worker for this monitoring pass, continue with remaining workers.
-3. The worker will be checked again on the next monitoring interval.
-
-**Global MCP failure** (e.g., `list_workers` during reconciliation, or ALL worker checks fail in the same pass):
-1. Retry up to **3 times** with **30-second backoff**.
-2. If still failing:
-   - Write current state to `{SESSION_DIR}state.md`.
-   - Log: `"MCP session-orchestrator unreachable after 3 retries. Supervisor paused. State saved. Resolve MCP connection and re-run /auto-pilot to resume."`
-   - **STOP** the loop (graceful pause -- do not crash).
-
-### Malformed Task Data
-
-If `task.md` is missing, unparseable, or has invalid fields:
-
-- Skip that task.
-- Log a warning with the task ID and reason.
-- Continue with other tasks.
-
-### Unexpected Error
-
-On any unexpected error:
-
-1. Write current state to `{SESSION_DIR}state.md` **FIRST** (state preservation is top priority).
-2. Then surface the error with context.
-3. State is preserved for recovery on next `/auto-pilot` invocation.
-
-### Dependency Cycle
-
-- Write `BLOCKED` to `task-tracking/TASK_YYYY_NNN/status` for all tasks in the cycle.
-- Log the cycle chain (e.g., `"Dependency cycle: TASK_A -> TASK_B -> TASK_A"`).
-- Continue processing non-cyclic tasks.
-
----
 
 ## Reference Index
 
@@ -617,6 +307,7 @@ On any unexpected error:
 | [references/pause-continue.md](references/pause-continue.md) | `--pause` or `--continue` | Pause/resume logic, session restoration |
 | [references/log-templates.md](references/log-templates.md) | Need exact log row format | All ~60 event types with pipe-table format |
 | [references/worker-prompts.md](references/worker-prompts.md) | Spawning workers (Step 5) | All worker prompt templates + Worker-to-Agent Mapping |
+| [references/session-lifecycle.md](references/session-lifecycle.md) | Session startup, state format, errors | Session dir, active-sessions, stale archive, state.md/log.md format, error handling |
 | [references/cortex-integration.md](references/cortex-integration.md) | cortex_available = true paths | Summary of cortex DB overrides; full inline in parallel-mode.md |
 
 **Loading protocol**: Always loaded (this SKILL.md). Load on demand: references above. Never preload all references at once.
@@ -628,8 +319,8 @@ On any unexpected error:
 1. **You are the Supervisor** -- spawn, monitor, loop
 2. **Workers invoke /orchestrate** -- you never re-implement agent logic
 3. **The cortex DB is the source of truth during the live loop** — registry and task files are fallback-only artifacts
-4. **`{SESSION_DIR}state.md` and `{SESSION_DIR}log.md` are debug outputs, not loop memory** on the DB-backed path
-5. **Workers still write task artifacts, but supervisor state transitions come from MCP/DB re-query** rather than status-file polling
+4. **Compaction recovery is DB re-query** — `list_workers()` + `get_tasks()` rebuild the loop state
+5. **`state.md` and `log.md` are debug outputs, not loop inputs** on the DB-backed path
 6. **Prefer get_worker_activity over get_worker_stats** for context efficiency
 7. **Never spawn duplicate workers** -- check both registry (IN_PROGRESS/IN_REVIEW) and state (active workers), and verify worker_type matches expected worker for current state
 8. **A completed task triggers immediate re-evaluation** of the dependency graph
@@ -637,3 +328,4 @@ On any unexpected error:
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
 11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
 12. **Review Workers take priority** -- finishing tasks is more valuable than starting new ones
+13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)

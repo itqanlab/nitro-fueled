@@ -18,12 +18,26 @@ description: >
 
 ### NEVER DO (instant violations)
 1. **NEVER use Bash to read files** — no `cat`, `head`, `tail`, `for` loops reading task.md/status files. Use the **Read tool** for files. Use **MCP tools** for task data.
-2. **NEVER read task.md during pre-flight** — pre-flight uses registry columns ONLY. Task.md is read JIT at spawn time (one task at a time).
+   - **Banned Bash patterns** (any of these is an instant violation):
+     - `for task in ...; do cat task.md` — looping over task folders and reading files
+     - `cat task-tracking/TASK_*/status` — reading status files via Bash
+     - `head -1 status` or `tail -5 log.md` — partial file reads via Bash
+     - `grep -r "CREATED" task-tracking/` — searching task files via Bash
+     - Any Bash command that outputs file content from `task-tracking/`
+2. **NEVER read task.md during pre-flight** — pre-flight reads registry columns ONLY — no task.md reads under any circumstance. Task.md is read JIT at spawn time (one task at a time). Reading task.md before spawn to "check dependencies" or "verify type" is a pre-flight violation even if the data would be useful.
 3. **NEVER load reference files during startup** — Steps 1-4 require ZERO reference files. Only load a reference at the moment it's needed (first spawn → worker-prompts.md, entering core loop → parallel-mode.md).
 4. **NEVER hallucinate providers** — the ONLY available providers are what `get_available_providers()` returned. Do not invent names like "Cloudcode", "Codex", etc.
+   - **Banned provider labels** (any use is an instant violation): `Cloudcode`, `Codex`, `OpenCode`, `Ollama`, `GPT`, `Gemini`, or any name not returned verbatim by `get_available_providers()`.
+   - Routing labels in state.md MUST use provider IDs returned verbatim from `get_available_providers()`. If that call returns `["claude", "glm"]`, the only valid routing labels are `claude` and `glm` — never "GLM/Cloudcode launcher" or "Codex".
 5. **NEVER print tables in the monitoring loop** — heartbeats are ONE LINE. No tables, no summaries, no analysis between heartbeat and `sleep`.
 6. **NEVER think for >10 seconds without calling a tool** — if you're reasoning/planning, you're stalling. Call `Bash: sleep 30` immediately.
 7. **NEVER go on tangents** — do not check for "newer tasks", explore the codebase, or investigate things not in the current step. Follow the steps sequentially.
+   - **Banned tangent patterns** (any of these is an instant violation):
+     - Checking for newer tasks via `git log`, `git diff`, or any VCS command
+     - Scanning git commits to find recently created task files
+     - Exploring `.claude/` or `task-tracking/` directories out of curiosity
+     - Reading reference files "just in case" or to "understand the system"
+     - Any investigation not explicitly required by the current step
 8. **NEVER end your turn after spawning workers** — after the last `spawn_worker` call completes, your VERY NEXT action MUST be `Bash: sleep 30`. Not a summary. Not a table. Not text to the user. Just `sleep`. If you output text or end your turn here, workers run unmonitored and the session is dead. The sequence is: `spawn_worker` → `sleep 30` → `get_pending_events` → loop. This is the #1 cause of supervisor stalls.
 9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to the DB event stream or optional session artifacts, never the conversation. Conversation output is ONE LINE per event maximum. See **Per-Phase Output Budget** below.
 
@@ -93,6 +107,7 @@ Session registration and worker-slot accounting are multi-session safe only when
 | Need | Use THIS | NEVER use |
 |------|----------|-----------|
 | Task list/status | `get_tasks()` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
+| Task list/status during pre-flight | `get_tasks()` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
 | Task metadata before spawn | `get_task_context(task_id)` MCP | `cat task.md`, `Read task.md`, `Bash` on task files |
 | Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
 | Task state transitions | `get_pending_events()` and `get_tasks()` MCP | Per-task `status` files, `registry.md`, task-folder polling |
@@ -155,6 +170,7 @@ Single-task, dry-run, sequential, and evaluation modes are handled by the comman
 
 **Rules**:
 - Load exactly ONE reference per trigger event — never batch-load multiple references
+- **NEVER batch-load two references in one round** — one trigger event, one file load. Loading `parallel-mode.md` and `worker-prompts.md` simultaneously (or any two references in a single tool-call round) is a violation of this protocol regardless of whether both will be needed eventually. Each reference load must be its own distinct round triggered by a specific need.
 - Never re-read a reference already loaded in this session
 - If you catch yourself reading a reference "just in case", STOP — you are violating this protocol
 

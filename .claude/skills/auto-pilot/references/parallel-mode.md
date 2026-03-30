@@ -1,5 +1,23 @@
 # Parallel Mode — Core Loop — auto-pilot
 
+## Pre-Flight Exit Gate
+
+**MANDATORY**: After all pre-flight checks (Steps 1-4) complete, the supervisor's VERY NEXT action MUST be one of:
+
+1. **Call `spawn_worker`** — if actionable tasks exist and slots are available (enter Step 5 immediately)
+2. **Log "all tasks blocked"** — if no actionable tasks remain because all are BLOCKED
+3. **Log "--limit reached"** — if the task limit (`--limit N`) has been reached
+
+**NO further reads, analysis, or investigation are permitted between pre-flight completion and the first spawn.** Specifically:
+
+- Do NOT read additional reference files
+- Do NOT check for "newer" or "recently created" tasks
+- Do NOT investigate the codebase
+- Do NOT summarize the pre-flight findings in a table
+- Do NOT re-read the registry or any task files
+
+If you find yourself doing anything other than (a), (b), or (c) after pre-flight completes, STOP — you are violating the pre-flight exit gate. The pre-flight phase is a strict 3-step check (reconstruct state → read queue → build dependency view → select candidates), not a planning or research phase. Any activity beyond these steps before the first `spawn_worker` call is a stall.
+
 ## Context Budget Principle
 
 When `cortex_available = true`, the supervisor must behave as a thin event loop:
