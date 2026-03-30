@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { SettingsService } from '../../../services/settings.service';
 
 @Component({
@@ -9,7 +9,17 @@ import { SettingsService } from '../../../services/settings.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MappingComponent {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly settingsService = inject(SettingsService);
+  private pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.pendingTimer !== null) {
+        clearTimeout(this.pendingTimer);
+      }
+    });
+  }
 
   public readonly activeModels = this.settingsService.activeModels;
   public readonly activeLaunchers = this.settingsService.activeLaunchers;
@@ -83,7 +93,7 @@ export class MappingComponent {
   public onSave(): void {
     this.settingsService.saveMappings();
     this.saveMessage.set('Configuration saved (mock)');
-    setTimeout(() => this.saveMessage.set(null), 3000);
+    this.scheduleClearMessage();
   }
 
   public onReset(): void {
@@ -93,6 +103,16 @@ export class MappingComponent {
 
     this.settingsService.resetMappings();
     this.saveMessage.set('Mappings reset to defaults');
-    setTimeout(() => this.saveMessage.set(null), 3000);
+    this.scheduleClearMessage();
+  }
+
+  private scheduleClearMessage(): void {
+    if (this.pendingTimer !== null) {
+      clearTimeout(this.pendingTimer);
+    }
+    this.pendingTimer = setTimeout(() => {
+      this.saveMessage.set(null);
+      this.pendingTimer = null;
+    }, 3000);
   }
 }

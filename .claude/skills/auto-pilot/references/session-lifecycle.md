@@ -61,8 +61,9 @@ The `active-sessions.md` row, session directory name, and any later `list_worker
 > **When `cortex_available = true`**: After Session Directory creation and before entering the Core Loop, call:
 > 1. `sync_tasks_from_files()` — full task metadata import (bootstrap; safe to re-run)
 > 2. `reconcile_status_files()` — status-only drift fix (runs every startup; file wins)
+> 3. `release_orphaned_claims()` — auto-release tasks claimed by dead/missing sessions or expired TTL
 >
-> Both calls are best-effort. On failure: log a warning and continue. Do not abort.
+> All three calls are best-effort. On failure: log a warning and continue. Do not abort.
 >
 > On this path, steady-state loop persistence lives in the DB via `update_session()`. `state.md` is not rewritten during monitoring.
 

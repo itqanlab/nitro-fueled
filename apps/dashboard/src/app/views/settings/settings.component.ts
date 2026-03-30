@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { NgClass } from '@angular/common';
 import { SETTINGS_TABS, SettingsTab, SettingsTabDefinition } from '../../models/settings.model';
 import { SettingsService } from '../../services/settings.service';
 import { ApiKeysComponent } from './api-keys/api-keys.component';
@@ -11,7 +10,7 @@ import { TabNavComponent, TabItem } from '../../shared/tab-nav/tab-nav.component
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [NgClass, TabNavComponent, ApiKeysComponent, LaunchersComponent, SubscriptionsComponent, MappingComponent],
+  imports: [TabNavComponent, ApiKeysComponent, LaunchersComponent, SubscriptionsComponent, MappingComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

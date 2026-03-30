@@ -84,7 +84,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 ### Primary Responsibilities
 
 1. **Re-query DB state each tick** -- `get_tasks()` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
-2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority
+2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority strategy (default: build-first)
 3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
 4. **Monitor worker health** on a configurable interval
 5. **Handle completions**: react to DB events, then re-query the DB for the next tick
@@ -126,6 +126,7 @@ Session registration and worker-slot accounting are multi-session safe only when
 | Monitoring interval | 5 minutes   | --interval Nm    | Time between health checks                           |
 | Retry limit         | 2           | --retries N      | Maximum retry attempts for a failed task. Maximum allowed value: 5. Values above 5 are clamped to 5. |
 | Task limit          | 0 (unlimited) | --limit N      | Stop gracefully after N tasks reach a terminal state (COMPLETE/FAILED/BLOCKED). 0 = process entire backlog. **Sequential mode**: cap the task queue to N tasks at startup (different semantic — see ## Sequential Mode). |
+| Priority strategy   | build-first | --priority S     | Slot allocation strategy: `build-first` (fill with CREATED, remaining for IMPLEMENTED), `review-first` (fill with IMPLEMENTED, remaining for CREATED), `balanced` (reserve ≥1 slot each for build and review). |
 | Sequential mode     | false       | --sequential     | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. |
 | Escalate to user    | false       | --escalate       | When true: supervisor checks for NEED_INPUT signals from workers at phase boundaries (after each TASK_STATE_CHANGE event). Requires cortex_available = true. When false (default): workers fail autonomously, supervisor retries or blocks. |
 | MCP retry backoff   | 30 seconds  | (not overridable)| Wait time between MCP retry attempts                 |
@@ -234,6 +235,11 @@ but allows the Supervisor to run without the cortex DB.
 > `reconcile_status_files()` immediately after `sync_tasks_from_files()`. This fixes any
 > status drift from the previous session (file wins). This is best-effort — if it fails
 > or the tool is unavailable, log a warning and proceed. Do not abort startup.
+>
+> **Orphan release**: After `reconcile_status_files()` completes, call `release_orphaned_claims()`
+> to auto-release tasks claimed by dead/missing sessions or expired TTL. This eliminates the
+> manual release-reclaim cycle (claim fails → get_session → session_not_found → release_task).
+> Best-effort — log released count or error and continue.
 
 ---
 
@@ -327,5 +333,5 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 9. **Graceful degradation** -- one failure never crashes the loop
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
 11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
-12. **Review Workers take priority** -- finishing tasks is more valuable than starting new ones
+12. **Build-first by default** -- CREATED (build) tasks fill slots before IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
 13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
