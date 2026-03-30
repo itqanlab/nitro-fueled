@@ -22,7 +22,13 @@ export class HttpAuthGuard implements CanActivate {
   private readonly validKeys: Set<string>;
 
   constructor() {
-    this.enabled = process.env['AUTH_ENABLED'] === 'true';
+    const authEnabled = process.env['AUTH_ENABLED'];
+    const nodeEnv = process.env['NODE_ENV'];
+
+    this.enabled =
+      authEnabled === 'true' ||
+      (authEnabled !== 'false' && nodeEnv === 'production');
+
     const keys = process.env['HTTP_API_KEYS'];
     this.validKeys = new Set(
       keys
@@ -47,6 +53,10 @@ export class HttpAuthGuard implements CanActivate {
   }
 
   canActivate(context: ExecutionContext): boolean {
+    if (context.getType() !== 'http') {
+      return true;
+    }
+
     if (!this.enabled) {
       return true;
     }
@@ -54,14 +64,14 @@ export class HttpAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{
       method: string;
       url: string;
-      headers: Record<string, string | undefined>;
+      headers?: Record<string, string | undefined>;
     }>();
 
     if (this.isExempt(request.url)) {
       return true;
     }
 
-    const key = this.extractKey(request.headers);
+    const key = this.extractKey(request.headers ?? {});
     if (!key) {
       this.logger.warn(`Unauthorized: no credentials provided for ${request.method} ${request.url}`);
       throw new UnauthorizedException('Authentication required');

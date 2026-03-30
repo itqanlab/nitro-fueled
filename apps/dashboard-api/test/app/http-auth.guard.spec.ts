@@ -13,8 +13,13 @@ describe('HttpAuthGuard', () => {
     process.env = originalEnv;
   });
 
-  function createMockContext(url: string, headers: Record<string, string | undefined> = {}) {
+  function createMockContext(
+    url: string,
+    headers: Record<string, string | undefined> = {},
+    type: 'http' | 'ws' = 'http',
+  ) {
     return {
+      getType: () => type,
       switchToHttp: () => ({
         getRequest: () => ({ method: 'GET', url, headers }),
       }),
@@ -23,6 +28,7 @@ describe('HttpAuthGuard', () => {
 
   describe('when AUTH_ENABLED is not set or false', () => {
     it('allows all requests when AUTH_ENABLED is undefined', () => {
+      process.env['NODE_ENV'] = 'development';
       delete process.env['AUTH_ENABLED'];
       delete process.env['HTTP_API_KEYS'];
       const guard = new HttpAuthGuard();
@@ -35,6 +41,27 @@ describe('HttpAuthGuard', () => {
       delete process.env['HTTP_API_KEYS'];
       const guard = new HttpAuthGuard();
       const context = createMockContext('/api/tasks');
+      expect(guard.canActivate(context)).toBe(true);
+    });
+  });
+
+  describe('when running in production', () => {
+    beforeEach(() => {
+      process.env['NODE_ENV'] = 'production';
+      delete process.env['AUTH_ENABLED'];
+      process.env['HTTP_API_KEYS'] = 'prod-key';
+    });
+
+    it('enforces auth by default when AUTH_ENABLED is unset', () => {
+      const guard = new HttpAuthGuard();
+      const context = createMockContext('/api/tasks', {});
+      expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    });
+
+    it('allows explicit AUTH_ENABLED=false to disable auth in production', () => {
+      process.env['AUTH_ENABLED'] = 'false';
+      const guard = new HttpAuthGuard();
+      const context = createMockContext('/api/tasks', {});
       expect(guard.canActivate(context)).toBe(true);
     });
   });
@@ -147,6 +174,14 @@ describe('HttpAuthGuard', () => {
       process.env['HTTP_API_KEYS'] = '';
       const guard = new HttpAuthGuard();
       const context = createMockContext('/health', {});
+      expect(guard.canActivate(context)).toBe(true);
+    });
+
+    it('ignores non-http execution contexts', () => {
+      process.env['AUTH_ENABLED'] = 'true';
+      process.env['HTTP_API_KEYS'] = 'secret-key';
+      const guard = new HttpAuthGuard();
+      const context = createMockContext('/socket', {}, 'ws');
       expect(guard.canActivate(context)).toBe(true);
     });
   });
