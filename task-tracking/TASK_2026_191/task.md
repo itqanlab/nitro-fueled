@@ -43,8 +43,10 @@ Perform a full audit:
 
 ## File Scope
 
-- apps/cli/scaffold/.claude/skills/
-- apps/cli/scaffold/.claude/commands/
-- apps/cli/scaffold/.claude/agents/
-- apps/cli/scaffold/.claude/review-lessons/
-- apps/cli/scaffold/.claude/anti-patterns.md
+- apps/cli/scaffold/.claude/agents/ (15 files synced)
+- apps/cli/scaffold/.claude/commands/ (10 files synced)
+- apps/cli/scaffold/.claude/review-lessons/ (4 files synced)
+- apps/cli/scaffold/.claude/skills/auto-pilot/ (8 files synced including 6 new references)
+- apps/cli/scaffold/.claude/skills/orchestration/ (9 files synced)
+- apps/cli/scaffold/.claude/skills/technical-content-writer/ (2 files synced)
+- apps/cli/scaffold/.claude/anti-patterns.md (synced)
