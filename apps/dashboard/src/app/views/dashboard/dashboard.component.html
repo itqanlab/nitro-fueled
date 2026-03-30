@@ -1,153 +1,121 @@
-<!-- Page Header -->
-<div class="page-header">
-  <div class="page-header-left">
-    <h1>
-      {{ project.name }}
-      <span class="client-pill">{{ project.client }}</span>
-    </h1>
-    <div class="subtitle">
-      @for (tag of project.stackTags; track tag) {
-        <span class="stack-tag">{{ tag }}</span>
-      }
-      <span class="separator">|</span>
-      @for (team of project.teams; track team) {
-        <span class="team-pill" [class]="team.toLowerCase()">{{ team }}</span>
-      }
-    </div>
-  </div>
-  <div class="page-header-actions">
-    <button class="btn">
-      <span>&#x2699;</span> Settings
-    </button>
-    <button class="btn btn-primary">
-      <span>+</span> New Task
-    </button>
+<!-- Command Center Header -->
+<div class="command-center-header">
+  <h1 class="command-center-title">Command Center</h1>
+  <div class="project-context">
+    <span class="project-name">nitro-fueled</span>
+    <span class="project-client">local</span>
   </div>
 </div>
 
-<!-- Stats Row -->
-<div class="stats-row">
-  <app-stat-card label="Active Tasks" valueClass="running" [sub]="analytics.activeBreakdown">
-    {{ analytics.activeTasks }}
-  </app-stat-card>
-
-  <app-stat-card label="Completed" valueClass="completed" [sub]="analytics.completedPeriod">
-    {{ analytics.completedTasks }}
-  </app-stat-card>
-
-  <app-stat-card label="Budget" valueClass="cost">
-    ${{ analytics.budgetUsed }}
-    <span class="budget-denominator">/ ${{ analytics.budgetTotal }}</span>
-    <div slot="extra" class="budget-extra">
-      <div class="budget-progress">
-        <div class="budget-progress-fill" [style.width.%]="budgetPercent"></div>
-      </div>
-      <div class="budget-action">&#x26A0; Alert at {{ analytics.budgetAlertPercent }}%</div>
-    </div>
-  </app-stat-card>
-
-  <app-stat-card label="Tokens Used" [sub]="analytics.tokensPeriod">
-    {{ analytics.tokensUsed }}
-  </app-stat-card>
-
-  <app-stat-card label="Cost" valueClass="cost">
-    ${{ analytics.totalCost.toFixed(2) }}
-    <div slot="extra" class="cost-breakdown">
-      Client: <span>{{ '$' + analytics.clientCost.toFixed(2) }}</span>
-      / Internal: <span>{{ '$' + analytics.internalCost.toFixed(2) }}</span>
-    </div>
-  </app-stat-card>
-</div>
-
-<!-- Content Grid -->
-<div class="content-grid">
-  <!-- Left Column: Tasks -->
-  <div>
-    <!-- Active Tasks -->
-    <div class="card" style="margin-bottom: 20px;">
-      <div class="card-header">
-        <span class="card-header-title">Active Tasks</span>
-        <button class="btn btn-sm">View All History</button>
-      </div>
-      <div class="card-body">
-        @for (task of activeTasks; track task.id) {
-          <app-task-card [task]="task" />
-        }
-      </div>
-    </div>
-
-    <!-- Recently Completed -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-header-title">Recently Completed</span>
-      </div>
-      <div class="card-body">
-        @for (task of completedTasks; track task.id) {
-          <app-task-card [task]="task" />
-        }
-      </div>
-    </div>
+<!-- Task Status Breakdown Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Task Status Breakdown</h2>
+    <div class="total-tasks-badge">{{ totalTasks() }} Total</div>
   </div>
+  <div class="stat-grid">
+    <app-stat-card label="CREATED" [valueClass]="getStatusValueClass('CREATED')">
+      {{ taskBreakdown().CREATED }}
+    </app-stat-card>
+    <app-stat-card label="IN PROGRESS" [valueClass]="getStatusValueClass('IN_PROGRESS')">
+      {{ taskBreakdown().IN_PROGRESS }}
+    </app-stat-card>
+    <app-stat-card label="IMPLEMENTED" [valueClass]="getStatusValueClass('IMPLEMENTED')">
+      {{ taskBreakdown().IMPLEMENTED }}
+    </app-stat-card>
+    <app-stat-card label="IN REVIEW" [valueClass]="getStatusValueClass('IN_REVIEW')">
+      {{ taskBreakdown().IN_REVIEW }}
+    </app-stat-card>
+    <app-stat-card label="COMPLETE" [valueClass]="getStatusValueClass('COMPLETE')">
+      {{ taskBreakdown().COMPLETE }}
+    </app-stat-card>
+    <app-stat-card label="FAILED" [valueClass]="getStatusValueClass('FAILED')">
+      {{ taskBreakdown().FAILED }}
+    </app-stat-card>
+    <app-stat-card label="BLOCKED" [valueClass]="getStatusValueClass('BLOCKED')">
+      {{ taskBreakdown().BLOCKED }}
+    </app-stat-card>
+  </div>
+</section>
 
-  <!-- Right Column -->
-  <div>
-    <!-- Quick Actions -->
-    <div class="card" style="margin-bottom: 20px;">
-      <div class="card-header">
-        <span class="card-header-title">Quick Actions</span>
+<!-- Token & Cost Summary Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Token & Cost Summary</h2>
+  </div>
+  <div class="token-cost-grid">
+    <div class="token-cost-main">
+      <div class="token-cost-stat">
+        <div class="token-cost-label">Total Tokens</div>
+        <div class="token-cost-value">{{ tokensDisplay() }}</div>
       </div>
-      <div class="card-body">
-        <div class="quick-actions">
-          @for (action of quickActions; track action.label) {
-            <div class="quick-action">
-              <div class="quick-action-icon" [class]="action.color">{{ action.icon }}</div>
-              <span>{{ action.label }}</span>
-            </div>
-          }
+      <div class="token-cost-stat">
+        <div class="token-cost-label">Total Cost</div>
+        <div class="token-cost-value">${{ totalCost().toFixed(2) }}</div>
+      </div>
+    </div>
+    <div class="recent-sessions">
+      <div class="sessions-header">Recent Sessions</div>
+      @for (session of recentSessions(); track session.sessionId) {
+        <div class="session-row">
+          <span class="session-id">{{ session.sessionId.slice(-12) }}</span>
+          <span class="session-date">{{ session.date }}</span>
+          <span class="session-tokens">{{ session.tokens.toLocaleString() }} tokens</span>
+          <span class="session-cost">${{ session.cost.toFixed(2) }}</span>
         </div>
-      </div>
-    </div>
-
-    <!-- Team -->
-    <div class="card" style="margin-bottom: 20px;">
-      <div class="card-header">
-        <span class="card-header-title">Team ({{ agents.length }} agents)</span>
-        <button class="btn btn-sm">Manage</button>
-      </div>
-      <div class="card-body">
-        @for (group of teamGroups; track group.team; let last = $last) {
-          <div class="team-group-header">
-            {{ group.team }}
-            <span class="team-group-count">{{ group.members.length }}</span>
-          </div>
-          <div class="team-grid" [style.margin-bottom]="last ? '0' : '12px'">
-            @for (member of group.members; track member.name) {
-              <div class="team-member">
-                <div class="team-member-dot" [class]="member.installed ? 'installed' : 'available'"></div>
-                <span class="team-member-name">{{ member.name }}</span>
-                <span class="team-member-model">{{ member.model }}</span>
-              </div>
-            }
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Activity -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-header-title">Activity</span>
-      </div>
-      <div class="card-body activity-body">
-        @for (entry of activity; track entry.timeAgo) {
-          <div class="activity-item">
-            <span class="activity-time">{{ entry.timeAgo }}</span>
-            <span class="activity-text">
-              <strong>{{ entry.actorBold }}</strong> {{ entry.text }}
-            </span>
-          </div>
-        }
-      </div>
+      }
     </div>
   </div>
-</div>
+</section>
+
+<!-- Active Sessions Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Active Sessions</h2>
+    <div class="session-count-badge">{{ activeSessionCount() }} Running</div>
+  </div>
+  <div class="sessions-list">
+    @if (activeSessions().length === 0) {
+      <div class="empty-state">No active sessions</div>
+    } @else {
+      @for (session of activeSessions(); track session.sessionId) {
+        <div class="active-session-card">
+          <div class="session-info">
+            <div class="session-status-indicator" [class]="getSessionStatusClass(session.status)"></div>
+            <div class="session-details">
+              <div class="session-id">{{ session.sessionId }}</div>
+              <div class="session-task">{{ session.taskTitle }}</div>
+            </div>
+          </div>
+          <div class="session-task-id">{{ session.taskId }}</div>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+<!-- Active Tasks Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Active Tasks</h2>
+    <div class="task-count-badge">{{ activeTaskCount() }} In Progress</div>
+  </div>
+  <div class="tasks-list">
+    @if (activeTasks().length === 0) {
+      <div class="empty-state">No active tasks</div>
+    } @else {
+      @for (task of activeTasks(); track task.taskId) {
+        <div class="active-task-card">
+          <div class="task-info">
+            <div class="task-id">{{ task.taskId }}</div>
+            <div class="task-title">{{ task.title }}</div>
+          </div>
+          <div class="task-meta">
+            <span class="task-type">{{ task.type }}</span>
+            <span class="task-priority priority-{{ task.priority.toLowerCase() }}">{{ task.priority }}</span>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</section>

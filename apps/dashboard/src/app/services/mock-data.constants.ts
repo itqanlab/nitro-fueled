@@ -8,6 +8,13 @@ import { AnalyticsSummary } from '../models/analytics-summary.model';
 import { StatusIndicator } from '../models/provider.model';
 import { SidebarSection } from '../models/sidebar.model';
 import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
+import {
+  CommandCenterData,
+  TaskStatusBreakdown,
+  TokenCostSummary,
+  ActiveSession,
+  ActiveTask,
+} from '../models/dashboard.model';
 
 export const MOCK_PROJECTS: readonly Project[] = [
   {
@@ -918,3 +925,49 @@ export const MOCK_MCP_INTEGRATIONS: readonly McpIntegration[] = [
     toggleOn: false,
   },
 ];
+
+// ── Command Center Mock Data ────────────────────────────────────────────────────────
+
+export const MOCK_TASK_STATUS_BREAKDOWN: TaskStatusBreakdown = {
+  CREATED: 8,
+  IN_PROGRESS: 5,
+  IMPLEMENTED: 12,
+  IN_REVIEW: 3,
+  COMPLETE: 47,
+  FAILED: 2,
+  BLOCKED: 1,
+  total: 78,
+};
+
+export const MOCK_TOKEN_COST_SUMMARY: TokenCostSummary = {
+  totalTokens: 2400000,
+  totalCost: 847.32,
+  recentSessions: [
+    { sessionId: 'SESSION_2026-03-30_03-40-31', date: '2026-03-30', tokens: 125000, cost: 42.50 },
+    { sessionId: 'SESSION_2026-03-30_02-52-25', date: '2026-03-30', tokens: 89000, cost: 31.20 },
+    { sessionId: 'SESSION_2026-03-29_18-15-42', date: '2026-03-29', tokens: 156000, cost: 54.80 },
+    { sessionId: 'SESSION_2026-03-29_14-32-18', date: '2026-03-29', tokens: 210000, cost: 73.40 },
+    { sessionId: 'SESSION_2026-03-28_22-10-05', date: '2026-03-28', tokens: 95000, cost: 33.10 },
+  ],
+};
+
+export const MOCK_ACTIVE_SESSIONS: readonly ActiveSession[] = [
+  { sessionId: 'SESSION_2026-03-30_03-40-31', taskId: 'TASK_2026_147', taskTitle: 'Dashboard Home — Live Command Center Redesign', status: 'running' },
+  { sessionId: 'SESSION_2026-03-30_02-52-25', taskId: 'TASK_2026_130', taskTitle: 'CLI Error Handling and Reporting', status: 'running' },
+  { sessionId: 'SESSION_2026-03-30_01-18-33', taskId: 'TASK_2026_128', taskTitle: 'Agent Editor Analytics Integration', status: 'paused' },
+];
+
+export const MOCK_ACTIVE_COMMAND_CENTER_TASKS: readonly ActiveTask[] = [
+  { taskId: 'TASK_2026_147', title: 'Dashboard Home — Live Command Center Redesign', status: 'IN_PROGRESS', type: 'FEATURE', priority: 'P1-High' },
+  { taskId: 'TASK_2026_130', title: 'CLI Error Handling and Reporting', status: 'IN_PROGRESS', type: 'REFACTORING', priority: 'P1-High' },
+  { taskId: 'TASK_2026_128', title: 'Agent Editor Analytics Integration', status: 'IN_PROGRESS', type: 'FEATURE', priority: 'P2-Medium' },
+  { taskId: 'TASK_2026_122', title: 'Telemetry Model Performance View', status: 'IN_PROGRESS', type: 'FEATURE', priority: 'P2-Medium' },
+  { taskId: 'TASK_2026_115', title: 'MCP Tool Access Management', status: 'IN_PROGRESS', type: 'FEATURE', priority: 'P2-Medium' },
+];
+
+export const MOCK_COMMAND_CENTER_DATA: CommandCenterData = {
+  taskBreakdown: MOCK_TASK_STATUS_BREAKDOWN,
+  tokenCost: MOCK_TOKEN_COST_SUMMARY,
+  activeSessions: MOCK_ACTIVE_SESSIONS,
+  activeTasks: MOCK_ACTIVE_COMMAND_CENTER_TASKS,
+};

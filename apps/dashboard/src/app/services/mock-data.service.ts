@@ -12,6 +12,7 @@ import { AnalyticsData } from '../models/analytics.model';
 import { ModelAssignmentsData } from '../models/model-assignment.model';
 import { ProviderGroup } from '../models/new-task.model';
 import { ProviderHubData } from '../models/provider-hub.model';
+import { CommandCenterData } from '../models/dashboard.model';
 import { MOCK_PROVIDER_HUB_DATA } from './provider-hub.constants';
 import {
   MOCK_AGENT_EDITOR_LIST,
@@ -27,6 +28,7 @@ import {
   MOCK_MCP_TOOL_ACCESS,
   MOCK_MCP_INTEGRATIONS,
   MOCK_ANALYTICS_PAGE_DATA,
+  MOCK_COMMAND_CENTER_DATA,
 } from './mock-data.constants';
 import { MOCK_MODEL_ASSIGNMENTS_DATA } from './model-assignment.constants';
 import { MOCK_PROVIDER_GROUPS } from './new-task.constants';
@@ -111,5 +113,9 @@ export class MockDataService {
 
   public getProviderGroups(): readonly ProviderGroup[] {
     return MOCK_PROVIDER_GROUPS;
+  }
+
+  public getCommandCenterData(): CommandCenterData {
+    return MOCK_COMMAND_CENTER_DATA;
   }
 }

@@ -54,12 +54,12 @@ Design should be clean, numbers-focused, minimal details. Command center feel â€
 
 ## File Scope
 
-- `apps/dashboard/src/app/views/dashboard/dashboard.component.ts`
-- `apps/dashboard/src/app/views/dashboard/dashboard.component.html` (if separate)
-- `apps/dashboard/src/app/services/mock-data.constants.ts`
-- `apps/dashboard/src/app/services/mock-data.service.ts`
-- `apps/dashboard/src/app/models/dashboard.model.ts` (new or update)
-- `apps/dashboard/src/app/shared/stat-card/` (extend if needed)
+- `apps/dashboard/src/app/views/dashboard/dashboard.component.ts` (modified)
+- `apps/dashboard/src/app/views/dashboard/dashboard.component.html` (modified)
+- `apps/dashboard/src/app/views/dashboard/dashboard.component.scss` (modified)
+- `apps/dashboard/src/app/services/mock-data.constants.ts` (modified)
+- `apps/dashboard/src/app/services/mock-data.service.ts` (modified)
+- `apps/dashboard/src/app/models/dashboard.model.ts` (new)
 
 ## Parallelism
 
