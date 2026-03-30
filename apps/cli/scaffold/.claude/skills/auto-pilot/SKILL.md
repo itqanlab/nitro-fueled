@@ -86,7 +86,7 @@ The registry (`task-tracking/registry.md`) is a generated artifact regenerated b
 
 ## Session Log
 
-The supervisor MUST append every significant event to `{SESSION_DIR}log.md` using the pipe-table format (see `references/log-templates.md`).
+The supervisor may render significant events to `{SESSION_DIR}log.md` using the pipe-table format (see `references/log-templates.md`), but on the DB-backed path the live loop should prefer MCP/DB event logging and materialize `log.md` later.
 
 > **Load full template list**: Read `references/log-templates.md` for all event types and their exact log row formats.
 
@@ -193,7 +193,7 @@ per loop iteration.
 
 ## Session Directory
 
-On startup (after MCP validation passes and Concurrent Session Guard passes), the supervisor creates a session-scoped directory for all state and log output.
+On startup, after MCP validation, Concurrent Session Guard, and the stale archive check complete, the supervisor creates a session-scoped directory for optional state and log output.
 
 **Directory path**: `task-tracking/sessions/SESSION_{YYYY-MM-DD}_{HH-MM-SS}/`
 
@@ -206,20 +206,19 @@ All datetime fields written inside session files must use local time with timezo
 
 The supervisor startup follows this exact order:
 
-0. **Stale Session Archive Check** (see ## Stale Session Archive Check) — commit artifacts from ended sessions
 1. **MCP validation** (see ## MCP Requirement) — HARD FAIL if MCP unavailable
 2. **Concurrent Session Guard** (see ## Concurrent Session Guard) — warns/aborts if another supervisor is running
-3. **Session Directory creation** — create dir, create log.md, register in active-sessions.md
-4. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
-5. **Step 1: Read State** — check for existing state.md in session dir (compaction recovery)
+3. **Stale Session Archive Check** (see ## Stale Session Archive Check) — stage artifacts from ended sessions, never auto-commit
+4. **Session Directory creation** — create dir, create log.md, register in active-sessions.md
+5. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
 6. **Enter Core Loop**
 
 ### Files inside the session directory
 
 | File | Written by | Purpose |
 |------|-----------|---------|
-| `state.md` | auto-pilot | Live supervisor state (workers, queues, config). Full overwrite on every update. |
-| `log.md` | auto-pilot + orchestration skill | Unified event log. Append-only. All orchestration paths write here. |
+| `state.md` | auto-pilot | Optional debug snapshot. Written at startup and optionally at pause/stop, not on every loop tick. |
+| `log.md` | auto-pilot + orchestration skill | Optional rendered event log. On the DB-backed path, loop events are emitted through MCP and materialized later. |
 | `analytics.md` | auto-pilot | Post-session analytics generated at supervisor stop (Step 8c). |
 | `worker-logs/` | auto-pilot | Per-worker log files written at each worker completion (Step 7h). |
 
@@ -227,9 +226,8 @@ The supervisor startup follows this exact order:
 
 **On startup**:
 
-0. (Run after MCP validation and Concurrent Session Guard — see those sections for prerequisites.)
-1. Compute `SESSION_ID = SESSION_{YYYY-MM-DD}_{HH-MM-SS}` using current timestamp.
-   When writing datetime values to state.md or worker logs, use local time with timezone offset (`YYYY-MM-DD HH:MM:SS +ZZZZ`). To generate: `date '+%Y-%m-%d %H:%M:%S %z'`
+0. (Run after Startup Sequence steps 1-3 complete — see those sections for prerequisites.)
+1. Capture timestamp ONCE: run `date '+%Y-%m-%d_%H-%M-%S %Y-%m-%d %H:%M:%S %z'` and reuse it for `SESSION_ID`, session timestamps, and log rows.
 2. Create directory `task-tracking/sessions/{SESSION_ID}/` (mkdir, no-op if exists).
 3. Create `task-tracking/sessions/{SESSION_ID}/log.md` with header if it does not already exist:
    ```markdown
@@ -246,11 +244,11 @@ The supervisor startup follows this exact order:
 
 **On stop** (normal completion, compaction limit, MCP unreachable, manual):
 
-1. Write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED`.
+1. Optionally write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED`.
 2. Append final log entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
 3. Remove this session's row from `task-tracking/active-sessions.md`.
-4. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (commit all session artifacts).
+4. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (optional staging/cleanup bookkeeping only — never auto-commit).
 
 ---
 
@@ -293,7 +291,7 @@ The `Tasks` column is static (set at startup, not updated as tasks complete). It
 
 ## Stale Session Archive Check
 
-Runs at supervisor startup **before MCP validation** (Step 0 of Startup Sequence). Detects and commits session artifacts from ended sessions that were not committed due to a crash or kill.
+Runs at supervisor startup **after MCP validation and Concurrent Session Guard, before Session Directory creation** (Step 3 of Startup Sequence). Detects and stages session artifacts from ended sessions that were not committed due to a crash or kill.
 
 ### Algorithm
 
@@ -305,36 +303,35 @@ Runs at supervisor startup **before MCP validation** (Step 0 of Startup Sequence
 3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}` — discard any that do not match.
 4. Read `task-tracking/active-sessions.md` (if missing, treat as empty — all sessions are ended).
 5. For each uncommitted file under `task-tracking/sessions/{SESSION_ID}/`:
-   - Check active-sessions.md for the session row.
-   - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'all')` and check if any worker belongs to this session). If MCP confirms workers exist for this session → skip (live session). If MCP shows no workers but the row exists → it is a crashed supervisor; treat as ended (commit its artifacts).
-   - If the row has **Source `orchestrate`** (Build/Review Worker): these rows are always stale (workers can be killed at any time per the design). Commit their artifacts.
-   - If the session has **no row** in active-sessions.md → treat as ended. Commit its artifacts.
-   > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT commit `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still commit `orchestrate`-source sessions (always safe).
-6. **For each ended session with uncommitted artifacts**:
+    - Check active-sessions.md for the session row.
+    - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'all')` and check if any worker belongs to this session). If MCP confirms workers exist for this session → skip (live session). If MCP shows no workers but the row exists → it is a crashed supervisor; treat as ended (stage its artifacts).
+    - If the row has **Source `orchestrate`** (Build/Review Worker): these rows are always stale (workers can be killed at any time per the design). Stage their artifacts.
+    - If the session has **no row** in active-sessions.md → treat as ended. Stage its artifacts.
+    > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT stage `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still stage `orchestrate`-source sessions (always safe).
+6. **For each ended session with uncommitted artifacts** — **stage only, do NOT commit**:
    ```
    git add task-tracking/sessions/{SESSION_ID}/log.md
    git add task-tracking/sessions/{SESSION_ID}/analytics.md
    git add "task-tracking/sessions/{SESSION_ID}/worker-logs/" (only if directory exists)
-   git commit -m "chore(session): archive {SESSION_ID} — recovered from previous session"
-   ```
-   Print: `STALE ARCHIVE — archived {SESSION_ID}`
+    ```
+    Print: `STALE ARCHIVE — staged {SESSION_ID} (awaiting user commit)`
 7. **If `orchestrator-history.md` has uncommitted changes** and no active session is currently writing it:
-   ```
-   git add task-tracking/orchestrator-history.md
-   git commit -m "chore(session): commit stale orchestrator-history.md"
-   ```
-   Print: `STALE ARCHIVE — committed stale orchestrator-history.md`
+    ```
+    git add task-tracking/orchestrator-history.md
+    ```
+    Print: `STALE ARCHIVE — staged stale orchestrator-history.md (awaiting user commit)`
 8. If no stale artifacts found: Print `STALE ARCHIVE — no stale session artifacts found`
-9. All git operations here are **best-effort**: if a commit fails (nothing to commit, lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
+9. **Do NOT run `git commit`**. The stale archive check stages files only; any commit requires explicit user instruction.
+10. All git operations here are **best-effort**: if staging fails (nothing to stage, lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
 
 ### Session Log Entries
 
-After the Session Directory is created (Step 3 of Startup Sequence), append one log entry per action taken during the stale archive check:
+After the Session Directory is created (Step 4 of Startup Sequence), append one log entry per action taken during the stale archive check:
 
 | Event | Log Row |
 |-------|---------|
-| Archived stale session | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — archived {SESSION_ID} \|` |
-| Committed stale history | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — committed stale orchestrator-history.md \|` |
+| Staged stale session | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — staged {SESSION_ID} for later user commit \|` |
+| Staged stale history | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — staged stale orchestrator-history.md for later user commit \|` |
 | No stale artifacts | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE — no stale session artifacts found \|` |
 | Git error (non-fatal) | `\| {HH:MM:SS} \| auto-pilot \| STALE ARCHIVE WARNING — git error: {reason[:200]} \|` |
 
@@ -346,12 +343,12 @@ On startup, **after MCP validation passes, before Session Directory creation, be
 
 1. Read `task-tracking/active-sessions.md` (if it exists).
 2. If any row with Source `auto-pilot` is present:
-   - Log: `"INFO: Another supervisor session is running: {SESSION_ID} — concurrent mode enabled (cross-session task exclusion active)"`
-   - Continue without prompting. Concurrent sessions are safe: Step 3d reads each other's `state.md` on every loop cycle and excludes their claimed tasks from the spawn queue, preventing double-spawning.
+   - Log: `"INFO: Another supervisor session is running: {SESSION_ID} — concurrent mode enabled (DB task claiming active)"`
+   - Continue without prompting. Concurrent sessions are safe on the DB-backed path because task claiming and worker ownership come from MCP/DB state, preventing double-spawning without reading other sessions' `state.md` files.
    - **Only abort** if `--no-concurrent` flag is passed. In that case, display: `"ABORT: Another supervisor is running ({SESSION_ID}). Pass --force to override or wait for it to finish."` and exit.
 3. Proceed to Session Directory startup (create dir, register in active-sessions.md).
 
-> **Concurrency is safe by design**: Each session operates on its own `SESSION_DIR`, writes to separate worker IDs, and Step 3d provides cross-session task exclusion. Multiple supervisors can process different tasks in parallel without conflict.
+> **Concurrency is safe by design**: Each session operates on its own `SESSION_DIR`, writes to separate worker IDs, and relies on DB-backed task claiming for cross-session exclusion. Multiple supervisors can process different tasks in parallel without conflict on the DB-backed path.
 
 ---
 
@@ -360,14 +357,14 @@ On startup, **after MCP validation passes, before Session Directory creation, be
 > **Load reference**: Read `references/parallel-mode.md` for all 8 steps of the Core Loop.
 
 The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
-1. Read State (recovery check, compaction)
-2. Read Registry (cortex or file-based)
-3. Build Dependency Graph + plan check + file-scope overlap detection
-4. Order Task Queue (review queue before build queue)
-5. Spawn Workers (JIT quality gate, worker type selection, MCP spawn)
-6. Monitor Workers (health checks, subscribe_worker events, stuck detection)
-7. Handle Completions (state transitions, re-evaluate queue)
-8. Stop / Loop (analytics, session archive, bookkeeping)
+1. Reconstruct current state from `list_workers()` + `get_tasks()`
+2. Read the current task queue from `get_tasks()`
+3. Build the dependency view from DB fields only
+4. Order/select spawn candidates
+5. Spawn workers with DB-backed task metadata
+6. Monitor workers with `get_pending_events()` + worker health MCP calls
+7. Handle completions and re-query the DB
+8. Stop or continue; write optional artifacts only after the loop tick ends
 
 ---
 
@@ -379,7 +376,7 @@ The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
 
 ## state.md Format
 
-Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24_22-00-00/state.md`). Must be parseable after compaction -- uses clear section headers and markdown tables.
+Written to `{SESSION_DIR}state.md` (e.g., `task-tracking/sessions/SESSION_2026-03-24_22-00-00/state.md`) only when the supervisor chooses to materialize a debug snapshot at startup, pause, stop, or error time. It is helpful after compaction, but it is not the primary recovery source on the DB-backed path.
 
 ```markdown
 # Orchestrator State
@@ -468,11 +465,11 @@ Written to `{SESSION_DIR}log.md`. Append-only — never overwrite. Created on se
 
 **Key design properties**:
 
-- **Atomic overwrite**: Full file overwrite on every update -- no appending. Prevents partial state corruption.
+- **Snapshot, not live loop memory**: `state.md` is a materialized debug snapshot, not the steady-state source of truth on the DB-backed path.
 - **Standard markdown**: All tables use standard markdown syntax, parseable by any agent after compaction.
-- **Retry persistence**: Retry Tracker persists across loop iterations and compactions -- not just for active workers.
-- **Task Queue is informational**: Recalculated each loop iteration, but useful for context recovery after compaction.
-- **Split state/log**: `state.md` is fully overwritten on each update (structured tables). `log.md` is append-only (human-readable event stream). Keep them separate.
+- **Retry persistence**: Retry counters should persist in the DB session record; `state.md` may mirror them for debugging.
+- **Task Queue is informational**: Any queue snapshot is informational only; the live queue is rebuilt from DB state each tick.
+- **Split state/log**: `state.md` is an optional structured snapshot. `log.md` is an optional rendered event stream. Keep them separate.
 
 ---
 
@@ -598,9 +595,9 @@ On any unexpected error:
 
 1. **You are the Supervisor** -- spawn, monitor, loop
 2. **Workers invoke /orchestrate** -- you never re-implement agent logic
-3. **Per-task `status` files are the source of truth** for task state — registry.md is a generated artifact for metadata and enumeration only
-4. **`{SESSION_DIR}state.md` and `{SESSION_DIR}log.md` are your private memory** across compactions
-5. **Workers write their own `status` file** as their final action -- you monitor state transitions by reading `status` files, not causing them
+3. **The cortex DB is the source of truth during the live loop** — registry and task files are fallback-only artifacts
+4. **`{SESSION_DIR}state.md` and `{SESSION_DIR}log.md` are debug outputs, not loop memory** on the DB-backed path
+5. **Workers still write task artifacts, but supervisor state transitions come from MCP/DB re-query** rather than status-file polling
 6. **Prefer get_worker_activity over get_worker_stats** for context efficiency
 7. **Never spawn duplicate workers** -- check both registry (IN_PROGRESS/IN_REVIEW) and state (active workers), and verify worker_type matches expected worker for current state
 8. **A completed task triggers immediate re-evaluation** of the dependency graph

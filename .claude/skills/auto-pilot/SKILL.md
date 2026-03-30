@@ -25,7 +25,7 @@ description: >
 6. **NEVER think for >10 seconds without calling a tool** — if you're reasoning/planning, you're stalling. Call `Bash: sleep 30` immediately.
 7. **NEVER go on tangents** — do not check for "newer tasks", explore the codebase, or investigate things not in the current step. Follow the steps sequentially.
 8. **NEVER end your turn after spawning workers** — after the last `spawn_worker` call completes, your VERY NEXT action MUST be `Bash: sleep 30`. Not a summary. Not a table. Not text to the user. Just `sleep`. If you output text or end your turn here, workers run unmonitored and the session is dead. The sequence is: `spawn_worker` → `sleep 30` → `get_pending_events` → loop. This is the #1 cause of supervisor stalls.
-9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to `log.md`, `state.md`, or the DB only. Conversation output is ONE LINE per event maximum. See **Per-Phase Output Budget** below.
+9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to the DB event stream or optional session artifacts, never the conversation. Conversation output is ONE LINE per event maximum. See **Per-Phase Output Budget** below.
 
 ### ALWAYS DO
 1. **Parallel tool calls** — read registry + active-sessions + config in ONE round, not three.
@@ -36,7 +36,7 @@ description: >
 
 ### Per-Phase Output Budget
 
-**Re-read this section after every compaction.** All structured data (tables, wave headers, queue summaries, routing plans, analysis, notes) goes to `log.md` and `state.md` ONLY. The conversation receives exactly ONE line per event — nothing more.
+**Re-read this section after every compaction.** All structured data (tables, wave headers, queue summaries, routing plans, analysis, notes) goes to MCP/DB state first and may later be rendered into optional session artifacts. The conversation receives exactly ONE line per event — nothing more.
 
 | Phase | Conversation Output (EXACTLY this — nothing else) |
 |-------|---------------------------------------------------|
@@ -45,8 +45,8 @@ description: >
 | **Completion (Build Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
 | **Completion (Review+Fix Worker)** | `COMPLETE task=<task_id> → COMPLETE` (or `FAILED` / `BLOCKED`) |
 | **Session end** | `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` |
-| **All structured data** | Tables, queues, state snapshots, notes, analysis — `log.md` and `state.md` ONLY. **Never printed to conversation.** |
-| **Explanatory text** | Any sentence explaining what the supervisor is about to do, what it decided, or how monitoring works — **banned from conversation**. Decisions go to `log.md`. |
+| **All structured data** | Tables, queues, state snapshots, notes, analysis — DB/session artifacts only. **Never printed to conversation.** |
+| **Explanatory text** | Any sentence explaining what the supervisor is about to do, what it decided, or how monitoring works — **banned from conversation**. Decisions go to DB/session artifacts. |
 
 ---
 
@@ -309,4 +309,4 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
 11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
 12. **Review Workers take priority** -- finishing tasks is more valuable than starting new ones
-13. **One line per event** — all structured output (tables, queues, wave summaries) goes to `log.md` and `state.md`; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
+13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
