@@ -3,7 +3,6 @@ import {
   Get,
   Param,
   Query,
-  Logger,
   ServiceUnavailableException,
   NotFoundException,
   BadRequestException,
@@ -20,8 +19,6 @@ import { LogsService, WorkerLogEntry } from './logs.service';
 @ApiTags('logs')
 @Controller({ path: 'api', version: '1' })
 export class LogsController {
-  private readonly logger = new Logger(LogsController.name);
-
   public constructor(private readonly logsService: LogsService) {}
 
   @ApiOperation({ summary: 'Get event logs', description: 'Returns cortex events with filtering by session, task, event type, and severity' })

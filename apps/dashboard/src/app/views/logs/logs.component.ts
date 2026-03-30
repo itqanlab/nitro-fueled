@@ -65,10 +65,6 @@ interface EnrichedWorkerDetail {
   filteredEvents: EnrichedEvent[];
 }
 
-interface EnrichedSessionWorker extends CortexWorker {
-  statusClass: string;
-}
-
 interface EnrichedSessionDetail {
   sessionId: string;
   eventCount: number;
@@ -77,7 +73,7 @@ interface EnrichedSessionDetail {
   startTime: string | null;
   lastActivity: string | null;
   events: EnrichedEvent[];
-  workers: EnrichedSessionWorker[];
+  workers: EnrichedWorker[];
 }
 
 @Component({
@@ -191,8 +187,12 @@ export class LogsComponent {
 
   /** Unified display events — respects both live mode and active filters. */
   public readonly displayEvents = computed((): EnrichedEvent[] => {
-    const base = this.isLive() && this.liveEvents().length > 0
-      ? this.liveEvents()
+    const base = this.isLive()
+      ? Array.from(
+          new Map(
+            [...this.eventsRaw(), ...this.liveEvents()].map((event) => [event.id, event]),
+          ).values(),
+        ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       : this.eventsRaw();
     const filters = this.eventFilters();
     let result = base;
@@ -300,9 +300,7 @@ export class LogsComponent {
       this.searchTaskFilter();
       this.searchStartTime();
       this.searchEndTime();
-      if (q.length >= 2) {
-        this.search$.next(q);
-      }
+      this.search$.next(q);
     });
 
     const sub = this.ws.cortexEvents$.subscribe((event: CortexEvent) => {
@@ -349,18 +347,6 @@ export class LogsComponent {
       else next.add(phaseIdStr);
       return next;
     });
-  }
-
-  public trackByEventId(_index: number, event: CortexEvent): number {
-    return event.id;
-  }
-
-  public trackByWorkerId(_index: number, worker: CortexWorker): string {
-    return worker.id;
-  }
-
-  public trackBySessionId(_index: number, session: CortexSession): string {
-    return session.id;
   }
 
   private eventTypeClass(eventType: string): string {

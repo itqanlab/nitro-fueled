@@ -6,6 +6,8 @@
 2. `npx nx build dashboard`
 3. `rg --files -g '**/*logs*.spec.ts'`
 4. `rg --files -g '**/*logs*.test.ts'`
+5. `npx nx build dashboard-api` (post-fix rerun)
+6. `npx nx build dashboard` (post-fix rerun)
 
 ## Results
 
@@ -27,6 +29,12 @@
 - Result: No focused `logs` spec/test files found via file search.
 - Notes: There is no dedicated `logs` component or API test artifact in the repository that could be run independently for this task.
 
+### Post-fix verification
+
+- `npx nx build dashboard-api`: PASS after the source fixes in `logs.service.ts` and `logs.controller.ts`.
+- `npx nx build dashboard`: still BLOCKED by unrelated pre-existing dashboard compilation failures outside `TASK_2026_169` scope.
+- Logs-specific signal: the rerun did not surface any `apps/dashboard/src/app/views/logs/*` compile errors before the build failed in unrelated areas.
+
 ## Failures
 
 1. Unrelated pre-existing frontend build failures block `npx nx build dashboard` from reaching a clean success state.
@@ -40,6 +48,6 @@
 
 BLOCKED
 
-- Backend verification for the touched logs API files passed.
+- Backend verification for the touched logs API files passed, including a post-fix rerun.
 - Frontend verification could not be completed to a clean pass because unrelated, pre-existing dashboard compile failures stop the application build.
-- Based on this run, there is no evidence that `TASK_2026_169` introduced the observed frontend build blockers, but the task cannot be declared fully verified until the broader dashboard build is green.
+- Based on both dashboard build runs, there is no evidence that `TASK_2026_169` introduced the observed frontend build blockers, and the post-fix rerun did not report `logs` view compile failures before the unrelated build errors terminated compilation.

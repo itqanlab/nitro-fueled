@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CortexService } from './cortex.service';
 import type { CortexEvent, CortexWorker, CortexPhase } from './cortex.types';
 
@@ -47,8 +47,6 @@ export interface SearchResult {
 
 @Injectable()
 export class LogsService {
-  private readonly logger = new Logger(LogsService.name);
-
   public constructor(private readonly cortexService: CortexService) {}
 
   public getEvents(filters: LogEventFilters): CortexEvent[] | null {
