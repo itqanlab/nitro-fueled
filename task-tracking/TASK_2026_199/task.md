@@ -16,40 +16,50 @@
 
 ## Description
 
-Build a dedicated analytics page that shows how every model performs when paired with every launcher, across all task types and complexity tiers. This is the primary tool for making informed routing decisions — knowing which model + launcher combination works best for which kind of work, at what cost and reliability.
+Build a dedicated analytics page that shows how **every model** (GLM, Claude, GPT, Codex, and any future model) performs when paired with **every launcher/harness** (claude-code, opencode, codex-cli, glm), across all task types and complexity tiers. This is the primary tool for making informed routing decisions — knowing which model + harness combination works best for which kind of work, at what cost and reliability.
+
+**Scope: ALL models, ALL launchers, no exceptions.** The cortex already records provider, model, and launcher for every worker — this page surfaces all of it.
 
 **What to build:**
 
 1. **Model × Launcher Matrix view** — dashboard page at `/analytics/model-performance`:
-   - Grid: rows = models (glm-5, glm-4.7, claude-opus-4-6, gpt-5.4, etc.), columns = launchers (claude, glm, opencode, codex)
+   - Grid: rows = every model ever used (claude-opus-4-6, claude-sonnet-4-6, glm-5, glm-4.7, glm-4.5-air, openai/gpt-5.4, openai/gpt-5.4-mini, openai/codex-mini-latest, and any others in the DB)
+   - Columns = every launcher/harness ever used (claude, glm, opencode, codex)
    - Each cell: task count, success rate %, avg review score, avg cost, avg duration
-   - Color-coded heatmap cells (green = high success/low cost, red = low success/high cost)
-   - Empty cells (combination never used) shown as greyed out
-   - Click any cell to drill into a filtered task list for that model+launcher pair
+   - Color-coded heatmap (green = high success/low cost, red = low success/high cost)
+   - Empty cells (combination never used) greyed out
+   - Click any cell → filtered task list for that model+launcher pair
 
-2. **Per-Model Detail panel** — clicking a model row expands an inline detail section:
+2. **Per-Model Detail panel** — clicking a model row expands inline:
    - Success rate by task type (FEATURE, BUGFIX, REFACTORING, RESEARCH, etc.)
    - Success rate by complexity tier (Simple, Medium, Complex)
-   - Review score distribution (code logic, style, security — sourced from review events)
+   - Review score distribution (code logic, style, security scores)
    - Avg cost per task type
-   - Compaction rate (context fills up frequently = reliability risk)
-   - Common failure patterns (from TASK_FAILED events — top 3 failure reasons)
+   - Compaction rate — how often context fills up (key reliability signal; varies significantly by model)
+   - Context overflow rate — how often the worker exceeded 100% context (new `context_overflow` health state)
+   - Common failure patterns — top 3 failure reasons from TASK_FAILED events
 
-3. **Launcher Effectiveness section** — below the matrix:
-   - Per-launcher reliability metrics: worker crash rate, stuck worker rate, avg worker duration
-   - Cost comparison: for the same model, which launcher is cheaper/faster
-   - Best model per launcher (highest success rate for each launcher)
+3. **Per-Launcher/Harness Detail** — dedicated section per launcher:
+   - **Claude Code harness** — compaction behavior, tool call patterns, session stability, context management quality
+   - **OpenCode harness** — same metrics; note: no native compaction, context overflow patterns
+   - **Codex CLI harness** — same metrics
+   - **GLM harness** — same metrics
+   - Cross-launcher comparison: for the same model, which harness produces better outcomes?
+   - Harness reliability: worker crash rate, stuck rate (no activity > 2min), orphaned claim rate
+   - Harness-specific quirks visible in data: e.g. opencode workers tend to hit high_context without compaction
 
-4. **Routing Recommendations** — a card row at the top of the page:
-   - "Best for FEATURE/Complex" — top model+launcher by success rate on that combination
-   - "Most cost-efficient for Simple tasks" — lowest avg cost with >80% success rate
+4. **Routing Recommendations** — card row at top of page:
+   - "Best for FEATURE/Complex" — top model+launcher by success rate
+   - "Most cost-efficient for Simple" — lowest avg cost with >80% success rate
    - "Most reliable overall" — highest success rate across all task types
-   - Each card shows the recommendation with confidence % (based on sample size) and a "Use this routing" link
+   - "Best harness for model X" — which launcher gets the best results from each model
+   - Each card shows confidence % based on sample size
 
 5. **Backend endpoints** in dashboard-api:
-   - `GET /api/analytics/model-performance` — full matrix data: for each model×launcher pair, aggregate success rate, avg cost, avg duration, avg review score, task count
-   - `GET /api/analytics/model-performance/:modelId` — per-model breakdown by task type and complexity
-   - Data sources: cortex MCP tools `get_model_performance`, `get_provider_stats`, and direct task/event queries
+   - `GET /api/analytics/model-performance` — full matrix: every model×launcher pair aggregated
+   - `GET /api/analytics/model-performance/:modelId` — per-model breakdown
+   - `GET /api/analytics/launcher/:launcherId` — per-launcher harness metrics
+   - Data sources: cortex `get_model_performance`, `get_provider_stats`, `query_events`, workers table
 
 ## Dependencies
 
@@ -57,12 +67,13 @@ Build a dedicated analytics page that shows how every model performs when paired
 
 ## Acceptance Criteria
 
-- [ ] `/analytics/model-performance` renders the matrix with at least mock data fallback when no real data exists
-- [ ] Each matrix cell shows success rate, cost, and task count
-- [ ] Per-model detail expands inline with breakdown by task type and complexity
-- [ ] Routing recommendation cards appear at the top with confidence indicators
-- [ ] `GET /api/analytics/model-performance` endpoint returns real aggregated data from cortex
-- [ ] Empty model×launcher combinations are shown as greyed-out (not errors)
+- [ ] All models and all launchers present in the DB appear in the matrix — no hardcoded model list
+- [ ] Each matrix cell shows success rate, avg cost, and task count
+- [ ] Per-model detail expands inline with breakdown by task type, complexity, compaction rate, and context overflow rate
+- [ ] Per-launcher section shows harness-specific reliability metrics (crash rate, stuck rate, orphaned claim rate)
+- [ ] Routing recommendation cards appear at the top with confidence % and "best harness per model" card
+- [ ] `GET /api/analytics/model-performance` and `GET /api/analytics/launcher/:id` return real aggregated data from cortex
+- [ ] Empty model×launcher combinations shown as greyed-out (not errors)
 
 ## References
 
@@ -80,6 +91,6 @@ Suggested execution wave: Wave 1 (independent).
 
 - apps/dashboard/src/app/views/analytics/model-performance/model-performance.component.ts (new)
 - apps/dashboard/src/app/views/analytics/model-performance/model-performance.component.html (new)
-- apps/dashboard-api/src/analytics/analytics.controller.ts (new)
+- apps/dashboard-api/src/analytics/analytics.controller.ts (new — model-performance + launcher endpoints)
 - apps/dashboard-api/src/analytics/analytics.service.ts (new)
 - apps/dashboard/src/app/app.routes.ts (modified — add model-performance route)
