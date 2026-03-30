@@ -27,8 +27,8 @@ The supervisor startup follows this exact order:
 
 | File | Written by | Purpose |
 |------|-----------|---------|
-| `state.md` | auto-pilot | Live supervisor state (workers, queues, config). Full overwrite on every update. |
-| `log.md` | auto-pilot + orchestration skill | Unified event log. Append-only. All orchestration paths write here. |
+| `state.md` | auto-pilot | Optional debug snapshot. Written at startup and optionally at pause/stop, not on every loop tick. |
+| `log.md` | auto-pilot + orchestration skill | Optional rendered event log. On the DB-backed path, loop events are emitted through MCP and materialized later. |
 | `analytics.md` | auto-pilot | Post-session analytics generated at supervisor stop (Step 8c). |
 | `worker-logs/` | auto-pilot | Per-worker log files written at each worker completion (Step 7h). |
 
@@ -61,6 +61,8 @@ The supervisor startup follows this exact order:
 > 2. `reconcile_status_files()` — status-only drift fix (runs every startup; file wins)
 >
 > Both calls are best-effort. On failure: log a warning and continue. Do not abort.
+>
+> On this path, steady-state loop persistence lives in the DB via `update_session()`. `state.md` is not rewritten during monitoring.
 
 **On stop** (normal completion, compaction limit, MCP unreachable, manual):
 
@@ -68,7 +70,7 @@ The supervisor startup follows this exact order:
 2. Append final log entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
 3. Remove this session's row from `task-tracking/active-sessions.md`.
-4. **Render log.md from events (when cortex available)**: When `cortex_available = true`, at session end, call `query_events(session_id=SESSION_ID)` and render the results as a pipe-table to `{SESSION_DIR}log.md` (overwriting the incremental appends). This ensures log.md is a complete, queryable-derived artifact. If `query_events` fails, keep the incrementally-written log.md as-is. This is best-effort.
+4. **Render log.md from events (when cortex available)**: When `cortex_available = true`, at session end, call `query_events(session_id=SESSION_ID)` and render the results as a pipe-table to `{SESSION_DIR}log.md`. This ensures log.md is a complete DB-derived artifact. If `query_events` fails, keep any existing file as-is or skip writing it. This is best-effort.
 5. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (commit all session artifacts).
 
 ---

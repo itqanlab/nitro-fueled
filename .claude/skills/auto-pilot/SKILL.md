@@ -69,13 +69,13 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 ### Primary Responsibilities
 
-1. **Read registry at startup; read task.md files just-in-time before each spawn** -- build the dependency graph
+1. **Re-query DB state each tick** -- `get_tasks()` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
 2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority
 3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
 4. **Monitor worker health** on a configurable interval
-5. **Handle completions**: check if state transitioned, decide next action
+5. **Handle completions**: react to DB events, then re-query the DB for the next tick
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
-7. **Persist state** to `{SESSION_DIR}state.md` for compaction survival
+7. **Persist session state in the DB** for compaction survival
 8. **Loop** until the backlog is drained, all remaining tasks are blocked, or `--limit` is reached
 
 ### What You Never Do
@@ -90,12 +90,12 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 | Need | Use THIS | NEVER use |
 |------|----------|-----------|
-| Task list/status | `list_workers(status_filter)` or `get_tasks()` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md` |
+| Task list/status | `get_tasks()` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
 | Task metadata before spawn | `get_task_context(task_id)` MCP | `cat task.md`, `Read task.md`, `Bash` on task files |
 | Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
-| Task state | Per-task `status` file (single word) or MCP `get_tasks()` | Full `task.md` reads, registry.md grep |
+| Task state transitions | `get_pending_events()` and `get_tasks()` MCP | Per-task `status` files, `registry.md`, task-folder polling |
 
-**File reads are ONLY acceptable when:** MCP tools are confirmed unavailable (cortex_available = false).
+**File reads are ONLY acceptable when:** MCP tools are confirmed unavailable (`cortex_available = false`). Inside the DB-backed loop, `registry.md`, task `status` files, and `task.md` are all banned.
 
 **`npx nitro-fueled status` is PROHIBITED** inside the supervisor loop — it spawns a subprocess, reads all task files, and wastes context. Use MCP tools instead.
 
@@ -121,9 +121,9 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 ## Registry & Log
 
-- **Registry** (`registry.md`) is a generated artifact — the Supervisor does NOT write to it. Workers write state to `task-tracking/TASK_YYYY_NNN/status` files only.
-- **Session log** (`{SESSION_DIR}log.md`) is append-only. Load `references/log-templates.md` for format.
-- **State** (`{SESSION_DIR}state.md`) holds structured worker/queue tables — fully overwritten on each update. Restore from here after compaction.
+- **Registry** (`registry.md`) is a generated artifact — the Supervisor does NOT read it inside the DB-backed loop.
+- **Session log** (`{SESSION_DIR}log.md`) is an optional rendered artifact from DB events. The loop itself uses MCP logging when available.
+- **State** (`{SESSION_DIR}state.md`) is an optional debug snapshot written outside the monitoring loop. Compaction recovery comes from DB re-query, not from `state.md`.
 
 ---
 
@@ -229,14 +229,24 @@ but allows the Supervisor to run without the cortex DB.
 > **Load reference**: Read `references/parallel-mode.md` for all 8 steps of the Core Loop.
 
 The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
-1. Read State (recovery check, compaction)
-2. Read Registry (cortex or file-based)
-3. Build Dependency Graph + plan check + file-scope overlap detection
-4. Order Task Queue (review queue before build queue)
-5. Spawn Workers (JIT quality gate, worker type selection, MCP spawn)
-6. Monitor Workers (health checks, subscribe_worker events, stuck detection)
-7. Handle Completions (state transitions, re-evaluate queue)
-8. Stop / Loop (analytics, session archive, bookkeeping)
+1. Reconstruct current state from `list_workers()` + `get_tasks()`
+2. Read the current task queue from `get_tasks()`
+3. Build the dependency view from DB fields only
+4. Order/select spawn candidates
+5. Spawn workers with DB-backed task metadata
+6. Monitor workers with `get_pending_events()` + worker health MCP calls
+7. Handle completions and re-query the DB
+8. Stop or continue; write optional artifacts only after the loop tick ends
+
+## Compaction Survival
+
+When compaction happens, recovery is:
+
+1. `list_workers(compact: true)`
+2. `get_tasks()`
+3. `get_session(session_id)` if session counters are needed
+
+Do **not** recover by reading `state.md` on the DB-backed path.
 
 ---
 
@@ -289,9 +299,9 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 
 1. **You are the Supervisor** -- spawn, monitor, loop
 2. **Workers invoke /orchestrate** -- you never re-implement agent logic
-3. **Per-task `status` files are the source of truth** for task state — registry.md is a generated artifact for metadata and enumeration only
-4. **`{SESSION_DIR}state.md` and `{SESSION_DIR}log.md` are your private memory** across compactions
-5. **Workers write their own `status` file** as their final action -- you monitor state transitions by reading `status` files, not causing them
+3. **The cortex DB is the source of truth during the live loop** — registry and task files are fallback-only artifacts
+4. **Compaction recovery is DB re-query** — `list_workers()` + `get_tasks()` rebuild the loop state
+5. **`state.md` and `log.md` are debug outputs, not loop inputs** on the DB-backed path
 6. **Prefer get_worker_activity over get_worker_stats** for context efficiency
 7. **Never spawn duplicate workers** -- check both registry (IN_PROGRESS/IN_REVIEW) and state (active workers), and verify worker_type matches expected worker for current state
 8. **A completed task triggers immediate re-evaluation** of the dependency graph

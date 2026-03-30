@@ -86,6 +86,11 @@ The result: the supervisor's context at any point in time contains only (a) the 
 - `.claude/skills/auto-pilot/SKILL.md`
 - `.claude/skills/auto-pilot/references/parallel-mode.md`
 - `.claude/skills/auto-pilot/references/session-lifecycle.md`
+- `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md`
+- `apps/cli/scaffold/.claude/skills/auto-pilot/references/parallel-mode.md`
+- `task-tracking/TASK_2026_154/task-description.md`
+- `task-tracking/TASK_2026_154/plan.md`
+- `task-tracking/TASK_2026_154/tasks.md`
 
 ## Parallelism
 
