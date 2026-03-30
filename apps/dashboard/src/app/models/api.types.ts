@@ -385,6 +385,26 @@ export interface AnalyticsSessionsData {
   }>;
 }
 
+// ── Orchestration flow types ─────────────────────────────────────────────────
+
+export interface OrchestrationFlowPhase {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly isOptional: boolean;
+  readonly outputs: readonly string[];
+}
+
+export interface OrchestrationFlow {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly taskTypes: readonly string[];
+  readonly phases: readonly OrchestrationFlowPhase[];
+  readonly hasParallelReview: boolean;
+  readonly strategy: string;
+}
+
 // ── Cortex types ─────────────────────────────────────────────────────────────
 
 export interface CortexTask {
@@ -418,6 +438,7 @@ export interface CortexSession {
   total_cost: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  last_heartbeat: string | null;
 }
 
 export interface CortexSessionWorker {
@@ -528,6 +549,41 @@ export interface CortexPhaseTiming {
   avg_duration_minutes: number | null;
   min_duration_minutes: number | null;
   max_duration_minutes: number | null;
+}
+
+// ── Logs types ─────────────────────────────────────────────────────────────────
+
+export interface LogsEventFilters {
+  readonly sessionId?: string;
+  readonly taskId?: string;
+  readonly eventType?: string;
+  readonly severity?: string;
+  readonly limit?: number;
+  readonly offset?: number;
+}
+
+export interface WorkerLogEntry {
+  readonly worker: CortexWorker;
+  readonly phases: readonly CortexPhase[];
+  readonly events: readonly CortexEvent[];
+}
+
+export interface SessionLogSummary {
+  readonly sessionId: string;
+  readonly eventCount: number;
+  readonly workerCount: number;
+  readonly taskIds: readonly string[];
+  readonly startTime: string | null;
+  readonly lastActivity: string | null;
+  readonly events: readonly CortexEvent[];
+  readonly workers: readonly CortexWorker[];
+  readonly phases: readonly CortexPhase[];
+}
+
+export interface LogSearchResult {
+  readonly events: readonly CortexEvent[];
+  readonly total: number;
+  readonly query: string;
 }
 
 // Task creation API types

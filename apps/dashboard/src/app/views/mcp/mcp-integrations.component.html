@@ -5,7 +5,7 @@
 </div>
 
   <!-- Tabs -->
-  <app-tab-nav [tabs]="tabs" [activeTab]="activeTab" (tabChange)="activeTab = $event"></app-tab-nav>
+  <app-tab-nav [tabs]="tabs" [activeTab]="activeTab" (tabChange)="handleTabChange($event)"></app-tab-nav>
 
 <!-- MCP Servers Tab -->
 @if (activeTab === 'servers') {
@@ -107,26 +107,56 @@
       <div class="add-server-title-icon" aria-hidden="true">+</div>
       Install MCP Server
     </div>
-    <form class="add-server-form" (submit)="$event.preventDefault()">
+    <form class="add-server-form" (ngSubmit)="onAddServerSubmit($event)" #serverForm="ngForm">
       <div class="add-server-field wide">
         <label class="form-label" for="mcp-package-input">NPM package or local path</label>
         <input
           id="mcp-package-input"
           class="input"
           type="text"
+          name="packageInput"
           placeholder="@modelcontextprotocol/server-filesystem or /path/to/server"
+          [(ngModel)]="serverFormModel.package"
+          required
+          minlength="2"
+          maxlength="255"
+          pattern="^(@[a-z][a-z0-9-._]*\/[a-z][a-z0-9-._]*|(\/[a-zA-Z0-9._-]+)+)$"
+          #packageInput="ngModel"
         />
+        @if (packageInput.invalid && (packageInput.dirty || packageInput.touched)) {
+          @if (packageInput.errors?.['required']) {
+            <div class="form-error">Package name or path is required</div>
+          }
+          @if (packageInput.errors?.['minlength']) {
+            <div class="form-error">Package name or path must be at least 2 characters</div>
+          }
+          @if (packageInput.errors?.['maxlength']) {
+            <div class="form-error">Package name or path must be less than 255 characters</div>
+          }
+          @if (packageInput.errors?.['pattern']) {
+            <div class="form-error">Invalid package name or path format</div>
+          }
+        }
       </div>
       <div class="add-server-field">
         <label class="form-label" for="mcp-transport-select">Transport</label>
-        <select id="mcp-transport-select" class="select">
-          <option>stdio</option>
-          <option>HTTP</option>
+        <select id="mcp-transport-select" class="select" 
+                name="transportSelect" 
+                [(ngModel)]="serverFormModel.transport" 
+                required
+                #transportSelect="ngModel">
+          <option value="stdio">stdio</option>
+          <option value="HTTP">HTTP</option>
         </select>
+        @if (transportSelect.invalid && (transportSelect.dirty || transportSelect.touched)) {
+          <div class="form-error">Transport type is required</div>
+        }
       </div>
       <div class="add-server-field">
         <label class="form-label">&nbsp;</label>
-        <button class="btn btn-primary" type="submit">Install</button>
+        <button class="btn btn-primary" type="submit" [disabled]="serverForm.invalid || !serverForm.form.valid">
+          Install
+        </button>
       </div>
     </form>
     <div class="add-server-footer">

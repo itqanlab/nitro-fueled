@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { FormsModule, NgForm } from '@angular/forms';
 import {
   MOCK_MCP_SERVERS,
   MOCK_MCP_TOOL_ACCESS,
@@ -9,10 +10,15 @@ import { CompatibilityMatrixComponent } from './compatibility-matrix/compatibili
 import { IntegrationsTabComponent } from './integrations-tab/integrations-tab.component';
 import { TabNavComponent, TabItem } from '../../shared/tab-nav/tab-nav.component';
 
+interface ServerFormModel {
+  package: string;
+  transport: 'stdio' | 'HTTP';
+}
+
 @Component({
   selector: 'app-mcp-integrations',
   standalone: true,
-  imports: [NgClass, TabNavComponent, CompatibilityMatrixComponent, IntegrationsTabComponent],
+  imports: [NgClass, TabNavComponent, CompatibilityMatrixComponent, IntegrationsTabComponent, FormsModule],
   templateUrl: './mcp-integrations.component.html',
   styleUrl: './mcp-integrations.component.scss',
 })
@@ -27,6 +33,14 @@ export class McpIntegrationsComponent {
   ];
 
   public activeTab: 'servers' | 'integrations' = 'servers';
+  public get activeTabStr(): string {
+    return this.activeTab;
+  }
+  public serverFormModel: ServerFormModel = {
+    package: '',
+    transport: 'stdio'
+  };
+  public serverFormSubmitted = false;
 
   public readonly activeServerCount = this.servers.filter(
     (s) => s.status === 'active',
@@ -50,5 +64,51 @@ export class McpIntegrationsComponent {
 
   public getTransportClass(transport: string): string {
     return transport === 'stdio' ? 'badge-stdio' : 'badge-http';
+  }
+
+  public onAddServerSubmit(event: Event): void {
+    event.preventDefault();
+    this.serverFormSubmitted = true;
+
+    if (this.validateServerForm()) {
+      this.processServerInstallation();
+    }
+  }
+
+  private validateServerForm(): boolean {
+    const isValid = this.serverFormModel.package.length > 0 && 
+                   this.serverFormModel.transport.length > 0;
+    
+    if (!isValid) {
+      console.error('Server form validation failed');
+    }
+
+    return isValid;
+  }
+
+  private processServerInstallation(): void {
+    console.log('Processing server installation:', this.serverFormModel);
+    
+    this.resetForm();
+    
+    console.log('Server installation process completed');
+  }
+
+  private resetForm(): void {
+    this.serverFormModel = {
+      package: '',
+      transport: 'stdio'
+    };
+    this.serverFormSubmitted = false;
+  }
+
+  handleTabChange(tabId: string): void {
+    const validTabs: ('servers' | 'integrations')[] = ['servers', 'integrations'];
+    if (validTabs.includes(tabId as 'servers' | 'integrations')) {
+      this.activeTab = tabId as 'servers' | 'integrations';
+    } else {
+      console.warn(`Invalid tab ID: ${tabId}. Defaulting to 'servers'.`);
+      this.activeTab = 'servers';
+    }
   }
 }

@@ -36,8 +36,46 @@ export interface QueueTask {
   readonly lastActivity: string;
 }
 
-export type SortField = 'id' | 'status' | 'priority' | 'createdAt' | 'type';
+export enum SortField {
+  ID = 'id',
+  STATUS = 'status',
+  PRIORITY = 'priority',
+  CREATED_AT = 'createdAt',
+  TYPE = 'type'
+}
+
 export type SortDirection = 'asc' | 'desc';
+
+export interface SortConfig {
+  field: SortField;
+  direction: SortDirection;
+}
+
+export interface QueueTaskExtended {
+  readonly id: string;
+  readonly title: string;
+  description?: string;
+  readonly status: QueueTaskStatus;
+  readonly type: QueueTaskType;
+  readonly priority: QueueTaskPriority;
+  readonly phase: QueueTaskPhase;
+  readonly sessionId: string | null;
+  readonly model: string | null;
+  created?: string;
+  readonly lastActivity: string;
+}
+
+export interface FilterChips {
+  statuses: QueueTaskStatus[];
+  types: QueueTaskType[];
+  priorities: QueueTaskPriority[];
+  models: string[];
+}
+
+export interface DateRange {
+  startDate: string | null;
+  endDate: string | null;
+}
 
 export interface QueueFilterState {
   readonly searchQuery: string;
@@ -49,6 +87,7 @@ export interface QueueFilterState {
   readonly models: readonly string[];
   readonly sortField: SortField;
   readonly sortDirection: SortDirection;
+  readonly activeChips?: FilterChips;
 }
 
 export interface QueueFilter {

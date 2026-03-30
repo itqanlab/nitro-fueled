@@ -101,6 +101,13 @@ export const APP_ROUTES: Routes = [
             (m) => m.SessionViewerComponent,
           ),
       },
+      {
+        path: 'logs',
+        loadComponent: () =>
+          import('./views/logs/logs.component').then(
+            (m) => m.LogsComponent,
+          ),
+      },
     ],
   },
 ];

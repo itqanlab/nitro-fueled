@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnDestroy, SecurityContext } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { NgClass } from '@angular/common';
 
 type SpinnerSize = 'sm' | 'md' | 'lg';
@@ -14,7 +15,7 @@ type SpinnerMode = 'spinner' | 'skeleton';
       <div class="spinner-container">
         <span class="spinner-icon" [ngClass]="size"></span>
         @if (text) {
-          <span class="spinner-text">{{ text }}</span>
+          <span class="spinner-text" [innerHTML]="sanitizedText"></span>
         }
       </div>
     } @else {
@@ -82,8 +83,61 @@ type SpinnerMode = 'spinner' | 'skeleton';
     }
   `],
 })
-export class LoadingSpinnerComponent {
-  @Input() size: SpinnerSize = 'md';
-  @Input() mode: SpinnerMode = 'spinner';
-  @Input() text?: string;
+export class LoadingSpinnerComponent implements OnDestroy {
+  constructor(private sanitizer: DomSanitizer) {}
+
+  private _size: SpinnerSize = 'md';
+  private _mode: SpinnerMode = 'spinner';
+  private _text?: string;
+
+  @Input() set size(val: SpinnerSize) {
+    this._size = this.validateSize(val);
+  }
+
+  get size(): SpinnerSize {
+    return this._size;
+  }
+
+  @Input() set mode(val: SpinnerMode) {
+    this._mode = this.validateMode(val);
+  }
+
+  get mode(): SpinnerMode {
+    return this._mode;
+  }
+
+  @Input() set text(val: string) {
+    this._text = this.validateText(val);
+  }
+
+  get text(): string | undefined {
+    return this._text;
+  }
+
+  get sanitizedText(): SafeHtml {
+    if (!this._text) return '';
+    return this.sanitizer.sanitize(SecurityContext.HTML, this._text) || '';
+  }
+
+  private validateSize(size: any): SpinnerSize {
+    const validSizes: SpinnerSize[] = ['sm', 'md', 'lg'];
+    return validSizes.includes(size) ? size : 'md';
+  }
+
+  private validateMode(mode: any): SpinnerMode {
+    const validModes: SpinnerMode[] = ['spinner', 'skeleton'];
+    return validModes.includes(mode) ? mode : 'spinner';
+  }
+
+  private validateText(text: any): string | undefined {
+    if (text == null) return undefined;
+    const str = String(text).trim();
+    return str.length > 0 ? str : undefined;
+  }
+
+  ngOnDestroy(): void {
+    this._size = 'md';
+    this._mode = 'spinner';
+    this._text = undefined;
+  }
 }

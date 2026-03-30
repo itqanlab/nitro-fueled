@@ -40,6 +40,12 @@
                 <span class="activity-label">Last activity:</span>
                 <span class="activity-text">{{ truncatedActivities().get(session.sessionId) ?? session.lastActivity }}</span>
               </div>
+              @if (heartbeatStatusMap().get(session.sessionId); as hbStatus) {
+                <div class="session-heartbeat" [ngClass]="hbStatus.cssClass">
+                  <span class="heartbeat-icon">&#x2665;</span>
+                  <span class="heartbeat-label">{{ hbStatus.label }}</span>
+                </div>
+              }
             </div>
 
             <div class="session-card-footer">

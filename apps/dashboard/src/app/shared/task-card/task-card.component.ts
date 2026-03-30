@@ -59,7 +59,7 @@ import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
       @if (task.status !== 'completed') {
         <div class="task-progress">
-          <app-progress-bar [value]="task.progressPercent" [variant]="task.status" showLabel="true"></app-progress-bar>
+          <app-progress-bar [value]="task.progressPercent" [variant]="task.status" [showLabel]="true"></app-progress-bar>
         </div>
         <div class="task-actions">
           <button class="btn btn-sm btn-icon" [title]="task.status === 'running' ? 'Pause' : 'Resume'">

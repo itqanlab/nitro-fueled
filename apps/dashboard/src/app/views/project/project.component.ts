@@ -14,7 +14,7 @@ import { Subscription, Subject, switchMap, timer, takeUntil, debounceTime, disti
 import { ApiService } from '../../services/api.service';
 import { MOCK_QUEUE_TASKS } from '../../services/project.constants';
 import { SessionsPanelComponent } from './sessions-panel/sessions-panel.component';
-import type {
+import {
   QueueTask,
   QueueTaskPriority,
   QueueTaskStatus,
@@ -66,7 +66,7 @@ export class ProjectComponent implements OnInit {
   public readonly selectedModels = signal<readonly string[]>([]);
   public readonly startDate = signal<string | null>(null);
   public readonly endDate = signal<string | null>(null);
-  public readonly sortField = signal<SortField>('id');
+  public readonly sortField = signal<SortField>(SortField.ID);
   public readonly sortDirection = signal<SortDirection>('asc');
   public readonly autoPilotState = signal<'idle' | 'starting' | 'running'>('idle');
   public readonly autoPilotSessionId = signal<string | null>(null);
@@ -80,10 +80,10 @@ export class ProjectComponent implements OnInit {
     for (const task of this.allTasks) {
       if (task.model) models.add(task.model);
     }
-    return [...models].sort();
+    return Array.from(models).sort();
   });
 
-  public readonly filteredTasks = computed(() => {
+  public applyFiltersAndSort(tasks: readonly QueueTask[]): QueueTask[] {
     const query = this.searchQuery().trim().toLowerCase();
     const statuses = this.selectedStatuses();
     const types = this.selectedTypes();
@@ -94,53 +94,78 @@ export class ProjectComponent implements OnInit {
     const field = this.sortField();
     const dir = this.sortDirection();
 
-    let results = this.allTasks.filter(task => {
+    // Apply filters with OR logic for multi-select filters
+    const results = tasks.filter(task => {
+      // Search filter (OR logic across id, title, description)
       if (query) {
         const matchesId = task.id.toLowerCase().includes(query);
         const matchesTitle = task.title.toLowerCase().includes(query);
-        const matchesDesc = task.description.toLowerCase().includes(query);
+        const matchesDesc = task.description?.toLowerCase().includes(query) || false;
         if (!matchesId && !matchesTitle && !matchesDesc) return false;
       }
+
+      // Status filter (OR logic)
       if (statuses.length > 0 && !statuses.includes(task.status)) return false;
+
+      // Type filter (OR logic)
       if (types.length > 0 && !types.includes(task.type)) return false;
+
+      // Priority filter (OR logic)
       if (priorities.length > 0 && !priorities.includes(task.priority)) return false;
+
+      // Model filter (OR logic)
       if (models.length > 0 && (task.model === null || !models.includes(task.model))) return false;
+
+      // Date range filter (AND logic)
       if (start) {
         const taskDate = new Date(task.createdAt).getTime();
         const startDate = new Date(start).getTime();
         if (taskDate < startDate) return false;
       }
+
       if (end) {
         const taskDate = new Date(task.createdAt).getTime();
-        const endDate = new Date(end).getTime() + 86400000;
+        const endDate = new Date(end).getTime() + 86400000; // Add one day to include end date
         if (taskDate > endDate) return false;
       }
+
       return true;
     });
 
-    results = [...results].sort((a, b) => {
-      let cmp = 0;
-      switch (field) {
-        case 'id':
-          cmp = a.id.localeCompare(b.id);
-          break;
-        case 'status':
-          cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-          break;
-        case 'priority':
-          cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-          break;
-        case 'createdAt':
-          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-        case 'type':
-          cmp = a.type.localeCompare(b.type);
-          break;
-      }
-      return dir === 'asc' ? cmp : -cmp;
-    });
+    // Apply sorting
+    return this.sortTasks(results, field, dir);
+  }
 
-    return results;
+  public compareTasks(a: QueueTask, b: QueueTask, field: SortField, direction: SortDirection): number {
+    let cmp = 0;
+    
+    switch (field) {
+      case SortField.ID:
+        cmp = a.id.localeCompare(b.id);
+        break;
+      case SortField.STATUS:
+        cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+        break;
+      case SortField.PRIORITY:
+        cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+        break;
+      case SortField.CREATED_AT:
+        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        break;
+      case SortField.TYPE:
+        cmp = a.type.localeCompare(b.type);
+        break;
+    }
+
+    return direction === 'asc' ? cmp : -cmp;
+  }
+
+  public sortTasks(tasks: readonly QueueTask[], field: SortField, direction: SortDirection): QueueTask[] {
+    return [...tasks].sort((a, b) => this.compareTasks(a, b, field, direction));
+  }
+
+  public readonly filteredTasks = computed(() => {
+    return this.applyFiltersAndSort(this.allTasks);
   });
 
   public readonly resultCountText = computed(() => {
@@ -238,11 +263,11 @@ export class ProjectComponent implements OnInit {
   };
 
   public sortFieldOptions: readonly { value: SortField; label: string }[] = [
-    { value: 'id', label: 'ID' },
-    { value: 'status', label: 'Status' },
-    { value: 'priority', label: 'Priority' },
-    { value: 'createdAt', label: 'Created' },
-    { value: 'type', label: 'Type' },
+    { value: SortField.ID, label: 'ID' },
+    { value: SortField.STATUS, label: 'Status' },
+    { value: SortField.PRIORITY, label: 'Priority' },
+    { value: SortField.CREATED_AT, label: 'Created' },
+    { value: SortField.TYPE, label: 'Type' },
   ];
 
   public constructor() {

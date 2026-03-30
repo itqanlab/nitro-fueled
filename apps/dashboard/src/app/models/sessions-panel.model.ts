@@ -10,4 +10,5 @@ export interface ActiveSessionSummary {
   readonly status: SessionStatus;
   readonly lastActivity: string;
   readonly duration: string;
+  readonly lastHeartbeat?: string | null;
 }

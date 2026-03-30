@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { NgClass } from '@angular/common';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EMPTY, catchError, interval, switchMap } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { WebSocketService } from '../../../services/websocket.service';
 import type {
@@ -29,6 +30,7 @@ export class SessionsPanelComponent {
   public readonly sessions = signal<ActiveSessionSummary[]>([]);
   public readonly recentSessions = signal<ActiveSessionSummary[]>([]);
   public readonly loading = signal(true);
+  public readonly now = signal(Date.now());
 
   public readonly statusClassMap: Record<SessionStatus, string> = {
     running: 'status-running',
@@ -48,11 +50,50 @@ export class SessionsPanelComponent {
   public constructor() {
     this.loadSessions();
     this.subscribeToSessionUpdates();
+
+    // Update "last seen X min ago" labels every 30s
+    interval(30_000).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.now.set(Date.now()));
+
+    // Background: close stale sessions every 5 minutes while this view is open
+    interval(5 * 60_000).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      switchMap(() => this.apiService.closeStaleSession(30).pipe(catchError(() => EMPTY))),
+    ).subscribe();
   }
 
   public onSessionClick(session: ActiveSessionSummary): void {
     void this.router.navigate(['/session', session.sessionId]);
   }
+
+  public readonly heartbeatStatusMap = computed(() => {
+    const nowMs = this.now();
+    const map = new Map<string, { label: string; cssClass: string }>();
+    const allSessions = [...this.sessions(), ...this.recentSessions()];
+    for (const session of allSessions) {
+      if (session.status !== 'running') continue;
+      const hb = session.lastHeartbeat;
+      if (!hb) {
+        map.set(session.sessionId, { label: 'No heartbeat', cssClass: 'heartbeat-stale' });
+        continue;
+      }
+      const ageMs = nowMs - new Date(hb).getTime();
+      const ageMinutes = Math.floor(ageMs / 60_000);
+      if (ageMs < 0) {
+        map.set(session.sessionId, { label: 'just now', cssClass: '' });
+      } else if (ageMinutes < 1) {
+        map.set(session.sessionId, { label: 'just now', cssClass: '' });
+      } else if (ageMinutes < 2) {
+        map.set(session.sessionId, { label: `${ageMinutes}m ago`, cssClass: '' });
+      } else if (ageMinutes < 10) {
+        map.set(session.sessionId, { label: `${ageMinutes}m ago`, cssClass: 'heartbeat-warn' });
+      } else {
+        map.set(session.sessionId, { label: `${ageMinutes}m ago`, cssClass: 'heartbeat-stale' });
+      }
+    }
+    return map;
+  });
 
   public truncatedActivities = computed(() => {
     const active = this.sessions();

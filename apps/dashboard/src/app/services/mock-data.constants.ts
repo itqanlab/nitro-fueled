@@ -194,6 +194,7 @@ export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
       { label: 'Commands', icon: '\u25B6', badge: 8, route: '/agents' },
       { label: 'Prompts', icon: '\u{1F4DD}', badge: 5, route: '/agents' },
       { label: 'Workflows', icon: '\u{1F504}', badge: 7, route: '/agents' },
+      { label: 'Orchestration', icon: '\u{1F517}', badge: 11, route: '/orchestration' },
     ],
   },
   {
@@ -204,6 +205,7 @@ export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
       { label: 'Teams', icon: '\u{1F465}', badge: 3, route: '/dashboard' },
       { label: 'Knowledge Base', icon: '\u{1F4DA}', route: '/dashboard' },
       { label: 'Analytics', icon: '\u{1F4CA}', route: '/analytics' },
+      { label: 'Logs', icon: '\u{1F4DC}', route: '/logs' },
       { label: 'Integrations', icon: '\u{1F517}', badge: 3, route: '/mcp' },
       { label: 'Activity Log', icon: '\u{1F4CB}', route: '/dashboard' },
     ],

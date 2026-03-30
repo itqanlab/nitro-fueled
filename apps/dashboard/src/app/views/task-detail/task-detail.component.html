@@ -1,0 +1,503 @@
+<div class="task-detail-page">
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading-wrapper">
+      <nz-spin nzSimple nzTip="Loading task data..."></nz-spin>
+    </div>
+  }
+
+  <!-- No task ID -->
+  @if (!loading && !taskId()) {
+    <nz-empty nzNotFoundContent="No task ID provided"></nz-empty>
+  }
+
+  <!-- No data found -->
+  @if (!loading && taskId() && !vm) {
+    <nz-empty nzNotFoundContent="Task not found"></nz-empty>
+  }
+
+  <!-- Main content -->
+  @if (vm) {
+
+    <!-- Header -->
+    <div class="detail-header">
+      <button nz-button nzType="text" (click)="goBack()" aria-label="Back to project">
+        &larr; Back
+      </button>
+      <div class="detail-header-info">
+        <h1 class="detail-title">{{ vm.taskId }}</h1>
+        <span class="detail-title-label">{{ vm.title }}</span>
+      </div>
+      <div class="detail-header-badges">
+        <nz-tag [nzColor]="statusColorMap[vm.status] ?? 'default'">{{ vm.status }}</nz-tag>
+        <nz-tag [nzColor]="priorityColorMap[vm.priority] ?? 'default'">{{ vm.priority }}</nz-tag>
+        <nz-tag>{{ vm.type }}</nz-tag>
+        <nz-tag>{{ vm.complexity }}</nz-tag>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <nz-statistic nzTitle="Total Cost" [nzValue]="vm.totalCost" nzPrefix="$" [nzValueStyle]="{ color: 'var(--accent)' }"></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic nzTitle="Input Tokens" [nzValue]="formatTokens(vm.totalInputTokens)"></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic nzTitle="Output Tokens" [nzValue]="formatTokens(vm.totalOutputTokens)"></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic nzTitle="Workers" [nzValue]="vm.workers.length"></nz-statistic>
+      </div>
+      <div class="stat-card">
+        <nz-statistic nzTitle="Phases" [nzValue]="vm.phases.length"></nz-statistic>
+      </div>
+    </div>
+
+    <!-- 1. Core Metadata -->
+    <div class="section">
+      <div class="section-title">Core Metadata</div>
+      <div class="metadata-grid">
+        <div class="meta-item">
+          <span class="meta-label">Task ID</span>
+          <span class="meta-value">{{ vm.taskId }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Type</span>
+          <span class="meta-value">{{ vm.type }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Priority</span>
+          <span class="meta-value">{{ vm.priority }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Complexity</span>
+          <span class="meta-value">{{ vm.complexity }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Status</span>
+          <nz-tag [nzColor]="statusColorMap[vm.status] ?? 'default'">{{ vm.status }}</nz-tag>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Created</span>
+          <span class="meta-value">{{ vm.createdAt | date:'medium' }}</span>
+        </div>
+        @if (vm.updatedAt) {
+          <div class="meta-item">
+            <span class="meta-label">Updated</span>
+            <span class="meta-value">{{ vm.updatedAt | date:'medium' }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 2. Status Timeline -->
+    <div class="section">
+      <div class="section-title">Status Timeline</div>
+      @if (vm.statusTransitions.length === 0) {
+        <nz-empty nzNotFoundContent="No status transitions recorded"></nz-empty>
+      } @else {
+        <div class="timeline" aria-label="Status timeline">
+          @for (transition of vm.statusTransitions; track $index) {
+            <div class="timeline-item">
+              <div class="timeline-dot" [ngClass]="'tl-status--' + transition.to.toLowerCase().replace('_', '-')"></div>
+              <div class="timeline-content">
+                <div class="tl-header">
+                  @if (transition.from) {
+                    <span class="tl-from">{{ transition.from }}</span>
+                    <span class="tl-arrow">&rarr;</span>
+                  }
+                  <nz-tag [nzColor]="statusColorMap[transition.to] ?? 'default'">{{ transition.to }}</nz-tag>
+                </div>
+                <div class="tl-meta">
+                  <span class="tl-time">{{ transition.timestamp | date:'medium' }}</span>
+                  @if (transition.duration) {
+                    <span class="tl-duration">{{ transition.duration }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- 3. Relations & Dependencies -->
+    <div class="section">
+      <div class="section-title">Relations &amp; Dependencies</div>
+      <div class="relations-grid">
+        <div class="relations-col">
+          <h4>Depends On</h4>
+          @if (vm.dependencies.length === 0) {
+            <span class="empty-label">No dependencies</span>
+          } @else {
+            @for (dep of vm.dependencies; track dep) {
+              <div class="dep-link" (click)="navigateToTask(dep)" role="link" [attr.tabindex]="0">
+                {{ dep }}
+              </div>
+            }
+          }
+        </div>
+        <div class="relations-col">
+          <h4>Depended By</h4>
+          @if (vm.dependentTasks.length === 0) {
+            <span class="empty-label">No dependents found</span>
+          } @else {
+            @for (dep of vm.dependentTasks; track dep) {
+              <div class="dep-link" (click)="navigateToTask(dep)" role="link" [attr.tabindex]="0">
+                {{ dep }}
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Reviews -->
+    <div class="section">
+      <div class="section-title">Reviews</div>
+      @if (vm.reviews.length === 0 && (!vm.completionReport || vm.completionReport.reviewScores.length === 0)) {
+        <nz-empty nzNotFoundContent="No reviews recorded"></nz-empty>
+      } @else {
+        @if (vm.reviews.length > 0) {
+          <nz-table [nzData]="vm.reviews" [nzShowPagination]="false" nzSize="small">
+            <thead>
+              <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Score</th>
+                <th scope="col">Findings</th>
+                <th scope="col">Critical</th>
+                <th scope="col">Built By</th>
+                <th scope="col">Reviewed By</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of vm.reviews; track r.id) {
+                <tr>
+                  <td>{{ r.reviewType }}</td>
+                  <td>
+                    <nz-tag [nzColor]="r.score >= 7 ? 'green' : r.score >= 4 ? 'orange' : 'red'">
+                      {{ r.score }}/10
+                    </nz-tag>
+                  </td>
+                  <td>{{ r.findingsCount }}</td>
+                  <td>{{ r.criticalCount }}</td>
+                  <td class="model-cell">{{ r.modelThatBuilt }}</td>
+                  <td class="model-cell">{{ r.modelThatReviewed }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+        @if (vm.completionReport && vm.completionReport.reviewScores.length > 0) {
+          <div class="review-scores">
+            <h4>Completion Report Scores</h4>
+            @for (score of vm.completionReport.reviewScores; track score.review) {
+              <div class="score-row">
+                <span class="score-label">{{ score.review }}</span>
+                <span class="score-value">{{ score.score }}/10</span>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- 5. Model & Provider Info -->
+    <div class="section">
+      <div class="section-title">Model &amp; Provider Info</div>
+      @if (vm.workers.length === 0) {
+        <nz-empty nzNotFoundContent="No model data available"></nz-empty>
+      } @else {
+        <nz-table [nzData]="vm.workers" [nzShowPagination]="false" nzSize="small">
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col">Provider</th>
+              <th scope="col">Input Tokens</th>
+              <th scope="col">Output Tokens</th>
+              <th scope="col">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of vm.workers; track w.id) {
+              <tr>
+                <td class="model-cell">{{ w.model }}</td>
+                <td>{{ w.provider }}</td>
+                <td>{{ w.inputTokens | number }}</td>
+                <td>{{ w.outputTokens | number }}</td>
+                <td>${{ w.cost | number:'1.4-4' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </div>
+
+    <!-- 6. Launcher Info -->
+    <div class="section">
+      <div class="section-title">Launcher Info</div>
+      @if (vm.workers.length === 0) {
+        <nz-empty nzNotFoundContent="No launcher data available"></nz-empty>
+      } @else {
+        <div class="metadata-grid">
+          @for (w of vm.workers; track w.id) {
+            <div class="launcher-card">
+              <div class="launcher-header">
+                <span class="launcher-label">{{ w.label }}</span>
+                <nz-tag [nzColor]="w.status === 'complete' ? 'green' : w.status === 'failed' ? 'red' : 'blue'">{{ w.status }}</nz-tag>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Launcher</span>
+                <span class="meta-value">{{ w.launcher }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Session</span>
+                <span class="meta-value">{{ w.sessionId | slice:0:24 }}{{ w.sessionId.length > 24 ? '...' : '' }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Spawned</span>
+                <span class="meta-value">{{ w.spawnTime | date:'medium' }}</span>
+              </div>
+              @if (w.retryNumber > 0) {
+                <div class="meta-item">
+                  <span class="meta-label">Retry</span>
+                  <nz-tag nzColor="warning">#{{ w.retryNumber }}</nz-tag>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- 7. Phase Timing -->
+    <div class="section">
+      <div class="section-title">Phase Timing</div>
+      @if (vm.phases.length === 0) {
+        <nz-empty nzNotFoundContent="No phase timing data available"></nz-empty>
+      } @else {
+        <nz-table [nzData]="vm.phases" [nzShowPagination]="false" nzSize="small">
+          <thead>
+            <tr>
+              <th scope="col">Phase</th>
+              <th scope="col">Model</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Input Tokens</th>
+              <th scope="col">Output Tokens</th>
+              <th scope="col">Outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of vm.phases; track p.phase) {
+              <tr>
+                <td>{{ p.phase }}</td>
+                <td class="model-cell">{{ p.model }}</td>
+                <td>{{ p.durationMinutes !== null ? (p.durationMinutes | number:'1.1-1') + ' min' : '&mdash;' }}</td>
+                <td>{{ p.inputTokens | number }}</td>
+                <td>{{ p.outputTokens | number }}</td>
+                <td>{{ p.outcome ?? '&mdash;' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+
+        <!-- Phase timing chart -->
+        @if (vm.phases.length > 0) {
+          <div class="phase-chart">
+            <div class="phase-chart-title">Timing Breakdown</div>
+            <div class="phase-bars">
+              @for (p of vm.phases; track p.phase) {
+                @if (p.durationMinutes !== null) {
+                  <div class="phase-bar-row">
+                    <span class="phase-bar-label">{{ p.phase }}</span>
+                    <div class="phase-bar-track">
+                      <div
+                        class="phase-bar-fill"
+                        [style.width.%]="phaseBarWidth(p.durationMinutes)"
+                      ></div>
+                    </div>
+                    <span class="phase-bar-value">{{ p.durationMinutes | number:'1.1-1' }}m</span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- 8. Score & Quality -->
+    <div class="section">
+      <div class="section-title">Score &amp; Quality</div>
+      @if (vm.reviews.length === 0 && (!vm.completionReport || vm.completionReport.reviewScores.length === 0)) {
+        <nz-empty nzNotFoundContent="No quality scores available"></nz-empty>
+      } @else {
+        <div class="quality-summary">
+          @for (r of vm.reviews; track r.id) {
+            <div class="quality-card">
+              <div class="quality-score" [class]="r.score >= 7 ? 'quality-good' : r.score >= 4 ? 'quality-warn' : 'quality-bad'">
+                {{ r.score }}/10
+              </div>
+              <div class="quality-type">{{ r.reviewType }}</div>
+              <div class="quality-findings">{{ r.findingsCount }} findings, {{ r.criticalCount }} critical</div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- 9. Worker Activity -->
+    <div class="section">
+      <div class="section-title">Worker Activity</div>
+      @if (vm.workers.length === 0) {
+        <nz-empty nzNotFoundContent="No worker activity data available"></nz-empty>
+      } @else {
+        <nz-table [nzData]="vm.workers" [nzShowPagination]="false" nzSize="small">
+          <thead>
+            <tr>
+              <th scope="col">Worker ID</th>
+              <th scope="col">Type</th>
+              <th scope="col">Label</th>
+              <th scope="col">Status</th>
+              <th scope="col">Spawned</th>
+              <th scope="col">Retry</th>
+              <th scope="col">Outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of vm.workers; track w.id) {
+              <tr>
+                <td class="id-cell" [title]="w.id">{{ w.id | slice:0:12 }}&hellip;</td>
+                <td>{{ w.workerType }}</td>
+                <td>{{ w.label }}</td>
+                <td>
+                  <nz-tag [nzColor]="w.status === 'complete' ? 'green' : w.status === 'failed' ? 'red' : 'blue'">{{ w.status }}</nz-tag>
+                </td>
+                <td>{{ w.spawnTime | date:'short' }}</td>
+                <td>{{ w.retryNumber }}</td>
+                <td>{{ w.outcome ?? '&mdash;' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </div>
+
+    <!-- 10. Acceptance Criteria -->
+    <div class="section">
+      <div class="section-title">Acceptance Criteria</div>
+      @if (vm.acceptanceCriteria.length === 0) {
+        <nz-empty nzNotFoundContent="No acceptance criteria defined"></nz-empty>
+      } @else {
+        <ul class="criteria-list">
+          @for (criterion of vm.acceptanceCriteria; track $index) {
+            <li class="criteria-item">
+              <span class="criteria-bullet">&#x25CB;</span>
+              {{ criterion }}
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <!-- 11. File Scope -->
+    <div class="section">
+      <div class="section-title">File Scope</div>
+      @if (vm.fileScope.length === 0 && (!vm.completionReport || (vm.completionReport.filesCreated.length === 0 && vm.completionReport.filesModified.length === 0))) {
+        <nz-empty nzNotFoundContent="No file scope data available"></nz-empty>
+      } @else {
+        @if (vm.completionReport) {
+          <div class="file-sections">
+            @if (vm.completionReport.filesCreated.length > 0) {
+              <div class="file-group">
+                <h4>Created</h4>
+                @for (f of vm.completionReport.filesCreated; track f) {
+                  <div class="file-entry file-created">{{ f }}</div>
+                }
+              </div>
+            }
+            @if (vm.completionReport.filesModified.length > 0) {
+              <div class="file-group">
+                <h4>Modified</h4>
+                @for (f of vm.completionReport.filesModified; track f) {
+                  <div class="file-entry file-modified">{{ f }}</div>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (vm.fileScope.length > 0) {
+          <div class="file-sections">
+            <div class="file-group">
+              <h4>Planned Scope</h4>
+              @for (f of vm.fileScope; track f) {
+                <div class="file-entry">{{ f }}</div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- 12. Handoff Artifact -->
+    <div class="section">
+      <div class="section-title">Handoff Artifact</div>
+      @if (!vm.completionReport) {
+        <nz-empty nzNotFoundContent="No handoff data available"></nz-empty>
+      } @else {
+        <div class="handoff-content">
+          @if (vm.completionReport.rootCause) {
+            <div class="meta-item">
+              <span class="meta-label">Root Cause</span>
+              <span class="meta-value">{{ vm.completionReport.rootCause }}</span>
+            </div>
+          }
+          @if (vm.completionReport.fix) {
+            <div class="meta-item">
+              <span class="meta-label">Fix</span>
+              <span class="meta-value">{{ vm.completionReport.fix }}</span>
+            </div>
+          }
+          @if (vm.completionReport.findingsFixed.length > 0) {
+            <div class="findings-fixed">
+              <h4>Findings Fixed</h4>
+              @for (finding of vm.completionReport.findingsFixed; track $index) {
+                <div class="finding-entry">{{ finding }}</div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- 13. Event Log -->
+    <div class="section">
+      <div class="section-title">Event Log</div>
+      @if (vm.events.length === 0) {
+        <nz-empty nzNotFoundContent="No events recorded"></nz-empty>
+      } @else {
+        <div class="event-log">
+          @for (event of vm.events; track event.id) {
+            <div class="event-row">
+              <span class="event-time">{{ event.timestamp | slice:11:19 }}</span>
+              <span class="event-type">{{ event.eventType }}</span>
+              <span class="event-source">{{ event.source }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Description (full) -->
+    @if (vm.description) {
+      <div class="section">
+        <div class="section-title">Description</div>
+        <div class="description-content">{{ vm.description }}</div>
+      </div>
+    }
+
+  }
+</div>

@@ -15,7 +15,7 @@ export interface TabItem {
   imports: [NgClass],
   template: `
     <nav class="tab-nav">
-      @for (tab of tabs; track tab.id) {
+      @for (tab of validatedTabs; track tab.id) {
         <button
           class="tab-button"
           [ngClass]="{ 'active': activeTab === tab.id }"
@@ -80,7 +80,59 @@ export interface TabItem {
   `],
 })
 export class TabNavComponent {
-  @Input({ required: true }) tabs!: TabItem[];
-  @Input({ required: true }) activeTab!: string;
+  private _tabs: TabItem[] = [];
+  private _activeTab = '';
+
+  @Input({ required: true }) set tabs(val: TabItem[]) {
+    this._tabs = Array.isArray(val) ? this.validateTabs(val) : [];
+  }
+
+  get tabs(): TabItem[] {
+    return this._tabs;
+  }
+
+  get validatedTabs(): TabItem[] {
+    return this._tabs.filter(tab => this.isValidTab(tab));
+  }
+
+  @Input({ required: true }) set activeTab(val: string) {
+    this._activeTab = this.isValidTabId(val) ? val : this.getDefaultTabId();
+  }
+
+  get activeTab(): string {
+    return this._activeTab;
+  }
+
   @Output() tabChange = new EventEmitter<string>();
+
+  private validateTabs(tabs: TabItem[]): TabItem[] {
+    return tabs
+      .filter(tab => this.isValidTab(tab))
+      .map(tab => ({
+        ...tab,
+        id: String(tab.id || '').trim() || this.generateFallbackId(),
+        label: String(tab.label || '').trim() || 'Tab',
+        count: typeof tab.count === 'number' && tab.count > 0 ? tab.count : undefined
+      }));
+  }
+
+  private isValidTab(tab: any): tab is TabItem {
+    return tab && 
+           typeof tab === 'object' &&
+           typeof tab.id === 'string' && tab.id.trim().length > 0 &&
+           typeof tab.label === 'string' && tab.label.trim().length > 0;
+  }
+
+  private isValidTabId(tabId: any): boolean {
+    return typeof tabId === 'string' && 
+           this._tabs.some(tab => tab.id === tabId);
+  }
+
+  private getDefaultTabId(): string {
+    return this._tabs.length > 0 ? this._tabs[0].id : '';
+  }
+
+  private generateFallbackId(): string {
+    return `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
 }

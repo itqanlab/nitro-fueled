@@ -244,6 +244,27 @@
   font-size: 1.25rem;
 }
 
+.session-heartbeat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+  margin-top: 2px;
+
+  &.heartbeat-warn {
+    color: var(--color-warning, #d29922);
+  }
+
+  &.heartbeat-stale {
+    color: var(--color-danger, #f85149);
+  }
+}
+
+.heartbeat-icon {
+  font-size: 10px;
+}
+
 .sessions-section-recent {
   border-top: 1px solid var(--border);
   padding-top: 1.5rem;

@@ -1,0 +1,234 @@
+<div class="logs-page">
+  <div class="page-header">
+    <div class="header-title-block">
+      <h1 class="page-title">Logs &amp; Events</h1>
+      <p class="page-subtitle">Browse events, worker logs, and session activity from cortex</p>
+    </div>
+    <div class="header-actions">
+      <label class="live-toggle">
+        <input type="checkbox" [checked]="isLive()" (change)="isLive.set($any($event.target).checked)" />
+        <span class="live-indicator" [class.active]="isLive()"></span>
+        Live
+      </label>
+    </div>
+  </div>
+
+  <app-tab-nav [tabs]="tabs" [activeTab]="activeTab()" (tabChange)="onTabChange($event)"></app-tab-nav>
+
+  <!-- Events Tab -->
+  @if (activeTab() === 'events') {
+    <div class="tab-content">
+      <div class="filter-bar">
+        <input class="filter-input" type="text" placeholder="Session ID..." [ngModel]="eventFilters().sessionId" (ngModelChange)="updateEventFilter('sessionId', $event)" />
+        <input class="filter-input" type="text" placeholder="Task ID..." [ngModel]="eventFilters().taskId" (ngModelChange)="updateEventFilter('taskId', $event)" />
+        <input class="filter-input" type="text" placeholder="Event type..." [ngModel]="eventFilters().eventType" (ngModelChange)="updateEventFilter('eventType', $event)" />
+        <select class="filter-select" [ngModel]="eventFilters().severity" (ngModelChange)="updateEventFilter('severity', $event)">
+          <option value="">All severity</option>
+          <option value="error">Error</option>
+          <option value="warning">Warning</option>
+          <option value="info">Info</option>
+        </select>
+      </div>
+
+      <div class="events-list">
+        @if (isLive() && liveEvents().length > 0) {
+          <div class="live-banner">
+            <span class="live-dot"></span>
+            Streaming {{ liveEvents().length }} live events
+          </div>
+          @for (event of liveEvents(); track event.id) {
+            <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">
+              <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
+              <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+              <div class="event-source">{{ event.source }}</div>
+              <div class="event-task">{{ event.task_id || '-' }}</div>
+              <div class="event-data">{{ formatEventData(event.data) }}</div>
+            </div>
+          }
+        } @else {
+          @for (event of filteredEvents(); track event.id) {
+            <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">
+              <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
+              <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+              <div class="event-source">{{ event.source }}</div>
+              <div class="event-task">{{ event.task_id || '-' }}</div>
+              <div class="event-data">{{ formatEventData(event.data) }}</div>
+            </div>
+          }
+          @if (filteredEvents().length === 0) {
+            <div class="empty-state">No events found. Cortex DB may be empty or unavailable.</div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Workers Tab -->
+  @if (activeTab() === 'workers') {
+    <div class="tab-content">
+      <div class="workers-layout">
+        <div class="workers-list">
+          <div class="list-header">Workers ({{ workers().length }})</div>
+          @for (worker of workers(); track worker.id) {
+            <div class="worker-item" [class.selected]="selectedWorkerId() === worker.id" (click)="selectedWorkerId.set(worker.id)">
+              <div class="worker-item-header">
+                <span class="worker-status-dot" [ngClass]="getWorkerStatusClass(worker.status)"></span>
+                <span class="worker-label">{{ worker.label }}</span>
+              </div>
+              <div class="worker-meta">
+                <span class="worker-task">{{ worker.task_id }}</span>
+                <span class="worker-model">{{ worker.model }}</span>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="worker-detail">
+          @if (workerDetail()) {
+            @let detail = workerDetail();
+            <div class="detail-header">
+              <h3>{{ detail.worker.label }}</h3>
+              <span class="detail-status" [ngClass]="getWorkerStatusClass(detail.worker.status)">{{ detail.worker.status }}</span>
+            </div>
+            <div class="detail-meta">
+              <span>ID: {{ detail.worker.id }}</span>
+              <span>Task: {{ detail.worker.task_id }}</span>
+              <span>Model: {{ detail.worker.model }}</span>
+              <span>Cost: ${{ detail.worker.cost }}</span>
+            </div>
+
+            <div class="phases-section">
+              <h4>Phases ({{ detail.phases.length }})</h4>
+              @for (phase of detail.phases; track phase.id) {
+                <div class="phase-block">
+                  <div class="phase-header" (click)="togglePhase(phaseId(phase.id))">
+                    <span class="phase-toggle">{{ isPhaseExpanded(phaseId(phase.id)) ? '\u25BC' : '\u25B6' }}</span>
+                    <span class="phase-name">{{ phase.phase }}</span>
+                    <span class="phase-duration">{{ phase.duration_minutes !== null ? phase.duration_minutes + 'm' : 'running' }}</span>
+                    <span class="phase-outcome">{{ phase.outcome || '-' }}</span>
+                  </div>
+                  @if (isPhaseExpanded(phaseId(phase.id))) {
+                    <div class="phase-detail">
+                      <div>Start: {{ phase.start_time | date:'medium' }}</div>
+                      @if (phase.end_time) {
+                        <div>End: {{ phase.end_time | date:'medium' }}</div>
+                      }
+                      <div>Tokens: {{ phase.input_tokens | number }} in / {{ phase.output_tokens | number }} out</div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="worker-events-section">
+              <h4>Events ({{ detail.events.length }})</h4>
+              @for (event of detail.events; track event.id) {
+                <div class="event-row compact" [ngClass]="getEventTypeClass(event.event_type)">
+                  <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
+                  <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+                  <div class="event-data">{{ formatEventData(event.data) }}</div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">Select a worker to view logs</div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Sessions Tab -->
+  @if (activeTab() === 'sessions') {
+    <div class="tab-content">
+      <div class="workers-layout">
+        <div class="workers-list">
+          <div class="list-header">Sessions ({{ sessions().length }})</div>
+          @for (session of sessions(); track session.id) {
+            <div class="worker-item" [class.selected]="selectedSessionId() === session.id" (click)="selectedSessionId.set(session.id)">
+              <div class="worker-item-header">
+                <span class="worker-label">{{ session.id }}</span>
+              </div>
+              <div class="worker-meta">
+                <span class="worker-task">{{ session.loop_status }}</span>
+                <span class="worker-model">{{ session.started_at | date:'short' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="worker-detail">
+          @if (sessionDetail()) {
+            @let detail = sessionDetail();
+            <div class="detail-header">
+              <h3>{{ detail.sessionId }}</h3>
+            </div>
+            <div class="detail-meta">
+              <span>Events: {{ detail.eventCount }}</span>
+              <span>Workers: {{ detail.workerCount }}</span>
+              <span>Tasks: {{ detail.taskIds.length }}</span>
+              @if (detail.startTime) {
+                <span>Started: {{ detail.startTime | date:'medium' }}</span>
+              }
+            </div>
+
+            <div class="session-workers">
+              <h4>Workers</h4>
+              @for (worker of detail.workers; track worker.id) {
+                <div class="session-worker-row">
+                  <span class="worker-status-dot" [ngClass]="getWorkerStatusClass(worker.status)"></span>
+                  <span class="worker-label-col">{{ worker.label }}</span>
+                  <span class="worker-task-col">{{ worker.task_id }}</span>
+                  <span class="worker-model-col">{{ worker.model }}</span>
+                  <span class="worker-cost-col">${{ worker.cost }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="session-events">
+              <h4>Events Timeline</h4>
+              @for (event of detail.events; track event.id) {
+                <div class="event-row compact" [ngClass]="getEventTypeClass(event.event_type)">
+                  <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
+                  <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+                  <div class="event-task">{{ event.task_id || '-' }}</div>
+                  <div class="event-data">{{ formatEventData(event.data) }}</div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">Select a session to view aggregated logs</div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Search Tab -->
+  @if (activeTab() === 'search') {
+    <div class="tab-content">
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="Search logs... (min 2 characters)" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+        <input class="filter-input" type="text" placeholder="Session filter..." [ngModel]="searchSessionFilter()" (ngModelChange)="searchSessionFilter.set($event)" />
+        <input class="filter-input" type="text" placeholder="Task filter..." [ngModel]="searchTaskFilter()" (ngModelChange)="searchTaskFilter.set($event)" />
+      </div>
+
+      @if (searchResults()) {
+        @let results = searchResults();
+        <div class="search-meta">Found {{ results.total }} results for "{{ results.query }}"</div>
+        @for (event of results.events; track event.id) {
+          <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">
+            <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
+            <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+            <div class="event-source">{{ event.source }}</div>
+            <div class="event-task">{{ event.task_id || '-' }}</div>
+            <div class="event-session">{{ event.session_id }}</div>
+            <div class="event-data">{{ formatEventData(event.data) }}</div>
+          </div>
+        }
+      } @else if (searchQuery().length >= 2) {
+        <div class="empty-state">No results found.</div>
+      } @else {
+        <div class="empty-state">Type at least 2 characters to search across all log entries.</div>
+      }
+    </div>
+  }
+</div>

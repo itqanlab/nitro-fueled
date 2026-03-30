@@ -37,6 +37,8 @@ import type {
   CortexWorker,
   CortexModelPerformance,
   CortexPhaseTiming,
+  CortexEvent,
+  OrchestrationFlow,
   CreateTaskRequest,
   CreateTaskResponse,
   StartAutoPilotRequest,
@@ -44,6 +46,10 @@ import type {
   StopAutoPilotRequest,
   StopAutoPilotResponse,
   AutoPilotStatusResponse,
+  LogsEventFilters,
+  WorkerLogEntry,
+  SessionLogSummary,
+  LogSearchResult,
 } from '../models/api.types';
 
 // ── Allowlists for filter parameters ─────────────────────────────────────────
@@ -160,6 +166,18 @@ export class ApiService {
     return this.http.get<ActiveSessionSummary[]>(`${this.base}/sessions/active/enhanced`);
   }
 
+  public closeStaleSession(ttlMinutes?: number): Observable<{ closed_sessions: number }> {
+    let httpParams = new HttpParams();
+    if (ttlMinutes !== undefined) {
+      httpParams = httpParams.set('ttl', String(ttlMinutes));
+    }
+    return this.http.post<{ closed_sessions: number }>(
+      `${this.base}/sessions/close-stale`,
+      null,
+      { params: httpParams },
+    );
+  }
+
   public getAnalyticsCost(): Observable<AnalyticsCostData> {
     return this.http.get<AnalyticsCostData>(`${this.base}/analytics/cost`);
   }
@@ -263,6 +281,20 @@ export class ApiService {
     );
   }
 
+  public getOrchestrationFlows(): Observable<OrchestrationFlow[]> {
+    return this.http.get<OrchestrationFlow[]>(`${this.base}/orchestration/flows`);
+  }
+
+  public cloneOrchestrationFlow(
+    sourceFlowId: string,
+    customName: string,
+  ): Observable<{ success: boolean; flow: OrchestrationFlow }> {
+    return this.http.post<{ success: boolean; flow: OrchestrationFlow }>(
+      `${this.base}/orchestration/flows/clone`,
+      { sourceFlowId, customName },
+    );
+  }
+
   public createTask(req: CreateTaskRequest): Observable<CreateTaskResponse> {
     return this.http.post<CreateTaskResponse>(`${this.base}/tasks/create`, req);
   }
@@ -277,5 +309,37 @@ export class ApiService {
 
   public getAutoPilotStatus(sessionId: string): Observable<AutoPilotStatusResponse> {
     return this.http.get<AutoPilotStatusResponse>(`${this.base}/auto-pilot/status/${encodeURIComponent(sessionId)}`);
+  }
+
+  // ── Logs ────────────────────────────────────────────────────────────────────
+
+  public getLogEvents(filters?: LogsEventFilters): Observable<CortexEvent[]> {
+    let params = new HttpParams();
+    if (filters?.sessionId) params = params.set('sessionId', filters.sessionId);
+    if (filters?.taskId) params = params.set('taskId', filters.taskId);
+    if (filters?.eventType) params = params.set('eventType', filters.eventType);
+    if (filters?.severity) params = params.set('severity', filters.severity);
+    if (filters?.limit !== undefined) params = params.set('limit', String(filters.limit));
+    if (filters?.offset !== undefined) params = params.set('offset', String(filters.offset));
+    return this.http.get<CortexEvent[]>(`${this.base}/logs/events`, { params });
+  }
+
+  public getWorkerLogs(workerId: string): Observable<WorkerLogEntry> {
+    return this.http.get<WorkerLogEntry>(`${this.base}/logs/workers/${encodeURIComponent(workerId)}`);
+  }
+
+  public getSessionLogs(sessionId: string): Observable<SessionLogSummary> {
+    return this.http.get<SessionLogSummary>(`${this.base}/logs/sessions/${encodeURIComponent(sessionId)}`);
+  }
+
+  public searchLogs(query: string, extra?: { sessionId?: string; taskId?: string; startTime?: string; endTime?: string; limit?: number; offset?: number }): Observable<LogSearchResult> {
+    let params = new HttpParams().set('q', query);
+    if (extra?.sessionId) params = params.set('sessionId', extra.sessionId);
+    if (extra?.taskId) params = params.set('taskId', extra.taskId);
+    if (extra?.startTime) params = params.set('startTime', extra.startTime);
+    if (extra?.endTime) params = params.set('endTime', extra.endTime);
+    if (extra?.limit !== undefined) params = params.set('limit', String(extra.limit));
+    if (extra?.offset !== undefined) params = params.set('offset', String(extra.offset));
+    return this.http.get<LogSearchResult>(`${this.base}/logs/search`, { params });
   }
 }

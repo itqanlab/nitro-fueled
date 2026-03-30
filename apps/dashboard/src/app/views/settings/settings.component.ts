@@ -18,10 +18,10 @@ import { TabNavComponent, TabItem } from '../../shared/tab-nav/tab-nav.component
 export class SettingsComponent {
   private readonly settingsService = inject(SettingsService);
 
-  public readonly tabs: readonly SettingsTabDefinition[] = SETTINGS_TABS;
+  public readonly tabs: TabItem[] = SETTINGS_TABS as TabItem[];
   public readonly activeTab = signal<SettingsTab>('api-keys');
 
-  public selectTab(tab: SettingsTab): void {
-    this.activeTab.set(tab);
+  public selectTab(tab: string): void {
+    this.activeTab.set(tab as SettingsTab);
   }
 }
