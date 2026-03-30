@@ -338,9 +338,11 @@ export default class Status extends BaseCommand {
     }
 
     if (!usedDb) {
-      generateRegistry(cwd);
       rows = parseRegistry(cwd);
     }
+
+    // Always regenerate registry.md from status files so it stays in sync
+    generateRegistry(cwd);
 
     const workers = parseActiveWorkers(cwd);
 
