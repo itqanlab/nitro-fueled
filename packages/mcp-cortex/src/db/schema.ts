@@ -239,6 +239,7 @@ const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'total_cost',                ddl: 'ALTER TABLE sessions ADD COLUMN total_cost REAL' },
   { column: 'total_input_tokens',        ddl: 'ALTER TABLE sessions ADD COLUMN total_input_tokens INTEGER' },
   { column: 'total_output_tokens',       ddl: 'ALTER TABLE sessions ADD COLUMN total_output_tokens INTEGER' },
+  { column: 'last_heartbeat',            ddl: 'ALTER TABLE sessions ADD COLUMN last_heartbeat TEXT' },
 ];
 
 const WORKER_MIGRATIONS: Array<{ column: string; ddl: string }> = [

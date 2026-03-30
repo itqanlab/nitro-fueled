@@ -9,6 +9,8 @@ import {
   handleUpdateSession,
   handleListSessions,
   handleEndSession,
+  handleUpdateHeartbeat,
+  handleCloseStaleSessions,
 } from './sessions.js';
 import type Database from 'better-sqlite3';
 
@@ -304,5 +306,107 @@ describe('handleEndSession', () => {
     const row = db.prepare('SELECT ended_at FROM sessions WHERE id = ?').get(sessionId) as { ended_at: string };
     expect(row.ended_at).toBeTruthy();
     expect(() => new Date(row.ended_at)).not.toThrow();
+  });
+});
+
+describe('handleUpdateHeartbeat', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+  let sessionId: string;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+    const r = handleCreateSession(db, {});
+    sessionId = (parseText(r) as { session_id: string }).session_id;
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('updates last_heartbeat timestamp', () => {
+    handleUpdateHeartbeat(db, { session_id: sessionId });
+    const row = db.prepare('SELECT last_heartbeat FROM sessions WHERE id = ?').get(sessionId) as { last_heartbeat: string };
+    expect(row.last_heartbeat).toBeTruthy();
+    expect(() => new Date(row.last_heartbeat)).not.toThrow();
+  });
+
+  it('returns session_not_found for unknown session', () => {
+    const result = handleUpdateHeartbeat(db, { session_id: 'SESSION_NOPE' });
+    const data = parseText(result) as { ok: boolean; reason: string };
+    expect(data.ok).toBe(false);
+    expect(data.reason).toBe('session_not_found');
+  });
+
+  it('accepts legacy underscore session IDs', () => {
+    const result = handleUpdateHeartbeat(db, { session_id: sessionId.replace('T', '_') });
+    const data = parseText(result) as { ok: boolean };
+    expect(data.ok).toBe(true);
+  });
+});
+
+describe('handleCloseStaleSessions', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('closes sessions with last_heartbeat older than TTL', () => {
+    const r = handleCreateSession(db, {});
+    const sessionId = (parseText(r) as { session_id: string }).session_id;
+
+    const oldHeartbeat = new Date(Date.now() - 31 * 60 * 1000).toISOString();
+    db.prepare('UPDATE sessions SET last_heartbeat = ? WHERE id = ?').run(oldHeartbeat, sessionId);
+
+    const result = handleCloseStaleSessions(db, { ttl_minutes: 30 });
+    const data = parseText(result) as { ok: boolean; closed_sessions: number };
+    expect(data.ok).toBe(true);
+    expect(data.closed_sessions).toBe(1);
+
+    const row = db.prepare('SELECT loop_status FROM sessions WHERE id = ?').get(sessionId) as { loop_status: string };
+    expect(row.loop_status).toBe('stopped');
+  });
+
+  it('does not close sessions with recent heartbeat', () => {
+    const r = handleCreateSession(db, {});
+    const sessionId = (parseText(r) as { session_id: string }).session_id;
+    handleUpdateHeartbeat(db, { session_id: sessionId });
+
+    const result = handleCloseStaleSessions(db, { ttl_minutes: 30 });
+    const data = parseText(result) as { ok: boolean; closed_sessions: number };
+    expect(data.ok).toBe(true);
+    expect(data.closed_sessions).toBe(0);
+  });
+
+  it('closes sessions with no heartbeat', () => {
+    const r = handleCreateSession(db, {});
+    const sessionId = (parseText(r) as { session_id: string }).session_id;
+
+    const result = handleCloseStaleSessions(db, { ttl_minutes: 0 });
+    const data = parseText(result) as { ok: boolean; closed_sessions: number };
+    expect(data.ok).toBe(true);
+    expect(data.closed_sessions).toBe(1);
+
+    const row = db.prepare('SELECT loop_status FROM sessions WHERE id = ?').get(sessionId) as { loop_status: string };
+    expect(row.loop_status).toBe('stopped');
+  });
+
+  it('uses default TTL of 30 minutes when not specified', () => {
+    const r = handleCreateSession(db, {});
+    const sessionId = (parseText(r) as { session_id: string }).session_id;
+
+    const oldHeartbeat = new Date(Date.now() - 31 * 60 * 1000).toISOString();
+    db.prepare('UPDATE sessions SET last_heartbeat = ? WHERE id = ?').run(oldHeartbeat, sessionId);
+
+    const result = handleCloseStaleSessions(db, {});
+    const data = parseText(result) as { ok: boolean; closed_sessions: number };
+    expect(data.ok).toBe(true);
+    expect(data.closed_sessions).toBe(1);
   });
 });

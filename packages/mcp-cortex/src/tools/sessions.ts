@@ -149,3 +149,53 @@ export function handleEndSession(
     }],
   };
 }
+
+export function handleUpdateHeartbeat(
+  db: Database.Database,
+  args: { session_id: string },
+): ToolResult {
+  const sessionId = normalizeSessionId(args.session_id);
+  const now = new Date().toISOString();
+
+  const info = db.prepare(
+    `UPDATE sessions SET last_heartbeat = ?, updated_at = ? WHERE id = ?`,
+  ).run(now, now, sessionId);
+
+  if (info.changes === 0) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
+  }
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true }) }] };
+}
+
+export function handleCloseStaleSessions(
+  db: Database.Database,
+  args: { ttl_minutes?: number },
+): ToolResult {
+  const ttlMinutes = args.ttl_minutes ?? 30;
+  const cutoffTime = new Date(Date.now() - ttlMinutes * 60 * 1000).toISOString();
+
+  const staleSessions = db.prepare(
+    `SELECT id FROM sessions WHERE loop_status = 'running' AND (last_heartbeat IS NULL OR last_heartbeat < ?)`,
+  ).all(cutoffTime) as Array<{ id: string }>;
+
+  let closedCount = 0;
+  if (staleSessions.length > 0) {
+    const now = new Date().toISOString();
+    const updateStmt = db.prepare(
+      `UPDATE sessions SET loop_status = 'stopped', ended_at = ?, summary = ?, updated_at = ? WHERE id = ?`,
+    );
+
+    for (const session of staleSessions) {
+      updateStmt.run(now, 'stale: no heartbeat', now, session.id);
+      closedCount++;
+    }
+  }
+
+  return {
+    content: [{
+      type: 'text' as const,
+      text: JSON.stringify({ ok: true, closed_sessions: closedCount }),
+    }],
+  };
+}

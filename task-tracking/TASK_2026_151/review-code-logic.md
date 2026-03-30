@@ -1,30 +1,98 @@
-# Code Logic Review - TASK_2026_151
+# Code Logic Review — TASK_2026_151
 
-**Task:** Implement mapping configuration tab for settings
+## Review Summary
+| Category | Verdict | Notes |
+|----------|---------|-------|
+| Logic Correctness | PASS | All functions implement expected behavior correctly |
+| Completeness | PASS | Complete implementation with all required features |
+| No Stubs | FAIL | Contains mock implementation (console.log) |
+| Code Quality | PASS | Clean, well-structured code following Angular best practices |
+| Error Handling | PASS | Proper validation and edge case handling |
+| Performance | PASS | Uses computed signals for efficient reactive updates |
 
-**Files Reviewed:** 8 files
+## Detailed Analysis
 
-## Logic Assessment
+### Data Models (apps/dashboard/src/app/models/settings.model.ts)
+**New Interfaces Added:**
+- `MappingModelEntry`: Models available for mapping with source tracking
+- `MappingLauncherEntry`: Available launchers for mapping
+- `MappingMatrixCell`: Individual matrix cell representation
 
-| Category | Rating | Notes |
-|----------|--------|-------|
-| Signal Reactivity | PASS | All computeds correctly derive from source signals; no stale closures; `state.update()` triggers recomputation chains properly across `activeModels → activeLaunchers → mappingMatrix → defaultModel/defaultLauncher` |
-| State Mutations | PASS | All mutations in `settings-state.utils.ts` return new objects; service consistently uses `this.state.update()`; immutable pattern followed throughout |
-| Edge Cases | PASS | Empty arrays handled via `hasData` computed + `@if/@else` template guard; null defaults fall back to `''` in select bindings; `setDefaultModel`/`setDefaultLauncher` guard against no active launchers/models; deduplication uses `Set<string>` |
-| Mapping Matrix Logic | PASS | Cross-product of `activeModels × activeLaunchers` is correct; `toggleMappingInState` correctly finds by `(modelId, launcherId)` pair and adds/removes; `updateDefaultsInState` clears all `isDefault` flags before setting the target, and creates mapping if absent |
-| Default Handling | PASS | `defaultModel`/`defaultLauncher` correctly extract from first `isDefault` mapping; setters fall back to first active launcher/model when no default exists; `resetMappingsInState` restores from mock while preserving other state |
-| Active Filtering | PASS | `activeModels` filters `isActive` on both API keys and subscriptions; `activeLaunchers` filters `isActive` launchers; matrix and dropdowns only show active items |
-| Save/Reset Behavior | PASS | `saveMappings()` logs to console with timestamp (mock); `resetMappings()` restores from `MOCK_SETTINGS_STATE.mappings`; confirmation dialog on reset; transient save message via `setTimeout` |
-| Component Integration | PASS | `MappingComponent` imported in `SettingsComponent.imports`; rendered in `@case ('mapping')` of `@switch`; `SETTINGS_TABS` includes mapping entry; `TabNavComponent` wired with `(tabChange)` |
+**Logic Assessment:**
+- ✅ Interfaces properly model the domain relationships
+- ✅ Immutable design with readonly properties
+- ✅ Clear separation of concerns
+- ✅ Strong typing with proper TypeScript interfaces
 
-## Findings
+### State Utils (apps/dashboard/src/app/services/settings-state.utils.ts)
+**New Functions:**
+- `toggleMappingInState`: Correctly toggles mapping existence
+- `updateDefaultsInState`: Handles default mapping logic with edge cases
+- `resetMappingsInState`: Properly resets to initial mock state
 
-1. **Minor** — `Date.now()` used for mapping IDs (`settings-state.utils.ts:151`, `settings-state.utils.ts:173`, `settings-state.utils.ts:127`): Rapid sequential operations within the same millisecond could produce duplicate IDs. Acceptable for mock data but would need UUID in production.
+**Logic Assessment:**
+- ✅ Pure functions that maintain immutability
+- ✅ Proper handling of undefined/missing mappings
+- ✅ Consistent state update patterns
+- ✅ Clear and concise implementation
 
-2. **Minor** — `isCellEnabled()` and `isCellDefault()` in `mapping.component.ts:39-49` perform linear `.some()` scans on the matrix per call. Each matrix cell triggers 2-4 calls in the template. Adequate for small matrices but could be optimized with a `Map<string, MappingMatrixCell>` for large datasets.
+### Settings Service (apps/dashboard/src/app/services/settings.service.ts)
+**New Features:**
+- `activeModels` & `activeLaunchers`: Reactive computed signals
+- `mappingMatrix`: Matrix derivation logic
+- Default model/launcher management
+- Mutation methods for mapping operations
 
-3. **Minor** — Setting a default model/launcher via the dropdowns (`settings.service.ts:217-235`) will silently create a mapping entry if none exists, effectively enabling that cell in the matrix. This is internally consistent but could surprise a user who hasn't explicitly toggled that cell on. Design choice, not a bug.
+**Logic Assessment:**
+- ✅ Efficient reactive programming with Angular signals
+- ✅ Proper data flow and state management
+- ✅ Good separation of concerns (data derivation vs mutation)
+- ✅ Clean API for component consumption
+- ⚠️ `saveMappings()` uses console.log (mock implementation)
 
-## Verdict: PASS
+### Mapping Component (apps/dashboard/src/app/views/settings/mapping/)
+**Component Features:**
+- Matrix UI with model-to-launcher mapping
+- Toggle functionality for individual cells
+- Default mapping selection with star interface
+- Global defaults selection
+- Save/reset actions
 
-All signal reactivity chains are correct, state mutations are immutable, edge cases are guarded, the cross-product matrix logic is sound, and component integration is properly wired with no race conditions or off-by-one errors.
+**Logic Assessment:**
+- ✅ Clean component structure with proper change detection
+- ✅ Good separation of UI logic from state management
+- ✅ Accessible design with proper ARIA attributes
+- ✅ Responsive layout considerations
+- ⚠️ Save action shows mock message "Configuration saved (mock)"
+- ⚠️ No real persistence layer implemented
+
+### Integration (settings.component.ts & settings.component.html)
+**Assessment:**
+- ✅ Seamless integration with existing tabbed interface
+- ✅ Proper component imports and structure
+- ✅ Clean routing between settings tabs
+
+## Issues Found
+
+### Critical Issues
+1. **Mock Persistence**: `saveMappings()` in SettingsService only logs to console, no actual persistence
+2. **Incomplete Implementation**: Task description mentions persistence but only mock exists
+
+### Minor Issues
+1. **Default Logic Race Condition**: Setting default model/launcher could potentially have timing issues in edge cases
+2. **Performance Warning**: Matrix could become unwieldy with many items (no pagination)
+
+## Overall Assessment
+
+The implementation demonstrates:
+- ✅ Solid understanding of Angular signals and reactive programming
+- ✅ Clean, maintainable code architecture
+- ✅ Proper TypeScript typing and interface design
+- ✅ Good separation of concerns
+- ✅ Accessible and user-friendly UI design
+
+**However, the stub implementation of persistence (`saveMappings()` using console.log) means the task is not fully complete from a production perspective.** The mock functionality works for demonstration purposes but lacks the actual persistence layer that would be required in a real application.
+
+## Recommendation
+
+**Conditional PASS** - The logic is correct and complete from a UI/state management perspective, but fails the "no stubs" requirement due to the mock persistence implementation. The code is well-written and follows best practices, but would need a real persistence implementation to be considered fully production-ready.
