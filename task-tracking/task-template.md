@@ -6,7 +6,7 @@
 
 | Field                 | Value                                                                         |
 |-----------------------|-------------------------------------------------------------------------------|
-| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | CREATIVE | CONTENT | SOCIAL | DESIGN] |
+| Type                  | [FEATURE | BUGFIX | REFACTORING | DOCUMENTATION | RESEARCH | DEVOPS | OPS | CREATIVE | CONTENT | SOCIAL | DESIGN] |
 | Priority              | [P0-Critical | P1-High | P2-Medium | P3-Low]                                 |
 | Complexity            | [Simple | Medium | Complex]                                                   |
 | Preferred Tier        | [light | balanced | heavy | auto]                                             |
@@ -23,6 +23,7 @@
        DOCUMENTATION — PM -> Developer -> Style Reviewer
        RESEARCH      — Researcher -> [conditional implementation]
        DEVOPS        — PM -> Architect -> DevOps Engineer -> QA
+       OPS           — PM -> DevOps Engineer -> QA (no Architect phase; known-pattern operational config)
        CREATIVE      — [ui-ux-designer] -> content-writer -> frontend
        CONTENT       — PM -> [Researcher] -> content-writer -> Style Reviewer
        SOCIAL        — PM -> content-writer -> [ui-ux-designer] -> Style Reviewer

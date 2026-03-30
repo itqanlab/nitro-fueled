@@ -108,7 +108,9 @@ Every task type follows the same 6-step lifecycle. The agents and review criteri
 | document, readme, comment                     | DOCUMENTATION |
 | research, investigate, analyze                | RESEARCH      |
 
-**Priority**: DEVOPS > DESIGN > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
+**Priority**: DEVOPS > OPS > DESIGN > CREATIVE > SOCIAL > CONTENT > FEATURE (when multiple keywords present)
+
+**DEVOPS vs OPS**: If keywords match both DEVOPS and OPS, prefer OPS unless the task involves novel infrastructure design decisions that require architectural review.
 
 ### Adaptive Strategy Selection
 
