@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
+| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
@@ -105,7 +105,7 @@
 | TASK_2026_100 | COMPLETE    | REFACTORING | Nitro Commit Traceability Standard | 2026-03-28 | default |
 | TASK_2026_101 | COMPLETE    | FEATURE | Add CONTENT Orchestration Flow (Blog, Email, Newsletter, Ad Copy) | 2026-03-28 | default |
 | TASK_2026_102 | COMPLETE    | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-28 | default |
-| TASK_2026_103 | IN_REVIEW   | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
+| TASK_2026_103 | COMPLETE    | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
 | TASK_2026_104 | COMPLETE    | FEATURE | Enhance RESEARCH Orchestration Flow (Market, Competitive, Feasibility) | 2026-03-28 | default |
 | TASK_2026_105 | COMPLETE    | FEATURE | Add OPS Orchestration Flow (Project Setup, CI/CD, Infrastructure) | 2026-03-28 | default |
 | TASK_2026_106 | COMPLETE    | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-28 | claude-opus-4-6 |
@@ -154,7 +154,7 @@
 | TASK_2026_149 | COMPLETE    | FEATURE | Settings — API Keys Management Tab | 2026-03-30 | default |
 | TASK_2026_150 | COMPLETE    | FEATURE | Settings — Launchers & Subscriptions Tabs | 2026-03-30 | default |
 | TASK_2026_151 | CREATED     | FEATURE | Settings — Default Mapping Configuration Tab | 2026-03-30 | default |
-| TASK_2026_152 | CREATED     | BUGFIX  | Fix Auto-Pilot Supervisor Pre-Flight Violations | 2026-03-30 | default |
+| TASK_2026_152 | IN_PROGRESS | BUGFIX  | Fix Auto-Pilot Supervisor Pre-Flight Violations | 2026-03-30 | default |
 | TASK_2026_153 | COMPLETE    | BUGFIX  | Enforce Minimal Supervisor Output — Log to File, Not Conversation | 2026-03-30 | default |
 | TASK_2026_154 | COMPLETE    | REFACTORING | Stateless Supervisor — Offload All State to MCP DB | 2026-03-30 | default |
 | TASK_2026_155 | COMPLETE    | FEATURE | Project Page — Task Queue Board | 2026-03-30 | default |
@@ -162,10 +162,10 @@
 | TASK_2026_157 | COMPLETE    | FEATURE | Live Session Chat UI — Real-Time Session Viewer | 2026-03-30 | default |
 | TASK_2026_158 | CREATED     | FEATURE | Session Monitor — Active Sessions List + Switching | 2026-03-30 | default |
 | TASK_2026_159 | COMPLETE    | FEATURE | New Task Page — Single Textarea Task Creator | 2026-03-30 | default |
-| TASK_2026_160 | IMPLEMENTED | REFACTORING | Shared UI Lib — Badge, Status Indicator, Empty State Components | 2026-03-30 | default |
+| TASK_2026_160 | COMPLETE    | REFACTORING | Shared UI Lib — Badge, Status Indicator, Empty State Components | 2026-03-30 | default |
 | TASK_2026_161 | CREATED     | REFACTORING | Shared UI Lib — Progress Bar, Tab Nav, Loading Spinner Components | 2026-03-30 | default |
 | TASK_2026_162 | CREATED     | REFACTORING | Shared UI Lib — Form Field, Expandable Panel, Button Group Components | 2026-03-30 | default |
-| TASK_2026_163 | IMPLEMENTED | FEATURE | Cortex MCP — Full Task Creation Tools (create_task, bulk_create_tasks, get_next_task_id) | 2026-03-30 | default |
+| TASK_2026_163 | IN_REVIEW   | FEATURE | Cortex MCP — Full Task Creation Tools (create_task, bulk_create_tasks, get_next_task_id) | 2026-03-30 | default |
 | TASK_2026_164 | COMPLETE    | BUGFIX  | Fix OpenCode Worker Telemetry Integration | 2026-03-30 | default |
 | TASK_2026_165 | COMPLETE    | BUGFIX  | Fix Auto-Pilot Multi-Session Support — DB Session Registration and Per-Session Concurrency | 2026-03-30 | default |
 | TASK_2026_166 | CREATED     | FEATURE | Rich Task Detail Page | 2026-03-30 | default |
@@ -195,3 +195,9 @@
 | TASK_2026_190 | CREATED     | RESEARCH | GLM-4.7 Review Worker Investigation — 0% Success Rate | 2026-03-30 | default |
 | TASK_2026_191 | CREATED     | BUGFIX  | Scaffold Sync Audit — Verify All Scaffold Files Match Source | 2026-03-30 | default |
 | TASK_2026_192 | CREATED     | BUGFIX  | Add Missing Unit Tests for Tasks 148, 155, 159 Utility Functions | 2026-03-30 | default |
+| TASK_2026_193 | CREATED     | BUGFIX  | Auto-Release Orphaned Task Claims on Session Startup | 2026-03-30 | default |
+| TASK_2026_194 | CREATED     | BUGFIX  | Normalize Session ID Format — Consistent T-Separator Everywhere | 2026-03-30 | default |
+| TASK_2026_195 | CREATED     | BUGFIX  | Auto-Close Dead Sessions — TTL-Based Expiry | 2026-03-30 | default |
+| TASK_2026_196 | CREATED     | BUGFIX  | Supervisor Task Prioritization — Build CREATED Before Review IMPLEMENTED | 2026-03-30 | default |
+| TASK_2026_197 | CREATED     | BUGFIX  | Prevent get_tasks(status: "COMPLETE") Overflow in Supervisor | 2026-03-30 | default |
+| TASK_2026_198 | CREATED     | BUGFIX  | Validate Provider Availability Before Session Config Assignment | 2026-03-30 | default |
