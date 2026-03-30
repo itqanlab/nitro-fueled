@@ -43,7 +43,7 @@ describe('handleCreateSession', () => {
     const result = handleCreateSession(db, {});
     const data = parseText(result) as { ok: boolean; session_id: string };
     expect(data.ok).toBe(true);
-    expect(data.session_id).toMatch(/^SESSION_/);
+    expect(data.session_id).toMatch(/^SESSION_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/);
   });
 
   it('stores the source when provided', () => {
@@ -103,6 +103,12 @@ describe('handleGetSession', () => {
     expect(data.id).toBe(sessionId);
     expect(data.source).toBe('test-runner');
     expect(data.loop_status).toBe('running');
+  });
+
+  it('accepts legacy underscore session IDs on lookup', () => {
+    const result = handleGetSession(db, { session_id: sessionId.replace('T', '_') });
+    const data = parseText(result) as Record<string, unknown>;
+    expect(data.id).toBe(sessionId);
   });
 
   it('includes worker_count structure', () => {
@@ -178,6 +184,15 @@ describe('handleUpdateSession', () => {
     const data = parseText(result) as { ok: boolean; reason: string };
     expect(data.ok).toBe(false);
     expect(data.reason).toBe('session_not_found');
+  });
+
+  it('accepts legacy underscore session IDs when updating', () => {
+    const result = handleUpdateSession(db, {
+      session_id: sessionId.replace('T', '_'),
+      fields: { loop_status: 'paused' },
+    });
+    const data = parseText(result) as { ok: boolean };
+    expect(data.ok).toBe(true);
   });
 });
 

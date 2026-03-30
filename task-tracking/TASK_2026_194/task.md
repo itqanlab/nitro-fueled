@@ -23,7 +23,7 @@ Fix:
 1. Pick one canonical format (T-separator, matching ISO 8601 style)
 2. Update all session ID generation points to use the canonical format
 3. Add a normalization function that converts underscore-format to T-format for backward compatibility
-4. Apply normalization in `get_session`, `claim_task`, and `release_task` lookups
+4. Apply normalization in session retrieval and task-claim lookups that read or persist `session_id`
 
 ## Dependencies
 
@@ -48,5 +48,15 @@ Fix:
 
 ## File Scope
 
+- packages/mcp-cortex/src/tools/session-id.ts
 - packages/mcp-cortex/src/tools/sessions.ts
-- .claude/skills/auto-pilot/SKILL.md (session creation)
+- packages/mcp-cortex/src/tools/tasks.ts
+- packages/mcp-cortex/src/tools/wave.ts
+- packages/mcp-cortex/src/tools/workers.ts
+- packages/mcp-cortex/src/tools/events.ts
+- packages/mcp-cortex/src/tools/telemetry.ts
+- packages/mcp-cortex/src/tools/sessions.spec.ts
+- packages/mcp-cortex/src/tools/tasks.spec.ts
+- packages/mcp-cortex/src/tools/workers.spec.ts
+- .claude/skills/orchestration/SKILL.md
+- apps/cli/scaffold/.claude/skills/orchestration/SKILL.md

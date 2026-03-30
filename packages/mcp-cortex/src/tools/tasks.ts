@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
+import { normalizeSessionId } from './session-id.js';
 
 const UPDATABLE_COLUMNS = new Set([
   'title', 'type', 'priority', 'status', 'complexity', 'model',
@@ -55,23 +56,24 @@ export function handleClaimTask(
   args: { task_id: string; session_id: string },
 ): { content: Array<{ type: 'text'; text: string }> } {
   const now = new Date().toISOString();
+  const sessionId = normalizeSessionId(args.session_id);
 
   const result = db.transaction(() => {
     const row = db.prepare(
       'SELECT session_claimed FROM tasks WHERE id = ? AND (session_claimed IS NULL OR session_claimed = ?)',
-    ).get(args.task_id, args.session_id) as { session_claimed: string | null } | undefined;
+    ).get(args.task_id, sessionId) as { session_claimed: string | null } | undefined;
 
     if (!row) {
-      const existing = db.prepare('SELECT session_claimed FROM tasks WHERE id = ?').get(args.task_id) as { session_claimed: string } | undefined;
+      const existing = db.prepare('SELECT session_claimed FROM tasks WHERE id = ?').get(args.task_id) as { session_claimed: string | null } | undefined;
       if (!existing) {
         return { ok: false, reason: 'task_not_found' };
       }
-      return { ok: false, claimed_by: existing.session_claimed };
+      return { ok: false, claimed_by: existing.session_claimed ? normalizeSessionId(existing.session_claimed) : null };
     }
 
     db.prepare(
       'UPDATE tasks SET session_claimed = ?, claimed_at = ?, status = ?, updated_at = ? WHERE id = ?',
-    ).run(args.session_id, now, 'IN_PROGRESS', now, args.task_id);
+    ).run(sessionId, now, 'IN_PROGRESS', now, args.task_id);
 
     return { ok: true };
   })();

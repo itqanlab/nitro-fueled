@@ -6,6 +6,7 @@ import { emptyTokenStats, emptyCost, emptyProgress } from '../db/schema.js';
 import { spawnWorkerProcess, killWorkerProcess, isProcessAlive, resolveGlmApiKey } from '../process/spawn.js';
 import type { JsonlWatcher } from '../process/jsonl-watcher.js';
 import type { ToolResult } from './types.js';
+import { normalizeSessionId } from './session-id.js';
 
 const DEFAULT_MODEL = process.env['DEFAULT_MODEL'] ?? 'claude-sonnet-4-6';
 const STARTUP_GRACE_MS = 300_000;
@@ -92,6 +93,7 @@ export function handleSpawnWorker(
 
   const model = args.model ?? DEFAULT_MODEL;
   const provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode' | 'codex';
+  const sessionId = normalizeSessionId(args.session_id);
   const workerId = randomUUID();
 
   let glmApiKey: string | undefined;
@@ -105,7 +107,7 @@ export function handleSpawnWorker(
   }
 
   // M5: Verify the session exists before inserting the worker row.
-  const sessionExists = db.prepare('SELECT id FROM sessions WHERE id = ?').get(args.session_id);
+  const sessionExists = db.prepare('SELECT id FROM sessions WHERE id = ?').get(sessionId);
   if (!sessionExists) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
   }
@@ -126,7 +128,7 @@ export function handleSpawnWorker(
     INSERT INTO workers (id, session_id, task_id, worker_type, label, status, working_directory, model, provider, launcher, auto_close, tokens_json, cost_json, progress_json)
     VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    workerId, args.session_id, args.task_id ?? null,
+    workerId, sessionId, args.task_id ?? null,
     args.worker_type, args.label, resolvedDir,
     model, provider, launcher, args.auto_close ? 1 : 0,
     JSON.stringify(emptyTokenStats()), JSON.stringify(emptyCost()), JSON.stringify(emptyProgress()),
@@ -164,11 +166,12 @@ export function handleListWorkers(
   db: Database.Database,
   args: { session_id?: string; status_filter?: string },
 ): ToolResult {
+  const sessionId = args.session_id ? normalizeSessionId(args.session_id) : undefined;
   let rows: WorkerRow[];
-  if (args.session_id && args.status_filter && args.status_filter !== 'all') {
-    rows = db.prepare('SELECT * FROM workers WHERE session_id = ? AND status = ? ORDER BY spawn_time').all(args.session_id, args.status_filter) as WorkerRow[];
-  } else if (args.session_id) {
-    rows = db.prepare('SELECT * FROM workers WHERE session_id = ? ORDER BY spawn_time').all(args.session_id) as WorkerRow[];
+  if (sessionId && args.status_filter && args.status_filter !== 'all') {
+    rows = db.prepare('SELECT * FROM workers WHERE session_id = ? AND status = ? ORDER BY spawn_time').all(sessionId, args.status_filter) as WorkerRow[];
+  } else if (sessionId) {
+    rows = db.prepare('SELECT * FROM workers WHERE session_id = ? ORDER BY spawn_time').all(sessionId) as WorkerRow[];
   } else if (args.status_filter && args.status_filter !== 'all') {
     rows = db.prepare('SELECT * FROM workers WHERE status = ? ORDER BY spawn_time').all(args.status_filter) as WorkerRow[];
   } else {

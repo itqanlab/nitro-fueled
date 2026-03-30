@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
+import { normalizeSessionId } from './session-id.js';
 
 // ---------------------------------------------------------------------------
 // log_phase
@@ -339,7 +340,8 @@ export function handleGetSessionSummary(
   args: { session_id: string },
 ): ToolResult {
   try {
-    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(args.session_id) as Record<string, unknown> | undefined;
+    const sessionId = normalizeSessionId(args.session_id);
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as Record<string, unknown> | undefined;
     if (!session) {
       return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }], isError: true };
     }
@@ -354,16 +356,16 @@ export function handleGetSessionSummary(
        FROM workers
        WHERE session_id = ?
        GROUP BY worker_type, status, model, provider`,
-    ).all(args.session_id) as Array<Record<string, unknown>>;
+    ).all(sessionId) as Array<Record<string, unknown>>;
 
     const taskIds = (db.prepare(
       'SELECT DISTINCT task_id FROM workers WHERE session_id = ? AND task_id IS NOT NULL',
-    ).all(args.session_id) as Array<{ task_id: string }>).map(r => r.task_id);
+    ).all(sessionId) as Array<{ task_id: string }>).map(r => r.task_id);
 
     // Cost breakdown: sum from workers cost_json
     const workers = db.prepare(
       'SELECT cost_json, tokens_json, model, provider, spawn_time FROM workers WHERE session_id = ?',
-    ).all(args.session_id) as Array<{ cost_json: string; tokens_json: string; model: string | null; provider: string | null; spawn_time: string }>;
+    ).all(sessionId) as Array<{ cost_json: string; tokens_json: string; model: string | null; provider: string | null; spawn_time: string }>;
 
     let totalCost = 0;
     let totalInputTokens = 0;
@@ -397,7 +399,7 @@ export function handleGetSessionSummary(
         type: 'text' as const,
         text: JSON.stringify({
           ok: true,
-          session_id: args.session_id,
+          session_id: sessionId,
           source: session['source'],
           loop_status: session['loop_status'],
           started_at: session['started_at'],

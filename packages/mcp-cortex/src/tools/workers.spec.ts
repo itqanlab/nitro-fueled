@@ -125,6 +125,13 @@ describe('handleListWorkers', () => {
     expect(data[0]!.status).toBe('active');
   });
 
+  it('accepts legacy underscore session IDs when listing workers', () => {
+    insertWorkerRow(db, sessionId, { label: 'legacy-session-worker' });
+    const result = parseText(handleListWorkers(db, { session_id: sessionId.replace('T', '_') })) as Array<{ label: string }>;
+    expect(result).toHaveLength(1);
+    expect(result[0]!.label).toBe('legacy-session-worker');
+  });
+
   it('filters by status_filter', () => {
     insertWorkerRow(db, sessionId, { label: 'active-worker', status: 'active' });
     insertWorkerRow(db, sessionId, { label: 'completed-worker', status: 'completed' });
@@ -272,6 +279,21 @@ describe('handleSpawnWorker — DB insertion', () => {
     expect(row).toBeTruthy();
     expect(row.status).toBe('active');
     expect(row.worker_type).toBe('build');
+  });
+
+  it('accepts legacy underscore session IDs when spawning a worker', async () => {
+    const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
+      session_id: sessionId.replace('T', '_'),
+      worker_type: 'build',
+      prompt: 'Do some work',
+      working_directory: '/tmp',
+      label: 'legacy-spawn-worker',
+    });
+    const data = parseText(result) as { ok: boolean; worker_id: string };
+    expect(data.ok).toBe(true);
+
+    const row = db.prepare('SELECT session_id FROM workers WHERE id = ?').get(data.worker_id) as { session_id: string };
+    expect(row.session_id).toBe(sessionId);
   });
 
   it('returns error when GLM provider requested but no API key', async () => {

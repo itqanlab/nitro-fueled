@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { normalizeSessionId } from './session-id.js';
 
 interface TaskRow {
   id: string;
@@ -16,6 +17,7 @@ export function handleGetNextWave(
   db: Database.Database,
   args: { session_id: string; slots: number },
 ): { content: Array<{ type: 'text'; text: string }> } {
+  const sessionId = normalizeSessionId(args.session_id);
   const result = db.transaction(() => {
     const completeTasks = new Set(
       (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE'").all() as Array<{ id: string }>).map(r => r.id),
@@ -51,7 +53,7 @@ export function handleGetNextWave(
     for (const taskId of wave) {
       db.prepare(
         'UPDATE tasks SET session_claimed = ?, claimed_at = ?, updated_at = ? WHERE id = ? AND session_claimed IS NULL',
-      ).run(args.session_id, now, now, taskId);
+      ).run(sessionId, now, now, taskId);
       claimed.push({ id: taskId });
     }
 

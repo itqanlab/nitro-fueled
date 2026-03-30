@@ -1,6 +1,8 @@
 import type Database from 'better-sqlite3';
 import type { LoopStatus } from '../db/schema.js';
 import type { ToolResult } from './types.js';
+import { buildSessionId, normalizeSessionId } from './session-id.js';
+import { handleReleaseOrphanedClaims } from './tasks.js';
 
 // M1: 'ended_at' and 'summary' are updatable here; use end_session to set them atomically
 // together with loop_status='stopped'. These are also allowed as direct updates for cases
@@ -11,30 +13,50 @@ const UPDATABLE_SESSION_COLUMNS = new Set([
 
 export function handleCreateSession(
   db: Database.Database,
-  args: { source?: string; config?: string; task_count?: number },
+  args: { source?: string; config?: string; task_count?: number; skip_orphan_recovery?: boolean },
 ): ToolResult {
-  const id = `SESSION_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+  const id = buildSessionId();
   const config = args.config ?? '{}';
 
   db.prepare(
     `INSERT INTO sessions (id, source, config, task_limit) VALUES (?, ?, ?, ?)`,
   ).run(id, args.source ?? null, config, args.task_count ?? null);
 
-  return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, session_id: id }) }] };
+  let recoveryResult = null;
+  if (!args.skip_orphan_recovery) {
+    const releaseResult = handleReleaseOrphanedClaims(db);
+    try {
+      const released = JSON.parse((releaseResult.content[0] as { text: string }).text) as { released: number; tasks: string[] };
+      recoveryResult = { orphaned_claims_released: released.released, task_ids: released.tasks };
+    } catch {
+      // If parsing fails, don't block session creation — best-effort logging only
+    }
+  }
+
+  const result: { ok: true; session_id: string; orphan_recovery?: typeof recoveryResult } = {
+    ok: true,
+    session_id: id,
+  };
+  if (recoveryResult) {
+    result.orphan_recovery = recoveryResult;
+  }
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
 }
 
 export function handleGetSession(
   db: Database.Database,
   args: { session_id: string },
 ): ToolResult {
-  const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(args.session_id) as Record<string, unknown> | undefined;
+  const sessionId = normalizeSessionId(args.session_id);
+  const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as Record<string, unknown> | undefined;
   if (!session) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
   }
 
   const workers = db.prepare(
     'SELECT id, task_id, worker_type, label, status, pid, model, provider FROM workers WHERE session_id = ?',
-  ).all(args.session_id) as Array<Record<string, unknown>>;
+  ).all(sessionId) as Array<Record<string, unknown>>;
 
   const activeWorkers = workers.filter((w) => w.status === 'active');
   const completedWorkers = workers.filter((w) => w.status === 'completed');
@@ -53,6 +75,7 @@ export function handleUpdateSession(
   db: Database.Database,
   args: { session_id: string; fields: Record<string, unknown> },
 ): ToolResult {
+  const sessionId = normalizeSessionId(args.session_id);
   const sets: string[] = [];
   const params: unknown[] = [];
 
@@ -70,7 +93,7 @@ export function handleUpdateSession(
 
   sets.push('updated_at = ?');
   params.push(new Date().toISOString());
-  params.push(args.session_id);
+  params.push(sessionId);
 
   const info = db.prepare(`UPDATE sessions SET ${sets.join(', ')} WHERE id = ?`).run(...params);
   if (info.changes === 0) {
@@ -104,11 +127,12 @@ export function handleEndSession(
   db: Database.Database,
   args: { session_id: string; summary?: string },
 ): ToolResult {
+  const sessionId = normalizeSessionId(args.session_id);
   const now = new Date().toISOString();
 
   const info = db.prepare(
     `UPDATE sessions SET loop_status = 'stopped', ended_at = ?, summary = ?, updated_at = ? WHERE id = ?`,
-  ).run(now, args.summary ?? null, now, args.session_id);
+  ).run(now, args.summary ?? null, now, sessionId);
 
   if (info.changes === 0) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
@@ -116,7 +140,7 @@ export function handleEndSession(
 
   const counters = db.prepare(
     `SELECT status, COUNT(*) as count FROM workers WHERE session_id = ? GROUP BY status`,
-  ).all(args.session_id) as Array<{ status: string; count: number }>;
+  ).all(sessionId) as Array<{ status: string; count: number }>;
 
   return {
     content: [{
