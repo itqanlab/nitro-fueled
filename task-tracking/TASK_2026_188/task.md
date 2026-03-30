@@ -64,6 +64,8 @@ Suggested execution wave: Wave 1 (independent). Should be prioritized early sinc
 
 ## File Scope
 
-- packages/mcp-cortex/src/tools/tasks.ts
-- packages/mcp-cortex/src/index.ts
 - packages/mcp-cortex/src/db/schema.ts
+- packages/mcp-cortex/src/tools/tasks.ts
+- packages/mcp-cortex/src/tools/sessions.ts
+- packages/mcp-cortex/src/index.ts
+- task-tracking/TASK_2026_188/handoff.md
