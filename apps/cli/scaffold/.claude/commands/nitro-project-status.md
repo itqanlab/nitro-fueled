@@ -38,7 +38,7 @@ Then proceed with reading the regenerated registry.md for Source B task data.
 - For each task folder, check for:
   - `context.md` (task was started)
   - `tasks.md` (decomposition happened)
-  - `implementation-plan.md` (architecture was done)
+  - `plan.md` (or legacy: `implementation-plan.md`) (architecture was done)
   - `review-*.md` files (review happened — note review scores)
   - Any status markers in the files
 

@@ -72,7 +72,7 @@ if tasks.md exists:
     # IMPLEMENT ALL TASKS IN BATCH - in order, respecting dependencies
 
 # Read implementation plan for context
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 
 # Read requirements for context
 Read(task-tracking/TASK_[ID]/task-description.md)
@@ -158,7 +158,7 @@ Determine current infrastructure level:
 
 ### CRITICAL: You Are NOT Authorized to Make Architectural Decisions
 
-**BEFORE changing approach from what's specified in `implementation-plan.md`, you MUST escalate.**
+**BEFORE changing approach from what's specified in `plan.md`, you MUST escalate.**
 
 You are an **executor**, not an **architect**. If the plan says "implement X" and you think "X is too complex, let's simplify" - **STOP**. That's an architectural decision that requires escalation.
 
@@ -181,7 +181,7 @@ You are an **executor**, not an **architect**. If the plan says "implement X" an
 ## ESCALATION REQUIRED
 
 **Task**: [Task number and description]
-**File**: [implementation-plan.md reference]
+**File**: [plan.md reference]
 
 **Issue**: [What is blocking implementation as planned]
 
@@ -377,6 +377,54 @@ npm run deploy         # Deploy (if configured)
 4. **Test locally** with dry-run where available
 5. **Document** requirements and environment variables
 6. **Update tasks.md** and return report
+
+---
+
+## Commit Traceability (REQUIRED)
+
+Every commit you create must include a traceability footer. This is required for all commits in orchestrated workflows.
+
+### Footer Template
+
+```
+Task: {TASK_ID}
+Agent: nitro-devops-engineer
+Phase: implementation
+Worker: build-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+```
+
+### Field Values
+
+| Field | Value | Source |
+|-------|-------|--------|
+| Agent | `nitro-devops-engineer` | Fixed — this agent's identity |
+| Phase | `implementation` | Fixed — DevOps tasks commit directly |
+| Worker | `build-worker` | Fixed for this agent |
+| Task | From task folder name | e.g., `TASK_2026_100` |
+| Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Provider | From execution context | e.g., `claude`, `glm`, `opencode` |
+| Model | From execution context | e.g., `claude-sonnet-4-6` |
+| Retry | From prompt context | e.g., `0/2`, `1/2` |
+| Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |
+| Priority | From task.md | e.g., `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
+| Generated-By | Read from `apps/cli/package.json` at project root | Fallback: `nitro-fueled@unknown` |
+
+### Reading the Version
+
+Before creating a commit, read the version from `apps/cli/package.json`:
+
+```bash
+# Extract version field from package.json
+# Format: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+# Fallback if file unreadable: nitro-fueled@unknown
+```
 
 ---
 

@@ -52,7 +52,7 @@ Before proposing any architecture, you systematically explore the codebase to un
 
 ### Mandatory Clarification Step
 
-**BEFORE creating implementation-plan.md**, evaluate if clarifying questions are needed.
+**BEFORE creating plan.md**, evaluate if clarifying questions are needed.
 
 ### Trigger Conditions (Ask Questions If ANY Apply)
 
@@ -179,7 +179,7 @@ Read(task-tracking/TASK_[ID]/design-handoff.md)
 
 #### 5. Design Document Citation in Implementation Plan
 
-**In your implementation-plan.md, you MUST cite design documents.**
+**In your plan.md, you MUST cite design documents.**
 
 #### 6. Design Compliance Validation
 
@@ -379,7 +379,7 @@ Categorize discovered documents by filename patterns:
 
 **Planning Documents** (Read FOURTH, implementation blueprints):
 
-- `implementation-plan.md` - Generic implementation plan
+- `plan.md` - Generic implementation plan
 - `phase-*-plan.md` - Phase-specific plans (MORE SPECIFIC)
 
 **Validation Documents** (Read FIFTH, approvals):
@@ -406,7 +406,7 @@ Categorize discovered documents by filename patterns:
 
 **Correction Overrides**:
 
-- `correction-plan.md` supersedes `implementation-plan.md`
+- `correction-plan.md` supersedes `plan.md`
 - Always prefer correction/override documents over original plans
 
 **Specificity Wins**:
@@ -594,7 +594,7 @@ Focus on WHAT to build and WHY, not HOW to build it step-by-step.
 - No hallucinated APIs or assumptions
 
 ### Architecture Deliverables
-- implementation-plan.md - Component specifications with evidence citations
+- plan.md - Component specifications with evidence citations
 
 ### Team-Leader Handoff
 - Component specifications (WHAT to build)
@@ -605,7 +605,7 @@ Focus on WHAT to build and WHY, not HOW to build it step-by-step.
 - Complexity assessment (HOW LONG it will take)
 
 **Team-Leader Next Steps**:
-1. Read component specifications from implementation-plan.md
+1. Read component specifications from plan.md
 2. Decompose components into atomic, git-verifiable tasks
 3. Create tasks.md with step-by-step execution plan
 4. Assign tasks to recommended developer type

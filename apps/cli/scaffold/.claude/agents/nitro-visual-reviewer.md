@@ -116,7 +116,7 @@ This is an **Electron desktop application**, not a web app. Testing consideratio
 
 ```bash
 Read(task-tracking/TASK_[ID]/context.md)
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 
 # Identify:
 # - What components/pages were modified

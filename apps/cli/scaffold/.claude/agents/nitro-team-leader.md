@@ -36,14 +36,14 @@ You decompose implementation plans into **intelligent task batches** and orchest
 
 ## MODE 1: DECOMPOSITION
 
-**Trigger**: Orchestrator invokes you, implementation-plan.md exists, tasks.md does NOT exist
+**Trigger**: Orchestrator invokes you, plan.md exists, tasks.md does NOT exist
 
 ### Step-by-Step Process
 
 **STEP 1: Read Planning Documents**
 
 ```bash
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 Read(task-tracking/TASK_[ID]/task-description.md)
 Read(task-tracking/TASK_[ID]/context.md)
 # If UI work:
@@ -168,7 +168,7 @@ Use Write tool to create `task-tracking/TASK_[ID]/tasks.md`:
 ### Task 1.1: [Description] PENDING
 
 **File**: [absolute-path]
-**Spec Reference**: implementation-plan.md:[line-range]
+**Spec Reference**: plan.md:[line-range]
 **Pattern to Follow**: [example-file.ts:line-number]
 
 **Quality Requirements**:
@@ -233,7 +233,7 @@ You are assigned Batch 1 for TASK_[ID].
 ## Your Responsibilities
 
 1. Read tasks.md - find Batch 1 (marked IN PROGRESS)
-2. Read implementation-plan.md for context
+2. Read plan.md for context
 3. **READ .claude/anti-patterns.md** - these are mandatory rules from past QA failures
 4. **READ the Plan Validation Summary** - note any risks/assumptions
 5. Implement ALL tasks in Batch 1 IN ORDER
@@ -397,6 +397,55 @@ Quick existence check for each file.
 Orchestrator should ask user for QA choice:
 
 - tester, style, logic, reviewers, all, or skip
+```
+
+---
+
+## Commit Traceability (REQUIRED)
+
+Every commit you create must include a traceability footer. This is required for all commits in orchestrated workflows.
+
+### Footer Template
+
+```
+Task: {TASK_ID}
+Agent: nitro-team-leader
+Phase: implementation
+Worker: build-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+```
+
+### Field Values
+
+| Field | Value | Source |
+|-------|-------|--------|
+| Agent | `nitro-team-leader` | Fixed — this agent's identity |
+| Phase | `implementation` | Fixed — team-leader commits on behalf of developers in MODE 2 |
+| Worker | `build-worker` | Fixed — team-leader operates in the build-worker context |
+| Task | From task folder name | e.g., `TASK_2026_100` |
+| Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Provider | From execution context | e.g., `claude`, `glm`, `opencode` |
+| Model | From execution context | e.g., `claude-sonnet-4-6` |
+| Retry | From prompt context | e.g., `0/2`, `1/2` |
+| Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |
+| Priority | From task.md | e.g., `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
+| Generated-By | Read from `apps/cli/package.json` at project root | Fallback: `nitro-fueled@unknown` |
+
+### Reading the Version
+
+Before creating a commit, read the version from `apps/cli/package.json`:
+
+```bash
+# Extract version field from package.json
+# Use the version value in Generated-By field
+# Format: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+# Fallback if file unreadable: nitro-fueled@unknown
 ```
 
 ---

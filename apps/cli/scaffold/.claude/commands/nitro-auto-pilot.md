@@ -1,7 +1,21 @@
 # Auto-Pilot -- Supervisor Task Processing
 
+## STOP — HARD RULES (read FIRST, re-read after every compaction)
+
+1. **NO Bash for file reads** — never `cat`, `head`, `for` loops on task files. Use Read tool or MCP.
+2. **NO task.md reads during pre-flight** — registry columns only. task.md reads happen JIT at spawn.
+3. **NO reference file loads during Steps 1-4** — zero. Load only when entering the Core Loop.
+4. **NO hallucinated providers** — only use what `get_available_providers()` returned. Nothing else exists.
+5. **NO tables in monitoring loop** — heartbeat is ONE line, then `Bash: sleep 30`, then poll. Nothing else.
+6. **NO thinking >10s without a tool call** — if you're not calling a tool, you're stalling. Call sleep.
+7. **NO tangents** — don't explore, don't check for "newer tasks", don't investigate. Follow the steps.
+8. **NO ending your turn after spawning** — after `spawn_worker`, your next tool call MUST be `Bash: sleep 30`. No text, no tables, no summaries between spawn and sleep. This is the #1 stall cause.
+9. **NO wave tables, queue summaries, or notes to conversation** — structured output goes to log/DB only. Conversation = one line per event: `SPAWNED worker=X task=Y`.
+
+---
+
 Start the Supervisor loop. Reads the task backlog, spawns Build Workers
-and Review Workers via MCP session-orchestrator, monitors state transitions,
+and Review Workers via MCP nitro-cortex, monitors state transitions,
 and loops until all tasks are complete or blocked.
 
 ## Usage
@@ -15,6 +29,14 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --pause                            # Run one monitoring cycle then stop cleanly (workers keep running)
 /nitro-auto-pilot --continue                         # Resume most recent paused/stopped session
 /nitro-auto-pilot --continue SESSION_2026-03-28T14-00-00  # Resume specific session
+/nitro-auto-pilot --evaluate claude-opus-4-6          # Evaluate a model against the benchmark suite
+/nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6  # A/B comparison
+/nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role reviewer  # Test as reviewer
+/nitro-auto-pilot --evaluate claude-sonnet-4-6 --compare claude-opus-4-6 --role both      # Test both roles
+/nitro-auto-pilot --evaluate claude-opus-4-6 --reviewer claude-sonnet-4-6  # Override reviewer model
+/nitro-auto-pilot --sequential                       # Process backlog inline (no MCP workers)
+/nitro-auto-pilot --sequential TASK_YYYY_NNN         # Process single task inline
+/nitro-auto-pilot --sequential --limit 3             # Process up to 3 tasks inline
 ```
 
 ### Parameters
@@ -29,6 +51,11 @@ and loops until all tasks are complete or blocked.
 | --force         | flag                         | false   | Override stale RUNNING state                             |
 | --pause         | flag                         | false   | Stop cleanly after current monitoring cycle; workers keep running |
 | --continue      | flag or SESSION_ID string    | —       | Resume a paused/stopped session (latest if no ID given; invalid format exits immediately) |
+| --evaluate      | model-id string              | —       | Enter evaluation mode: run benchmark suite against specified model |
+| --compare       | model-id string              | —       | A/B comparison: run same benchmarks for both models (parallel worktrees in builder mode; sequential phases in reviewer/both modes) |
+| --role          | builder\|reviewer\|both       | builder | Which role to test the model in. `reviewer` and `both` require `--compare` |
+| --reviewer      | model-id string              | —       | Override the reviewer model for evaluation (defaults to baseline or system default) |
+| --sequential    | flag                         | false   | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. Compatible with [TASK_ID] and --limit N. |
 
 ## Execution Steps
 
@@ -59,6 +86,20 @@ Parse $ARGUMENTS for:
   given (see Continue Mode in SKILL.md). **If `--continue` is present and the SESSION_ID is
   valid, or no SESSION_ID was provided, skip Steps 3 and 4 entirely** and jump directly to
   the Continue Mode sequence in SKILL.md.
+- `--evaluate <model-id>` -> evaluation mode: enter single-model evaluation against the
+  benchmark suite. The `<model-id>` is required (e.g., `claude-opus-4-6`, `claude-sonnet-4-6`,
+  `glm-5`). **If `--evaluate` is present, skip Steps 3, 4, 5, and 6 entirely** and jump
+  directly to the Evaluation Mode sequence in SKILL.md.
+- `--compare <baseline-model>` -> A/B comparison mode (requires `--evaluate`). Runs same
+  benchmarks on both models in separate worktrees. Results stored in
+  `evaluations/<date>-<modelA>_vs_<modelB>/`.
+- `--role builder|reviewer|both` -> controls which role the model under test plays in
+  evaluation. `builder` (default): model builds, baseline reviews. `reviewer`: baseline
+  builds, model reviews. `both`: two full passes. Requires `--compare` when `reviewer`
+  or `both`.
+- `--reviewer <model-id>` -> overrides the model used for Review Workers in evaluation.
+  Defaults to `--compare` model if A/B mode, or no review phase if single-model builder.
+- `--sequential` flag -> sequential mode (set `sequential_mode = true`). **If `--sequential` is present, skip Step 3c** (MCP validation) entirely — jump to Step 4 after Steps 3a and 3b. All other pre-flight checks still run. **Then skip Steps 5–6** and jump directly to the Sequential Mode sequence in SKILL.md.
 
 ### Step 3: Pre-Flight Checks
 
@@ -67,21 +108,40 @@ Parse $ARGUMENTS for:
 **3b.** Verify `task-tracking/registry.md` exists.
 If missing: ERROR -- "Registry not found. Run /nitro-initialize-workspace first."
 
-**3c.** Verify MCP session-orchestrator is available:
-Call MCP `list_workers` (status_filter: 'all').
+**3c.** Verify MCP nitro-cortex is available:
+Call MCP `list_workers` (status_filter: 'running', compact: true).
 If MCP call fails or the tool does not exist: **STOP IMMEDIATELY.**
-Display: "FATAL: MCP session-orchestrator is not configured or not running.
-The Supervisor REQUIRES the MCP session-orchestrator to spawn separate
+Display: "FATAL: MCP nitro-cortex is not configured or not running.
+The Supervisor REQUIRES nitro-cortex to spawn separate
 worker sessions in their own terminal windows. Without it, tasks cannot
 be processed. Do NOT use the Agent tool as a fallback — sub-agents share
-context and break the architecture. Configure the MCP server in
-.claude/settings.json and restart."
+context and break the architecture. Configure nitro-cortex in
+.mcp.json and restart."
 **EXIT. Do not continue to Step 4.**
 
-**3d.** If single-task mode: verify the task ID exists in the registry
+**3d. Provider Discovery (MANDATORY)**
+
+Before any task validation, discover which providers are actually available using MCP tools:
+
+1. **Call MCP `get_available_providers()`**: Returns each provider's availability status and supported models. This is a single MCP call (~3 lines output) — no config file reads needed.
+2. **Call MCP `get_provider_stats()`** (no filters): Returns historical success rates and avg costs per provider/model from all past workers. Use this to identify unreliable providers (e.g., glm-5 with high kill rate) and inform routing defaults.
+3. **Build `available_providers` map** from the MCP response: `{ providerName: { available: bool, models: string[] } }`.
+4. **Read routing config**: Read `.nitro-fueled/config.json` for the `routing` section only (which tier maps to which provider). If missing, use defaults: all tiers → `claude`.
+5. **Validate routing config against available providers**: For each routing slot, check that the configured provider is in `available_providers` and marked available. If not, override to `claude` and log: `"ROUTING OVERRIDE — slot '{slot}' configured for '{provider}' but it's unavailable, falling back to claude"`.
+6. **Log discovery results**: For each provider, log one line:
+   `| {HH:MM:SS} | auto-pilot | PROVIDER {name}: {available|unavailable} — models=[{list}] |`
+   For provider stats (if any history exists), log:
+   `| {HH:MM:SS} | auto-pilot | PROVIDER STATS — {provider}/{model}: {success_rate}% success, avg ${cost} |`
+7. **If NO providers are available** (not even claude): FATAL error, exit.
+8. **Store in session**: Write `## Available Providers` table to `{SESSION_DIR}state.md` so routing decisions survive compaction.
+
+**The `available_providers` map is the ONLY source of truth for spawn decisions.** Any Provider field in task.md that references an unavailable provider is overridden to the fallback chain — never blindly trusted.
+
+**3e.** If single-task mode: verify the task ID exists in the registry
 and its status is CREATED or IMPLEMENTED. If status is IN_PROGRESS or
 IN_REVIEW, the Supervisor will spawn the appropriate worker type to resume.
 If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
+- If `--sequential` is active and status is IMPLEMENTED: ERROR — "TASK_X is IMPLEMENTED. Sequential mode requires CREATED status. Use /auto-pilot TASK_X (without --sequential) to run a Review Worker."
 
 ### Step 4: Pre-Flight Task Validation
 
@@ -99,24 +159,26 @@ If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
 2. Determine scope based on invocation mode:
    - **Single-task mode** (`/nitro-auto-pilot TASK_YYYY_NNN`): scope = the specified task ID plus its transitive dependencies only. Warnings for out-of-scope tasks are still printed to the user but do NOT trigger an abort.
    - **All-tasks or dry-run mode**: scope = all CREATED and IMPLEMENTED tasks.
-3. **Do NOT read task.md files here.** Pre-flight validation runs against the registry only. Full task.md reads happen JIT at spawn time.
+3. **Do NOT read task.md files here.** Pre-flight validation runs against the **registry only** (metadata columns: Task ID, Status, Type, Priority, Dependencies). Full task.md reads happen JIT at spawn time (Step 5a-jit) — this keeps the supervisor's context lean.
+   - Validations that require task.md content (acceptance criteria count, file scope, description length) are **deferred to Step 5a-jit** and run per-task immediately before spawn, not in bulk at pre-flight.
+   - The only pre-flight validations are: dependency checks (4c), circular dependency detection (4d), and registry-level completeness (4b uses registry columns only).
 4. Use `sizing-rules.md` (already read in step 1). If it was not found, use the inline fallback limits in Validation D below.
 5. Initialize two collections: `blocking_issues = []`, `warnings = []`.
-6. **Initialize session directory**: Capture the startup timestamp once, then call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Register that same `SESSION_ID` in `task-tracking/active-sessions.md`. Create `{SESSION_DIR}state.md` with a `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command. Do not generate a second local timestamp-based session ID.
+6. **Initialize session directory**: Capture the startup timestamp once (see session-lifecycle.md Step 1), then call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Register that same `SESSION_ID` in `task-tracking/active-sessions.md`. Create `{SESSION_DIR}state.md` with `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command. Do not generate a second local timestamp-based session ID.
 7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `{SESSION_DIR}`. Then skip to Step 6 (dry-run handler).
 
 **4b. Validation A: Task Completeness — Registry-Only (Warning)**
 
-For each CREATED task, check the registry columns only — do NOT read task.md:
+For each CREATED task, check the **registry columns** (Type, Priority) only — do NOT read task.md:
 
 | Field | Requirement | Warning if violated |
 |-------|-------------|---------------------|
 | Type | One of: FEATURE, BUGFIX, REFACTORING, DOCUMENTATION, RESEARCH, DEVOPS, CREATIVE | "TASK_X: missing or invalid Type" |
 | Priority | One of: P0-Critical, P1-High, P2-Medium, P3-Low | "TASK_X: missing or invalid Priority" |
 
-Add each violation to `warnings`.
+Description length and acceptance criteria count are validated **at spawn time** (Step 5a-jit), not here. This keeps pre-flight context-free of task.md content.
 
-Description length and acceptance criteria count are validated at spawn time, not during pre-flight.
+Add each violation to `warnings`.
 
 **4c. Validation B: Dependency Check (Blocking)**
 
@@ -128,7 +190,7 @@ For each CREATED or IMPLEMENTED task in scope, parse the Dependencies section. F
 - If the dependency has status BLOCKED → add to `blocking_issues`: `"TASK_X: dependency TASK_Y is BLOCKED — unsatisfiable"`
 - If the dependency has any unrecognized status value → record warning: `"TASK_X: dependency TASK_Y has unrecognized status '{value}' — verify manually"`
 
-**Validation B-ii: Orphan BLOCKED Task Detection (Warning)**
+**4c-ii. Validation B-ii: Orphan BLOCKED Task Detection (Warning)**
 
 1. For each task with status BLOCKED:
    - Check if any other task has it in its Dependencies field (directly or transitively)
@@ -149,28 +211,20 @@ Build a dependency graph of all non-COMPLETE, non-CANCELLED tasks. Run DFS cycle
 
 Deduplicate cycles by their normalized node set (e.g., `{A,B,C}` — report each cycle only once regardless of which node started the traversal).
 
-**4e. Validation D: Task Sizing Validation (Warning)**
+**4e. Validation D: Task Sizing Validation — Deferred to JIT (Step 5a-jit)**
 
-For each CREATED task's task.md, check these dimensions against sizing-rules.md. Inline fallback limits (used when sizing-rules.md is absent — includes all dimensions from the canonical file):
+Task sizing validation (file scope count, acceptance criteria count, description length, complexity) requires reading task.md content. To preserve supervisor context, these checks are **deferred to Step 5a-jit** and run per-task immediately before spawn.
 
-| Dimension | Hard Limit | How to measure |
-|-----------|------------|----------------|
-| Files in File Scope | 7 | Count lines starting with `-` under the `## File Scope` heading |
-| Acceptance criteria | 5 | Count lines starting with `- [ ]` that are not indented |
-| Description length | ~150 lines | Count total lines in the Description section |
-| Complexity + multiple layers | Human judgment | Complexity field is "Complex" — flag for human review: the task may need splitting |
+At Step 5a-jit, if any sizing limit is exceeded:
+1. Log: `"TASK_X: {dimension} limit exceeded ({actual}, max {limit}) — auto-splitting"`
+2. Invoke `/nitro-create-task` with `--split TASK_X` to auto-split the oversized task.
+3. **Never ask the user for permission to split** — auto-split by default. Only skip if `--no-split` is passed.
 
-For the first three dimensions, add to `warnings`: `"TASK_X: {dimension} limit exceeded ({actual}, max {limit}) — consider splitting"`
+**No task.md reads happen at pre-flight time.**
 
-For the Complexity dimension, add to `warnings`: `"TASK_X: complexity is 'Complex' — verify this task fits within a single worker session"`
+**4f. Validation E: File Scope Overlap Detection — Deferred to Step 3 of Core Loop**
 
-**4f. Validation E: File Scope Overlap Detection (Warning)**
-
-For all CREATED tasks in scope:
-
-1. Extract File Scope entries from each task.md (lines starting with `-` under `## File Scope`).
-2. Build a map: `file_path -> [task IDs that scope it]`.
-3. For any file mapped to 2+ task IDs → add to `warnings`: `"File scope overlap: TASK_A and TASK_B both scope {file}"`
+File scope overlap requires reading task.md content. Deferred to Step 3 of the Core Loop (dependency graph + file-scope overlap detection) where it runs against only the tasks about to be spawned in the current wave, not the entire backlog.
 
 **4g. Pre-Flight Report**
 
@@ -235,6 +289,19 @@ Monitoring interval: {N} minutes
 Mode: {all | single-task TASK_ID | dry-run}
 ```
 
+If `--sequential` is active, display instead:
+```
+SEQUENTIAL SUPERVISOR STARTING
+-------------------------------
+Total tasks in registry: {N}
+Ready for sequential execution (CREATED): {N}
+Complete: {N}
+Blocked/Cancelled: {N}
+Task limit: {N | "unlimited"}
+Retry limit: {N}
+Mode: {all | single-task TASK_ID}
+```
+
 ### Step 6: Handle Mode
 
 **IF `--dry-run`:**
@@ -277,10 +344,16 @@ STOP after task reaches COMPLETE or failure.
 
 Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 
+**IF `--sequential` mode:**
+
+1. If a TASK_ID was also provided: single-task sequential mode.
+2. Skip MCP validation (already skipped in Step 3).
+3. Load the Sequential Mode flow from SKILL.md and execute it.
+
 ## Quick Reference
 
 **Worker Types**: Build Worker (CREATED -> IMPLEMENTED), Review Worker (IMPLEMENTED -> COMPLETE)
-**Modes**: all-tasks (default), single-task, dry-run, pause, continue
+**Modes**: all-tasks (default), single-task, dry-run, pause, continue, sequential, evaluate, evaluate-ab, evaluate-role
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity, get_worker_stats,
               kill_worker, subscribe_worker, get_pending_events, emit_event
 **State Dir**: task-tracking/sessions/SESSION_{timestamp}/
@@ -291,5 +364,6 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 - Supervisor skill: `.claude/skills/auto-pilot/SKILL.md`
 - Orchestration skill (used by workers): `.claude/skills/orchestration/SKILL.md`
 - Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
-- MCP session-orchestrator design: `docs/mcp-session-orchestrator-design.md`
+- MCP nitro-cortex design: `docs/mcp-session-orchestrator-design.md`
 - Task template guide: `docs/task-template-guide.md`
+- Benchmark suite: `benchmark-suite/config.md`

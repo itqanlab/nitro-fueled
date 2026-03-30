@@ -1,6 +1,6 @@
 # Security Review Command
 
-**Agent Integration**: This command is executed by the nitro-code-security-reviewer agent as Phase 3 of the systematic triple review protocol.
+**Agent Integration**: This command is executed by the code-reviewer agent as Phase 3 of the systematic triple review protocol.
 
 **Purpose**: Universal security vulnerability assessment that identifies potential security issues across any technology stack and deployment environment.
 

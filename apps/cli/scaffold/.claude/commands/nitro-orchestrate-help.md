@@ -1,6 +1,6 @@
 # Orchestrator Quick Reference
 
-Quick help guide for the `/nitro-orchestrate` command workflow system.
+Quick help guide for the `/orchestrate` command workflow system.
 
 ## Command Usage
 
@@ -42,7 +42,7 @@ Quick help guide for the `/nitro-orchestrate` command workflow system.
 
 ### 4. Software Architect
 
-- Creates implementation-plan.md
+- Creates plan.md
 - Designs architecture
 - **MUST** search project's shared types and components
 - Breaks down into subtasks
@@ -92,13 +92,23 @@ Quick help guide for the `/nitro-orchestrate` command workflow system.
 ### Check Status
 
 ```bash
-grep "IN_PROGRESS\|BLOCKED\|FAILED" task-tracking/registry.md
+!cat task-tracking/registry.md | grep "IN_PROGRESS\|BLOCKED\|FAILED"
 ```
 
 ### View Task Progress
 
 ```bash
-cat task-tracking/TASK_YYYY_NNN/progress.md
+!cat task-tracking/TASK_CMD_009/progress.md
+```
+
+### Validate Specific Phase
+
+```bash
+/validate-project-manager TASK_CMD_009
+/validate-architect TASK_CMD_009
+/validate-developer TASK_CMD_009
+/validate-tester TASK_CMD_009
+/validate-reviewer TASK_CMD_009
 ```
 
 ## Troubleshooting

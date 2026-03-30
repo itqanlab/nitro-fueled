@@ -183,7 +183,7 @@ evoking intelligence, innovation, and developer-first design.
 - Hover: Subtle glow, slight lift
 ```
 
-**Designer Also Creates** (visual-design-specification.md) with page structure: Hero, Features, Architecture, Workflow, CTA, and Footer sections.
+**Designer Also Creates** (design-spec.md) with page structure: Hero, Features, Architecture, Workflow, CTA, and Footer sections.
 
 ---
 
@@ -199,7 +199,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_047
 **Design System**: Read .claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md
-**Visual Spec**: Read task-tracking/TASK_2026_047/visual-design-specification.md
+**Visual Spec**: Read task-tracking/TASK_2026_047/design-spec.md
 
 Create landing page content that integrates with the design system.
 See nitro-technical-content-writer.md for detailed instructions.`,
@@ -365,7 +365,7 @@ Summary:
 
 Deliverables:
 1. Brand Design System (.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md)
-2. Visual Specification (task-tracking/TASK_2026_047/visual-design-specification.md)
+2. Visual Specification (task-tracking/TASK_2026_047/design-spec.md)
 3. Content Specification (task-tracking/TASK_2026_047/content-specification.md)
 4. Landing Page (docs/index.html, docs/nitro-fueled-overview.css)
 5. Style Review (task-tracking/TASK_2026_047/code-review.md)

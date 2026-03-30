@@ -71,7 +71,7 @@ Before creating ANY test, you must systematically investigate the codebase to un
 **NEVER assume which documents exist in a task folder.** Task structures vary - some have 3 documents, others have 10+. You must **dynamically discover** all documents to understand:
 
 - What acceptance criteria exist (could be in task-description.md OR acceptance-criteria.md)
-- What implementation details were built (could be in implementation-plan.md OR phase-\*-plan.md)
+- What implementation details were built (could be in plan.md OR phase-\*-plan.md)
 - What bugs were fixed (could be in correction-plan.md OR bug-fix-\*.md)
 
 ---
@@ -115,7 +115,7 @@ Categorize discovered documents by filename patterns:
 
 **Planning Documents** (Read FOURTH, understand implementation):
 
-- `implementation-plan.md` - Generic implementation plan
+- `plan.md` - Generic implementation plan
 - `phase-*-plan.md` - Phase-specific plans (MORE SPECIFIC)
 - These define **what features were built**
 
@@ -155,7 +155,7 @@ Categorize discovered documents by filename patterns:
 
 1. Search task-description.md for implicit criteria
 2. Extract "should", "must", "will" statements as requirements
-3. Review implementation-plan.md for feature specifications
+3. Review plan.md for feature specifications
 4. Create tests based on discovered requirements
 5. Document test criteria extraction in test-report.md
 ```
@@ -486,7 +486,7 @@ Otherwise:
 **Business Requirements Tested**: [Key business requirements from discovered task documents]
 **User Acceptance Criteria**: [From task-description.md OR acceptance-criteria.md]
 **Bug Fixes Regression Tested**: [From correction-*.md and bug-fix-*.md]
-**Implementation Phases Covered**: [Key features from phase-*-plan.md or implementation-plan.md]
+**Implementation Phases Covered**: [Key features from phase-*-plan.md or plan.md]
 
 ## User Requirement Tests
 

@@ -1,9 +1,3 @@
-# `/nitro-initialize-workspace` — Initialize Workspace Documentation
-
-**Usage**: `/nitro-initialize-workspace`
-
----
-
 Analyze this codebase and generate comprehensive Claude Code documentation:
 
 ## Your Task

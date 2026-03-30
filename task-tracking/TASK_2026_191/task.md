@@ -46,3 +46,5 @@ Perform a full audit:
 - apps/cli/scaffold/.claude/skills/
 - apps/cli/scaffold/.claude/commands/
 - apps/cli/scaffold/.claude/agents/
+- apps/cli/scaffold/.claude/review-lessons/
+- apps/cli/scaffold/.claude/anti-patterns.md

@@ -1,6 +1,6 @@
 # Code Quality Review Command
 
-**Agent Integration**: This command is executed by the nitro-code-style-reviewer agent as Phase 1 of the systematic triple review protocol.
+**Agent Integration**: This command is executed by the code-reviewer agent as Phase 1 of the systematic triple review protocol.
 
 **Purpose**: Universal code quality assessment that adapts to the detected technology stack and applies relevant best practices.
 
