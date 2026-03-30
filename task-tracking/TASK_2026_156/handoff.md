@@ -15,7 +15,7 @@
 - task-tracking/TASK_2026_156/tasks.md (new, batch/task breakdown)
 
 ## Commits
-- pending: implementation commit will be recorded after this handoff is staged
+- ee52c6f: feat(dashboard): add mock auto-pilot start flow for TASK_2026_156
 
 ## Decisions
 - Kept the backend mocked with an in-memory session map so the UI flow can be wired without touching real cortex or CLI spawning.
