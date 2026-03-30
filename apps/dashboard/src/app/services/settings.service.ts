@@ -28,6 +28,7 @@ function cloneState(): SettingsState {
 
       return {
         ...entry,
+        key: maskApiKey(entry.key),
         label: entry.label ?? `${entry.provider} key`,
         providerId: entry.providerId ?? provider?.id,
       };

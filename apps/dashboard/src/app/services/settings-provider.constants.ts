@@ -73,10 +73,19 @@ export function detectProviderFromKey(keyValue: string): ApiProviderOption | nul
 
 export function maskApiKey(value: string): string {
   const trimmedValue = value.trim();
+  const keyLength = trimmedValue.length;
 
-  if (trimmedValue.length <= 8) {
+  if (keyLength === 0) {
     return trimmedValue;
   }
 
-  return `${trimmedValue.slice(0, 6)}${'•'.repeat(Math.max(4, trimmedValue.length - 10))}${trimmedValue.slice(-4)}`;
+  if (keyLength <= 4) {
+    return '*'.repeat(keyLength);
+  }
+
+  if (keyLength <= 12) {
+    return `${'*'.repeat(keyLength - 4)}${trimmedValue.slice(-4)}`;
+  }
+
+  return `${trimmedValue.slice(0, 2)}${'*'.repeat(keyLength - 6)}${trimmedValue.slice(-4)}`;
 }

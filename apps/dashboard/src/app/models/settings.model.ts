@@ -52,3 +52,22 @@ export interface SettingsState {
   readonly subscriptions: readonly SubscriptionEntry[];
   readonly mappings: readonly ModelMapping[];
 }
+
+export type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping';
+
+export interface SettingsTabDefinition {
+  readonly id: SettingsTab;
+  readonly label: string;
+  readonly icon: string;
+}
+
+export interface MappingDisplayEntry extends ModelMapping {
+  readonly launcherName: string;
+}
+
+export const SETTINGS_TABS: readonly SettingsTabDefinition[] = [
+  { id: 'api-keys', label: 'API Keys', icon: '🔑' },
+  { id: 'launchers', label: 'Launchers', icon: '🚀' },
+  { id: 'subscriptions', label: 'Subscriptions', icon: '📡' },
+  { id: 'mapping', label: 'Mapping', icon: '🗺️' },
+];

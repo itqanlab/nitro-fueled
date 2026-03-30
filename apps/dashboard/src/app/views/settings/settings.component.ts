@@ -1,22 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { MappingDisplayEntry, SETTINGS_TABS, SettingsTab, SettingsTabDefinition } from '../../models/settings.model';
 import { SettingsService } from '../../services/settings.service';
 import { ApiKeysComponent } from './api-keys/api-keys.component';
-
-type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping';
-
-interface TabDefinition {
-  readonly id: SettingsTab;
-  readonly label: string;
-  readonly icon: string;
-}
-
-const SETTINGS_TABS: readonly TabDefinition[] = [
-  { id: 'api-keys', label: 'API Keys', icon: '🔑' },
-  { id: 'launchers', label: 'Launchers', icon: '🚀' },
-  { id: 'subscriptions', label: 'Subscriptions', icon: '📡' },
-  { id: 'mapping', label: 'Mapping', icon: '🗺️' },
-];
 
 @Component({
   selector: 'app-settings',
@@ -29,16 +15,19 @@ const SETTINGS_TABS: readonly TabDefinition[] = [
 export class SettingsComponent {
   private readonly settingsService = inject(SettingsService);
 
-  public readonly tabs: readonly TabDefinition[] = SETTINGS_TABS;
+  public readonly tabs: readonly SettingsTabDefinition[] = SETTINGS_TABS;
   public readonly activeTab = signal<SettingsTab>('api-keys');
 
   public readonly launchers = this.settingsService.launchers;
   public readonly subscriptions = this.settingsService.subscriptions;
-  public readonly mappings = this.settingsService.mappings;
+  public readonly mappings = computed<readonly MappingDisplayEntry[]>(() => {
+    const launcherNames = new Map(this.settingsService.launchers().map((launcher) => [launcher.id, launcher.name]));
 
-  public readonly launcherNames = computed(() =>
-    new Map(this.settingsService.launchers().map((l) => [l.id, l.name])),
-  );
+    return this.settingsService.mappings().map((mapping) => ({
+      ...mapping,
+      launcherName: launcherNames.get(mapping.launcherId) ?? mapping.launcherId,
+    }));
+  });
 
   public selectTab(tab: SettingsTab): void {
     this.activeTab.set(tab);

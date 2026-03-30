@@ -25,7 +25,7 @@
 
       <label class="field-group field-group--wide">
         <span class="field-label">API key</span>
-        <input class="field-input field-input--mono" type="text" [value]="keyValue()" [placeholder]="editingId() === null ? 'sk-ant-...' : 'Paste a replacement key to update it'" (input)="onKeyInput($event)" />
+        <input class="field-input field-input--mono" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" [value]="keyValue()" [placeholder]="editingId() === null ? 'sk-ant-...' : 'Paste a replacement key to update it'" (input)="onKeyInput($event)" />
       </label>
 
       <label class="field-group">
