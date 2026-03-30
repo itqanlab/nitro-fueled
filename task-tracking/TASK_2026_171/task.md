@@ -55,3 +55,13 @@ Reports should be exportable (CSV/PDF) and show meaningful trends with actionabl
 
 - apps/dashboard/src/app/pages/reports/ (new page directory)
 - apps/dashboard-api/src/dashboard/ (report generation endpoints)
+- apps/dashboard/src/app/views/reports/ (new reports page)
+- apps/dashboard/src/app/models/reports.model.ts (shared frontend report contracts)
+- apps/dashboard/src/app/services/api.service.ts (reports API client)
+- apps/dashboard/src/app/app.routes.ts (reports route)
+- apps/dashboard/src/app/services/mock-data.constants.ts (sidebar navigation)
+- apps/dashboard-api/src/dashboard/reports.types.ts (report response contracts)
+- apps/dashboard-api/src/dashboard/reports.helpers.ts (report aggregation helpers)
+- apps/dashboard-api/src/dashboard/reports.service.ts (report assembly service)
+- apps/dashboard-api/src/dashboard/dashboard.controller.ts (reports endpoint)
+- apps/dashboard-api/src/dashboard/dashboard.module.ts (reports service wiring)

@@ -12,6 +12,7 @@ import { WsAuthGuard } from './auth/ws-auth.guard';
 import { OrchestrationFlowsService } from './orchestration-flows.service';
 import { LogsController } from './logs.controller';
 import { LogsService } from './logs.service';
+import { ReportsService } from './reports.service';
 
 @Module({
   controllers: [DashboardController, LogsController],
@@ -27,10 +28,15 @@ import { LogsService } from './logs.service';
     WatcherService,
     DashboardGateway,
     CortexService,
+    {
+      provide: ReportsService,
+      useFactory: (cortexService: CortexService) => new ReportsService(cortexService, process.cwd()),
+      inject: [CortexService],
+    },
     WsAuthGuard,
     OrchestrationFlowsService,
     LogsService,
   ],
-  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, OrchestrationFlowsService, LogsService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, ReportsService, OrchestrationFlowsService, LogsService],
 })
 export class DashboardModule {}

@@ -14,6 +14,13 @@ export const APP_ROUTES: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'analytics', component: AnalyticsComponent },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('./views/reports/reports.component').then(
+            (m) => m.ReportsComponent,
+          ),
+      },
       { path: 'agents', component: AgentEditorViewComponent },
       { path: 'mcp', component: McpIntegrationsComponent },
       {

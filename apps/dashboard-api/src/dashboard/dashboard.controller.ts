@@ -26,6 +26,7 @@ import { SessionsService } from './sessions.service';
 import { AnalyticsService } from './analytics.service';
 import { CortexService } from './cortex.service';
 import { OrchestrationFlowsService } from './orchestration-flows.service';
+import { ReportsService } from './reports.service';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
@@ -45,6 +46,7 @@ export class DashboardController {
     private readonly analyticsService: AnalyticsService,
     private readonly cortexService: CortexService,
     private readonly orchestrationFlowsService: OrchestrationFlowsService,
+    private readonly reportsService: ReportsService,
   ) {}
 
   // === Health ===
@@ -328,6 +330,25 @@ export class DashboardController {
     } catch (err) {
       this.logger.error('Analytics sessions failed:', err);
       throw new InternalServerErrorException({ error: 'Analytics unavailable' });
+    }
+  }
+
+  @ApiTags('reports')
+  @ApiOperation({ summary: 'Get analytics reports overview', description: 'Returns session, success, cost, model, and quality reports for the selected date range' })
+  @ApiQuery({ name: 'from', required: false, description: 'Start date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'to', required: false, description: 'End date (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, description: 'Reports overview payload' })
+  @ApiResponse({ status: 500, description: 'Reports unavailable' })
+  @Get('reports/overview')
+  public async getReportsOverview(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<ReturnType<ReportsService['getOverview']>> {
+    try {
+      return await this.reportsService.getOverview(from ?? null, to ?? null);
+    } catch (err) {
+      this.logger.error('Reports overview failed:', err);
+      throw new InternalServerErrorException({ error: 'Reports unavailable' });
     }
   }
 

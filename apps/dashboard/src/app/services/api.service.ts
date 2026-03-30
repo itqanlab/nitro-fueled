@@ -51,6 +51,7 @@ import type {
   SessionLogSummary,
   LogSearchResult,
 } from '../models/api.types';
+import type { ReportsOverview } from '../models/reports.model';
 
 // ── Allowlists for filter parameters ─────────────────────────────────────────
 const VALID_TASK_STATUSES = [
@@ -196,6 +197,19 @@ export class ApiService {
     return this.http.get<AnalyticsSessionsData>(
       `${this.base}/analytics/sessions`,
     );
+  }
+
+  public getReportsOverview(params?: { from?: string; to?: string }): Observable<ReportsOverview> {
+    let httpParams = new HttpParams();
+    if (params?.from) {
+      httpParams = httpParams.set('from', params.from);
+    }
+    if (params?.to) {
+      httpParams = httpParams.set('to', params.to);
+    }
+    return this.http.get<ReportsOverview>(`${this.base}/reports/overview`, {
+      params: httpParams,
+    });
   }
 
   public getCortexTasks(
