@@ -87,13 +87,21 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 2. Treat dependency fields as opaque data.
 3. Validate every dependency token against `^TASK_\d{4}_\d{3}$`.
 4. Classify tasks using DB state only:
-   - `READY_FOR_BUILD`: `CREATED` and all dependencies `COMPLETE`
-   - `BUILDING`: `IN_PROGRESS`
+   - `READY_FOR_BUILD`: `CREATED` and all dependencies `COMPLETE` (single Worker Mode)
+   - `READY_FOR_PREP`: `CREATED` and all dependencies `COMPLETE` (split Worker Mode)
+   - `BUILDING`: `IN_PROGRESS` (single mode)
+   - `PREPPING`: `IN_PROGRESS` (split mode — Prep Worker running)
+   - `READY_FOR_IMPLEMENT`: `PREPPED` and all dependencies `COMPLETE`
+   - `IMPLEMENTING`: `IMPLEMENTING`
    - `READY_FOR_REVIEW`: `IMPLEMENTED` and all dependencies `COMPLETE`
    - `REVIEWING`: `IN_REVIEW`
    - `BLOCKED`: `BLOCKED`
    - `COMPLETE`: `COMPLETE`
    - `CANCELLED`: `CANCELLED`
+
+   **Worker Mode resolution**: Read `worker_mode` from DB task metadata. If absent, auto-select:
+   Simple → `single`, Medium/Complex → `split`. This determines whether a CREATED task becomes
+   READY_FOR_BUILD or READY_FOR_PREP.
 5. If a dependency is missing, cancelled, or cyclic, call `update_task(task_id, fields=JSON.stringify({status: 'BLOCKED'}))`.
 6. If `log_event()` is available, record the reason there. If it is unavailable, skip the log write. Do **not** append to `log.md`.
 7. Do **not** read `task.md`, `registry.md`, or task `status` files on this path.
@@ -110,25 +118,29 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 1. Call `list_workers(session_id=SESSION_ID, status_filter: 'running', compact: true)` and derive `slots = concurrency_limit - running_workers_in_this_session`.
    Never compute `slots` from global active workers across all sessions.
 2. If `slots <= 0`, skip to Step 6.
-3. Partition candidates from the Step 3 classifications into two sets:
-   - `build_candidates`: tasks in `READY_FOR_BUILD` state (CREATED, deps satisfied), ordered by priority (P0 > P1 > P2 > P3), then by task ID ascending.
+3. Partition candidates from the Step 3 classifications into three sets:
+   - `build_candidates`: tasks in `READY_FOR_BUILD` or `READY_FOR_PREP` state (CREATED, deps satisfied), ordered by priority (P0 > P1 > P2 > P3), then by task ID ascending.
+   - `implement_candidates`: tasks in `READY_FOR_IMPLEMENT` state (PREPPED, deps satisfied), ordered by priority, then by task ID ascending.
    - `review_candidates`: tasks in `READY_FOR_REVIEW` state (IMPLEMENTED, deps satisfied), ordered by priority, then by task ID ascending.
 4. **Apply the configured priority strategy** (default: `build-first`) to allocate slots:
 
    **`build-first` (default)**:
-   - Fill slots starting with `build_candidates`.
+   - Fill slots starting with `build_candidates` (CREATED tasks — Build or Prep Workers).
+   - Next, fill from `implement_candidates` (PREPPED tasks — Implement Workers).
    - Any remaining slots go to `review_candidates`.
    - Guarantee: at least 1 slot goes to builds when `build_candidates` is non-empty.
 
    **`review-first`**:
    - Fill slots starting with `review_candidates`.
+   - Next, fill from `implement_candidates`.
    - Any remaining slots go to `build_candidates`.
    - Guarantee: at least 1 slot goes to reviews when `review_candidates` is non-empty.
 
    **`balanced`**:
    - Reserve ≥1 slot for builds and ≥1 slot for reviews (when both candidate sets are non-empty).
+   - `implement_candidates` are treated as build-adjacent (they progress the same task forward).
    - With `slots = 1` and both sets non-empty: allocate to builds.
-   - With `slots ≥ 2`: first slot to builds, second to reviews, remaining alternate starting with builds.
+   - With `slots ≥ 2`: first slot to builds, second to reviews, remaining alternate starting with builds. Implement candidates fill during build turns.
    - When only one candidate set is non-empty, all slots go to that set.
 
 5. If `get_next_wave(session_id, slots)` exists, use it as the atomic selector/claimer.
@@ -149,11 +161,22 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 
 1. For each selected task, read its metadata from the DB (`get_task_context(task_id)` or equivalent task row fields). The DB is the source for spawn-time metadata.
 2. Do not open `task.md` on this path.
-3. Validate structured routing fields before use: type, priority, complexity, provider, model, preferred tier, testing mode, and retry limits.
-4. Resolve provider/model from DB fields plus the routing config.
-5. Claim the task atomically if Step 4 did not already claim it.
-6. Call `spawn_worker(...)`.
-7. On success, persist active-worker state to the DB with `update_session()`.
+3. Validate structured routing fields before use: type, priority, complexity, provider, model, preferred tier, testing mode, worker mode, and retry limits.
+4. **Resolve worker type and prompt template**:
+   - Determine Worker Mode from DB metadata (`worker_mode` field). If absent, auto-select: Simple → `single`, Medium/Complex → `split`.
+   - Select prompt template from `references/worker-prompts.md` based on classification:
+     - `READY_FOR_BUILD` (single mode) → First-Run Build Worker Prompt
+     - `READY_FOR_PREP` (split mode) → First-Run Prep Worker Prompt
+     - `READY_FOR_IMPLEMENT` (split mode) → First-Run Implement Worker Prompt
+     - `READY_FOR_REVIEW` → First-Run Review+Fix Worker Prompt
+   - For retries, use the corresponding Retry prompt template.
+5. **Resolve provider/model**:
+   - Prep Workers default to `claude-sonnet-4-6` (planning doesn't need opus). Override if the task's Model field is explicitly set.
+   - Implement Workers use the task's Model field (or system default).
+   - Build Workers and Review Workers: unchanged routing.
+6. Claim the task atomically if Step 4 did not already claim it.
+7. Call `spawn_worker(...)` with the resolved prompt, model, and provider.
+8. On success, persist active-worker state to the DB with `update_session()`.
 8. If `subscribe_worker()` is available, register completion conditions immediately.
 9. If `log_event()` is available, emit the spawn event there. Otherwise skip the log write.
 10. Do **not** write `state.md` after each spawn.
@@ -194,8 +217,9 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 **Preferred path (`cortex_available = true`):**
 
 1. Treat `get_pending_events()` as the primary completion signal.
-2. For a Build Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
-3. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
+2. For a Prep Worker completion, accept the event as the authoritative signal that the task reached `PREPPED`. The task is now `READY_FOR_IMPLEMENT` — it will be picked up in the next Step 4 cycle.
+3. For a Build Worker or Implement Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
+4. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
 4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks. Avoid `get_tasks(status: "COMPLETE")`; if `get_tasks()` is needed for broader reconciliation, always use `compact: true` and provide a bounded `limit`.
 5. Release or update the task through MCP (`release_task()` / `update_task()`) as required by the implementation.
 6. Update the session DB record with completed/failed worker bookkeeping.

@@ -56,7 +56,8 @@ description: >
 |-------|---------------------------------------------------|
 | **Spawn** | `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` — one line per worker |
 | **Heartbeat** | `[HH:MM] monitoring — {N} active, {N} complete, {N} failed` |
-| **Completion (Build Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
+| **Completion (Prep Worker)** | `COMPLETE task=<task_id> → PREPPED` (or `FAILED` / `BLOCKED`) |
+| **Completion (Build/Implement Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
 | **Completion (Review+Fix Worker)** | `COMPLETE task=<task_id> → COMPLETE` (or `FAILED` / `BLOCKED`) |
 | **Session end** | `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` |
 | **All structured data** | Tables, queues, state snapshots, notes, analysis — DB/session artifacts only. **Never printed to conversation.** |
@@ -64,7 +65,19 @@ description: >
 
 ---
 
-Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
+Autonomous loop that processes the task backlog by spawning, monitoring, and managing workers via MCP nitro-cortex.
+
+### Worker Mode: single vs split
+
+Tasks can run in **single** mode (one Build Worker: CREATED → IMPLEMENTED) or **split** mode (Prep Worker: CREATED → PREPPED, then Implement Worker: PREPPED → IMPLEMENTED). The Supervisor auto-selects based on task Complexity when the `Worker Mode` field is absent:
+
+| Complexity | Default Worker Mode |
+|------------|-------------------|
+| Simple | single |
+| Medium | split |
+| Complex | split |
+
+In both modes, the Review+Fix Worker handles IMPLEMENTED → COMPLETE.
 
 ## Quick Start
 
@@ -84,8 +97,10 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 ### Primary Responsibilities
 
 1. **Re-query DB state each tick** -- `get_tasks(compact: true)` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
-2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority strategy (default: build-first)
-3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
+2. **Identify actionable tasks** (CREATED, PREPPED, or IMPLEMENTED) and order by priority strategy (default: build-first)
+3. **Spawn appropriate worker type** based on task state and Worker Mode:
+   - **single mode**: Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW
+   - **split mode**: Prep Worker for CREATED/IN_PROGRESS, Implement Worker for PREPPED/IMPLEMENTING, Review+Fix Worker for IMPLEMENTED/IN_REVIEW
 4. **Monitor worker health** on a configurable interval
 5. **Handle completions**: react to DB events, then re-query the DB for the next tick
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
@@ -133,7 +148,7 @@ Session registration and worker-slot accounting are multi-session safe only when
 
 > Stuck detection is server-side (120s inactivity). `escalate_to_user` requires cortex_available=true — auto-disabled otherwise. Merge overrides with defaults and write to `{SESSION_DIR}state.md` at startup.
 
-> **2-session worker model**: Build Worker (CREATED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). Each worker = 1 concurrency slot.
+> **Worker model**: In single mode: Build Worker (CREATED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). In split mode: Prep Worker (CREATED → PREPPED) + Implement Worker (PREPPED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). Each worker = 1 concurrency slot.
 
 ---
 
@@ -332,6 +347,6 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 8. **A completed task triggers immediate re-evaluation** of the dependency graph
 9. **Graceful degradation** -- one failure never crashes the loop
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
-11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
-12. **Build-first by default** -- CREATED (build) tasks fill slots before IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
+11. **Spawn the right worker type** -- Determine Worker Mode (single/split) from task metadata or Complexity auto-selection. In single mode: Build Worker for CREATED, Review Worker for IMPLEMENTED. In split mode: Prep Worker for CREATED, Implement Worker for PREPPED, Review Worker for IMPLEMENTED. Prep Workers always use `nitro-software-architect` and default to sonnet model.
+12. **Build-first by default** -- CREATED (build/prep) tasks fill slots before PREPPED (implement) and IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
 13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
