@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
 
-export type Provider = 'claude' | 'glm' | 'opencode';
+export type Provider = 'claude' | 'glm' | 'opencode' | 'codex';
 
 export interface SpawnOptions {
   prompt: string;
@@ -30,22 +30,15 @@ export function spawnWorkerProcess(opts: SpawnOptions): SpawnResult {
   const safeLabel = opts.label.replace(/[^a-zA-Z0-9_-]/g, '_');
   const logPath = join(logDir, `${safeLabel}_${timestamp}.log`);
 
-  const args = [
-    '--print',
-    '--dangerously-skip-permissions',
-    '--model', opts.model,
-    '--output-format', 'stream-json',
-    '--verbose',
-    opts.prompt,
-  ];
-
-  const env = opts.provider === 'glm'
-    ? buildGlmEnv(opts.glmApiKey ?? '')
-    : buildMinimalEnv();
+  const spawnOpts = {
+    ...opts,
+    prompt: sanitizePromptForProvider(opts.prompt, opts.provider),
+  };
+  const { binary, args, env } = buildSpawnCommand(spawnOpts);
 
   let stdoutBuffer = '';
 
-  const child = spawn('claude', args, {
+  const child = spawn(binary, args, {
     cwd: opts.workingDirectory,
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: false,
@@ -94,7 +87,7 @@ export function spawnWorkerProcess(opts: SpawnOptions): SpawnResult {
 
   if (!child.pid) {
     throw new Error(
-      `Failed to spawn 'claude' process for worker "${opts.label}". Is claude on PATH?`,
+      `Failed to spawn '${binary}' process for worker "${opts.label}". Is ${binary} on PATH?`,
     );
   }
 
@@ -157,15 +150,123 @@ export function resolveGlmApiKey(workingDirectory: string): string | undefined {
   }
 }
 
+interface SpawnCommand {
+  binary: string;
+  args: string[];
+  env: NodeJS.ProcessEnv;
+}
+
+export function sanitizePromptForProvider(prompt: string, provider: Provider): string {
+  if (provider === 'claude' || provider === 'glm') return prompt;
+
+  return prompt
+    .replaceAll('Agent tool', 'launcher-supported sub-agent tool')
+    .replaceAll('Agent sub-agents', 'sub-agents')
+    .replaceAll('reviewer Agents', 'reviewer sub-agents')
+    .replaceAll('All 3 Agents', 'All 3 sub-agents')
+    .replaceAll('Spawn a test Agent', 'Spawn a test sub-agent')
+    .replaceAll('spawn Agent sub-agents', 'spawn review sub-agents')
+    .replaceAll('Use the Agent tool for parallel sub-agents.', 'Use the available sub-agent tool for parallel sub-agents.')
+    .replaceAll('Spawn 3 reviewer Agents IN PARALLEL using the Agent tool (NOT MCP spawn_worker):',
+      'Spawn 3 reviewer sub-agents in parallel using the available sub-agent tool (NOT MCP spawn_worker):')
+    .replaceAll('All 3 Agents run in parallel (single message with 3 Agent tool calls).',
+      'All 3 sub-agents run in parallel (single message with 3 sub-agent tool calls).')
+    .replaceAll('a. Spawn a test Agent (subagent_type: nitro-senior-tester):',
+      'a. Spawn a test sub-agent (use the launcher-supported sub-agent mechanism):')
+    .replaceAll('artifacts written by Agent sub-agents in Phase 2,',
+      'artifacts written by sub-agents in Phase 2,')
+    .replaceAll('3. For any review type not yet complete, spawn Agent sub-agents',
+      '3. For any review type not yet complete, spawn review sub-agents')
+    .replaceAll('(same as First-Run Phase 2, step 4). Use the Agent tool, NOT MCP.',
+      '(same as First-Run Phase 2, step 4). Use the launcher-supported sub-agent mechanism, NOT MCP.')
+    .replaceAll('Use the Skill tool', 'Read the referenced instructions directly')
+    .replaceAll('using the Skill tool', 'by reading the referenced instructions directly');
+}
+
+function buildSpawnCommand(opts: SpawnOptions): SpawnCommand {
+  switch (opts.provider) {
+    case 'claude':
+      return {
+        binary: 'claude',
+        args: [
+          '--print',
+          '--dangerously-skip-permissions',
+          '--model', opts.model,
+          '--output-format', 'stream-json',
+          '--verbose',
+          opts.prompt,
+        ],
+        env: buildClaudeEnv(),
+      };
+
+    case 'glm':
+      return {
+        binary: 'claude',
+        args: [
+          '--print',
+          '--dangerously-skip-permissions',
+          '--model', opts.model,
+          '--output-format', 'stream-json',
+          '--verbose',
+          opts.prompt,
+        ],
+        env: buildGlmEnv(opts.glmApiKey ?? ''),
+      };
+
+    case 'opencode':
+      return {
+        binary: 'opencode',
+        args: [
+          'run',
+          '--model', opts.model,
+          '--format', 'json',
+          '--dir', opts.workingDirectory,
+          opts.prompt,
+        ],
+        env: buildOpenEnv(),
+      };
+
+    case 'codex':
+      return {
+        binary: 'codex',
+        args: [
+          'exec',
+          '--model', opts.model,
+          '--json',
+          '--dangerously-bypass-approvals-and-sandbox',
+          '-C', opts.workingDirectory,
+          opts.prompt,
+        ],
+        env: buildOpenEnv(),
+      };
+  }
+}
+
 /**
- * Builds a minimal environment for non-GLM providers (e.g., claude).
+ * Builds a minimal environment for the claude CLI.
  * Only forwards essential vars to avoid leaking sensitive environment variables
  * to child processes. Do NOT pass process.env wholesale.
  */
-function buildMinimalEnv(): NodeJS.ProcessEnv {
+function buildClaudeEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
-  // Allowlisted vars necessary for the claude CLI to function
   const allow = ['PATH', 'HOME', 'USER', 'SHELL', 'TERM', 'ANTHROPIC_API_KEY'];
+  for (const key of allow) {
+    if (process.env[key] !== undefined) env[key] = process.env[key];
+  }
+  return env;
+}
+
+/**
+ * Builds environment for opencode/codex CLIs.
+ * These read their own config files for API keys, so we forward broader env.
+ */
+function buildOpenEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  const allow = [
+    'PATH', 'HOME', 'USER', 'SHELL', 'TERM',
+    'OPENAI_API_KEY', 'OPENCODE_SERVER_PASSWORD',
+    'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
+  ];
   for (const key of allow) {
     if (process.env[key] !== undefined) env[key] = process.env[key];
   }

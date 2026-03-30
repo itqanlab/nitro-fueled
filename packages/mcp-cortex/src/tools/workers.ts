@@ -56,6 +56,17 @@ function getHealth(row: WorkerRow): HealthStatus {
   return 'healthy';
 }
 
+function getLauncherForProvider(provider: ProviderType): LauncherMode {
+  switch (provider) {
+    case 'opencode':
+      return 'opencode';
+    case 'codex':
+      return 'codex';
+    default:
+      return 'print';
+  }
+}
+
 export function handleSpawnWorker(
   db: Database.Database,
   watcher: JsonlWatcher,
@@ -80,7 +91,7 @@ export function handleSpawnWorker(
   }
 
   const model = args.model ?? DEFAULT_MODEL;
-  const provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode';
+  const provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode' | 'codex';
   const workerId = randomUUID();
 
   let glmApiKey: string | undefined;
@@ -110,13 +121,14 @@ export function handleSpawnWorker(
   // H2: INSERT the worker row BEFORE spawning the process so that if the process
   // exits immediately (onExit fires), the DB row already exists for the UPDATE.
   // T1: Use JSON.stringify(empty*()) instead of '{}' so parsed structs have correct fields.
+  const launcher = getLauncherForProvider(provider);
   db.prepare(`
     INSERT INTO workers (id, session_id, task_id, worker_type, label, status, working_directory, model, provider, launcher, auto_close, tokens_json, cost_json, progress_json)
-    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, 'print', ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     workerId, args.session_id, args.task_id ?? null,
     args.worker_type, args.label, resolvedDir,
-    model, provider, args.auto_close ? 1 : 0,
+    model, provider, launcher, args.auto_close ? 1 : 0,
     JSON.stringify(emptyTokenStats()), JSON.stringify(emptyCost()), JSON.stringify(emptyProgress()),
   );
 
