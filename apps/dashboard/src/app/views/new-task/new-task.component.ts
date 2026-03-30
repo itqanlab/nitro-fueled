@@ -5,6 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -66,8 +67,8 @@ export class NewTaskComponent {
     'Simple', 'Medium', 'Complex',
   ];
 
-  public castToInput(target: EventTarget | null): HTMLTextAreaElement {
-    return target as HTMLTextAreaElement;
+  public castToInput(target: EventTarget | null): HTMLTextAreaElement | null {
+    return target instanceof HTMLTextAreaElement ? target : null;
   }
 
   public onDescriptionChange(value: string): void {
@@ -114,7 +115,12 @@ export class NewTaskComponent {
         this.isSubmitting.set(false);
       },
       error: (err: unknown) => {
-        const message = err instanceof Error ? err.message : 'Failed to create task. Please try again.';
+        let message = 'Failed to create task. Please try again.';
+        if (err instanceof HttpErrorResponse) {
+          message = (err.error as { message?: string })?.message ?? message;
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
         this.errorMessage.set(message);
         this.isSubmitting.set(false);
       },

@@ -63,7 +63,7 @@
           class="task-textarea"
           placeholder="Describe the feature, bug fix, or improvement you want. Be as specific as you can — include what the user sees, what the system should do, and any constraints or references to existing code."
           [value]="description()"
-          (input)="onDescriptionChange(castToInput($event.target).value)"
+          (input)="onDescriptionChange(castToInput($event.target)?.value ?? '')"
           [disabled]="isSubmitting()"
           rows="10"
         ></textarea>

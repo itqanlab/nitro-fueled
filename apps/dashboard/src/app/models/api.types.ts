@@ -23,7 +23,8 @@ export type TaskType =
   | 'DOCUMENTATION'
   | 'RESEARCH'
   | 'DEVOPS'
-  | 'CREATIVE';
+  | 'CREATIVE'
+  | 'CONTENT';
 
 export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
 
@@ -500,14 +501,12 @@ export interface CortexPhaseTiming {
 }
 
 // Task creation API types
-export type TaskType = 'FEATURE' | 'BUGFIX' | 'REFACTORING' | 'DOCUMENTATION' | 'RESEARCH' | 'DEVOPS' | 'CREATIVE' | 'CONTENT';
-export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
-export type TaskComplexity = 'Simple' | 'Medium' | 'Complex';
+export type TaskCreationComplexity = 'Simple' | 'Medium' | 'Complex';
 
 export interface CreateTaskOverrides {
   type?: TaskType;
   priority?: TaskPriority;
-  complexity?: TaskComplexity;
+  complexity?: TaskCreationComplexity;
   model?: string;
   dependencies?: string[];
 }

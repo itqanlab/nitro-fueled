@@ -3,6 +3,7 @@ import {
   Post,
   Body,
   BadRequestException,
+  HttpCode,
   Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -23,6 +24,7 @@ export class TasksController {
   public constructor(private readonly tasksService: TasksService) {}
 
   @Post('create')
+  @HttpCode(201)
   @ApiOperation({ summary: 'Create one or more tasks from a natural-language description' })
   @ApiResponse({ status: 201, description: 'Task(s) created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request body' })
@@ -84,7 +86,11 @@ export class TasksController {
         if (typeof overrides['model'] !== 'string' || overrides['model'].trim().length === 0) {
           throw new BadRequestException('model must be a non-empty string');
         }
-        req.overrides.model = overrides['model'].trim();
+        const model = overrides['model'].trim();
+        if (!/^[a-zA-Z0-9._-]{1,128}$/.test(model)) {
+          throw new BadRequestException('model must contain only alphanumeric characters, dots, underscores, or hyphens (max 128 chars)');
+        }
+        req.overrides.model = model;
       }
 
       if (overrides['dependencies'] !== undefined) {
