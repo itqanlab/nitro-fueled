@@ -12,7 +12,7 @@
 - apps/dashboard/src/app/views/agent-editor/metadata-panel/compatibility-list.component.scss (new, 27 lines)
 
 ## Commits
-- (pending — see implementation commit)
+- 1c6b0c9: refactor(agent-editor): extract inline templates/styles to external files for TASK_2026_115
 
 ## Decisions
 - Templates and styles extracted as-is; no functional changes made
