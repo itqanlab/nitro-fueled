@@ -71,6 +71,11 @@ export class ProjectComponent implements OnInit {
   public readonly autoPilotState = signal<'idle' | 'starting' | 'running'>('idle');
   public readonly autoPilotSessionId = signal<string | null>(null);
   public readonly autoPilotError = signal<string | null>(null);
+  
+  // Dropdown open/close signals
+  public readonly statusDropdownOpen = signal(false);
+  public readonly typeDropdownOpen = signal(false);
+  public readonly priorityDropdownOpen = signal(false);
 
   public readonly allStatuses: readonly QueueTaskStatus[] = KANBAN_COLUMNS;
   public readonly allTypes: readonly QueueTaskType[] = ['FEATURE', 'BUGFIX', 'REFACTOR', 'DOCS', 'TEST', 'CHORE'];
@@ -284,17 +289,54 @@ export class ProjectComponent implements OnInit {
       takeUntil(this.destroy$),
     ).subscribe(query => {
       this.searchQuery.set(query);
-      this.syncUrlParams();
+      this.updateURL();
     });
   }
 
   public ngOnInit(): void {
-    this.restoreFromUrlParams();
+    this.initializeFromURL();
+  }
+
+  // Dropdown toggle methods
+  public toggleStatusDropdown(): void {
+    this.statusDropdownOpen.set(!this.statusDropdownOpen());
+  }
+
+  public toggleTypeDropdown(): void {
+    this.typeDropdownOpen.set(!this.typeDropdownOpen());
+  }
+
+  public togglePriorityDropdown(): void {
+    this.priorityDropdownOpen.set(!this.priorityDropdownOpen());
+  }
+
+  // Sort change handler
+  public onSortChange(event: Event): void {
+    if (event.target instanceof HTMLSelectElement) {
+      const value = event.target.value;
+      const [field, direction] = value.split('-') as [SortField, SortDirection];
+      this.sortField.set(field);
+      this.sortDirection.set(direction);
+      this.updateURL();
+    }
+  }
+
+  // Selected count methods
+  public statusSelectedCount(): number {
+    return this.selectedStatuses().length;
+  }
+
+  public typeSelectedCount(): number {
+    return this.selectedTypes().length;
+  }
+
+  public prioritySelectedCount(): number {
+    return this.selectedPriorities().length;
   }
 
   public setViewMode(mode: QueueViewMode): void {
     this.viewMode.set(mode);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public onSearchInput(event: Event): void {
@@ -312,7 +354,7 @@ export class ProjectComponent implements OnInit {
       current.push(status);
     }
     this.selectedStatuses.set(current);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public toggleType(type: QueueTaskType): void {
@@ -324,7 +366,7 @@ export class ProjectComponent implements OnInit {
       current.push(type);
     }
     this.selectedTypes.set(current);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public togglePriority(priority: QueueTaskPriority): void {
@@ -336,7 +378,7 @@ export class ProjectComponent implements OnInit {
       current.push(priority);
     }
     this.selectedPriorities.set(current);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public toggleModel(model: string): void {
@@ -348,19 +390,19 @@ export class ProjectComponent implements OnInit {
       current.push(model);
     }
     this.selectedModels.set(current);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public onStartDateChange(event: Event): void {
     const val = (event.target as HTMLInputElement).value;
     this.startDate.set(val || null);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public onEndDateChange(event: Event): void {
     const val = (event.target as HTMLInputElement).value;
     this.endDate.set(val || null);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public setSortField(field: SortField): void {
@@ -370,50 +412,50 @@ export class ProjectComponent implements OnInit {
       this.sortField.set(field);
       this.sortDirection.set('asc');
     }
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearSearch(): void {
     this.searchQuery.set('');
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearStatusFilter(): void {
     this.selectedStatuses.set([]);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearTypeFilter(): void {
     this.selectedTypes.set([]);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearPriorityFilter(): void {
     this.selectedPriorities.set([]);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearModelFilter(): void {
     this.selectedModels.set([]);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearDateRange(): void {
     this.startDate.set(null);
     this.endDate.set(null);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public setDateRange(start: string | null, end: string | null): void {
     this.startDate.set(start);
     this.endDate.set(end);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public setSort(field: SortField, direction: SortDirection): void {
     this.sortField.set(field);
     this.sortDirection.set(direction);
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public clearAllFilters(): void {
@@ -423,7 +465,7 @@ export class ProjectComponent implements OnInit {
     this.clearPriorityFilter();
     this.clearModelFilter();
     this.clearDateRange();
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public isStatusSelected(status: QueueTaskStatus): boolean {
@@ -444,7 +486,7 @@ export class ProjectComponent implements OnInit {
 
   public removeChip(chip: { clear: () => void }): void {
     chip.clear();
-    this.syncUrlParams();
+    this.updateURL();
   }
 
   public onTaskClick(task: QueueTask): void {
@@ -471,7 +513,7 @@ export class ProjectComponent implements OnInit {
     });
   }
 
-  private syncUrlParams(): void {
+  private updateURL(): void {
     const params: Record<string, string> = {};
     const q = this.searchQuery().trim();
     if (q) params['q'] = q;
@@ -495,7 +537,7 @@ export class ProjectComponent implements OnInit {
     });
   }
 
-  private restoreFromUrlParams(): void {
+  private initializeFromURL(): void {
     const params = this.route.snapshot.queryParamMap;
     if (params.has('q')) this.searchQuery.set(params.get('q')!);
     if (params.has('status')) {

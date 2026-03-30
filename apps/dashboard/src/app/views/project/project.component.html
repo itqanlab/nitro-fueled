@@ -50,7 +50,7 @@
 
   <!-- Task Queue (Main Content) -->
   <main class="task-queue-main">
-    <!-- Toolbar: Search + Filters + View Toggle -->
+    <!-- Enhanced Toolbar: Search + Filters + View Toggle -->
     <div class="toolbar">
       <div class="toolbar-row toolbar-top">
         <div class="search-wrapper">
@@ -58,36 +58,40 @@
           <input
             class="search-input"
             type="search"
-            placeholder="Search by ID, title, or description..."
+            placeholder="Search by ID, title, description..."
             aria-label="Search tasks"
             [value]="searchQuery()"
             (input)="onSearchInput($event)"
+            (keydown.escape)="clearSearch()"
           />
         </div>
 
-        <div class="result-count" role="status" aria-live="polite">
-          {{ resultCountText() }}
+        <div class="filter-badges" role="status" aria-live="polite">
+          @if (activeFilterCount() > 0) {
+            <div class="filter-badge">
+              <span class="filter-badge-count">{{ activeFilterCount() }}</span>
+              <span class="filter-badge-label">Filters Active</span>
+            </div>
+          }
         </div>
 
         <div class="toolbar-right">
           <!-- Sort dropdown -->
           <div class="sort-control" role="group" aria-label="Sort tasks">
             <span class="sort-label">Sort:</span>
-            @for (opt of sortFieldOptions; track opt.value) {
-              <button
-                class="sort-btn"
-                type="button"
-                [class.active]="sortField() === opt.value"
-                [attr.aria-pressed]="sortField() === opt.value"
-                [attr.aria-label]="'Sort by ' + opt.label + (sortField() === opt.value ? (sortDirection() === 'asc' ? ' ascending' : ' descending') : '')"
-                (click)="setSortField(opt.value)"
-              >
-                {{ opt.label }}
-                @if (sortField() === opt.value) {
-                  <span class="sort-arrow">{{ sortDirection() === 'asc' ? '&#x25B2;' : '&#x25BC;' }}</span>
-                }
-              </button>
-            }
+            <select 
+              class="sort-select"
+              [value]="sortField() + '-' + sortDirection()"
+              (change)="onSortChange($event)"
+              aria-label="Sort by field and direction"
+            >
+              @for (opt of sortFieldOptions; track opt.value) {
+                <optgroup label="{{ opt.label }}">
+                  <option value="{{ opt.value }}-asc">Ascending</option>
+                  <option value="{{ opt.value }}-desc">Descending</option>
+                </optgroup>
+              }
+            </select>
           </div>
 
           <!-- View mode toggle -->
@@ -114,94 +118,176 @@
         </div>
       </div>
 
-      <!-- Filter bar -->
+      <!-- Enhanced Filter Controls -->
       <div class="toolbar-row toolbar-filters">
-        <!-- Status filter -->
-        <div class="filter-group" role="group" aria-label="Filter by status">
-          <span class="filter-group-label">Status:</span>
-          @for (status of allStatuses; track status) {
-            <button
-              class="filter-chip"
-              type="button"
-              [class.active]="isStatusSelected(status)"
-              [attr.aria-pressed]="isStatusSelected(status)"
-              [attr.aria-label]="'Filter by status: ' + statusLabelMap[status]"
-              (click)="toggleStatus(status)"
-            >
-              {{ statusLabelMap[status] }}
-            </button>
+        <!-- Search Results Count -->
+        <div class="result-count" role="status" aria-live="polite">
+          @if (filteredTasks().length === 0) {
+            <div class="no-results">
+              <div class="no-results-text">No tasks match your filters.</div>
+              @if (activeFilterCount() > 0) {
+                <button class="clear-all-btn" type="button" (click)="clearAllFilters()" aria-label="Clear all filters">
+                  Clear all filters
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="results-info">
+              @if (searchQuery()) {
+                <div class="results-text">
+                  Showing {{ filteredTasks().length }} tasks matching "{{ searchQuery() }}"
+                </div>
+              } @else if (activeFilterCount() > 0) {
+                <div class="results-text">
+                  Showing {{ filteredTasks().length }} of {{ allTasks().length }} tasks
+                </div>
+              } @else {
+                <div class="results-text">
+                  Showing all {{ filteredTasks().length }} tasks
+                </div>
+              }
+            </div>
           }
         </div>
 
-        <!-- Type filter -->
-        <div class="filter-group" role="group" aria-label="Filter by type">
-          <span class="filter-group-label">Type:</span>
-          @for (type of allTypes; track type) {
+        <!-- Filter Dropdowns -->
+        <div class="filter-dropdowns">
+          <!-- Status filter dropdown -->
+          <div class="filter-dropdown" role="group" aria-label="Filter by status">
             <button
-              class="filter-chip"
+              class="filter-dropdown-btn"
               type="button"
-              [class.active]="isTypeSelected(type)"
-              [attr.aria-pressed]="isTypeSelected(type)"
-              [attr.aria-label]="'Filter by type: ' + type"
-              (click)="toggleType(type)"
+              [class.active]="statusDropdownOpen()"
+              [attr.aria-expanded]="statusDropdownOpen()"
+              [attr.aria-label]="'Status filter: ' + (statusSelectedCount() > 0 ? statusSelectedCount() + ' selected' : 'none selected')"
+              (click)="toggleStatusDropdown()"
             >
-              {{ type }}
+              <span class="filter-dropdown-label">Status</span>
+              <span class="filter-dropdown-count" *ngIf="statusSelectedCount() > 0">
+                {{ statusSelectedCount() }}
+              </span>
+              <span class="filter-dropdown-arrow">&#x25BC;</span>
             </button>
-          }
-        </div>
+            <div class="filter-dropdown-menu" [class.open]="statusDropdownOpen()">
+              <div class="filter-dropdown-header">
+                <h3 class="dropdown-title">Status</h3>
+                <button class="clear-btn" type="button" (click)="clearStatusFilter()" aria-label="Clear status filter">
+                  Clear
+                </button>
+              </div>
+              <div class="filter-dropdown-options">
+                @for (status of allStatuses; track status) {
+                  <label class="filter-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isStatusSelected(status)"
+                      (change)="toggleStatus(status)"
+                      aria-label="'Filter by status: ' + statusLabelMap[status]"
+                    />
+                    <span class="filter-option-label">{{ statusLabelMap[status] }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
 
-        <!-- Priority filter -->
-        <div class="filter-group" role="group" aria-label="Filter by priority">
-          <span class="filter-group-label">Priority:</span>
-          @for (p of allPriorities; track p) {
+          <!-- Type filter dropdown -->
+          <div class="filter-dropdown" role="group" aria-label="Filter by type">
             <button
-              class="filter-chip filter-chip--priority"
+              class="filter-dropdown-btn"
               type="button"
-              [class.active]="isPrioritySelected(p)"
-              [attr.aria-pressed]="isPrioritySelected(p)"
-              [attr.aria-label]="'Filter by priority: ' + p"
-              (click)="togglePriority(p)"
+              [class.active]="typeDropdownOpen()"
+              [attr.aria-expanded]="typeDropdownOpen()"
+              [attr.aria-label]="'Type filter: ' + (typeSelectedCount() > 0 ? typeSelectedCount() + ' selected' : 'none selected')"
+              (click)="toggleTypeDropdown()"
             >
-              {{ p }}
+              <span class="filter-dropdown-label">Type</span>
+              <span class="filter-dropdown-count" *ngIf="typeSelectedCount() > 0">
+                {{ typeSelectedCount() }}
+              </span>
+              <span class="filter-dropdown-arrow">&#x25BC;</span>
             </button>
-          }
-        </div>
+            <div class="filter-dropdown-menu" [class.open]="typeDropdownOpen()">
+              <div class="filter-dropdown-header">
+                <h3 class="dropdown-title">Type</h3>
+                <button class="clear-btn" type="button" (click)="clearTypeFilter()" aria-label="Clear type filter">
+                  Clear
+                </button>
+              </div>
+              <div class="filter-dropdown-options">
+                @for (type of allTypes; track type) {
+                  <label class="filter-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isTypeSelected(type)"
+                      (change)="toggleType(type)"
+                      aria-label="'Filter by type: ' + type"
+                    />
+                    <span class="filter-option-label">{{ type }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
 
-        <!-- Model filter -->
-        <div class="filter-group" role="group" aria-label="Filter by model">
-          <span class="filter-group-label">Model:</span>
-          @for (model of availableModels(); track model) {
+          <!-- Priority filter dropdown -->
+          <div class="filter-dropdown" role="group" aria-label="Filter by priority">
             <button
-              class="filter-chip"
+              class="filter-dropdown-btn"
               type="button"
-              [class.active]="isModelSelected(model)"
-              [attr.aria-pressed]="isModelSelected(model)"
-              [attr.aria-label]="'Filter by model: ' + model"
-              (click)="toggleModel(model)"
+              [class.active]="priorityDropdownOpen()"
+              [attr.aria-expanded]="priorityDropdownOpen()"
+              [attr.aria-label]="'Priority filter: ' + (prioritySelectedCount() > 0 ? prioritySelectedCount() + ' selected' : 'none selected')"
+              (click)="togglePriorityDropdown()"
             >
-              {{ model }}
+              <span class="filter-dropdown-label">Priority</span>
+              <span class="filter-dropdown-count" *ngIf="prioritySelectedCount() > 0">
+                {{ prioritySelectedCount() }}
+              </span>
+              <span class="filter-dropdown-arrow">&#x25BC;</span>
             </button>
-          }
-        </div>
+            <div class="filter-dropdown-menu" [class.open]="priorityDropdownOpen()">
+              <div class="filter-dropdown-header">
+                <h3 class="dropdown-title">Priority</h3>
+                <button class="clear-btn" type="button" (click)="clearPriorityFilter()" aria-label="Clear priority filter">
+                  Clear
+                </button>
+              </div>
+              <div class="filter-dropdown-options">
+                @for (p of allPriorities; track p) {
+                  <label class="filter-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isPrioritySelected(p)"
+                      (change)="togglePriority(p)"
+                      aria-label="'Filter by priority: ' + p"
+                    />
+                    <span class="filter-option-label">{{ p }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
 
-        <!-- Date range filter -->
-        <div class="filter-group filter-group--date" role="group" aria-label="Filter by date range">
-          <span class="filter-group-label">Date:</span>
-          <input
-            class="date-input"
-            type="date"
-            [value]="startDate() ?? ''"
-            aria-label="Start date"
-            (change)="onStartDateChange($event)"
-          />
-          <span class="date-sep">&mdash;</span>
-          <input
-            class="date-input"
-            type="date"
-            [value]="endDate() ?? ''"
-            aria-label="End date"
-            (change)="onEndDateChange($event)"
-          />
+          <!-- Date range filter -->
+          <div class="filter-group filter-group--date" role="group" aria-label="Filter by date range">
+            <span class="filter-group-label">Date:</span>
+            <input
+              class="date-input"
+              type="date"
+              [value]="startDate() ?? ''"
+              aria-label="Start date"
+              (change)="onStartDateChange($event)"
+            />
+            <span class="date-sep">&mdash;</span>
+            <input
+              class="date-input"
+              type="date"
+              [value]="endDate() ?? ''"
+              aria-label="End date"
+              (change)="onEndDateChange($event)"
+            />
+          </div>
         </div>
       </div>
 
