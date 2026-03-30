@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { ToolResult } from '../tools/types.js';
+import { normalizeSessionId } from '../tools/session-id.js';
 
 const MAX_CONDITIONS_PER_WORKER = 20;
 const MAX_EVENT_QUEUE_SIZE = 1_000;
@@ -319,9 +320,12 @@ export function handleSubscribeWorker(
 }
 
 export function handleGetPendingEvents(fileWatcher: FileWatcher, emitQueue: EmitQueue, sessionId?: string): ToolResult {
+  // Normalize the optional session filter so legacy underscore IDs resolve to the canonical
+  // T-format that events are stored with (written by handleSpawnWorker after normalization).
+  const normalizedSessionId = sessionId ? (normalizeSessionId(sessionId) ?? sessionId) : undefined;
   // Filter both file-watcher events and emit-events by session_id when provided.
-  const fileEvents = fileWatcher.drainEvents(sessionId);
-  const emitEvents = emitQueue.drain(sessionId);
+  const fileEvents = fileWatcher.drainEvents(normalizedSessionId);
+  const emitEvents = emitQueue.drain(normalizedSessionId);
   const all = [...fileEvents, ...emitEvents];
   return { content: [{ type: 'text' as const, text: JSON.stringify({ events: all }, all.length > 0 ? null : undefined, all.length > 0 ? 2 : undefined) }] };
 }

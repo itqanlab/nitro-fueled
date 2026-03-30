@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { initDatabase, emptyTokenStats, emptyCost, emptyProgress } from '../db/schema.js';
 import { handleCreateSession } from './sessions.js';
+import { toLegacySessionId } from './session-id.js';
 import {
   handleListWorkers,
   handleGetWorkerStats,
@@ -127,7 +128,7 @@ describe('handleListWorkers', () => {
 
   it('accepts legacy underscore session IDs when listing workers', () => {
     insertWorkerRow(db, sessionId, { label: 'legacy-session-worker' });
-    const result = parseText(handleListWorkers(db, { session_id: sessionId.replace('T', '_') })) as Array<{ label: string }>;
+    const result = parseText(handleListWorkers(db, { session_id: toLegacySessionId(sessionId) })) as Array<{ label: string }>;
     expect(result).toHaveLength(1);
     expect(result[0]!.label).toBe('legacy-session-worker');
   });
@@ -283,7 +284,7 @@ describe('handleSpawnWorker — DB insertion', () => {
 
   it('accepts legacy underscore session IDs when spawning a worker', async () => {
     const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
-      session_id: sessionId.replace('T', '_'),
+      session_id: toLegacySessionId(sessionId),
       worker_type: 'build',
       prompt: 'Do some work',
       working_directory: '/tmp',

@@ -18,6 +18,9 @@ export function handleGetNextWave(
   args: { session_id: string; slots: number },
 ): { content: Array<{ type: 'text'; text: string }> } {
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
   const result = db.transaction(() => {
     const completeTasks = new Set(
       (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE'").all() as Array<{ id: string }>).map(r => r.id),

@@ -94,6 +94,9 @@ export function handleSpawnWorker(
   const model = args.model ?? DEFAULT_MODEL;
   const provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode' | 'codex';
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
   const workerId = randomUUID();
 
   let glmApiKey: string | undefined;
@@ -166,7 +169,14 @@ export function handleListWorkers(
   db: Database.Database,
   args: { session_id?: string; status_filter?: string },
 ): ToolResult {
-  const sessionId = args.session_id ? normalizeSessionId(args.session_id) : undefined;
+  let sessionId: string | undefined;
+  if (args.session_id) {
+    const normalized = normalizeSessionId(args.session_id);
+    if (normalized === null) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+    }
+    sessionId = normalized;
+  }
   let rows: WorkerRow[];
   if (sessionId && args.status_filter && args.status_filter !== 'all') {
     rows = db.prepare('SELECT * FROM workers WHERE session_id = ? AND status = ? ORDER BY spawn_time').all(sessionId, args.status_filter) as WorkerRow[];

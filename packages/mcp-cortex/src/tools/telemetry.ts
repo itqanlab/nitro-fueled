@@ -341,6 +341,9 @@ export function handleGetSessionSummary(
 ): ToolResult {
   try {
     const sessionId = normalizeSessionId(args.session_id);
+    if (sessionId === null) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }], isError: true };
+    }
     const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as Record<string, unknown> | undefined;
     if (!session) {
       return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }], isError: true };

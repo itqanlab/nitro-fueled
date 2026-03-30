@@ -14,6 +14,9 @@ export function handleLogEvent(
 ): ToolResult {
   const dataJson = JSON.stringify(args.data ?? {});
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
 
   try {
     const result = db.prepare(
@@ -39,7 +42,15 @@ export function handleQueryEvents(
 ): ToolResult {
   const conditions: string[] = [];
   const params: unknown[] = [];
-  const sessionId = args.session_id ? normalizeSessionId(args.session_id) : undefined;
+
+  let sessionId: string | undefined;
+  if (args.session_id) {
+    const normalized = normalizeSessionId(args.session_id);
+    if (normalized === null) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+    }
+    sessionId = normalized;
+  }
 
   if (sessionId) {
     conditions.push('session_id = ?');
