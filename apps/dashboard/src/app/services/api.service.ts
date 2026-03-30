@@ -48,7 +48,7 @@ import type {
 
 // ── Allowlists for filter parameters ─────────────────────────────────────────
 const VALID_TASK_STATUSES = [
-  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING',
   'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
 ] as const;
 

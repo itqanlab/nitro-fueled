@@ -5,7 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { join } from 'node:path';
 import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
-import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask } from './tools/tasks.js';
+import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
 import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession } from './tools/sessions.js';
@@ -72,7 +72,7 @@ server.registerTool('release_task', {
   description: 'Release a claimed task, clearing the claim and setting a new status.',
   inputSchema: {
     task_id: z.string().describe('Task ID to release'),
-    new_status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','COMPLETE','FAILED','BLOCKED','CANCELLED']).describe('New status to set'),
+    new_status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).describe('New status to set'),
   },
 }, (args) => handleReleaseTask(db, args));
 
@@ -89,7 +89,7 @@ server.registerTool('update_task', {
   } catch {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] };
   }
-  return handleUpdateTask(db, { task_id: args.task_id, fields: parsed });
+  return handleUpdateTask(db, { task_id: args.task_id, fields: parsed }, projectRoot);
 });
 
 server.registerTool('get_next_wave', {
@@ -123,6 +123,16 @@ server.registerTool('upsert_task', {
   }
   return handleUpsertTask(db, { task_id: args.task_id, fields: parsed });
 });
+
+server.registerTool('get_orphaned_claims', {
+  description: 'Query tasks claimed by dead sessions or expired TTL. Returns array of {task_id, title, status, claimed_by, claimed_at, stale_for_ms}.',
+  inputSchema: {},
+}, (args) => handleGetOrphanedClaims(db));
+
+server.registerTool('release_orphaned_claims', {
+  description: 'Release all orphaned task claims atomically. Resets claims to CREATED, logs CLAIM_RELEASED events. Returns {released: N, tasks: [...]}.',
+  inputSchema: {},
+}, (args) => handleReleaseOrphanedClaims(db));
 
 // --- Handoff tools ---
 
@@ -176,11 +186,12 @@ server.registerTool('query_events', {
 // --- Session tools ---
 
 server.registerTool('create_session', {
-  description: 'Create a new supervisor session. Returns session_id.',
+  description: 'Create a new supervisor session. Automatically runs orphaned claim recovery unless skip_orphan_recovery=true. Returns session_id.',
   inputSchema: {
     source: z.string().optional().describe('Session source identifier'),
     config: z.string().optional().describe('JSON config string'),
     task_count: z.number().optional().describe('Expected number of tasks'),
+    skip_orphan_recovery: z.boolean().optional().describe('Skip automatic orphaned claim recovery at session startup'),
   },
 }, (args) => handleCreateSession(db, args));
 

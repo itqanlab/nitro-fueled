@@ -38,6 +38,7 @@ const statusClassMap: Record<TaskStatusKey, string> = {
   IN_PROGRESS: 'status-in-progress',
   IMPLEMENTED: 'status-implemented',
   IN_REVIEW: 'status-in-review',
+  FIXING: 'status-fixing',
   COMPLETE: 'status-complete',
   FAILED: 'status-failed',
   BLOCKED: 'status-blocked',
@@ -49,7 +50,7 @@ function getStatusValueClass(status: string): string {
 }
 
 function computeTotalTasks(b: TaskStatusBreakdown): number {
-  return b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW + b.COMPLETE + b.FAILED + b.BLOCKED + b.CANCELLED;
+  return b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW + b.FIXING + b.COMPLETE + b.FAILED + b.BLOCKED + b.CANCELLED;
 }
 
 function getSessionStatusClass(status: string): string {
@@ -62,7 +63,7 @@ describe('TaskStatusBreakdown model', () => {
   it('has all required status keys including CANCELLED', () => {
     const b: TaskStatusBreakdown = MOCK_TASK_STATUS_BREAKDOWN;
     const requiredKeys: TaskStatusKey[] = [
-      'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+      'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING',
       'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
     ];
     for (const key of requiredKeys) {
@@ -74,7 +75,7 @@ describe('TaskStatusBreakdown model', () => {
     const b = MOCK_TASK_STATUS_BREAKDOWN;
     const sum = computeTotalTasks(b);
     expect(sum).toBe(
-      b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW +
+      b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW + b.FIXING +
       b.COMPLETE + b.FAILED + b.BLOCKED + b.CANCELLED
     );
   });
@@ -82,7 +83,7 @@ describe('TaskStatusBreakdown model', () => {
   it('all status counts are non-negative integers', () => {
     const b = MOCK_TASK_STATUS_BREAKDOWN;
     const values = [
-      b.CREATED, b.IN_PROGRESS, b.IMPLEMENTED, b.IN_REVIEW,
+      b.CREATED, b.IN_PROGRESS, b.IMPLEMENTED, b.IN_REVIEW, b.FIXING,
       b.COMPLETE, b.FAILED, b.BLOCKED, b.CANCELLED,
     ];
     for (const v of values) {
@@ -198,7 +199,7 @@ describe('MOCK_COMMAND_CENTER_DATA', () => {
 
 describe('Task status breakdown covers all acceptance criteria statuses', () => {
   const statuses: TaskStatusKey[] = [
-    'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+    'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
   ];
 
   for (const status of statuses) {
@@ -311,6 +312,7 @@ describe('getStatusValueClass', () => {
     ['IN_PROGRESS', 'status-in-progress'],
     ['IMPLEMENTED', 'status-implemented'],
     ['IN_REVIEW',   'status-in-review'],
+    ['FIXING',      'status-fixing'],
     ['COMPLETE',    'status-complete'],
     ['FAILED',      'status-failed'],
     ['BLOCKED',     'status-blocked'],

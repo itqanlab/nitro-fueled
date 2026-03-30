@@ -933,6 +933,7 @@ export const MOCK_TASK_STATUS_BREAKDOWN: TaskStatusBreakdown = {
   IN_PROGRESS: 5,
   IMPLEMENTED: 12,
   IN_REVIEW: 3,
+  FIXING: 2,
   COMPLETE: 47,
   FAILED: 2,
   BLOCKED: 1,

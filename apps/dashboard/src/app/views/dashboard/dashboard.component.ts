@@ -28,6 +28,7 @@ export class DashboardComponent {
     IN_PROGRESS: 'status-in-progress',
     IMPLEMENTED: 'status-implemented',
     IN_REVIEW: 'status-in-review',
+    FIXING: 'status-fixing',
     COMPLETE: 'status-complete',
     FAILED: 'status-failed',
     BLOCKED: 'status-blocked',
@@ -46,7 +47,7 @@ export class DashboardComponent {
   // Total tasks derived from breakdown fields (not a stored literal)
   public readonly totalTasks = computed(() => {
     const b = this.taskBreakdown();
-    return b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW + b.COMPLETE + b.FAILED + b.BLOCKED + b.CANCELLED;
+    return b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW + b.FIXING + b.COMPLETE + b.FAILED + b.BLOCKED + b.CANCELLED;
   });
 
   // Token and cost summary

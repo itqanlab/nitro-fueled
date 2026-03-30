@@ -93,6 +93,10 @@
   color: var(--warning);
 }
 
+.stat-card-value.status-fixing {
+  color: var(--warning);
+}
+
 .stat-card-value.status-complete {
   color: var(--success);
 }

@@ -206,6 +206,7 @@
   &.status-in-progress { background: rgba(16, 185, 129, 0.1); color: var(--success); }
   &.status-implemented { background: var(--accent-bg); color: var(--accent); }
   &.status-in-review { background: var(--warning-bg); color: var(--warning); }
+  &.status-fixing { background: var(--warning-bg); color: var(--warning); }
   &.status-complete { background: var(--success-bg, rgba(16, 185, 129, 0.1)); color: var(--success); }
   &.status-failed { background: var(--error-bg); color: var(--error); }
   &.status-blocked { background: var(--error-bg); color: var(--error); }
@@ -265,6 +266,7 @@
   &.status-created, &.status-cancelled { background: var(--text-tertiary); }
   &.status-implemented { background: var(--purple, #9254de); }
   &.status-in-review { background: var(--warning); }
+  &.status-fixing { background: var(--warning); }
   &.status-complete { background: var(--success); }
   &.status-failed, &.status-blocked { background: var(--error); }
 }

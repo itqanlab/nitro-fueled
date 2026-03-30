@@ -9,6 +9,7 @@ export type TaskStatusKey =
   | 'IN_PROGRESS'
   | 'IMPLEMENTED'
   | 'IN_REVIEW'
+  | 'FIXING'
   | 'COMPLETE'
   | 'FAILED'
   | 'BLOCKED'
@@ -19,6 +20,7 @@ export interface TaskStatusBreakdown {
   readonly IN_PROGRESS: number;
   readonly IMPLEMENTED: number;
   readonly IN_REVIEW: number;
+  readonly FIXING: number;
   readonly COMPLETE: number;
   readonly FAILED: number;
   readonly BLOCKED: number;

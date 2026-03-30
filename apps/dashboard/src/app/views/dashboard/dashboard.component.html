@@ -26,6 +26,9 @@
     <app-stat-card label="IN REVIEW" [valueClass]="statusClassMap['IN_REVIEW']">
       {{ taskBreakdown().IN_REVIEW }}
     </app-stat-card>
+    <app-stat-card label="FIXING" [valueClass]="statusClassMap['FIXING']">
+      {{ taskBreakdown().FIXING }}
+    </app-stat-card>
     <app-stat-card label="COMPLETE" [valueClass]="statusClassMap['COMPLETE']">
       {{ taskBreakdown().COMPLETE }}
     </app-stat-card>

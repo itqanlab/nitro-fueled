@@ -10,7 +10,7 @@ import { join } from 'node:path';
 export const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
 export const VALID_STATUSES = new Set([
-  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING',
   'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
 ]);
 

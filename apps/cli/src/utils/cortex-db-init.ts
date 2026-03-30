@@ -60,7 +60,7 @@ export function initCortexDatabase(dbPath: string): { db: Database.Database; mig
     title            TEXT NOT NULL,
     type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','REFACTOR','DOCS','TEST','CHORE')),
     priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-    status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+    status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
     complexity       TEXT,
     model            TEXT,
     dependencies     TEXT NOT NULL DEFAULT '[]',

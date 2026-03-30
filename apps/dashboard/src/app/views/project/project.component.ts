@@ -8,7 +8,7 @@ import { SessionsPanelComponent } from './sessions-panel/sessions-panel.componen
 import type { QueueTask, QueueTaskPriority, QueueTaskStatus, QueueViewMode } from '../../models/project-queue.model';
 
 type StatusFilter = QueueTaskStatus | 'ALL';
-const KANBAN_COLUMNS: readonly QueueTaskStatus[] = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED'];
+const KANBAN_COLUMNS: readonly QueueTaskStatus[] = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED'];
 
 @Component({
   selector: 'app-project',
@@ -50,6 +50,7 @@ export class ProjectComponent {
     { value: 'IN_PROGRESS', label: 'In Progress' },
     { value: 'IMPLEMENTED', label: 'Implemented' },
     { value: 'IN_REVIEW', label: 'In Review' },
+    { value: 'FIXING', label: 'Fixing' },
     { value: 'COMPLETE', label: 'Complete' },
     { value: 'FAILED', label: 'Failed' },
     { value: 'BLOCKED', label: 'Blocked' },
@@ -57,14 +58,14 @@ export class ProjectComponent {
   ];
   public readonly statusClassMap: Record<QueueTaskStatus, string> = {
     CREATED: 'status-created', IN_PROGRESS: 'status-in-progress', IMPLEMENTED: 'status-implemented', IN_REVIEW: 'status-in-review',
-    COMPLETE: 'status-complete', FAILED: 'status-failed', BLOCKED: 'status-blocked', CANCELLED: 'status-cancelled',
+    FIXING: 'status-fixing', COMPLETE: 'status-complete', FAILED: 'status-failed', BLOCKED: 'status-blocked', CANCELLED: 'status-cancelled',
   };
   public readonly priorityClassMap: Record<QueueTaskPriority, string> = {
     'P0-Critical': 'priority-critical', 'P1-High': 'priority-high', 'P2-Medium': 'priority-medium', 'P3-Low': 'priority-low',
   };
   public readonly statusLabelMap: Record<QueueTaskStatus, string> = {
     CREATED: 'Created', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented', IN_REVIEW: 'In Review',
-    COMPLETE: 'Complete', FAILED: 'Failed', BLOCKED: 'Blocked', CANCELLED: 'Cancelled',
+    FIXING: 'Fixing', COMPLETE: 'Complete', FAILED: 'Failed', BLOCKED: 'Blocked', CANCELLED: 'Cancelled',
   };
 
   public constructor() {

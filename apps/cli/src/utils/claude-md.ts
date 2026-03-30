@@ -38,7 +38,7 @@ npx nitro-fueled status          # Show project status
 \`\`\`
 
 ### Task States
-CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKED)
+CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKED/CANCELLED)
 
 ## Task Status Queries
 - When asked about project status, remaining tasks, what's next, or any task-related question:
@@ -48,7 +48,7 @@ CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKE
 
 ## Conventions
 - Git: conventional commits with scopes
-- Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED | CANCELLED
+- Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | FIXING | COMPLETE | FAILED | BLOCKED | CANCELLED
 - Do NOT start git commit/push without explicit user instruction
 `;
 

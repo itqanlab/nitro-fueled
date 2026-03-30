@@ -8,6 +8,7 @@ export type QueueTaskStatus =
   | 'IN_PROGRESS'
   | 'IMPLEMENTED'
   | 'IN_REVIEW'
+  | 'FIXING'
   | 'COMPLETE'
   | 'FAILED'
   | 'BLOCKED'
