@@ -8,7 +8,7 @@ import { SessionsPanelComponent } from './sessions-panel/sessions-panel.componen
 import type { QueueTask, QueueTaskPriority, QueueTaskStatus, QueueViewMode } from '../../models/project-queue.model';
 
 type StatusFilter = QueueTaskStatus | 'ALL';
-const KANBAN_COLUMNS: readonly QueueTaskStatus[] = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'COMPLETE', 'FAILED', 'BLOCKED'];
+const KANBAN_COLUMNS: readonly QueueTaskStatus[] = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED'];
 
 @Component({
   selector: 'app-project',
@@ -53,6 +53,7 @@ export class ProjectComponent {
     { value: 'COMPLETE', label: 'Complete' },
     { value: 'FAILED', label: 'Failed' },
     { value: 'BLOCKED', label: 'Blocked' },
+    { value: 'CANCELLED', label: 'Cancelled' },
   ];
   public readonly statusClassMap: Record<QueueTaskStatus, string> = {
     CREATED: 'status-created', IN_PROGRESS: 'status-in-progress', IMPLEMENTED: 'status-implemented', IN_REVIEW: 'status-in-review',
