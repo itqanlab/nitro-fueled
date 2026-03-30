@@ -10,7 +10,17 @@
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; [[ \"$f\" =~ task-tracking/[^/]+/status$ ]] && npx nitro-fueled status; } 2>/dev/null || true",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; [[ \"$f\" =~ task-tracking/[^/]+/status$ ]] && bash /Volumes/SanDiskSSD/mine/nitro-fueled/.claude/hooks/regen-registry.sh; } 2>/dev/null || true",
+            "statusMessage": "Syncing task registry..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__nitro-cortex__update_task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Volumes/SanDiskSSD/mine/nitro-fueled/.claude/hooks/regen-registry.sh 2>/dev/null || true",
             "statusMessage": "Syncing task registry..."
           }
         ]
