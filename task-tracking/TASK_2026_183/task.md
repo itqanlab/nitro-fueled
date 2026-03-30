@@ -52,5 +52,16 @@ All data streams via WebSocket for real-time updates without polling.
 
 ## File Scope
 
-- apps/dashboard/src/app/pages/progress/ (new page directory)
-- apps/dashboard-api/src/dashboard/ (progress aggregation + WebSocket events)
+- apps/dashboard-api/src/dashboard/progress-center.types.ts
+- apps/dashboard-api/src/dashboard/progress-center.service.ts
+- apps/dashboard-api/src/dashboard/dashboard.controller.ts
+- apps/dashboard-api/src/dashboard/dashboard.module.ts
+- apps/dashboard-api/src/dashboard/dashboard.gateway.ts
+- apps/dashboard/src/app/models/progress-center.model.ts
+- apps/dashboard/src/app/services/api.service.ts
+- apps/dashboard/src/app/services/websocket.service.ts
+- apps/dashboard/src/app/views/progress-center/progress-center.component.ts
+- apps/dashboard/src/app/views/progress-center/progress-center.component.html
+- apps/dashboard/src/app/views/progress-center/progress-center.component.scss
+- apps/dashboard/src/app/app.routes.ts
+- apps/dashboard/src/app/services/mock-data.constants.ts
