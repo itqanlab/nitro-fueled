@@ -681,13 +681,13 @@ Write `{SESSION_DIR}state.md` only (original behavior).
 
 ```
 # After last spawn_worker completes:
-Output: "SPAWNED worker=X task=Y provider=Z"    ← one line per worker, nothing else
-Tool:   Bash: sleep 30                           ← IMMEDIATE. No text between spawn and sleep.
+Output: "SPAWNED worker=<id> task=<task_id> provider=<provider/model>"  ← one line per worker, nothing else
+Tool:   Bash: sleep 30                                                   ← IMMEDIATE. No text between spawn and sleep.
 # After sleep returns:
 Tool:   get_pending_events()                     ← start monitoring
 ```
 
-Do NOT: print tables, print wave summaries, print queue status, print notes, print "monitoring will...", reason about next steps, or end your turn. ANY of these kills the session. The supervisor is in a `while(true)` loop from this point on.
+**Per-Phase Output Budget** applies here: `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` is the ONLY conversation output for this phase. Do NOT print tables, wave summaries, queue status, notes, "monitoring will..." explanations, or any other text. ANY output beyond the SPAWNED line kills the session.
 
 ### Step 6: Monitor Active Workers
 
@@ -700,7 +700,7 @@ while true:
   get_pending_events()              ← check for completions
   if events: handle in Step 7
   if done: exit in Step 8
-  Output: "[HH:MM] N active, N complete"  ← ONE LINE heartbeat
+  Output: "[HH:MM] monitoring — N active, N complete, N failed"  ← ONE LINE heartbeat
 ```
 
 If you find yourself thinking for more than 5 seconds without calling `Bash: sleep`, you are stalling. Call it immediately.
@@ -730,8 +730,8 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 1. **Wait 30 seconds** (fast event poll interval). Implement this as `Bash: sleep 30` — do NOT yield control to the user or ask for input. The supervisor loop must be fully autonomous between monitoring cycles.
 
-   **Heartbeat**: Print exactly one line (no tables, no formatting, no reasoning):
-   `[HH:MM:SS] Monitoring: {N} active — {TASK_X (Build/provider), TASK_Y (Review/provider)}. Sleeping 30s.`
+   **Heartbeat**: Print exactly one line — no tables, no worker-list details, no reasoning:
+   `[HH:MM] monitoring — {N} active, {N} complete, {N} failed`
    Then IMMEDIATELY call `Bash: sleep 30`. No other tool calls or text between the heartbeat and sleep.
 
 2. **Drain the event queue:** Call MCP `get_pending_events()`.
@@ -769,8 +769,8 @@ After this re-check (in either outcome), continue to the normal mode steps below
 
 1. **Wait** for the configured monitoring interval (default: 5 minutes). Implement this as `Bash: sleep N` (where N is the interval in seconds, e.g., `sleep 300` for 5 minutes) — do NOT yield control to the user, ask for input, or suggest the user send a message to trigger the next check. The supervisor loop must run autonomously until the backlog is drained or `--limit` is reached.
 
-   **Heartbeat**: Print exactly one line (no tables, no formatting, no reasoning):
-   `[HH:MM:SS] Monitoring: {N} active — {TASK_X (Build/provider), TASK_Y (Review/provider)}. Sleeping {N}s.`
+   **Heartbeat**: Print exactly one line — no tables, no worker-list details, no reasoning:
+   `[HH:MM] monitoring — {N} active, {N} complete, {N} failed`
    Then IMMEDIATELY call `Bash: sleep {N}`. No other tool calls or text between the heartbeat and sleep.
 
 2. For each active worker in `{SESSION_DIR}state.md`:
@@ -1044,7 +1044,7 @@ This means any worker can be replaced at any time — the supervisor never depen
 
 | Condition | Action |
 |-----------|--------|
-| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
+| No actionable tasks (READY_FOR_BUILD or READY_FOR_REVIEW) **AND** no active workers | Output: `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` (one conversation line). Log: `"All tasks complete or blocked. Supervisor stopping."` Write final `{SESSION_DIR}state.md` with `Loop Status: STOPPED` and session summary. **Append session to history** (Step 8b). **STOP.** |
 | No actionable tasks **BUT** active workers exist | Log: `"No actionable tasks. Waiting for {N} active workers..."` Go to **Step 6** (monitor, wait for completions that may unblock). |
 | Actionable tasks exist | Go to **Step 4** (select and spawn). |
 

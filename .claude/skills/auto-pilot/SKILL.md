@@ -25,7 +25,7 @@ description: >
 6. **NEVER think for >10 seconds without calling a tool** — if you're reasoning/planning, you're stalling. Call `Bash: sleep 30` immediately.
 7. **NEVER go on tangents** — do not check for "newer tasks", explore the codebase, or investigate things not in the current step. Follow the steps sequentially.
 8. **NEVER end your turn after spawning workers** — after the last `spawn_worker` call completes, your VERY NEXT action MUST be `Bash: sleep 30`. Not a summary. Not a table. Not text to the user. Just `sleep`. If you output text or end your turn here, workers run unmonitored and the session is dead. The sequence is: `spawn_worker` → `sleep 30` → `get_pending_events` → loop. This is the #1 cause of supervisor stalls.
-9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to `log.md` or the DB only. Conversation output is ONE LINE per event maximum: `SPAWNED worker=X task=Y provider=Z`.
+9. **NEVER print wave tables, queue summaries, or notes to the conversation** — all structured output (tables, queues, routing plans, wave headers, explanatory paragraphs) goes to `log.md`, `state.md`, or the DB only. Conversation output is ONE LINE per event maximum. See **Per-Phase Output Budget** below.
 
 ### ALWAYS DO
 1. **Parallel tool calls** — read registry + active-sessions + config in ONE round, not three.
@@ -35,6 +35,22 @@ description: >
 5. **Spawn → sleep atomic sequence** — after the last `spawn_worker` in a wave, call `Bash: sleep 30` as the immediate next tool call. This is how you enter the monitoring loop. No text output between spawn and sleep.
 
 ---
+
+---
+
+## Per-Phase Output Budget
+
+**HARD RULE**: All structured data (tables, wave headers, queue summaries, routing plans, analysis, notes) goes to `log.md` and `state.md` ONLY. The conversation receives exactly ONE line per event — nothing more.
+
+| Phase | Conversation Output (EXACTLY this — nothing else) |
+|-------|---------------------------------------------------|
+| **Spawn** | `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` — one line per worker |
+| **Heartbeat** | `[HH:MM] monitoring — <N> active, <N> complete, <N> failed` |
+| **Completion** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
+| **Session end** | `SESSION COMPLETE — <N> complete, <N> failed, <N> blocked` |
+| **All structured data** | Tables, queues, state snapshots, notes, analysis — `log.md` and `state.md` ONLY. **Never printed to conversation.** |
+| **Explanatory text** | Any sentence explaining what the supervisor is about to do, what it decided, or how monitoring works — **banned from conversation**. Decisions go to `log.md`. |
+
 
 Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
 
