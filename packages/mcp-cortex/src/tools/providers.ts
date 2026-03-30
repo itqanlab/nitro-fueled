@@ -13,6 +13,7 @@ interface ProviderConfig {
   launcher: string;
   enabled?: boolean;
   models?: Record<string, string>;
+  autoPromote?: boolean;
   [key: string]: unknown;
 }
 
@@ -97,6 +98,58 @@ function queryDynamicModels(): Map<string, string[]> {
   return grouped;
 }
 
+/**
+ * Parse a model name into a sortable version tuple.
+ * e.g. "zai-coding-plan/glm-5.1" → [5, 1, 0]
+ *      "openai/gpt-5.4-mini" → [5, 4, 0] (with suffix "mini")
+ * Returns null if no version is found.
+ */
+function parseModelVersion(model: string): { major: number; minor: number; patch: number; suffix: string } | null {
+  // Match version-like patterns: digits.digits(.digits)? optionally followed by -suffix
+  const match = model.match(/(\d+)\.(\d+)(?:\.(\d+))?(?:-(.+))?$/);
+  if (!match) {
+    // Try single digit version like "glm-5"
+    const single = model.match(/(\d+)(?:-(.+))?$/);
+    if (!single) return null;
+    return { major: parseInt(single[1], 10), minor: 0, patch: 0, suffix: single[2] ?? '' };
+  }
+  return {
+    major: parseInt(match[1], 10),
+    minor: parseInt(match[2], 10),
+    patch: match[3] ? parseInt(match[3], 10) : 0,
+    suffix: match[4] ?? '',
+  };
+}
+
+/** Suffixes that indicate a lighter/smaller model variant — these should not auto-promote to heavy. */
+const LIGHT_SUFFIXES = new Set(['mini', 'air', 'flash', 'flashx', 'lite', 'small', 'spark', 'turbo']);
+
+/**
+ * From a list of discovered models, pick the best candidate for the heavy tier.
+ * Skips models with light suffixes (mini, air, flash, etc.) and vision variants.
+ * Returns the full model name or null if no suitable candidate.
+ */
+function pickHeavyModel(discovered: string[]): string | null {
+  let best: { model: string; ver: { major: number; minor: number; patch: number } } | null = null;
+
+  for (const model of discovered) {
+    const parsed = parseModelVersion(model);
+    if (!parsed) continue;
+    // Skip light/small variants and vision models
+    if (LIGHT_SUFFIXES.has(parsed.suffix.toLowerCase())) continue;
+    if (parsed.suffix.toLowerCase().endsWith('v')) continue;
+
+    if (!best ||
+        parsed.major > best.ver.major ||
+        (parsed.major === best.ver.major && parsed.minor > best.ver.minor) ||
+        (parsed.major === best.ver.major && parsed.minor === best.ver.minor && parsed.patch > best.ver.patch)) {
+      best = { model, ver: { major: parsed.major, minor: parsed.minor, patch: parsed.patch } };
+    }
+  }
+
+  return best?.model ?? null;
+}
+
 function loadConfig(workingDirectory?: string): ConfigFile {
   const userConfig = join(homedir(), '.nitro-fueled', 'config.json');
   const projectConfig = workingDirectory
@@ -161,7 +214,14 @@ export async function handleGetAvailableProviders(
         const prefixKey = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
         const discovered = dynamicModels.get(prefixKey) ?? [];
         if (discovered.length > 0) {
-          // Keep tier assignments from config, add full list of available models
+          // Auto-promote heavy tier to the best available model (unless autoPromote: false)
+          if (providerConfig.autoPromote !== false) {
+            const bestHeavy = pickHeavyModel(discovered);
+            if (bestHeavy && bestHeavy !== models['heavy']) {
+              models = { ...models, heavy: bestHeavy, _configHeavy: models['heavy'] ?? '' };
+            }
+          }
+          // Add full list of available models
           models = { ...models, _available: discovered.join(', ') } as Record<string, string>;
         }
       }
