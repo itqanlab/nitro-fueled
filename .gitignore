@@ -23,3 +23,8 @@ task-tracking/active-sessions.md
 
 # Agent worktrees (ephemeral, created by MCP nitro-cortex)
 .claude/worktrees/
+
+# Review/test artifacts must live inside task-tracking/TASK_*/
+# Root-level files mean a worker wrote to the wrong path — delete them, do not commit.
+/review-*.md
+/test-report.md

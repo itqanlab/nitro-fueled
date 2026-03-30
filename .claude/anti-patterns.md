@@ -66,3 +66,9 @@ Check these BEFORE submitting work.
 ## Specification Contradictions
 
 - Never have two sections in a spec that define the same rule with different conclusions (e.g., Step 3d allows IMPLEMENTED tasks but Step 5 rejects them). Each rule must have exactly one authoritative location. When splitting a spec across files, add explicit "source of truth for X is in [file:section]" headers. [RETRO_2026-03-30_2_since-2026-03-29]
+
+## Worker Output File Paths
+
+- Review and test artifact files (`review-*.md`, `test-report.md`) MUST always be written to `task-tracking/TASK_{TASK_ID}/` — never to the workspace root. A bare filename like `test-report.md` resolves relative to wherever the agent is running, which is the project root. Always use the full path including the task folder prefix.
+- Early-exit paths (skip decisions, "no framework found") are the most common offenders — they are written before the main phase loop and authors forget to qualify the path. Every write, including early exits, must use `task-tracking/TASK_{TASK_ID}/{filename}`.
+- Root-level `review-*.md` / `test-report.md` files in git are a sign of this bug. The `.gitignore` blocks them from being committed — if you see them untracked, delete them and identify which agent wrote them.
