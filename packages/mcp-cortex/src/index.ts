@@ -233,7 +233,7 @@ server.registerTool('spawn_worker', {
     working_directory: z.string().describe('Project directory to run in'),
     label: z.string().describe('Label for the worker'),
     model: z.string().optional().describe('Model to use (default: claude-sonnet-4-6)'),
-    provider: z.enum(['claude', 'glm', 'opencode']).optional().describe('Provider to use'),
+    provider: z.enum(['claude', 'glm', 'opencode', 'codex']).optional().describe('Provider to use'),
     auto_close: z.boolean().optional().describe('Auto-kill when worker finishes'),
   },
 }, (args) => handleSpawnWorker(db, jsonlWatcher, args));
