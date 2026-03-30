@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   file_scope       TEXT NOT NULL DEFAULT '[]',
   session_claimed  TEXT,
   claimed_at       TEXT,
+  claim_timeout_ms INTEGER,
   created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
@@ -228,6 +229,7 @@ const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'file_scope',           ddl: "ALTER TABLE tasks ADD COLUMN file_scope TEXT NOT NULL DEFAULT '[]'" },
   { column: 'session_claimed',      ddl: 'ALTER TABLE tasks ADD COLUMN session_claimed TEXT' },
   { column: 'claimed_at',           ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
+  { column: 'claim_timeout_ms',     ddl: 'ALTER TABLE tasks ADD COLUMN claim_timeout_ms INTEGER' },
 ];
 
 const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
