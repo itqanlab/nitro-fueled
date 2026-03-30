@@ -83,7 +83,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 ### Primary Responsibilities
 
-1. **Re-query DB state each tick** -- `get_tasks()` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
+1. **Re-query DB state each tick** -- `get_tasks(compact: true)` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
 2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority strategy (default: build-first)
 3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
 4. **Monitor worker health** on a configurable interval
@@ -106,11 +106,11 @@ Session registration and worker-slot accounting are multi-session safe only when
 
 | Need | Use THIS | NEVER use |
 |------|----------|-----------|
-| Task list/status | `get_tasks()` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
-| Task list/status during pre-flight | `get_tasks()` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
+| Task list/status | `get_tasks(compact: true)` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
+| Task list/status during pre-flight | `get_tasks(compact: true)` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
 | Task metadata before spawn | `get_task_context(task_id)` MCP | `cat task.md`, `Read task.md`, `Bash` on task files |
 | Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
-| Task state transitions | `get_pending_events()` and `get_tasks()` MCP | Per-task `status` files, `registry.md`, task-folder polling |
+| Task state transitions | `get_pending_events()` and `get_tasks(compact: true)` MCP | Per-task `status` files, `registry.md`, task-folder polling |
 
 **File reads are ONLY acceptable when:** MCP tools are confirmed unavailable (`cortex_available = false`). Inside the DB-backed loop, `registry.md`, task `status` files, and `task.md` are all banned.
 
@@ -254,8 +254,8 @@ but allows the Supervisor to run without the cortex DB.
 > **Load reference**: Read `references/parallel-mode.md` for all 8 steps of the Core Loop.
 
 The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
-1. Reconstruct current state from `list_workers()` + `get_tasks()`
-2. Read the current task queue from `get_tasks()`
+1. Reconstruct current state from `list_workers()` + `get_tasks(compact: true)`
+2. Read the current task queue from `get_tasks(compact: true)`
 3. Build the dependency view from DB fields only
 4. Order/select spawn candidates
 5. Spawn workers with DB-backed task metadata
@@ -268,7 +268,7 @@ The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
 When compaction happens, recovery is:
 
 1. `list_workers(compact: true)`
-2. `get_tasks()`
+2. `get_tasks(compact: true)`
 3. `get_session(session_id)` if session counters are needed
 
 Do **not** recover by reading `state.md` on the DB-backed path.

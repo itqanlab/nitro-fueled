@@ -60,9 +60,13 @@ const UPDATABLE_COLUMNS = new Set([
   'session_claimed', 'claimed_at',
 ]);
 
+// Lightweight columns returned when compact=true. Excludes description,
+// acceptance_criteria, and file_scope which can be 2-3 KB each.
+const COMPACT_COLS = 'id, title, status, type, priority, complexity, dependencies, model, created_at, updated_at';
+
 export function handleGetTasks(
   db: Database.Database,
-  args: { status?: string; type?: string; priority?: string; unblocked?: boolean; limit?: number },
+  args: { status?: string; type?: string; priority?: string; unblocked?: boolean; limit?: number; compact?: boolean },
 ): { content: Array<{ type: 'text'; text: string }> } {
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -82,12 +86,13 @@ export function handleGetTasks(
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const limit = args.limit !== undefined ? Math.min(Math.max(1, Math.trunc(args.limit)), 200) : undefined;
+  const cols = args.compact ? COMPACT_COLS : '*';
 
   if (args.unblocked) {
     // When filtering for unblocked tasks, do NOT apply LIMIT in SQL — the SQL LIMIT would
     // cap rows before dependency filtering, causing callers to get empty results when the
     // first N rows by ID are all blocked. Instead, fetch all candidates and cap post-filter.
-    const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id`).all(...params) as Array<Record<string, unknown>>;
+    const rows = db.prepare(`SELECT ${cols} FROM tasks ${where} ORDER BY id`).all(...params) as Array<Record<string, unknown>>;
 
     // Fetch IDs of all completed tasks for dependency resolution.
     // Bounded at 1000 — this is only used for set-membership checks, so a large-but-finite
@@ -115,7 +120,7 @@ export function handleGetTasks(
   // When unblocked filtering is not requested, apply LIMIT in SQL for efficiency.
   const limitClause = limit !== undefined ? ' LIMIT ?' : '';
   const queryParams = limit !== undefined ? [...params, limit] : params;
-  const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id${limitClause}`).all(...queryParams) as Array<Record<string, unknown>>;
+  const rows = db.prepare(`SELECT ${cols} FROM tasks ${where} ORDER BY id${limitClause}`).all(...queryParams) as Array<Record<string, unknown>>;
   return { content: [{ type: 'text' as const, text: JSON.stringify(rows, null, 2) }] };
 }
 

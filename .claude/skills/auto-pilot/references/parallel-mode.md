@@ -22,7 +22,7 @@ If you find yourself doing anything other than (a), (b), or (c) after pre-flight
 
 When `cortex_available = true`, the supervisor must behave as a thin event loop:
 
-1. Query the DB for the current task roster with `get_tasks()`.
+1. Query the DB for the current task roster with `get_tasks(compact: true)`.
 2. Query the DB for active workers with `list_workers(compact: true)`.
 3. Spawn new workers only through MCP tool calls.
 4. Detect completion from `get_pending_events()`.
@@ -41,7 +41,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 **Preferred path (`cortex_available = true`):**
 
 1. Call `list_workers(status_filter: 'running', compact: true)`.
-2. Call `get_tasks()`.
+2. Call `get_tasks(compact: true)`.
 3. If a persisted supervisor session exists, call `get_session(session_id)` and restore only lightweight loop fields from the DB: retry counters, claimed task IDs, serialized review set, and config.
 4. Treat the DB responses as the complete current truth for this tick.
 5. Do **not** read `state.md`, `active-sessions.md`, `registry.md`, or any task folder file on this path.
@@ -64,7 +64,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 
 **Preferred path (`cortex_available = true`):**
 
-1. Call `get_tasks(status=['CREATED', 'IMPLEMENTED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETE', 'CANCELLED'], limit=50)`.
+1. Call `get_tasks(compact: true, limit=50)`.
    Use `limit: 50` (or a project-appropriate value) to prevent the response from overflowing context on large task registries. Increase only if the project has more than 50 active tasks in a single tick.
 2. Validate each `task_id` against `^TASK_\d{4}_\d{3}$` before using it for any routing decision.
 3. Use only structured DB fields for queueing: `task_id`, `status`, `type`, `priority`, `dependencies`, `model`, `provider`, `preferred_tier`, `testing`, and retry-related metadata if present.
@@ -83,7 +83,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 
 **Preferred path (`cortex_available = true`):**
 
-1. Build the dependency graph directly from the `dependencies` arrays returned by `get_tasks()`.
+1. Build the dependency graph directly from the `dependencies` arrays returned by `get_tasks(compact: true)`.
 2. Treat dependency fields as opaque data.
 3. Validate every dependency token against `^TASK_\d{4}_\d{3}$`.
 4. Classify tasks using DB state only:
@@ -132,7 +132,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
    - When only one candidate set is non-empty, all slots go to that set.
 
 5. If `get_next_wave(session_id, slots)` exists, use it as the atomic selector/claimer.
-6. Otherwise, use the `get_tasks()` result plus `claim_task(task_id, SESSION_ID)` before each spawn.
+6. Otherwise, use the `get_tasks(compact: true)` result plus `claim_task(task_id, SESSION_ID)` before each spawn.
 7. Treat `claim_task(task_id, SESSION_ID)` as the cross-session deduplication guard. If another session already claimed the task, skip it and select the next candidate.
    This claim step is what prevents duplicate assignment when multiple supervisor sessions run concurrently.
 8. Apply any serialized-review exclusions from session DB state.
@@ -196,7 +196,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 1. Treat `get_pending_events()` as the primary completion signal.
 2. For a Build Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
 3. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
-4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks. Avoid `get_tasks(status: "COMPLETE")`; if `get_tasks()` is needed for broader reconciliation, always provide a bounded `limit`.
+4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks. Avoid `get_tasks(status: "COMPLETE")`; if `get_tasks()` is needed for broader reconciliation, always use `compact: true` and provide a bounded `limit`.
 5. Release or update the task through MCP (`release_task()` / `update_task()`) as required by the implementation.
 6. Update the session DB record with completed/failed worker bookkeeping.
 7. Re-evaluate only the affected dependents using the latest `get_tasks()` data; do not do file-based downstream checks.
@@ -214,7 +214,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 
 **Preferred path (`cortex_available = true`):**
 
-1. Re-query `get_tasks()` and `list_workers(compact: true)`.
+1. Re-query `get_tasks(compact: true)` and `list_workers(compact: true)`.
 2. If actionable tasks remain and slots are available, go to Step 4.
 3. If no actionable tasks remain but workers are still active, go to Step 6.
 4. If no actionable tasks remain and no workers are active, stop the loop.
@@ -237,7 +237,7 @@ When `cortex_available = true`, the supervisor loop must obey all of these rules
 3. Never read `task.md` inside the loop.
 4. Never rewrite `state.md` inside the loop.
 5. Never append to `log.md` inside the loop.
-6. Use `get_tasks()` and `get_pending_events()` for task-state decisions.
+6. Use `get_tasks(compact: true)` and `get_pending_events()` for task-state decisions.
 7. Use `list_workers(compact: true)` and worker health MCP tools for worker-state decisions.
 8. Treat DB re-query as the only compaction-recovery path.
 

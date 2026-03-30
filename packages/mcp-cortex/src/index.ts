@@ -40,25 +40,27 @@ const server = new McpServer({
 // --- Task tools (from Part 1) ---
 
 server.registerTool('get_tasks', {
-  description: 'Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE.',
+  description: 'Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE. Use compact=true to omit description/acceptance_criteria/file_scope (saves ~80% tokens).',
   inputSchema: {
     status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
     limit: z.number().int().min(1).max(200).optional().describe('Max tasks to return (default unlimited, max 200)'),
+    compact: z.boolean().optional().describe('When true, return only lightweight columns (id, title, status, type, priority, complexity, dependencies, model). Omits description, acceptance_criteria, file_scope. Recommended for listing/routing.'),
   },
 }, (args) => handleGetTasks(db, args));
 
 // query_tasks is an alias for get_tasks (acceptance-criteria name from TASK_2026_138 spec)
 server.registerTool('query_tasks', {
-  description: 'Alias for get_tasks. Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE.',
+  description: 'Alias for get_tasks. Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE. Use compact=true to omit description/acceptance_criteria/file_scope (saves ~80% tokens).',
   inputSchema: {
     status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
     limit: z.number().int().min(1).max(200).optional().describe('Max tasks to return (default unlimited, max 200)'),
+    compact: z.boolean().optional().describe('When true, return only lightweight columns (id, title, status, type, priority, complexity, dependencies, model). Omits description, acceptance_criteria, file_scope. Recommended for listing/routing.'),
   },
 }, (args) => handleGetTasks(db, args));
 
