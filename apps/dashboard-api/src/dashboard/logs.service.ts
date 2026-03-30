@@ -100,14 +100,18 @@ export class LogsService {
     return filtered.slice(offset, offset + limit);
   }
 
-  public getWorkerLogs(workerId: string): WorkerLogEntry | null {
+  /**
+   * Returns null when the Cortex DB is unavailable, undefined when the worker
+   * is not found, and WorkerLogEntry when found.
+   */
+  public getWorkerLogs(workerId: string): WorkerLogEntry | null | undefined {
     if (!this.cortexService.isAvailable()) return null;
 
     const workers = this.cortexService.getWorkers({});
     if (workers === null) return null;
 
     const worker = workers.find((w) => w.id === workerId);
-    if (!worker) return null;
+    if (!worker) return undefined;
 
     const taskTrace = this.cortexService.getTaskTrace(worker.task_id);
     if (!taskTrace) {

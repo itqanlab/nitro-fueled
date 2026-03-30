@@ -15,7 +15,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { LogsService } from './logs.service';
+import { LogsService, WorkerLogEntry } from './logs.service';
 
 @ApiTags('logs')
 @Controller({ path: 'api', version: '1' })
@@ -62,10 +62,13 @@ export class LogsController {
   @ApiResponse({ status: 404, description: 'Worker not found' })
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('logs/workers/:workerId')
-  public getWorkerLogs(@Param('workerId') workerId: string): ReturnType<LogsService['getWorkerLogs']> {
+  public getWorkerLogs(@Param('workerId') workerId: string): WorkerLogEntry {
     const result = this.logsService.getWorkerLogs(workerId);
     if (result === null) {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    if (result === undefined) {
+      throw new NotFoundException({ error: `Worker ${workerId} not found` });
     }
     return result;
   }

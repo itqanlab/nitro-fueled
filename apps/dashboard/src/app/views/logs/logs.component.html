@@ -29,34 +29,24 @@
         </select>
       </div>
 
+      @if (isLive() && liveCount() > 0) {
+        <div class="live-banner">
+          <span class="live-dot"></span>
+          Streaming {{ liveCount() }} live events
+        </div>
+      }
+
       <div class="events-list">
-        @if (isLive() && liveEvents().length > 0) {
-          <div class="live-banner">
-            <span class="live-dot"></span>
-            Streaming {{ liveEvents().length }} live events
+        @for (event of displayEvents(); track event.id) {
+          <div class="event-row" [ngClass]="event.typeClass">
+            <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
+            <div class="event-type-badge" [ngClass]="event.typeClass">{{ event.event_type }}</div>
+            <div class="event-source">{{ event.source }}</div>
+            <div class="event-task">{{ event.task_id || '-' }}</div>
+            <div class="event-data">{{ event.formattedData }}</div>
           </div>
-          @for (event of liveEvents(); track event.id) {
-            <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">
-              <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
-              <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
-              <div class="event-source">{{ event.source }}</div>
-              <div class="event-task">{{ event.task_id || '-' }}</div>
-              <div class="event-data">{{ formatEventData(event.data) }}</div>
-            </div>
-          }
-        } @else {
-          @for (event of filteredEvents(); track event.id) {
-            <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">
-              <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
-              <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
-              <div class="event-source">{{ event.source }}</div>
-              <div class="event-task">{{ event.task_id || '-' }}</div>
-              <div class="event-data">{{ formatEventData(event.data) }}</div>
-            </div>
-          }
-          @if (filteredEvents().length === 0) {
-            <div class="empty-state">No events found. Cortex DB may be empty or unavailable.</div>
-          }
+        } @empty {
+          <div class="empty-state">No events found. Cortex DB may be empty or unavailable.</div>
         }
       </div>
     </div>
@@ -66,11 +56,11 @@
     <div class="tab-content">
       <div class="workers-layout">
         <div class="workers-list">
-          <div class="list-header">Workers ({{ workersResult().length }})</div>
-          @for (worker of workersResult(); track worker.id) {
+          <div class="list-header">Workers ({{ enrichedWorkers().length }})</div>
+          @for (worker of enrichedWorkers(); track worker.id) {
             <div class="worker-item" [class.selected]="selectedWorkerId() === worker.id" (click)="selectWorker(worker.id)">
               <div class="worker-item-header">
-                <span class="worker-status-dot" [ngClass]="getWorkerStatusClass(worker.status)"></span>
+                <span class="worker-status-dot" [ngClass]="worker.statusClass"></span>
                 <span class="worker-label">{{ worker.label }}</span>
               </div>
               <div class="worker-meta">
@@ -81,11 +71,10 @@
           }
         </div>
         <div class="worker-detail">
-          @if (workerDetailResult()) {
-            @let detail = workerDetailResult();
+          @if (enrichedWorkerDetail(); as detail) {
             <div class="detail-header">
               <h3>{{ detail.worker.label }}</h3>
-              <span class="detail-status" [ngClass]="getWorkerStatusClass(detail.worker.status)">{{ detail.worker.status }}</span>
+              <span class="detail-status" [ngClass]="detail.worker.statusClass">{{ detail.worker.status }}</span>
             </div>
             <div class="detail-meta">
               <span>ID: {{ detail.worker.id }}</span>
@@ -98,13 +87,13 @@
               <h4>Phases ({{ detail.phases.length }})</h4>
               @for (phase of detail.phases; track phase.id) {
                 <div class="phase-block">
-                  <div class="phase-header" (click)="togglePhase(phaseId(phase.id))">
-                    <span class="phase-toggle">{{ isPhaseExpanded(phaseId(phase.id)) ? '\u25BC' : '\u25B6' }}</span>
+                  <div class="phase-header" (click)="togglePhase(phase.phaseIdStr)">
+                    <span class="phase-toggle">{{ phase.isExpanded ? '▼' : '▶' }}</span>
                     <span class="phase-name">{{ phase.phase }}</span>
                     <span class="phase-duration">{{ phase.duration_minutes !== null ? phase.duration_minutes + 'm' : 'running' }}</span>
                     <span class="phase-outcome">{{ phase.outcome || '-' }}</span>
                   </div>
-                  @if (isPhaseExpanded(phaseId(phase.id))) {
+                  @if (phase.isExpanded) {
                     <div class="phase-detail">
                       <div>Start: {{ phase.start_time | date:'medium' }}</div>
                       @if (phase.end_time) {
@@ -119,12 +108,23 @@
 
             <div class="worker-events-section">
               <h4>Events ({{ detail.events.length }})</h4>
-              @for (event of detail.events; track event.id) {
-                <div class="event-row compact" [ngClass]="getEventTypeClass(event.event_type)">
+              <div class="worker-event-search">
+                <input
+                  class="filter-input worker-search-input"
+                  type="text"
+                  placeholder="Search events..."
+                  [ngModel]="workerSearchQuery()"
+                  (ngModelChange)="workerSearchQuery.set($event)"
+                />
+              </div>
+              @for (event of detail.filteredEvents; track event.id) {
+                <div class="event-row compact" [ngClass]="event.typeClass">
                   <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
-                  <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
-                  <div class="event-data">{{ formatEventData(event.data) }}</div>
+                  <div class="event-type-badge" [ngClass]="event.typeClass">{{ event.event_type }}</div>
+                  <div class="event-data">{{ event.formattedData }}</div>
                 </div>
+              } @empty {
+                <div class="empty-state small">No events match the search.</div>
               }
             </div>
           } @else {
@@ -153,8 +153,7 @@
           }
         </div>
         <div class="worker-detail">
-          @if (sessionDetailResult()) {
-            @let detail = sessionDetailResult();
+          @if (enrichedSessionDetail(); as detail) {
             <div class="detail-header">
               <h3>{{ detail.sessionId }}</h3>
             </div>
@@ -171,7 +170,7 @@
               <h4>Workers</h4>
               @for (worker of detail.workers; track worker.id) {
                 <div class="session-worker-row">
-                  <span class="worker-status-dot" [ngClass]="getWorkerStatusClass(worker.status)"></span>
+                  <span class="worker-status-dot" [ngClass]="worker.statusClass"></span>
                   <span class="worker-label-col">{{ worker.label }}</span>
                   <span class="worker-task-col">{{ worker.task_id }}</span>
                   <span class="worker-model-col">{{ worker.model }}</span>
@@ -183,11 +182,11 @@
             <div class="session-events">
               <h4>Events Timeline</h4>
               @for (event of detail.events; track event.id) {
-                <div class="event-row compact" [ngClass]="getEventTypeClass(event.event_type)">
+                <div class="event-row compact" [ngClass]="event.typeClass">
                   <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
-                  <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+                  <div class="event-type-badge" [ngClass]="event.typeClass">{{ event.event_type }}</div>
                   <div class="event-task">{{ event.task_id || '-' }}</div>
-                  <div class="event-data">{{ formatEventData(event.data) }}</div>
+                  <div class="event-data">{{ event.formattedData }}</div>
                 </div>
               }
             </div>
@@ -203,22 +202,27 @@
     <div class="tab-content">
       <div class="search-bar">
         <input class="search-input" type="text" placeholder="Search logs... (min 2 characters)" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      </div>
+      <div class="search-filters">
         <input class="filter-input" type="text" placeholder="Session filter..." [ngModel]="searchSessionFilter()" (ngModelChange)="searchSessionFilter.set($event)" />
         <input class="filter-input" type="text" placeholder="Task filter..." [ngModel]="searchTaskFilter()" (ngModelChange)="searchTaskFilter.set($event)" />
+        <input class="filter-input" type="datetime-local" placeholder="Start time" [ngModel]="searchStartTime()" (ngModelChange)="searchStartTime.set($event)" />
+        <input class="filter-input" type="datetime-local" placeholder="End time" [ngModel]="searchEndTime()" (ngModelChange)="searchEndTime.set($event)" />
       </div>
 
-      @if (searchResultData()) {
-        @let results = searchResultData();
-        <div class="search-meta">Found {{ results.total }} results for "{{ results.query }}"</div>
-        @for (event of results.events; track event.id) {
-          <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">
+      @if (enrichedSearchResults(); as results) {
+        <div class="search-meta">Found {{ searchResultTotal() }} results for "{{ searchResultQuery() }}"</div>
+        @for (event of results; track event.id) {
+          <div class="event-row" [ngClass]="event.typeClass">
             <div class="event-time">{{ event.created_at | date:'HH:mm:ss' }}</div>
-            <div class="event-type-badge" [ngClass]="getEventTypeClass(event.event_type)">{{ event.event_type }}</div>
+            <div class="event-type-badge" [ngClass]="event.typeClass">{{ event.event_type }}</div>
             <div class="event-source">{{ event.source }}</div>
             <div class="event-task">{{ event.task_id || '-' }}</div>
             <div class="event-session">{{ event.session_id }}</div>
-            <div class="event-data">{{ formatEventData(event.data) }}</div>
+            <div class="event-data">{{ event.formattedData }}</div>
           </div>
+        } @empty {
+          <div class="empty-state">No results found.</div>
         }
       } @else if (searchQuery().length >= 2) {
         <div class="empty-state">No results found.</div>

@@ -426,10 +426,26 @@
 .worker-model-col { width: 100px; color: var(--text-secondary); }
 .worker-cost-col { width: 80px; text-align: right; color: var(--text-secondary); }
 
+// Worker event search
+.worker-event-search {
+  margin-bottom: 8px;
+}
+
+.worker-search-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 // Search
 .search-bar {
   display: flex;
   gap: 8px;
+}
+
+.search-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .search-input {
@@ -458,4 +474,9 @@
   text-align: center;
   color: var(--text-tertiary);
   font-size: 14px;
+
+  &.small {
+    padding: 16px;
+    font-size: 13px;
+  }
 }
