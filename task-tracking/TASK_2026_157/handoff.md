@@ -15,7 +15,7 @@
 - `task-tracking/TASK_2026_157/tasks.md` (new)
 
 ## Commits
-- Pending implementation commit hash; backfilled in the status commit that finalizes `IMPLEMENTED`.
+- `086964e`: `feat(dashboard): add live session viewer for TASK_2026_157`
 
 ## Decisions
 - Kept the viewer mock-driven and route-local instead of wiring it to the existing WebSocket service before real session APIs exist.
