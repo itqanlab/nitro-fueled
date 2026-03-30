@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
-import { configureNitroCortex } from '../utils/mcp-configure.js';
+import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
 import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
@@ -269,7 +269,7 @@ async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<vo
     : await prompt('Configure nitro-cortex globally or per-project? (global/project) [project]: ');
   const location: 'project' | 'global' = locationAnswer === 'global' ? 'global' : 'project';
 
-  const success = await configureNitroCortex(cwd, serverPath, location);
+  const success = await configureMcp(cwd, serverPath, location);
   if (!success) {
     console.error('nitro-cortex configuration failed. You can configure it manually later.');
   }
