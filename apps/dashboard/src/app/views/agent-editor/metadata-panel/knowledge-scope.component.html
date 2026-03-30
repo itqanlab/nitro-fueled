@@ -1,14 +1,15 @@
 <div class="scope-section">
   <div class="scope-label">Knowledge Scope</div>
   <div class="scope-badges" role="group" aria-label="Knowledge scope selection">
+    @let scopes = activeScopes();
     @for (badge of badges; track badge.value) {
       <button
         type="button"
         class="scope-badge"
-        [class.active]="activeScopes().has(badge.value)"
+        [class.active]="scopes.has(badge.value)"
         role="switch"
-        [attr.aria-checked]="activeScopes().has(badge.value)"
-        [attr.aria-label]="badge.label + ' scope ' + (activeScopes().has(badge.value) ? 'enabled' : 'disabled')"
+        [attr.aria-checked]="scopes.has(badge.value)"
+        [attr.aria-label]="badge.label + ' scope ' + (scopes.has(badge.value) ? 'enabled' : 'disabled')"
         (click)="toggleScope(badge.value)"
       >
         {{ badge.label }}
