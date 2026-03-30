@@ -37,12 +37,12 @@
                 <div class="usage-bar-track">
                   <div
                     class="usage-bar-fill"
-                    [style.width.%]="card.limit > 0 ? Math.min(100, (card.used / card.limit) * 100) : 0"
+                    [style.width.%]="cardBarWidths().get(card.provider) ?? 0"
                   ></div>
                 </div>
                 <div class="usage-stats">
                   <span class="usage-text">{{ card.used | number }} / {{ card.limit | number }} tokens</span>
-                  @if (card.remaining > 0) {
+                  @if (card.limit > 0 && card.remaining > 0) {
                     <span class="usage-remaining">{{ ((card.remaining / card.limit) * 100) | number:'1.1-1' }}% remaining</span>
                   }
                 </div>

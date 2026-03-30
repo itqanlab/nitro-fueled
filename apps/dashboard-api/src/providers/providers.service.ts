@@ -60,7 +60,11 @@ export class ProvidersService {
   private unavailable(provider: ProviderId, reason: unknown): ProviderQuotaUnavailable {
     const message = reason instanceof Error ? reason.message : String(reason);
     this.logger.warn(`Provider ${provider} unavailable: ${message.slice(0, 200)}`);
-    return { provider, unavailable: true, reason: message.slice(0, 200) };
+    const statusMatch = message.match(/returned (\d{3})/);
+    const publicReason = statusMatch
+      ? `Provider API returned HTTP ${statusMatch[1]}`
+      : 'Provider API unavailable';
+    return { provider, unavailable: true, reason: publicReason };
   }
 
   private async fetchGlm(): Promise<ProviderQuotaItem> {
@@ -86,7 +90,7 @@ export class ProvidersService {
 
     const total = data['total_tokens'] ?? 0;
     const remaining = data['remaining_tokens'] ?? 0;
-    const used = total - remaining;
+    const used = Math.max(0, total - remaining);
 
     return {
       provider: 'glm',
