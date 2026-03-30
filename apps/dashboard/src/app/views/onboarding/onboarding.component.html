@@ -1,0 +1,170 @@
+<div class="onboarding-page">
+  <div class="wizard-chat-container">
+    <!-- Wizard Panel (Left ~60%) -->
+    <div class="wizard-column">
+      <div class="wizard">
+        <div class="wizard-header">
+          <h1>Add New Project</h1>
+          <p>AI-driven project setup: select a client, point at a folder, and let AI handle the rest</p>
+        </div>
+
+        <app-wizard-step-indicator
+          [steps]="steps"
+          [currentStep]="currentStep()"
+        />
+
+        <!-- Step 1: Select Client -->
+        <div class="section" [class.section-completed]="currentStep() > 1">
+          <div class="section-title">👤 Select Client</div>
+          <div class="section-subtitle">Choose an existing client or create a new one for this project.</div>
+          <div class="select-wrapper">
+            <select class="client-select" (change)="onClientChange($event)">
+              @for (client of clients; track client.name) {
+                <option [selected]="client.name === selectedClient().name">{{ client.name }}</option>
+              }
+              <option disabled>──────────</option>
+              <option>+ Create New Client</option>
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+          <div class="client-info">
+            <div class="client-info-item">
+              <span>Client:</span>
+              <span class="client-info-value">{{ selectedClient().name }}</span>
+            </div>
+            <div class="client-info-item">
+              <span>Projects:</span>
+              <span class="client-info-value">{{ selectedClient().activeProjects }} active</span>
+            </div>
+            <div class="client-info-item">
+              <span>Budget:</span>
+              <span class="client-budget">${{ selectedClient().budgetUsed | number }} / ${{ selectedClient().budgetTotal | number }} used</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Project Folder -->
+        <div class="section" [class.section-completed]="currentStep() > 2">
+          <div class="section-title">📁 Project Folder</div>
+          <div class="folder-picker">
+            <input class="input mono" type="text" [value]="projectPath" readonly>
+            <button class="btn">Browse</button>
+          </div>
+
+          <div class="external-refs">
+            <div class="external-refs-title">🔗 External References</div>
+            @for (ref of externalRefs; track ref.value) {
+              <div class="external-ref-row">
+                <span class="ref-tag" [ngClass]="ref.type">{{ ref.type | uppercase }}</span>
+                <input class="input" type="text" [value]="ref.value" readonly>
+              </div>
+            }
+            <div class="external-ref-row">
+              <span class="ref-tag url">URL</span>
+              <input class="input input-dashed" type="text" placeholder="Add URL or file path...">
+              <button class="btn btn-sm">+ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Data Collection -->
+        <div class="section" [class.section-completed]="currentStep() > 3">
+          <div class="section-title">🔍 Data Collection</div>
+          <div class="section-subtitle">Local analysis — no AI costs. Collecting file types, structure, dependencies...</div>
+          <div class="detection-info">
+            ✓ Data collection complete — scanned project structure, dependencies, and config files
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-label">
+              <span>Scan progress</span>
+              <span class="progress-complete">Complete</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill progress-bar-fill-complete"></div>
+            </div>
+          </div>
+          <div class="data-summary">
+            @for (item of dataSummary; track item.label) {
+              <div class="data-summary-item">
+                <div class="data-summary-value">{{ item.value }}</div>
+                <div class="data-summary-label">{{ item.label }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Step 4: AI Analysis -->
+        <div class="section" [class.section-active]="currentStep() === 4">
+          <div class="section-title">🧠 AI Analysis</div>
+          <div class="section-subtitle">AI analyzes collected data and recommends stack, teams, workflows, and folder organization.</div>
+
+          <div class="ai-loading">
+            <div class="ai-loading-spinner"></div>
+            <div class="ai-loading-text">Analyzing with Claude Opus 4... Generating stack &amp; team recommendations</div>
+          </div>
+
+          @for (rec of recommendationViews; track rec.title) {
+            <div class="ai-recommendation" [class.ai-recommendation-pending]="rec.isPending">
+              <div class="ai-rec-header">
+                {{ rec.icon }} {{ rec.title }}
+                <span class="ai-rec-badge" [class.ai-rec-badge-dim]="rec.isPending">{{ rec.badgeLabel }}</span>
+              </div>
+              <div
+                class="ai-rec-content"
+                [class.ai-rec-content-muted]="rec.isLoading || rec.isPending"
+                [innerHTML]="rec.description"
+              ></div>
+            </div>
+          }
+        </div>
+
+        <!-- Step 5: Team Assembly (preview) -->
+        <div class="section section-preview">
+          <div class="section-title">🧑‍💻 Team Assembly</div>
+          <div class="section-subtitle">Coming next — review and customize the AI-recommended team for your project.</div>
+        </div>
+
+        <!-- Step 6: Review & Folder Organization (preview) -->
+        <div class="section section-preview">
+          <div class="section-title">📋 Review &amp; Folder Organization</div>
+          <div class="section-subtitle">Review all settings, AI recommendations, and folder organization suggestions before setup.</div>
+
+          <div class="folder-org">
+            <app-folder-tree title="Before" [nodes]="foldersBefore" />
+            <div class="folder-org-arrow">→</div>
+            <app-folder-tree title="After (suggested)" [nodes]="foldersAfter" />
+          </div>
+          <div class="folder-org-hint">AI suggests moving 3 non-code files into organized subdirectories</div>
+        </div>
+
+        <!-- Navigation Actions -->
+        <div class="form-actions">
+          <button class="btn btn-ghost" [disabled]="isFirstStep()" (click)="goBack()">← Back</button>
+          <div class="form-actions-right">
+            <button class="btn">Save &amp; Exit (continue later)</button>
+            <button class="btn btn-primary btn-lg" (click)="goNext()">
+              @if (isLastStep()) {
+                Finish Setup
+              } @else {
+                Next: {{ nextStepLabel() }} →
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Panel (Right ~40%) -->
+    <div class="chat-column">
+      <app-chat-panel
+        [messages]="chatMessages()"
+        (messageSent)="onChatMessage($event)"
+      />
+    </div>
+  </div>
+
+  <!-- Bottom Panel -->
+  <div class="bottom-panel">
+    Step {{ currentStep() }} of {{ steps.length }} — {{ steps[currentStep() - 1].label }}
+  </div>
+</div>

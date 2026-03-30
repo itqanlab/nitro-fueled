@@ -1,0 +1,14 @@
+<div class="workflow-strip">
+  @for (step of steps(); track step.label; let last = $last) {
+    <div class="wp-step" [class.checkpoint]="step.kind === 'checkpoint'">
+      <span class="wp-step-icon">{{ step.icon }}</span>
+      <span class="wp-step-label">{{ step.label }}</span>
+    </div>
+    @if (!last) {
+      <span class="wp-arrow">&#x2192;</span>
+    }
+  }
+</div>
+@if (hintText()) {
+  <p class="wp-hint">{{ hintText() }}</p>
+}

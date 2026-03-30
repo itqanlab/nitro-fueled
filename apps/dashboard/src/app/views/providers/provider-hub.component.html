@@ -1,0 +1,77 @@
+<div class="page-header">
+  <h1>Provider Hub</h1>
+  <p>Manage your AI subscriptions, models, and API keys</p>
+</div>
+
+<!-- Cost Summary -->
+<div class="cost-summary">
+  <div class="cost-summary-header">
+    <span class="cost-summary-title">Cost This Month</span>
+    <span class="cost-summary-total">${{ data.costSummary.totalCost | number:'1.2-2' }}</span>
+  </div>
+
+  <div class="cost-bars">
+    @for (bar of data.costSummary.costBars; track bar.provider) {
+      <div class="cost-bar-row">
+        <span class="cost-bar-label">{{ bar.provider }}</span>
+        <div class="cost-bar-track">
+          <div
+            class="cost-bar-fill"
+            [class]="bar.colorClass"
+            [style.width.%]="bar.percent"
+          ></div>
+        </div>
+        <span class="cost-bar-value">${{ bar.amount | number:'1.2-2' }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="budget-bar">
+    <div class="budget-bar-header">
+      <span>Monthly Budget</span>
+      <span>
+        ${{ data.costSummary.totalCost | number:'1.2-2' }}
+        / ${{ data.costSummary.budget | number:'1.2-2' }}
+        ({{ budgetPercent | percent:'1.0-0' }})
+      </span>
+    </div>
+    <div class="budget-track">
+      <div class="budget-fill" [style.width.%]="budgetBarWidth"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Provider Cards -->
+<div class="provider-grid">
+  @for (provider of data.providers; track provider.id) {
+    <app-provider-card
+      [provider]="provider"
+      [expanded]="isExpanded(provider.id)"
+      (toggleExpand)="onToggleExpand($event)"
+      (toggleModel)="onToggleModel($event)"
+    />
+  }
+
+  <!-- Add Provider Card -->
+  <div class="add-provider-card">
+    <div class="add-provider-icon">+</div>
+    <div class="add-provider-text">Add Provider</div>
+    <div class="add-provider-sub">
+      Anthropic, OpenAI, Google, Mistral, Ollama, or any OpenAI-compatible endpoint
+    </div>
+    <div class="add-provider-types">
+      <div class="add-type-option">
+        <span class="type-dot dot-api"></span>
+        API
+      </div>
+      <div class="add-type-option">
+        <span class="type-dot dot-cli"></span>
+        CLI
+      </div>
+      <div class="add-type-option">
+        <span class="type-dot dot-oauth"></span>
+        OAuth
+      </div>
+    </div>
+  </div>
+</div>

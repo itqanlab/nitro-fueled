@@ -175,7 +175,7 @@ Glob(task-tracking/TASK_*/**.md)
 **Priority 3: Understand implementation**
 
 - phase-\*-plan.md - Current implementation plans
-- implementation-plan.md - Architecture decisions
+- plan.md - Architecture decisions
 
 **Priority 4: Understand validation**
 

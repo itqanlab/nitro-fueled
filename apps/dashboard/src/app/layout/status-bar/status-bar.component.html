@@ -1,0 +1,36 @@
+<div class="bottom-panel">
+  @for (indicator of indicators; track indicator.label) {
+    <div class="bottom-panel-item">
+      <div class="bottom-dot" [ngClass]="indicator.status"></div>
+      <span>{{ indicator.label }}</span>
+      @if (indicator.progressPercent !== undefined) {
+        <div class="bottom-progress">
+          <div class="bottom-progress-fill"
+               [style.width.%]="indicator.progressPercent"></div>
+        </div>
+        <span>{{ indicator.progressPercent }}%</span>
+      }
+    </div>
+  }
+
+  <div class="bottom-separator"></div>
+
+  <div class="bottom-panel-item">
+    <div class="bottom-dot ok"></div>
+    <span class="bottom-mcp">MCP: {{ mcpCount }} connected</span>
+  </div>
+
+  <div class="bottom-panel-item">
+    <div class="bottom-dot" [ngClass]="autoRunEnabled ? 'ok' : 'off'"></div>
+    <span class="bottom-autorun" [ngClass]="autoRunEnabled ? 'on' : 'off'">
+      Auto-run: {{ autoRunEnabled ? 'ON' : 'OFF' }}
+    </span>
+  </div>
+
+  <div class="bottom-spacer"></div>
+
+  <div class="bottom-panel-item">
+    <span>This month:</span>
+    <span class="bottom-cost">${{ budget.used.toFixed(2) }} / ${{ budget.total }}</span>
+  </div>
+</div>

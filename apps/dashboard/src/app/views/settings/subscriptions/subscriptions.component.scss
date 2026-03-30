@@ -1,0 +1,129 @@
+.subscriptions-panel,
+.subscription-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.subscription-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface-secondary);
+}
+
+.subscription-card--inactive {
+  opacity: 0.68;
+}
+
+.subscription-card__identity,
+.subscription-card__status-row,
+.subscription-models {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subscription-card__status-row,
+.subscription-models {
+  flex-wrap: wrap;
+}
+
+.subscription-card__status-row {
+  justify-content: space-between;
+}
+
+.provider-badge,
+.model-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.provider-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-bg);
+  color: var(--accent-color);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.subscription-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.subscription-meta,
+.helper-text {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.entry-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-connected {
+  background: var(--status-success-bg);
+  color: var(--status-success-color);
+}
+
+.status-disconnected {
+  background: var(--status-warning-bg);
+  color: var(--text-secondary);
+}
+
+.status-expired {
+  background: var(--status-error-bg);
+  color: var(--status-error-color);
+}
+
+.primary-action,
+.secondary-action,
+.toggle-action {
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-action {
+  background: var(--accent-bg);
+  color: var(--accent-color);
+}
+
+.secondary-action,
+.toggle-action {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.model-chip {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .subscription-card__identity,
+  .subscription-card__status-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

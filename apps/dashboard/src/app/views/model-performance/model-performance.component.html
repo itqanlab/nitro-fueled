@@ -1,0 +1,131 @@
+<div class="model-performance-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Model Performance</h1>
+    <p class="page-subtitle">Quality scores, cost efficiency, and phase metrics per model and task type</p>
+  </div>
+
+  <!-- 503 Banner -->
+  @if (unavailable) {
+    <div class="unavailable-banner" role="alert">
+      Cortex DB unavailable — data cannot be loaded at this time.
+    </div>
+  }
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <label class="filter-label" for="task-type-filter">Task Type</label>
+    <nz-select
+      id="task-type-filter"
+      [(ngModel)]="selectedTaskType"
+      (ngModelChange)="onFilterChange()"
+      [nzPlaceHolder]="'Filter by task type'"
+      aria-label="Filter by task type"
+    >
+      <nz-option nzValue="all" nzLabel="All Types"></nz-option>
+      @for (type of taskTypeOptions(); track type) {
+        <nz-option [nzValue]="type" [nzLabel]="type"></nz-option>
+      }
+    </nz-select>
+
+    <label class="filter-label" for="complexity-filter">Complexity</label>
+    <nz-select
+      id="complexity-filter"
+      [(ngModel)]="selectedComplexity"
+      (ngModelChange)="onFilterChange()"
+      [nzPlaceHolder]="'Filter by complexity'"
+      aria-label="Filter by complexity"
+    >
+      <nz-option nzValue="all" nzLabel="All Complexities"></nz-option>
+      @for (c of complexityOptions(); track c) {
+        <nz-option [nzValue]="c" [nzLabel]="c"></nz-option>
+      }
+    </nz-select>
+
+    <label class="filter-label" for="date-from-filter">From</label>
+    <input
+      id="date-from-filter"
+      type="date"
+      class="date-filter-input"
+      [(ngModel)]="dateFrom"
+      (ngModelChange)="onFilterChange()"
+      aria-label="Filter from date"
+    />
+
+    <label class="filter-label" for="date-to-filter">To</label>
+    <input
+      id="date-to-filter"
+      type="date"
+      class="date-filter-input"
+      [(ngModel)]="dateTo"
+      (ngModelChange)="onFilterChange()"
+      aria-label="Filter to date"
+    />
+  </div>
+
+  <!-- Loading Skeleton -->
+  @if (loading && !unavailable) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 6 }"></nz-skeleton>
+  }
+
+  <!-- Data Table -->
+  @if (!loading || unavailable) {
+    @if (rows.length === 0) {
+      <nz-empty nzNotFoundContent="No model performance data available"></nz-empty>
+    } @else {
+      <nz-table
+        [nzData]="rows"
+        [nzShowPagination]="rows.length > 20"
+        [nzPageSize]="20"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th (click)="sortBy('model')" class="sortable-col" scope="col">Model</th>
+            <th (click)="sortBy('taskType')" class="sortable-col" scope="col">Task Type</th>
+            <th (click)="sortBy('complexity')" class="sortable-col" scope="col">Complexity</th>
+            <th (click)="sortBy('phaseCount')" class="sortable-col" scope="col">Phases</th>
+            <th (click)="sortBy('reviewCount')" class="sortable-col" scope="col">Reviews</th>
+            <th (click)="sortBy('avgDurationMin')" class="sortable-col" scope="col">Avg Duration (min)</th>
+            <th (click)="sortBy('avgReviewScore')" class="sortable-col" scope="col">Avg Review Score</th>
+            <th (click)="sortBy('failureRate')" class="sortable-col" scope="col">Failure Rate</th>
+            <th (click)="sortBy('totalInputTokens')" class="sortable-col" scope="col">Tokens In</th>
+            <th (click)="sortBy('totalOutputTokens')" class="sortable-col" scope="col">Tokens Out</th>
+            <th (click)="sortBy('qualityPerDollar')" class="sortable-col" scope="col">Quality / $</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.model + row.taskType) {
+            <tr>
+              <td class="model-cell">{{ row.model }}</td>
+              <td>{{ row.taskType }}</td>
+              <td>{{ row.complexity ?? '—' }}</td>
+              <td>{{ row.phaseCount }}</td>
+              <td>{{ row.reviewCount }}</td>
+              <td>{{ row.avgDurationMin !== null ? (row.avgDurationMin | number:'1.1-1') : '—' }}</td>
+              <td>
+                @if (row.avgReviewScore !== null) {
+                  <nz-tag [nzColor]="scoreColor(row.scoreClass)">
+                    {{ row.avgReviewScore | number:'1.1-1' }}
+                  </nz-tag>
+                } @else {
+                  <span class="no-data">—</span>
+                }
+              </td>
+              <td>
+                {{ row.failureRate !== null ? (row.failureRate | number:'1.1-1') + '%' : '—' }}
+              </td>
+              <td>{{ row.totalInputTokens | number }}</td>
+              <td>{{ row.totalOutputTokens | number }}</td>
+              <td>
+                {{ row.qualityPerDollar !== null ? (row.qualityPerDollar | number:'1.2-2') : '—' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+  }
+
+</div>

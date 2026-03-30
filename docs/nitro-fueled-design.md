@@ -13,7 +13,7 @@ Single Nx workspace containing everything:
 ```
 nitro-fueled/
   packages/
-    cli/                       # npx nitro-fueled init|run|status|create
+    cli/                       # npx @itqanlab/nitro-fueled init|run|status|create
     cli/scaffold/              # Template files copied during init (lives inside cli package)
     .claude/
       agents/
@@ -50,11 +50,10 @@ Agents are split into two categories:
 
 Note: `nitro-frontend-developer` and `nitro-backend-developer` are **core** agents that ship with the package — they carry the `nitro-` prefix and are always overwritable by `update`. They provide generic developer patterns; the project-generated agents override them with stack-specific depth at `init` time.
 
-### MCP Server
+### MCP Server (nitro-cortex)
 
-- Lives in its own repo (existing `/Volumes/SanDiskSSD/mine/session-orchestrator/`)
-- Referenced/linked from the Nx workspace, not duplicated
-- No npm publishing needed — local path reference
+- Lives in `packages/mcp-cortex/` within the Nx workspace
+- Combines worker management + task DB (SQLite) in a single MCP server
 - See `docs/mcp-session-orchestrator-design.md` for full design
 
 ## Task Structure
@@ -129,11 +128,11 @@ CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE
 ## CLI Commands
 
 ```bash
-npx nitro-fueled init            # Scaffold .claude/ + task-tracking/ into current project
-npx nitro-fueled create          # Interactive task creation -> writes task.md
-npx nitro-fueled run             # Auto-pilot: Supervisor picks tasks, spawns workers, monitors, loops
-npx nitro-fueled run TASK_001    # Run specific task
-npx nitro-fueled status          # Show task statuses, active workers, costs
+npx @itqanlab/nitro-fueled init            # Scaffold .claude/ + task-tracking/ into current project
+npx @itqanlab/nitro-fueled create          # Interactive task creation -> writes task.md
+npx @itqanlab/nitro-fueled run             # Auto-pilot: Supervisor picks tasks, spawns workers, monitors, loops
+npx @itqanlab/nitro-fueled run TASK_001    # Run specific task
+npx @itqanlab/nitro-fueled status          # Show task statuses, active workers, costs
 ```
 
 ## Supervisor Architecture (Auto-Pilot)

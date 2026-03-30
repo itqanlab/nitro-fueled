@@ -1,0 +1,55 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Agent Assignments</h1>
+    <p>Configure which provider and model handles each agent role. More specific scopes override general ones.</p>
+  </div>
+</div>
+
+<!-- Hierarchy Info Bar -->
+<div class="hierarchy-bar">
+  <span class="hierarchy-icon">ℹ</span>
+  <span>Resolution order:</span>
+  @for (level of data.hierarchyLevels; track level.label; let i = $index) {
+    @if (i > 0) {
+      <span class="hierarchy-arrow">→</span>
+    }
+    <span class="hierarchy-level" [ngClass]="level.cssClass">{{ level.label }}</span>
+  }
+  <span class="hierarchy-note">Most specific wins. Running tasks are locked to their start configuration.</span>
+</div>
+
+<!-- Scope Tabs -->
+<div class="scope-tabs">
+  @for (tab of data.scopeTabs; track tab.label) {
+    <button
+      class="scope-tab"
+      type="button"
+      [class.active]="activeScope === tab.label"
+      (click)="setActiveScope(tab.label)"
+    >
+      {{ tab.label }}
+      @if (tab.count !== null) {
+        <span class="count">{{ tab.count }}</span>
+      }
+    </button>
+  }
+</div>
+
+<!-- Assignments Table + Sub-agents -->
+<app-assignments-table
+  [assignments]="data.assignments"
+  [subAgents]="data.subAgents"
+  [totalCost]="data.totalCostPerTask"
+  [budgetUsed]="data.budgetUsed"
+  [budgetTotal]="data.budgetTotal"
+  (resetRole)="onResetRole($event)"
+  (resetAll)="onResetAll()"
+  (save)="onSave()"
+/>
+
+<!-- Quick Presets -->
+<app-preset-cards
+  [presets]="data.presets"
+  (presetSelected)="onPresetSelected($event)"
+/>

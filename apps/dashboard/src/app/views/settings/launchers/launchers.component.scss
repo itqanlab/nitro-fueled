@@ -1,0 +1,202 @@
+.launchers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.launcher-detection-card,
+.launcher-form-card,
+.launcher-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface-secondary);
+}
+
+.launcher-detection-card,
+.launcher-form-card {
+  padding: 16px;
+}
+
+.section-header,
+.launcher-card,
+.launcher-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-title,
+.item-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.section-description,
+.item-path,
+.entry-type {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.detection-grid,
+.launcher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detection-item,
+.launcher-card {
+  padding: 14px 16px;
+}
+
+.detection-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-primary);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group--wide {
+  grid-column: span 2;
+}
+
+.field-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.field-input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.field-input--mono,
+.item-path {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.launcher-card--inactive {
+  opacity: 0.68;
+}
+
+.launcher-card {
+  border-radius: 12px;
+}
+
+.launcher-card__identity,
+.launcher-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.launcher-meta {
+  flex-wrap: wrap;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-bg);
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.entry-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-detected {
+  background: var(--status-success-bg);
+  color: var(--status-success-color);
+}
+
+.status-manual {
+  background: var(--status-warning-bg);
+  color: var(--text-secondary);
+}
+
+.status-missing {
+  background: var(--status-error-bg);
+  color: var(--status-error-color);
+}
+
+.primary-action,
+.toggle-action {
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-action {
+  background: var(--accent-bg);
+  color: var(--accent-color);
+}
+
+.primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.toggle-action {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .section-header,
+  .launcher-card,
+  .launcher-card__actions,
+  .launcher-card__identity {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-group--wide {
+    grid-column: span 1;
+  }
+}

@@ -1,0 +1,153 @@
+<div class="provider-card" [ngClass]="{ expanded: expanded() }">
+  <div class="provider-card-header" (click)="onHeaderClick()">
+    <div class="provider-card-left">
+      <div class="provider-icon" [ngClass]="provider().iconClass">
+        {{ provider().iconLetter }}
+      </div>
+      <div class="provider-info">
+        <h3>
+          {{ provider().name }}
+          <span class="type-badge" [ngClass]="'badge-' + provider().apiType">
+            {{ provider().apiType | uppercase }}
+          </span>
+        </h3>
+        <div class="provider-info-meta">
+          <span>{{ provider().subtitle }}</span>
+          @if (!expanded() && provider().apiType !== 'oauth') {
+            <span class="meta-dot">&#x2022;</span>
+            @if (provider().apiType === 'cli') {
+              <span>Local binary</span>
+            } @else {
+              <span>{{ provider().models.length }} models active</span>
+            }
+          }
+          @if (provider().apiType === 'oauth' && provider().oauthExpiryDays) {
+            <span class="meta-dot">&#x2022;</span>
+            <span class="oauth-expiry">Token expires in {{ provider().oauthExpiryDays }} days</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-card-right">
+      @if (provider().monthlyCost !== null) {
+        <span class="provider-cost">
+          {{ provider().monthlyCost | number:'1.2-2' }} this month
+        </span>
+      }
+      @if (provider().apiType === 'oauth') {
+        <button class="btn btn-purple btn-sm" (click)="$event.stopPropagation()">Re-authorize</button>
+      }
+      <div class="provider-status" [ngClass]="'status-' + provider().connectionStatus">
+        <div class="provider-status-dot"></div>
+        {{ provider().connectionLabel }}
+      </div>
+      <span class="expand-arrow">
+        @if (expanded()) {
+          &#x25B2;
+        } @else {
+          &#x25BC;
+        }
+      </span>
+    </div>
+  </div>
+
+  @if (expanded()) {
+    <div class="provider-card-body">
+      <!-- API Key auth -->
+      @if (provider().authType === 'api-key') {
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">API Key</label>
+            <div class="input-group">
+              <input
+                class="input masked"
+                type="password"
+                [value]="provider().maskedKey ?? ''"
+                readonly
+              />
+              <button class="btn btn-sm" type="button">&#x1F441;</button>
+              <button class="btn btn-sm" type="button">Edit</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Base URL (optional)</label>
+            <input
+              class="input"
+              type="text"
+              placeholder="https://api.example.com"
+              [value]="provider().baseUrl ?? ''"
+              readonly
+            />
+          </div>
+        </div>
+      }
+
+      <!-- CLI auth -->
+      @if (provider().authType === 'cli') {
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">CLI Path</label>
+            <div class="input-group">
+              <input class="input" type="text" [value]="provider().cliPath ?? ''" readonly />
+              <button class="btn btn-sm" type="button">Browse</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Version Detected</label>
+            <div class="cli-info">
+              <span class="cli-version">&#x2713; {{ provider().cliVersion }}</span>
+              <span class="info-dot">&#x2022;</span>
+              <span>{{ provider().cliInstallMethod }}</span>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- OAuth auth -->
+      @if (provider().authType === 'oauth') {
+        <div class="oauth-info">
+          <span>Connected via OAuth</span>
+          <span class="info-dot">&#x2022;</span>
+          <span class="oauth-expiry-detail">Token expires in {{ provider().oauthExpiryDays }} days</span>
+        </div>
+      }
+
+      <!-- Test result -->
+      @if (provider().testResult) {
+        <div class="test-result success">
+          &#x2713; {{ provider().testResult }}
+        </div>
+      }
+
+      <!-- No key message for CLI -->
+      @if (provider().noKeyMessage) {
+        <div class="no-key-label">
+          &#x1F512; {{ provider().noKeyMessage }}
+        </div>
+      }
+
+      <!-- Models table -->
+      @if (provider().models.length > 0) {
+        <app-model-table
+          [models]="provider().models"
+          [cliMode]="provider().authType === 'cli'"
+          (toggleModel)="onModelToggle($event)"
+        />
+      }
+
+      <!-- Action buttons -->
+      <div class="card-actions">
+        @if (provider().authType === 'cli') {
+          <button class="btn btn-success btn-sm" type="button">&#x2713; Test CLI</button>
+          <button class="btn btn-sm" type="button">Detect Version</button>
+        } @else {
+          <button class="btn btn-success btn-sm" type="button">&#x2713; Test Connection</button>
+          <button class="btn btn-sm" type="button">Refresh Models</button>
+        }
+        <div class="action-spacer"></div>
+        <button class="btn btn-danger btn-sm" type="button">Remove Provider</button>
+      </div>
+    </div>
+  }
+</div>

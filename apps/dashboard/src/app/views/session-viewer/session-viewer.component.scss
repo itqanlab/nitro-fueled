@@ -1,0 +1,198 @@
+.session-viewer-shell,
+.invalid-session-state {
+  display: grid;
+  gap: 20px;
+}
+
+.back-link,
+.jump-button {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.session-header,
+.stream-frame,
+.invalid-session-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+
+.session-header {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.eyebrow,
+.session-identifiers,
+.stat-label,
+.message-meta,
+.status-detail {
+  color: var(--text-secondary);
+}
+
+.eyebrow,
+.message-kind {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.session-title,
+.invalid-session-state h1 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.session-identifiers,
+.session-stats,
+.status-event,
+.message-meta,
+.stream-toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.session-stats {
+  gap: 16px;
+}
+
+.stat-card {
+  min-width: 120px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-tertiary);
+}
+
+.stat-card strong,
+.stream-label,
+.status-detail,
+.invalid-session-state p {
+  color: var(--text-primary);
+}
+
+.stream-frame {
+  overflow: hidden;
+}
+
+.stream-toolbar {
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stream-viewport {
+  max-height: 68vh;
+  overflow-y: auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.message-card {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--bg-tertiary);
+}
+
+.message-card--assistant {
+  border-left-color: var(--accent);
+}
+
+.message-card--tool-call {
+  border-left-color: var(--warning);
+}
+
+.message-card--tool-result {
+  border-left-color: var(--success);
+}
+
+.message-card--status {
+  border-left-color: var(--purple);
+  background: var(--purple-bg);
+}
+
+.markdown-body,
+.markdown-body :deep(p),
+.markdown-body :deep(code),
+.markdown-body :deep(strong) {
+  color: var(--text-primary);
+}
+
+.markdown-body :deep(p) {
+  margin: 0;
+}
+
+.markdown-body :deep(code),
+pre {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+details {
+  display: grid;
+  gap: 10px;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  white-space: pre-wrap;
+}
+
+.phase-chip,
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.phase-chip {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.status-pill--running {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.status-pill--completed {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.status-pill--failed {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.invalid-session-state {
+  padding: 24px;
+}
+
+@media (min-width: 900px) {
+  .session-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}

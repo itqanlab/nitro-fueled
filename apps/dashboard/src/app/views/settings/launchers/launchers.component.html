@@ -1,0 +1,84 @@
+<div class="settings-tab-panel launchers-panel">
+  <div>
+    <h2 class="panel-title">Launchers</h2>
+    <p class="panel-description">Review detected tools, add custom launchers, and control which ones stay active.</p>
+  </div>
+
+  <section class="launcher-detection-card">
+    <div class="section-header">
+      <div>
+        <h3 class="section-title">Auto-detect</h3>
+        <p class="section-description">Mock scan results for the launchers currently supported by the settings flow.</p>
+      </div>
+    </div>
+
+    <div class="detection-grid">
+      @for (entry of detectionEntries(); track entry.id) {
+        <article class="detection-item">
+          <div>
+            <h4 class="item-title">{{ entry.name }}</h4>
+            <p class="item-path">{{ entry.path }}</p>
+          </div>
+          <span class="entry-status status-{{ entry.status === 'not-found' ? 'missing' : entry.status }}">{{ entry.status === 'not-found' ? 'not found' : entry.status }}</span>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="launcher-form-card">
+    <div class="section-header">
+      <div>
+        <h3 class="section-title">Add launcher</h3>
+        <p class="section-description">Manual entries are stored as mock local settings and appear with a manual badge.</p>
+      </div>
+      <button class="primary-action" type="button" [disabled]="!canAddLauncher()" (click)="onAddLauncher()">Add Launcher</button>
+    </div>
+
+    <div class="form-grid">
+      <label class="field-group">
+        <span class="field-label">Name</span>
+        <input class="field-input" type="text" [value]="launcherName()" placeholder="OpenCode" (input)="onNameInput($event)" />
+      </label>
+
+      <label class="field-group">
+        <span class="field-label">Type</span>
+        <select class="field-input" [value]="launcherType()" (change)="onTypeChange($event)">
+          @for (type of launcherTypeOptions; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field-group field-group--wide">
+        <span class="field-label">Path</span>
+        <input class="field-input field-input--mono" type="text" [value]="launcherPath()" placeholder="/Applications/OpenCode.app" (input)="onPathInput($event)" />
+      </label>
+    </div>
+  </section>
+
+  <div class="launcher-list">
+    @for (launcher of launchers(); track launcher.id) {
+      <article class="launcher-card" [class.launcher-card--inactive]="!launcher.isActive">
+        <div class="launcher-card__identity">
+          <div class="type-badge">{{ launcher.typeIcon }}</div>
+          <div>
+            <h3 class="item-title">{{ launcher.name }}</h3>
+            <div class="launcher-meta">
+              <span class="entry-type">{{ launcher.type }}</span>
+              <span class="item-path">{{ launcher.path }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="launcher-card__actions">
+          <span class="entry-status status-{{ launcher.status }}">{{ launcher.status }}</span>
+          <button class="toggle-action" type="button" [attr.aria-pressed]="launcher.isActive" (click)="onToggle(launcher.id)">
+            {{ launcher.isActive ? 'Active' : 'Inactive' }}
+          </button>
+        </div>
+      </article>
+    } @empty {
+      <p class="empty-state">No launchers configured.</p>
+    }
+  </div>
+</div>

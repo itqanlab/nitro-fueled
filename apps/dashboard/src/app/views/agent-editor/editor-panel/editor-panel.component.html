@@ -1,0 +1,122 @@
+<div class="editor-panel">
+  <div class="editor-toolbar" role="toolbar" aria-label="Markdown editor toolbar">
+    <div class="toolbar-formatting" role="group" aria-label="Formatting tools">
+      <button
+        type="button"
+        class="toolbar-btn"
+        aria-label="Bold"
+        title="Bold"
+        (click)="insertMarkdown('bold')"
+      >
+        <strong>B</strong>
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        aria-label="Italic"
+        title="Italic"
+        (click)="insertMarkdown('italic')"
+      >
+        <em>I</em>
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        aria-label="Heading"
+        title="Heading"
+        (click)="insertMarkdown('heading')"
+      >
+        H
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        aria-label="List"
+        title="Bulleted list"
+        (click)="insertMarkdown('list')"
+      >
+        &#8226;&#8212;
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        aria-label="Code"
+        title="Code"
+        (click)="insertMarkdown('code')"
+      >
+        &lt;/&gt;
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        aria-label="Link"
+        title="Link"
+        (click)="insertMarkdown('link')"
+      >
+        &#128279;
+      </button>
+    </div>
+
+    <div class="toolbar-view-tabs" role="tablist" aria-label="View mode">
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.tab-btn--active]="store.viewMode() === 'split'"
+        [attr.aria-selected]="store.viewMode() === 'split'"
+        aria-controls="editor-split-view"
+        (click)="setViewMode('split')"
+      >
+        Split
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.tab-btn--active]="store.viewMode() === 'editor'"
+        [attr.aria-selected]="store.viewMode() === 'editor'"
+        aria-controls="editor-split-view"
+        (click)="setViewMode('editor')"
+      >
+        Editor
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.tab-btn--active]="store.viewMode() === 'preview'"
+        [attr.aria-selected]="store.viewMode() === 'preview'"
+        aria-controls="editor-split-view"
+        (click)="setViewMode('preview')"
+      >
+        Preview
+      </button>
+    </div>
+  </div>
+
+  <div class="editor-body" id="editor-split-view">
+    @if (isEditorVisible()) {
+      <div class="editor-pane">
+        <textarea
+          #editorTextarea
+          class="editor-textarea"
+          [value]="store.editorContent()"
+          spellcheck="false"
+          aria-label="Markdown editor"
+          aria-multiline="true"
+          (input)="onContentInput($event)"
+          (click)="onTextareaClick($event)"
+        ></textarea>
+      </div>
+    }
+
+    @if (isPreviewVisible()) {
+      <!-- previewHtml: marked.parse() → DOMPurify.sanitize() chain. Do not add bypassSecurityTrustHtml here. -->
+      <div
+        class="preview-pane"
+        aria-label="Markdown preview"
+        [innerHTML]="previewHtml"
+      ></div>
+    }
+  </div>
+</div>

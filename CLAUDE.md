@@ -4,9 +4,9 @@ Reusable AI development orchestration package. Install into any project to get a
 
 ## What This Is
 
-An installable CLI toolkit (`npx nitro-fueled init`) that sets up a fully customized AI orchestration pipeline in any project. It includes agents, skills, commands, task tracking, and an autonomous Supervisor loop proven across 55+ tasks.
+An installable CLI toolkit (`npx @itqanlab/nitro-fueled init`) that sets up a fully customized AI orchestration pipeline in any project. It includes agents, skills, commands, task tracking, and an autonomous Supervisor loop proven across 55+ tasks.
 
-**This project IS the library being tested on itself.** The `.claude/` directory here is the scaffold — it is always in sync with what `npx nitro-fueled init` copies into a target project. Changes here ship as the next version of the package.
+**This project IS the library being tested on itself.** The `.claude/` directory here is the scaffold — it is always in sync with what `npx @itqanlab/nitro-fueled init` copies into a target project. Changes here ship as the next version of the package.
 
 ## Project Structure
 ```
@@ -19,26 +19,26 @@ docs/                      # Design docs and architecture
     auto-pilot/            # Supervisor skill (spawns/monitors workers)
     technical-content-writer/  # Content writing skill
     ui-ux-designer/        # Visual design skill
-  commands/                # /orchestrate, /plan, /auto-pilot, /review-*, /create-task, /initialize-workspace, /project-status, /orchestrate-help
+  commands/                # /nitro-orchestrate, /nitro-plan, /nitro-auto-pilot, /nitro-review-*, /nitro-create-task, /nitro-initialize-workspace, /nitro-project-status, /nitro-orchestrate-help
   anti-patterns.md         # Starter checklist
   review-lessons/          # Per-reviewer learned lessons (grows over time)
 task-tracking/             # Task tracking folder structure
-packages/                  # Nx workspace packages
-  cli/                     # npx nitro-fueled init|run|status|create
-  cli/scaffold/            # Template files copied into target projects at init
+packages/                  # Shared packages (mcp-cortex)
+apps/                      # Nx workspace apps (cli, dashboard, dashboard-api, docs)
+libs/                      # Shared libraries
 ```
 
 ## Key Docs
 - `docs/nitro-fueled-design.md` — Full design doc
-- `docs/mcp-session-orchestrator-design.md` — MCP server for spawning/monitoring workers
+- `docs/mcp-session-orchestrator-design.md` — MCP cortex design (worker management + task DB)
 - `docs/task-template-guide.md` — Task template usage and orchestration integration
 
 ## Dependencies
-- Session Orchestrator MCP Server: `/Volumes/SanDiskSSD/mine/session-orchestrator/`
+- nitro-cortex MCP Server: `packages/mcp-cortex/` (worker management + task DB)
 - Claude Code CLI
 
 ## Current State
-- CLI package built (`packages/cli/`) — `npx nitro-fueled init|run|status|create` operational
+- CLI package built (`apps/cli/`) — `npx @itqanlab/nitro-fueled init|run|status|create` operational
 - .claude/ is the scaffold — changes here sync to what `init` installs in target projects
 - Supervisor architecture: Build Workers and Review Workers spawned/monitored by auto-pilot
 - Planner agent: strategic planning layer between Product Owner and Supervisor (/plan command)
@@ -54,6 +54,19 @@ packages/                  # Nx workspace packages
 6. ~~Build CLI (init, run, status, create)~~ DONE
 7. CLI Maturity — nitro-* rename, scaffold sync, docs update — IN_PROGRESS (Phase 12)
 8. Test on a fresh project
+
+## Task & Project Queries — ALWAYS Use Cortex MCP
+- **NEVER parse filesystem or bash-loop over status files.** The cortex MCP server (`packages/mcp-cortex/`) has all task, session, worker, and event data indexed in SQLite.
+- For ANY project data query (task counts, status breakdown, session info, worker stats, events, etc.), use the appropriate cortex MCP tool:
+  - `query_tasks` / `get_tasks` — task listings, filtering, counts, status grouping
+  - `list_sessions` / `get_session` — session data
+  - `list_workers` / `get_worker_stats` — worker data
+  - `query_events` — event logs
+  - `get_task_context` / `get_task_trace` — deep task info
+  - `get_model_performance` / `get_provider_stats` — model and provider analytics
+- This is **faster and cheaper** than filesystem parsing. One MCP call vs dozens of bash commands.
+- For task creation: use `get_next_task_id` to get the next available ID — do NOT scan folders with `ls | grep | sort | tail`
+- Only fall back to filesystem reads if cortex MCP is unavailable (tool not in session).
 
 ## Conventions
 - Git: conventional commits with scopes

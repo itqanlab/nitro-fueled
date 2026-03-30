@@ -1,0 +1,180 @@
+<div class="new-task-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="breadcrumb">
+      <a [routerLink]="['/dashboard']">Dashboard</a>
+      <span class="breadcrumb-sep">&#x2192;</span>
+      <span>New Task</span>
+    </div>
+    <h1 class="page-title">Create New Task</h1>
+    <p class="page-subtitle">Describe what you want to build in plain language. The system will parse, size-check, and create the task automatically.</p>
+  </div>
+
+  <!-- Success State -->
+  @if (createdTasks() !== null) {
+    <div class="success-panel">
+      <div class="success-header">
+        @if (autoSplit()) {
+          <span class="success-icon">&#x2702;</span>
+          <div>
+            <div class="success-title">Auto-split into {{ createdTasks()!.length }} tasks</div>
+            <div class="success-subtitle">Your description was complex — it was split into smaller, parallelizable tasks.</div>
+          </div>
+        } @else {
+          <span class="success-icon">&#x2705;</span>
+          <div>
+            <div class="success-title">Task created successfully</div>
+          </div>
+        }
+      </div>
+
+      <div class="created-tasks-list">
+        @for (task of createdTasks()!; track task.taskId) {
+          <div class="created-task-card">
+            <div class="created-task-id">{{ task.taskId }}</div>
+            <div class="created-task-title">{{ task.title }}</div>
+            <div class="created-task-meta">
+              <span class="status-badge">{{ task.status }}</span>
+              <span class="task-folder">{{ task.folder }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="success-actions">
+        <a class="btn btn-primary" [routerLink]="['/dashboard']">&#x1F4CB; View Project Queue</a>
+        <button type="button" class="btn btn-secondary" (click)="onCreateAnother()">+ Create Another</button>
+      </div>
+    </div>
+  }
+
+  <!-- Creation Form -->
+  @if (createdTasks() === null) {
+    <div class="form-container">
+
+      <!-- Primary Input -->
+      <section class="form-section">
+        <label class="textarea-label" for="task-description">
+          What do you want to build?
+        </label>
+        <textarea
+          id="task-description"
+          class="task-textarea"
+          placeholder="Describe the feature, bug fix, or improvement you want. Be as specific as you can — include what the user sees, what the system should do, and any constraints or references to existing code."
+          [value]="description()"
+          (input)="onDescriptionChange(castToInput($event.target)?.value ?? '')"
+          [disabled]="isSubmitting()"
+          rows="10"
+        ></textarea>
+        <div class="char-count">{{ description().length }} characters</div>
+      </section>
+
+      <!-- Advanced Section -->
+      <section class="form-section advanced-section">
+        <button type="button" class="advanced-toggle" (click)="toggleAdvanced()">
+          <span class="advanced-toggle-label">&#x2699;&#xFE0F; Advanced Options</span>
+          <span class="chevron" [class.open]="advancedOpen()">&#x25B6;</span>
+        </button>
+
+        @if (advancedOpen()) {
+          <div class="advanced-body">
+            <p class="advanced-hint">All fields optional — leave blank to auto-detect from your description.</p>
+
+            <div class="advanced-grid">
+              <div class="field-group">
+                <label class="field-label" for="adv-type">Type</label>
+                <div class="select-wrapper">
+                  <select id="adv-type" class="select" [(ngModel)]="overrides.type" name="adv-type">
+                    <option value="">Auto-detect</option>
+                    @for (t of taskTypes; track t) {
+                      <option [value]="t">{{ t }}</option>
+                    }
+                  </select>
+                  <span class="select-arrow">&#x25BC;</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="adv-priority">Priority</label>
+                <div class="select-wrapper">
+                  <select id="adv-priority" class="select" [(ngModel)]="overrides.priority" name="adv-priority">
+                    <option value="">Default (P2-Medium)</option>
+                    @for (p of priorities; track p) {
+                      <option [value]="p">{{ p }}</option>
+                    }
+                  </select>
+                  <span class="select-arrow">&#x25BC;</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="adv-complexity">Complexity</label>
+                <div class="select-wrapper">
+                  <select id="adv-complexity" class="select" [(ngModel)]="overrides.complexity" name="adv-complexity">
+                    <option value="">Auto-detect</option>
+                    @for (c of complexities; track c) {
+                      <option [value]="c">{{ c }}</option>
+                    }
+                  </select>
+                  <span class="select-arrow">&#x25BC;</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="adv-model">Model</label>
+                <input
+                  id="adv-model"
+                  class="input"
+                  type="text"
+                  placeholder="e.g. claude-sonnet-4-6"
+                  [(ngModel)]="overrides.model"
+                  name="adv-model"
+                />
+              </div>
+            </div>
+
+            <div class="field-group field-group--full">
+              <label class="field-label" for="adv-deps">Dependencies</label>
+              <input
+                id="adv-deps"
+                class="input"
+                type="text"
+                placeholder="e.g. TASK_2026_155, TASK_2026_156 (comma-separated)"
+                [(ngModel)]="overrides.dependencies"
+                name="adv-deps"
+              />
+              <p class="field-hint">Comma-separated task IDs this task depends on.</p>
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- Error -->
+      @if (errorMessage() !== null) {
+        <div class="error-banner" role="alert">
+          &#x26A0;&#xFE0F; {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" (click)="onCancel()">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-primary btn-lg"
+          [disabled]="!canSubmit()"
+          (click)="onSubmit()"
+        >
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Creating...
+          } @else {
+            &#x25B6; Create Task
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+</div>

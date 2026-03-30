@@ -1,0 +1,39 @@
+{
+  "name": "@itqanlab/nitro-cortex",
+  "version": "0.1.0",
+  "description": "MCP server — shared intelligence layer for task state, session coordination, and worker management",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "nitro-cortex": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "mcp",
+    "ai",
+    "orchestration",
+    "task-management",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "better-sqlite3": "^11.8.2",
+    "chokidar": "^4.0.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
+  }
+}

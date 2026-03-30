@@ -173,7 +173,7 @@ COMPLETE       → completion-report.md
 ### 1. Install
 
 ```bash
-npx nitro-fueled init
+npx @itqanlab/nitro-fueled init
 ```
 
 Detects your tech stack, copies core agents, generates project-specific developer agents, sets up task tracking.
@@ -201,10 +201,10 @@ The Supervisor takes over. Spawns workers, monitors health, handles failures, an
 The `nitro-fueled` CLI provides programmatic access:
 
 ```bash
-npx nitro-fueled init      # Initialize orchestration in current project
-npx nitro-fueled run       # Start the Supervisor
-npx nitro-fueled status    # Show task registry and worker status
-npx nitro-fueled create    # Create a new task interactively
+npx @itqanlab/nitro-fueled init      # Initialize orchestration in current project
+npx @itqanlab/nitro-fueled run       # Start the Supervisor
+npx @itqanlab/nitro-fueled status    # Show task registry and worker status
+npx @itqanlab/nitro-fueled create    # Create a new task interactively
 ```
 
 ---
@@ -230,8 +230,9 @@ nitro-fueled/
 │   ├── commands/            # 12 slash commands
 │   ├── anti-patterns.md     # QA-derived rules
 │   └── review-lessons/      # Per-domain learned patterns
-├── packages/
-│   └── cli/                 # npx nitro-fueled (init, run, status, create)
+├── apps/                    # Nx workspace apps (cli, dashboard, dashboard-api, docs)
+├── packages/                # Shared packages (mcp-cortex)
+├── libs/                    # Shared libraries
 ├── task-tracking/           # Registry, plan, state, task folders
 ├── docs/                    # Design docs + landing page
 └── CLAUDE.md                # Project instructions
@@ -270,7 +271,7 @@ nitro-fueled/
 - **Model-aware pipeline simplification** — Opus gets full PM → Architect → Dev → QA; Sonnet gets simplified pipelines; single-shot providers skip orchestration entirely
 - **Cost intelligence** — Supervisor auto-routes: Complex/P0 → Claude Opus, Medium → Sonnet, Simple → OpenCode with `o4-mini` or Gemini Flash
 - **Local model support** — Run tasks on local models via Ollama through OpenCode for zero API cost on sensitive codebases
-- **npm publish** — `npx nitro-fueled init` available as a public package
+- **npm publish** — `npx @itqanlab/nitro-fueled init` available as a public package
 
 ---
 

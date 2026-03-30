@@ -2,14 +2,36 @@
   "name": "nitro-fueled-workspace",
   "private": true,
   "scripts": {
-    "build:dashboard": "npm run build --workspace=packages/dashboard-web && npm run build --workspace=packages/dashboard-service && npm run copy-web-assets --workspace=packages/cli",
     "build": "npm run build --workspaces",
-    "dashboard": "node packages/cli/dist/index.js dashboard"
+    "dashboard": "node apps/cli/dist/index.js dashboard"
   },
   "workspaces": [
+    "apps/*",
+    "libs/*",
     "packages/*"
   ],
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^19.2.23",
+    "@types/socket.io-client": "^3.0.0",
+    "@angular/cli": "^19.2.23",
+    "@angular/compiler-cli": "^19.2.20",
+    "@nx/angular": "^20.8.4",
+    "nx": "^20.0.0",
+    "typescript": "~5.6.0"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1",
+    "@angular/animations": "^19.2.20",
+    "@angular/common": "^19.2.20",
+    "@angular/compiler": "^19.2.20",
+    "@angular/core": "^19.2.20",
+    "@angular/platform-browser": "^19.2.20",
+    "@angular/router": "^19.2.20",
+    "ng-zorro-antd": "^19.3.1",
+    "rxjs": "~7.8.0",
+    "zone.js": "^0.15.1"
   }
 }

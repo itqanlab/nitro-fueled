@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'packages/cli/package.json'
+      - 'apps/cli/package.json'
 
 jobs:
   release:
@@ -23,8 +23,8 @@ jobs:
       - name: Check if version changed
         id: version_check
         run: |
-          CURRENT=$(node -p "require('./packages/cli/package.json').version")
-          PREV=$(git show HEAD~1:packages/cli/package.json 2>/dev/null | node -p "require('/dev/stdin').version" || echo "none")
+          CURRENT=$(node -p "require('./apps/cli/package.json').version")
+          PREV=$(git show HEAD~1:apps/cli/package.json 2>/dev/null | node -p "require('/dev/stdin').version" || echo "none")
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "previous=$PREV" >> $GITHUB_OUTPUT
           if [ "$CURRENT" != "$PREV" ]; then
@@ -43,12 +43,12 @@ jobs:
       - name: Install dependencies
         if: steps.version_check.outputs.changed == 'true'
         run: npm install
-        working-directory: packages/cli
+        working-directory: apps/cli
 
       - name: Publish to npm
         if: steps.version_check.outputs.changed == 'true'
         run: npm publish
-        working-directory: packages/cli
+        working-directory: apps/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

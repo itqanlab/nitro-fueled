@@ -1,0 +1,76 @@
+<div class="session-comparison-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Session Comparison</h1>
+    <p class="page-subtitle">Compare all cortex sessions by cost, tasks, duration, and model usage</p>
+  </div>
+
+  <!-- 503 Banner -->
+  @if (unavailable) {
+    <div class="unavailable-banner" role="alert">
+      Cortex DB unavailable — data cannot be loaded at this time.
+    </div>
+  }
+
+  <!-- Loading Skeleton -->
+  @if (loading && !unavailable) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }"></nz-skeleton>
+  }
+
+  <!-- Data Table -->
+  @if (!loading || unavailable) {
+    @if (rows.length === 0) {
+      <nz-empty nzNotFoundContent="No session data available"></nz-empty>
+    } @else {
+      <nz-table
+        [nzData]="rows"
+        [nzShowPagination]="rows.length > 20"
+        [nzPageSize]="20"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th (click)="sortBy('id')" class="sortable-col" scope="col">Session ID</th>
+            <th (click)="sortBy('startedAt')" class="sortable-col" scope="col">Started</th>
+            <th (click)="sortBy('durationHours')" class="sortable-col" scope="col">Duration (h)</th>
+            <th (click)="sortBy('totalCost')" class="sortable-col" scope="col">Cost ($)</th>
+            <th (click)="sortBy('tasksTerminal')" class="sortable-col" scope="col">Tasks</th>
+            <th (click)="sortBy('costPerTask')" class="sortable-col" scope="col">Cost/Task</th>
+            <th (click)="sortBy('supervisorModel')" class="sortable-col" scope="col">Model</th>
+            <th (click)="sortBy('mode')" class="sortable-col" scope="col">Mode</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.id) {
+            <tr
+              (click)="toggleSelect(row)"
+              [class.row-selected]="row.isSelected"
+              class="session-row"
+              [attr.aria-selected]="row.isSelected"
+              tabindex="0"
+              (keydown.enter)="toggleSelect(row)"
+              (keydown.space)="toggleSelect(row)"
+            >
+              <td class="id-cell" [title]="row.id">{{ row.id | slice:0:12 }}...</td>
+              <td>{{ row.startedAt | date:'short' }}</td>
+              <td>{{ row.durationHours !== null ? (row.durationHours | number:'1.2-2') : '—' }}</td>
+              <td>${{ row.totalCost | number:'1.4-4' }}</td>
+              <td>{{ row.tasksTerminal }}</td>
+              <td>{{ row.costPerTask !== null ? ('$' + (row.costPerTask | number:'1.4-4')) : '—' }}</td>
+              <td class="model-cell">{{ row.supervisorModel }}</td>
+              <td>{{ row.mode }}</td>
+              <td>
+                <nz-tag [nzColor]="statusColor(row.statusClass)">
+                  {{ row.loopStatus }}
+                </nz-tag>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+  }
+
+</div>

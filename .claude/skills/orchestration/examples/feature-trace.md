@@ -142,7 +142,7 @@ See nitro-software-architect.md for detailed instructions.`,
 });
 ```
 
-**Architect Output** (implementation-plan.md excerpt):
+**Architect Output** (plan.md excerpt):
 
 ```markdown
 # Implementation Plan - TASK_2026_045

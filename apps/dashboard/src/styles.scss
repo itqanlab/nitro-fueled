@@ -1,0 +1,69 @@
+// N.Gine Dark Theme — Custom Properties
+:root {
+  // Background hierarchy
+  --bg-primary:   #141414;
+  --bg-secondary: #1f1f1f;
+  --bg-tertiary:  #262626;
+  --bg-hover:     #303030;
+
+  // Borders
+  --border:       #303030;
+  --border-light: #3a3a3a;
+
+  // Accent / brand
+  --accent:       #177ddc;
+  --accent-hover: #1890ff;
+  --accent-bg:    #111d2c;
+
+  // Text hierarchy
+  --text-primary:   #e8e8e8;
+  --text-secondary: #8c8c8c;
+  --text-muted:     #595959;
+
+  // Status colors
+  --status-success: #49aa19;
+  --status-warning: #d89614;
+  --status-error:   #d32029;
+
+  // Text on colored surfaces
+  --text-on-accent: #fff;
+
+  // Radius
+  --radius:    6px;
+  --radius-lg: 8px;
+
+  // Semantic aliases & status backgrounds
+  --text-tertiary: #595959;
+  --success:       #49aa19;
+  --success-bg:    #162312;
+  --warning:       #d89614;
+  --warning-bg:    #2b2111;
+  --error:         #d32029;
+  --error-bg:      #2a1215;
+  --running:       #177ddc;
+  --completed:     #49aa19;
+  --info:          #177ddc;
+  --paused:        #d89614;
+  --failed:        #d32029;
+  --border-focus:  #177ddc;
+
+  // Purple (AI / chat)
+  --purple:        #9254de;
+  --purple-bg:     #1a1325;
+  --purple-border: #3a1d72;
+}
+
+// Global reset
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}

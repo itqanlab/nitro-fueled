@@ -1,0 +1,106 @@
+<div class="settings-tab-panel api-keys-panel">
+  <div class="panel-header">
+    <div>
+      <h2 class="panel-title">API Keys</h2>
+      <p class="panel-description">Manage provider credentials with mock detection, status badges, and model previews.</p>
+    </div>
+  </div>
+
+  <section class="api-keys-form-card">
+    <div class="form-header">
+      <div>
+        <h3 class="form-title">{{ formTitle() }}</h3>
+        <p class="form-description">{{ formDescription() }}</p>
+      </div>
+      @if (editingId() !== null) {
+        <button class="secondary-action" type="button" (click)="onCancelEdit()">Cancel</button>
+      }
+    </div>
+
+    <div class="form-grid">
+      <label class="field-group">
+        <span class="field-label">Label</span>
+        <input class="field-input" type="text" [value]="labelValue()" placeholder="Primary Anthropic key" (input)="onLabelInput($event)" />
+      </label>
+
+      <label class="field-group field-group--wide">
+        <span class="field-label">API key</span>
+        <input class="field-input field-input--mono" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" [value]="keyValue()" [placeholder]="editingId() === null ? 'sk-ant-...' : 'Paste a replacement key to update it'" (input)="onKeyInput($event)" />
+      </label>
+
+      <label class="field-group">
+        <span class="field-label">Provider</span>
+        <select class="field-input" [value]="manualProviderId() ?? ''" [disabled]="detectedProvider() !== null" (change)="onProviderChange($event)">
+          <option value="">Select provider</option>
+          @for (provider of providerOptions; track provider.id) {
+            <option [value]="provider.id">{{ provider.name }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="field-group">
+        <span class="field-label">Available models</span>
+        <div class="model-chip-list">
+          @for (model of availableModels(); track model) {
+            <span class="model-chip">{{ model }}</span>
+          } @empty {
+            <span class="helper-text">Select or detect a provider to load mock models.</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <div class="helper-text">
+        @if (detectedProvider() !== null) {
+          <span>Auto-detected {{ detectedProvider()?.name }} from the key format.</span>
+        } @else if (requiresManualProvider()) {
+          <span>Unknown key format. Choose a provider manually.</span>
+        } @else {
+          <span>Mock-only flow: no live validation is performed.</span>
+        }
+      </div>
+      <button class="primary-action" type="button" [disabled]="!canSave()" (click)="onSubmit()">
+        {{ editingId() === null ? 'Add API Key' : 'Save Changes' }}
+      </button>
+    </div>
+  </section>
+
+  <div class="api-keys-list">
+    @for (key of apiKeys(); track key.id) {
+      <article class="api-key-card" [class.api-key-card--inactive]="!key.isActive">
+        <div class="api-key-card__identity">
+          <div class="provider-badge">{{ key.providerIcon }}</div>
+          <div>
+            <h3 class="api-key-card__title">{{ key.displayLabel }}</h3>
+            <div class="api-key-card__meta">
+              <span>{{ key.provider }}</span>
+              <span class="meta-divider">•</span>
+              <span class="api-key-card__key">{{ key.key }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="api-key-card__details">
+          <span class="entry-status status-{{ key.status }}">{{ key.status }}</span>
+          <span class="models-count">{{ key.detectedModels.length }} models</span>
+          <button class="toggle-action" type="button" [attr.aria-pressed]="key.isActive" (click)="onToggle(key.id)">
+            {{ key.isActive ? 'Active' : 'Inactive' }}
+          </button>
+          <button class="secondary-action" type="button" (click)="onEdit(key.id)">Edit</button>
+          <button class="danger-action" type="button" (click)="onDelete(key.id, key.displayLabel)">Delete</button>
+        </div>
+
+        @if (key.detectedModels.length > 0) {
+          <div class="api-key-card__models">
+            @for (model of key.detectedModels; track model) {
+              <span class="model-chip">{{ model }}</span>
+            }
+          </div>
+        }
+      </article>
+    } @empty {
+      <p class="empty-state">No API keys configured.</p>
+    }
+  </div>
+</div>

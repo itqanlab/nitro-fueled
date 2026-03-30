@@ -17,7 +17,7 @@ This reference documents all user validation checkpoints in the orchestration wo
 | **0**  | Scope Clarification         | Before PM         | Clarify ambiguous requests     | Answers or "use your judgment"        |
 | **1**  | Requirements Validation     | After PM          | Approve task-description.md    | "APPROVED" or feedback                |
 | **1.5**| Technical Clarification     | Before Architect  | Technical preferences          | Answers or "use your judgment"        |
-| **2**  | Architecture Validation     | After Architect   | Approve implementation-plan.md | "APPROVED" or feedback                |
+| **2**  | Architecture Validation     | After Architect   | Approve plan.md                | "APPROVED" or feedback                |
 | **3**  | QA Choice                   | After Development | Select QA agents               | tester/style/logic/reviewers/all/skip |
 | **4**  | Blocker Report              | Any phase         | Report impediment              | Resolution choice                     |
 | **5**  | Completion Confirmation     | Final phase       | Mark task COMPLETED            | "Complete" or "Adjust"                |
@@ -31,9 +31,13 @@ This reference documents all user validation checkpoints in the orchestration wo
 | BUGFIX        | No    | No           | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | REFACTORING   | No    | No           | No           | Yes          | Yes       | Yes     | Yes        | Yes          |
 | DOCUMENTATION | Yes   | Yes          | No           | No           | No        | Yes     | Yes        | Yes          |
-| RESEARCH      | No    | No           | No           | No           | No        | Yes     | Yes        | No           |
+| RESEARCH      | Yes   | No           | No           | No           | No        | Yes     | Yes        | No           |
 | DEVOPS        | Yes   | Yes          | No           | Yes          | Yes       | Yes     | Yes        | Yes          |
+| OPS           | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
 | CREATIVE      | Yes   | No           | No           | No           | Yes       | Yes     | Yes        | Yes          |
+| CONTENT       | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
+| SOCIAL        | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
+| DESIGN        | Yes   | Yes          | No           | No           | Yes       | Yes     | Yes        | Yes          |
 
 ---
 
@@ -178,7 +182,7 @@ Before I create the architecture, I have a few technical questions:
 
 ### When to Present
 
-After nitro-software-architect completes and creates `implementation-plan.md`
+After nitro-software-architect completes and creates `plan.md`
 
 ### Template
 
@@ -186,7 +190,7 @@ After nitro-software-architect completes and creates `implementation-plan.md`
 ## Checkpoint: Architecture
 
 **Status**: Software architect completed implementation plan
-**Deliverable**: task-tracking/TASK_[ID]/implementation-plan.md
+**Deliverable**: task-tracking/TASK_[ID]/plan.md
 
 ### Summary
 - [Component/service design summary]
@@ -239,6 +243,7 @@ After nitro-team-leader MODE 3 confirms all development complete
    - `visual` - Visual/UI reviewer
    - `all` - All reviewers
    - `skip` - Skip QA entirely
+   > **DESIGN tasks**: only `style` or `skip` are valid. `logic`, `tester`, and `visual` are not applicable to design document artifacts.
 2. **Adjust** - Request changes to implementation
 3. **Abort** - Cancel task (state preserved in task-tracking)
 

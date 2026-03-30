@@ -1,0 +1,15 @@
+@if (compatibility().length > 0) {
+  <div class="compat-section">
+    <div class="compat-label">Compatibility</div>
+    <ul class="compat-list" role="list" aria-label="Compatibility requirements">
+      @for (entry of compatibility(); track entry.label) {
+        <li class="compat-row">
+          <span class="compat-entry-label">{{ entry.label }}</span>
+          <span class="compat-version" [attr.aria-label]="'version ' + entry.version">
+            {{ entry.version }}
+          </span>
+        </li>
+      }
+    </ul>
+  </div>
+}

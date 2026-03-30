@@ -1,0 +1,48 @@
+<div class="sidebar-header">
+  <span class="sidebar-title">Library</span>
+</div>
+
+<nav class="sidebar-nav" aria-label="Library categories">
+  @for (item of navItems; track item.label) {
+    <button
+      type="button"
+      class="nav-item"
+      [class.nav-item--active]="item.isActive"
+      [attr.aria-current]="item.isActive ? 'page' : null"
+    >
+      {{ item.label }}
+    </button>
+  }
+</nav>
+
+<div class="agent-list-section">
+  <div class="agent-list-label">Agents</div>
+
+  <ul class="agent-list" role="listbox" aria-label="Agent list">
+    @for (agent of visibleAgents(); track agent.id) {
+      <li
+        role="option"
+        class="agent-row"
+        [class.agent-row--active]="selectedAgentId() === agent.id"
+        [attr.aria-selected]="selectedAgentId() === agent.id"
+        (click)="selectAgent(agent.id)"
+        (keydown.enter)="selectAgent(agent.id)"
+        (keydown.space)="selectAgent(agent.id)"
+        tabindex="0"
+      >
+        <span class="agent-name">{{ agent.name }}</span>
+        @if (selectedAgentId() === agent.id && selectedAgentVersion() !== null) {
+          <span class="agent-version-badge" [attr.aria-label]="'Version ' + selectedAgentVersion()">
+            v{{ selectedAgentVersion() }}
+          </span>
+        }
+      </li>
+    }
+  </ul>
+
+  @if (hiddenCount() > 0) {
+    <div class="agent-list-overflow" [attr.aria-label]="hiddenCount() + ' more agents not shown'">
+      + {{ hiddenCount() }} more...
+    </div>
+  }
+</div>

@@ -48,7 +48,7 @@ Read(task-tracking/TASK_XXXX/context.md)
 ### Technical Decisions
 
 ```bash
-Read(task-tracking/TASK_XXXX/implementation-plan.md)
+Read(task-tracking/TASK_XXXX/plan.md)
 # Extracts: Architecture decisions, trade-offs, approach chosen
 ```
 
@@ -89,7 +89,7 @@ Read(task-tracking/registry.md)  # Completed tasks with metrics
 ```bash
 # Story material
 Read(task-tracking/TASK_XXXX/context.md)  # The problem
-Read(task-tracking/TASK_XXXX/implementation-plan.md)  # The solution
+Read(task-tracking/TASK_XXXX/plan.md)  # The solution
 
 # Code examples
 Read(libs/[library]/src/lib/services/*.service.ts)
@@ -243,7 +243,7 @@ Read(task-tracking/registry.md)
 
 # Deep dive on feature
 Read(task-tracking/TASK_XXXX/context.md)
-Read(task-tracking/TASK_XXXX/implementation-plan.md)
+Read(task-tracking/TASK_XXXX/plan.md)
 
 # Find code for feature
 Grep("[feature-keyword]", libs/**/*)

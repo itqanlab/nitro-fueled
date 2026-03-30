@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__nitro-cortex__get_tasks",
+      "mcp__nitro-cortex__claim_task",
+      "mcp__nitro-cortex__release_task",
+      "mcp__nitro-cortex__update_task",
+      "mcp__nitro-cortex__get_next_wave",
+      "mcp__nitro-cortex__sync_tasks_from_files",
+      "mcp__nitro-cortex__create_session",
+      "mcp__nitro-cortex__get_session",
+      "mcp__nitro-cortex__update_session",
+      "mcp__nitro-cortex__list_sessions",
+      "mcp__nitro-cortex__end_session",
+      "mcp__nitro-cortex__spawn_worker",
+      "mcp__nitro-cortex__list_workers",
+      "mcp__nitro-cortex__get_worker_stats",
+      "mcp__nitro-cortex__get_worker_activity",
+      "mcp__nitro-cortex__kill_worker",
+      "mcp__nitro-cortex__subscribe_worker",
+      "mcp__nitro-cortex__get_pending_events",
+      "mcp__nitro-cortex__emit_event"
+    ]
+  }
+}

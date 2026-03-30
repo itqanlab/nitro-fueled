@@ -20,6 +20,54 @@ You run on `claude-sonnet-4-6`. Your phases are mechanical: read files, detect f
 
 ---
 
+## Commit Traceability (REQUIRED)
+
+Every commit you create must include a traceability footer. This is required for all commits in orchestrated workflows.
+
+### Footer Template
+
+```
+Task: {TASK_ID}
+Agent: nitro-test-lead
+Phase: test
+Worker: test-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+```
+
+### Field Values
+
+| Field | Value | Source |
+|-------|-------|--------|
+| Agent | `nitro-test-lead` | Fixed — this agent's identity |
+| Phase | `test` | Fixed for this agent's commits |
+| Worker | `test-worker` | Fixed for this agent |
+| Task | From task folder name | e.g., `TASK_2026_100` |
+| Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Provider | From execution context | e.g., `claude`, `glm`, `opencode` |
+| Model | From execution context | e.g., `claude-sonnet-4-6` |
+| Retry | From prompt context | e.g., `0/2`, `1/2` |
+| Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |
+| Priority | From task.md | e.g., `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
+| Generated-By | Read from `apps/cli/package.json` at project root | Fallback: `nitro-fueled@unknown` |
+
+### Reading the Version
+
+Before creating a commit, read the version from `apps/cli/package.json`:
+
+```bash
+# Extract version field from package.json
+# Format: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+# Fallback if file unreadable: nitro-fueled@unknown
+```
+
+---
+
 ## Phase 1: Context Generation
 
 Before spawning any sub-workers, generate `task-tracking/TASK_{TASK_ID}/test-context.md`.

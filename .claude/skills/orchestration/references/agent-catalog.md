@@ -38,7 +38,9 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Implement X      | nitro-project-manager -> architect -> nitro-team-leader -> dev | New features                |
 | Fix bug          | nitro-team-leader -> dev -> test -> review               | Bug reports                 |
 | Orchestration    | architect -> nitro-team-leader -> nitro-systems-developer      | Agents, skills, commands    |
-| Research X       | nitro-researcher-expert -> architect                     | Technical questions         |
+| Research (FEATURE) | nitro-researcher-expert (-> architect if eval needed)  | Technical unknowns in FEATURE Phase 2 |
+| Market Research  | nitro-project-manager -> nitro-researcher-expert -> PM (close) | Market/competitor analysis |
+| Tech Eval        | nitro-project-manager -> nitro-researcher-expert -> nitro-software-architect -> PM (close) | Technology evaluation, feasibility |
 | Review style     | nitro-code-style-reviewer                                | Pattern checks              |
 | Review logic     | nitro-code-logic-reviewer                                | Completeness checks         |
 | Review visual    | nitro-visual-reviewer                                    | UI/UX visual testing        |
@@ -46,8 +48,12 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 | Architecture     | nitro-software-architect                                 | Design                      |
 | Landing page     | nitro-ui-ux-designer -> nitro-technical-content-writer         | Marketing pages             |
 | Brand/visual     | nitro-ui-ux-designer                                     | Design system               |
-| Content          | nitro-technical-content-writer                           | Blogs, docs, video          |
+| Design (DESIGN flow) | nitro-project-manager -> nitro-ui-ux-designer -> nitro-code-style-reviewer | Design-only (no code) |
+| Content          | nitro-project-manager -> [nitro-researcher-expert] -> nitro-technical-content-writer -> nitro-code-style-reviewer | Blog, email, newsletter, ad copy (CONTENT flow) |
+| Social media     | nitro-project-manager -> nitro-technical-content-writer -> [nitro-ui-ux-designer] -> nitro-code-style-reviewer | Social posts, campaigns, carousels (SOCIAL flow) |
+| Design content   | nitro-technical-content-writer                           | Blogs, docs, video (CREATIVE flow) |
 | Infrastructure   | nitro-devops-engineer                                    | CI/CD, packaging            |
+| OPS              | nitro-project-manager -> nitro-devops-engineer                | Setup, config, known patterns |
 | Planning         | nitro-planner                                            | Roadmap, backlog, task creation |
 
 **Default**: When uncertain, use `/orchestrate` for full workflow analysis.
@@ -63,8 +69,14 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 **Triggers**:
 
 - Starting new features (FEATURE strategy Phase 1)
+- RESEARCH strategy Phase 1 (scope definition — all sub-flows)
+- RESEARCH strategy Phase 3/4 (PM close — synthesis report for Market/Competitive)
+- RESEARCH strategy Phase 4/5 (PM close — synthesis report for Tech Eval/Feasibility)
 - Documentation tasks (DOCUMENTATION strategy Phase 1)
 - DevOps tasks (DEVOPS strategy Phase 1)
+- OPS tasks (OPS strategy Phase 1)
+- Content tasks (CONTENT strategy Phase 1)
+- DESIGN tasks (DESIGN strategy Phase 1 — requirements gathering)
 - Any task needing scope clarification
 
 **Inputs**:
@@ -76,6 +88,7 @@ Comprehensive catalog of all 16 specialist agents with capabilities, triggers, a
 **Outputs**:
 
 - `task-tracking/TASK_[ID]/task-description.md`
+- `task-tracking/TASK_[ID]/research-summary.md` (RESEARCH strategy close — PM synthesizes findings and recommendations)
 
 **Dependencies**: None (first agent in most workflows)
 
@@ -108,6 +121,8 @@ See nitro-project-manager.md for detailed instructions.`,
 - After PM completes (FEATURE strategy Phase 4)
 - Refactoring tasks (REFACTORING strategy Phase 1)
 - DevOps tasks (DEVOPS strategy Phase 2)
+- RESEARCH strategy Phase 3 — Technology Evaluation sub-flow (reviews research findings, adds architectural recommendation)
+- RESEARCH strategy Phase 3 — Feasibility Study sub-flow (reviews findings, recommends approach)
 - When architectural decisions are needed
 
 **Inputs**:
@@ -118,7 +133,8 @@ See nitro-project-manager.md for detailed instructions.`,
 
 **Outputs**:
 
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
+- Appended recommendation section in `task-tracking/TASK_[ID]/research-report.md` (RESEARCH strategy only — no plan.md created)
 
 **Dependencies**: nitro-project-manager (for FEATURE), nitro-researcher-expert (optional)
 
@@ -156,7 +172,7 @@ See nitro-software-architect.md for detailed instructions.`,
 
 **Inputs**:
 
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - `task-tracking/TASK_[ID]/tasks.md` (for MODE 2/3)
 - Developer implementation reports
 
@@ -181,7 +197,7 @@ Task({
 
 **MODE**: 1 - DECOMPOSITION
 **Task Folder**: task-tracking/TASK_2026_042
-**Implementation Plan**: Read implementation-plan.md in task folder
+**Implementation Plan**: Read plan.md in task folder
 
 Break down the implementation into atomic, batchable tasks.
 See nitro-team-leader.md for MODE 1 instructions.`,
@@ -256,7 +272,7 @@ See nitro-planner.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Existing agent/skill/command files for pattern matching
 
 **Outputs**:
@@ -279,7 +295,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
-**Plan**: Read implementation-plan.md for context
+**Plan**: Read plan.md for context
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
 See nitro-systems-developer.md for detailed instructions.`,
@@ -302,7 +318,7 @@ See nitro-systems-developer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Library/module CLAUDE.md files
 
 **Outputs**:
@@ -324,7 +340,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 1 (IN PROGRESS)
-**Plan**: Read implementation-plan.md for context
+**Plan**: Read plan.md for context
 
 Implement all tasks in Batch 1. Update status to IMPLEMENTED when done.
 See nitro-backend-developer.md for detailed instructions.`,
@@ -347,7 +363,7 @@ See nitro-backend-developer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (assigned batch)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Library/module CLAUDE.md files
 
 **Outputs**:
@@ -369,7 +385,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Tasks**: Read tasks.md, find Batch 2 (IN PROGRESS)
-**Plan**: Read implementation-plan.md for context
+**Plan**: Read plan.md for context
 
 Implement all tasks in Batch 2. Update status to IMPLEMENTED when done.
 See nitro-frontend-developer.md for detailed instructions.`,
@@ -385,14 +401,16 @@ See nitro-frontend-developer.md for detailed instructions.`,
 **Triggers**:
 
 - DEVOPS strategy Phase 3
+- OPS strategy Phase 2
 - Build system configuration and optimization
 - Packaging and distribution setup
 - Deployment pipeline creation
+- Operational configuration (CI/CD setup, docker, kubernetes, terraform, environment setup)
 - Infrastructure-focused batches within FEATURE/REFACTORING workflows (assigned by nitro-team-leader)
 
 **Inputs**:
 
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Existing workflow files (`.github/workflows/`)
 - Build configs
 
@@ -415,7 +433,7 @@ Task({
   prompt: `You are nitro-devops-engineer for TASK_2026_042.
 
 **Task Folder**: task-tracking/TASK_2026_042
-**Plan**: Read implementation-plan.md for infrastructure design
+**Plan**: Read plan.md for infrastructure design
 
 Implement the infrastructure changes.
 See nitro-devops-engineer.md for detailed instructions.`,
@@ -440,7 +458,7 @@ See nitro-devops-engineer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (completed tasks)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Modified source files
 
 **Outputs**:
@@ -462,7 +480,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for implemented changes
-**Plan**: Read implementation-plan.md for expected behavior
+**Plan**: Read plan.md for expected behavior
 
 Create and run tests, document results in test-report.md.
 See nitro-senior-tester.md for detailed instructions.`,
@@ -527,7 +545,7 @@ See nitro-code-style-reviewer.md for detailed instructions.`,
 **Inputs**:
 
 - `task-tracking/TASK_[ID]/tasks.md` (file list)
-- `task-tracking/TASK_[ID]/implementation-plan.md`
+- `task-tracking/TASK_[ID]/plan.md`
 - Modified source files
 
 **Outputs**:
@@ -548,7 +566,7 @@ Task({
 
 **Task Folder**: task-tracking/TASK_2026_042
 **Changes**: Review tasks.md for modified files
-**Plan**: Read implementation-plan.md for expected behavior
+**Plan**: Read plan.md for expected behavior
 
 Review code for logic completeness and correctness.
 See nitro-code-logic-reviewer.md for detailed instructions.`,
@@ -631,7 +649,11 @@ See nitro-visual-reviewer.md for detailed instructions.`,
 **Triggers**:
 
 - FEATURE strategy Phase 2 (when technical unknowns exist)
-- RESEARCH strategy (primary agent)
+- RESEARCH strategy Phase 2 — all sub-flows (primary agent):
+  - Market Research: produces market/industry analysis report
+  - Competitive Analysis: produces competitor comparison report
+  - Technology Evaluation: produces options analysis + benchmark report
+  - Feasibility Study: produces POC findings + risk analysis report
 - BUGFIX with unknown cause
 - Technical complexity score > 3
 - API/library evaluation
@@ -719,7 +741,9 @@ See nitro-modernization-detector.md for detailed instructions.`,
 
 **Triggers**:
 
+- DESIGN workflow (primary agent — wireframes, design systems, prototypes, brand identity)
 - CREATIVE workflow (design system creation)
+- SOCIAL workflow (Phase 3 — carousel/visual asset specs, conditional)
 - FEATURE with UI components (Phase 3)
 - Visual redesigns, brand work
 - Landing page design
@@ -734,7 +758,7 @@ See nitro-modernization-detector.md for detailed instructions.`,
 **Outputs**:
 
 - `.claude/skills/nitro-technical-content-writer/DESIGN-SYSTEM.md`
-- `task-tracking/TASK_[ID]/visual-design-specification.md`
+- `task-tracking/TASK_[ID]/design-spec.md`
 
 **Dependencies**: nitro-project-manager (optional context)
 
@@ -760,13 +784,17 @@ See nitro-ui-ux-designer.md for detailed instructions.`,
 
 ### nitro-technical-content-writer
 
-**Role**: Marketing content, documentation, blog posts, video scripts
+**Role**: Marketing content, documentation, blog posts, video scripts, email campaigns, newsletters, ad copy
 
 **Triggers**:
 
+- CONTENT workflow (Phase 3 — primary content producer)
 - CREATIVE workflow (after design system exists)
+- SOCIAL workflow (Phase 2 — platform-specific copy)
 - Landing page content creation
 - Blog post writing
+- Email campaign / newsletter / ad copy creation
+- Social media posts (Twitter/X, LinkedIn, Instagram, etc.)
 - Documentation creation
 - Video script development
 

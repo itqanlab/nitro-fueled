@@ -1,0 +1,85 @@
+<div class="phase-timing-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Phase Timing</h1>
+    <p class="page-subtitle">Average, min, and max duration per pipeline phase with outlier detection</p>
+  </div>
+
+  <!-- 503 Banner -->
+  @if (unavailable) {
+    <div class="unavailable-banner" role="alert">
+      Cortex DB unavailable — data cannot be loaded at this time.
+    </div>
+  }
+
+  <!-- Loading Skeleton -->
+  @if (loading && !unavailable) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 6 }"></nz-skeleton>
+  }
+
+  <!-- Bar Chart -->
+  @if (!loading && rows.length > 0) {
+    <div class="section-title">Duration by Phase</div>
+    <div class="bar-chart" aria-label="Phase duration bar chart">
+      @for (row of rows; track row.phase) {
+        <div class="bar-row">
+          <span class="bar-label">{{ row.phaseLabel }}</span>
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              [style.width.%]="row.barHeightPercent"
+              [attr.aria-label]="row.phaseLabel + ': ' + row.avgMin + ' min avg'"
+            >
+              <div class="range-overlay" [style.width]="row.rangeWidth"></div>
+            </div>
+          </div>
+          <span class="bar-value">
+            {{ row.avgMin !== null ? (row.avgMin | number:'1.1-1') + ' min' : '—' }}
+          </span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Data Table -->
+  @if (!loading || unavailable) {
+    @if (rows.length === 0) {
+      <nz-empty nzNotFoundContent="No phase timing data available"></nz-empty>
+    } @else {
+      <nz-table
+        [nzData]="rows"
+        [nzShowPagination]="false"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Phase</th>
+            <th scope="col">Count</th>
+            <th scope="col">Avg (min)</th>
+            <th scope="col">Min (min)</th>
+            <th scope="col">Max (min)</th>
+            <th scope="col">Outlier</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.phase) {
+            <tr [ngClass]="{ 'row-outlier': isOutlier(row) }">
+              <td>{{ row.phaseLabel }}</td>
+              <td>{{ row.count }}</td>
+              <td>{{ row.avgMin !== null ? (row.avgMin | number:'1.1-1') : '—' }}</td>
+              <td>{{ row.minMin !== null ? (row.minMin | number:'1.1-1') : '—' }}</td>
+              <td>{{ row.maxMin !== null ? (row.maxMin | number:'1.1-1') : '—' }}</td>
+              <td>
+                @if (isOutlier(row)) {
+                  <nz-tag nzColor="red">Outlier</nz-tag>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+  }
+
+</div>

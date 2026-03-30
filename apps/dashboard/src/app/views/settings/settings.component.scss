@@ -1,0 +1,215 @@
+.settings-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.settings-header {
+  margin-bottom: 24px;
+}
+
+.settings-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.settings-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &.active {
+    color: var(--accent-color, #6366f1);
+    border-bottom-color: var(--accent-color, #6366f1);
+  }
+}
+
+.tab-icon {
+  font-size: 14px;
+}
+
+.tab-label {
+  font-weight: 500;
+}
+
+.settings-content {
+  flex: 1;
+}
+
+.settings-tab-panel {
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.panel-description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+}
+
+.entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.entry-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.entry-provider,
+.entry-name,
+.entry-model {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.entry-key,
+.entry-path {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+}
+
+.entry-type {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entry-arrow {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.entry-launcher {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.entry-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &.status-valid,
+  &.status-connected,
+  &.status-detected {
+    background: var(--status-success-bg, rgba(34, 197, 94, 0.15));
+    color: var(--status-success-color, #22c55e);
+  }
+
+  &.status-invalid,
+  &.status-expired,
+  &.status-missing {
+    background: var(--status-error-bg, rgba(239, 68, 68, 0.15));
+    color: var(--status-error-color, #ef4444);
+  }
+
+  &.status-untested,
+  &.status-disconnected,
+  &.status-manual {
+    background: var(--status-warning-bg, rgba(234, 179, 8, 0.15));
+    color: var(--status-warning-color, #eab308);
+  }
+}
+
+.entry-models {
+  flex-shrink: 0;
+}
+
+.models-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.entry-toggle {
+  flex-shrink: 0;
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 16px;
+  text-align: center;
+  margin: 0;
+}
+
+.default-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent-bg, rgba(99, 102, 241, 0.15));
+  color: var(--accent-color, #6366f1);
+  font-weight: 500;
+}

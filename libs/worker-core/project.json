@@ -1,0 +1,21 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "worker-core",
+  "sourceRoot": "libs/worker-core/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'No test script configured for worker-core'",
+        "cwd": "libs/worker-core"
+      }
+    }
+  }
+}

@@ -1,0 +1,164 @@
+<!-- Page Header -->
+<div class="page-header">
+  <h1>MCP Servers &amp; Integrations</h1>
+  <p>Manage Model Context Protocol servers and third-party service connections</p>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" role="tablist" aria-label="MCP navigation">
+  <button
+    class="tab"
+    role="tab"
+    type="button"
+    [class.active]="activeTab === 'servers'"
+    [attr.aria-selected]="activeTab === 'servers'"
+    (click)="switchTab('servers')"
+  >
+    MCP Servers <span class="tab-badge" [class.accent]="activeTab === 'servers'" [class.muted]="activeTab !== 'servers'">{{ servers.length }}</span>
+  </button>
+  <button
+    class="tab"
+    role="tab"
+    type="button"
+    [class.active]="activeTab === 'integrations'"
+    [attr.aria-selected]="activeTab === 'integrations'"
+    (click)="switchTab('integrations')"
+  >
+    Integrations <span class="tab-badge" [class.accent]="activeTab === 'integrations'" [class.muted]="activeTab !== 'integrations'">{{ integrations.length }}</span>
+  </button>
+</div>
+
+<!-- MCP Servers Tab -->
+@if (activeTab === 'servers') {
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-dot green" aria-hidden="true"></span>
+      <span><strong>{{ activeServerCount }} of {{ servers.length }}</strong> servers active</span>
+    </div>
+    <div class="status-divider" aria-hidden="true"></div>
+    <div class="status-item">
+      <span>Tools available: <strong>{{ totalToolCount }}</strong></span>
+    </div>
+    <div class="status-spacer"></div>
+    <button class="btn btn-sm" type="button" aria-label="Refresh all servers">&#x21BB; Refresh All</button>
+  </div>
+
+  <!-- Server Cards Grid -->
+  <div class="server-grid">
+    @for (server of servers; track server.name) {
+      <article class="server-card" [class.inactive-card]="server.status === 'inactive'">
+        <div class="server-card-header">
+          <div class="server-card-left">
+            <div class="server-icon" [ngClass]="server.iconClass" aria-hidden="true">{{ server.icon }}</div>
+            <div class="server-info">
+              <div class="server-name-row">
+                <span class="server-name">{{ server.name }}</span>
+                <span
+                  class="server-status-dot"
+                  [class.active]="server.status === 'active'"
+                  [class.inactive]="server.status === 'inactive'"
+                  [class.error]="server.status === 'error'"
+                  [attr.aria-label]="server.status + ' status'"
+                ></span>
+              </div>
+              <div class="server-badges">
+                <span class="badge" [ngClass]="getBadgeTypeClass(server.badgeType)">{{ server.badgeType }}</span>
+                <span class="badge" [ngClass]="getTransportClass(server.transport)">{{ server.transport }}</span>
+              </div>
+              <div class="server-meta">
+                <span class="server-meta-item">&#x1F527; {{ server.toolCount }}</span>
+              </div>
+              <div class="server-teams">
+                <span class="teams-label">Available to:</span>
+                @for (team of server.teams; track team) {
+                  <span class="team-pill" [ngClass]="getTeamClass(team)">{{ team }}</span>
+                }
+              </div>
+              @if (server.connectionInfo) {
+                <div class="server-connection" [class.ok]="server.connectionStatus === 'ok'" [class.warn]="server.connectionStatus === 'warn'">
+                  @if (server.connectionStatus === 'ok') {
+                    &#x2713;
+                  } @else {
+                    &#x26A0;
+                  }
+                  {{ server.connectionInfo }}
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="tool-preview" [class.dimmed]="server.status === 'inactive'">
+          <div class="tool-preview-label">Tools</div>
+          <div class="tool-tags">
+            @for (tool of server.tools; track tool) {
+              <span class="tool-tag">{{ tool }}</span>
+            }
+            @if (server.moreToolsCount) {
+              <span class="tool-tag more">+{{ server.moreToolsCount }} more</span>
+            }
+          </div>
+        </div>
+        <div class="server-actions">
+          @if (server.status === 'inactive') {
+            <button class="btn btn-sm btn-primary" type="button">&#x2699; Configure</button>
+            <button class="btn btn-sm disabled-btn" type="button" disabled aria-disabled="true">&#x21BB; Restart</button>
+          } @else {
+            <button class="btn btn-sm" type="button">&#x2699; Configure</button>
+            <button class="btn btn-sm" type="button">&#x21BB; Restart</button>
+          }
+          @if (server.badgeType === 'User') {
+            <div class="action-spacer"></div>
+            <button class="btn btn-sm btn-danger" type="button" [attr.aria-label]="'Remove ' + server.name + ' server'">&#x2715; Remove</button>
+          }
+        </div>
+      </article>
+    }
+  </div>
+
+  <!-- Tool Access Matrix -->
+  <app-compatibility-matrix
+    [servers]="servers"
+    [toolAccess]="toolAccess"
+  />
+
+  <!-- Add Server -->
+  <div class="add-server-card">
+    <div class="add-server-title">
+      <div class="add-server-title-icon" aria-hidden="true">+</div>
+      Install MCP Server
+    </div>
+    <form class="add-server-form" (submit)="$event.preventDefault()">
+      <div class="add-server-field wide">
+        <label class="form-label" for="mcp-package-input">NPM package or local path</label>
+        <input
+          id="mcp-package-input"
+          class="input"
+          type="text"
+          placeholder="@modelcontextprotocol/server-filesystem or /path/to/server"
+        />
+      </div>
+      <div class="add-server-field">
+        <label class="form-label" for="mcp-transport-select">Transport</label>
+        <select id="mcp-transport-select" class="select">
+          <option>stdio</option>
+          <option>HTTP</option>
+        </select>
+      </div>
+      <div class="add-server-field">
+        <label class="form-label">&nbsp;</label>
+        <button class="btn btn-primary" type="submit">Install</button>
+      </div>
+    </form>
+    <div class="add-server-footer">
+      <a class="link" href="#" aria-label="Browse the MCP server directory">Browse MCP Directory</a>
+      <span class="footer-dot" aria-hidden="true">&#x2022;</span>
+      <span class="footer-note">Supports any MCP-compatible server</span>
+    </div>
+  </div>
+}
+
+<!-- Integrations Tab -->
+@if (activeTab === 'integrations') {
+  <app-integrations-tab [integrations]="integrations" />
+}

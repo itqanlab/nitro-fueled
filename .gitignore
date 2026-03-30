@@ -4,6 +4,10 @@ dist/
 .DS_Store
 .vscode/
 package-lock.json
+.nx/
+
+# Angular cache
+.angular/
 
 # Supervisor ephemeral state
 task-tracking/orchestrator-state.md
@@ -15,3 +19,7 @@ task-tracking/active-sessions.md
 # Worker logs from print-mode sessions
 .worker-logs/
 .nitro-fueled/
+.nitro/
+
+# Agent worktrees (ephemeral, created by MCP nitro-cortex)
+.claude/worktrees/

@@ -1,0 +1,126 @@
+<!-- Command Center Header -->
+<div class="command-center-header">
+  <h1 class="command-center-title">Command Center</h1>
+  <div class="project-context">
+    <span class="project-name">nitro-fueled</span>
+    <span class="project-client">local</span>
+  </div>
+</div>
+
+<!-- Task Status Breakdown Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Task Status Breakdown</h2>
+    <div class="total-tasks-badge">{{ totalTasks() }} Total</div>
+  </div>
+  <div class="stat-grid">
+    <app-stat-card label="CREATED" [valueClass]="statusClassMap['CREATED']">
+      {{ taskBreakdown().CREATED }}
+    </app-stat-card>
+    <app-stat-card label="IN PROGRESS" [valueClass]="statusClassMap['IN_PROGRESS']">
+      {{ taskBreakdown().IN_PROGRESS }}
+    </app-stat-card>
+    <app-stat-card label="IMPLEMENTED" [valueClass]="statusClassMap['IMPLEMENTED']">
+      {{ taskBreakdown().IMPLEMENTED }}
+    </app-stat-card>
+    <app-stat-card label="IN REVIEW" [valueClass]="statusClassMap['IN_REVIEW']">
+      {{ taskBreakdown().IN_REVIEW }}
+    </app-stat-card>
+    <app-stat-card label="COMPLETE" [valueClass]="statusClassMap['COMPLETE']">
+      {{ taskBreakdown().COMPLETE }}
+    </app-stat-card>
+    <app-stat-card label="FAILED" [valueClass]="statusClassMap['FAILED']">
+      {{ taskBreakdown().FAILED }}
+    </app-stat-card>
+    <app-stat-card label="BLOCKED" [valueClass]="statusClassMap['BLOCKED']">
+      {{ taskBreakdown().BLOCKED }}
+    </app-stat-card>
+    <app-stat-card label="CANCELLED" [valueClass]="statusClassMap['CANCELLED']">
+      {{ taskBreakdown().CANCELLED }}
+    </app-stat-card>
+  </div>
+</section>
+
+<!-- Token & Cost Summary Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Token & Cost Summary</h2>
+  </div>
+  <div class="token-cost-grid">
+    <div class="token-cost-main">
+      <div class="token-cost-stat">
+        <div class="token-cost-label">Total Tokens</div>
+        <div class="token-cost-value">{{ tokensDisplay() }}</div>
+      </div>
+      <div class="token-cost-stat">
+        <div class="token-cost-label">Total Cost</div>
+        <div class="token-cost-value">${{ totalCost().toFixed(2) }}</div>
+      </div>
+    </div>
+    <div class="recent-sessions">
+      <div class="sessions-header">Recent Sessions</div>
+      @for (session of recentSessions(); track session.sessionId) {
+        <div class="session-row">
+          <span class="session-id">{{ session.sessionId.slice(-12) }}</span>
+          <span class="session-date">{{ session.date }}</span>
+          <span class="session-tokens">{{ session.tokens.toLocaleString() }} tokens</span>
+          <span class="session-cost">${{ session.cost.toFixed(2) }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Active Sessions Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Active Sessions</h2>
+    <div class="session-count-badge">{{ activeSessionCount() }} Running</div>
+  </div>
+  <div class="sessions-list">
+    @if (activeSessions().length === 0) {
+      <app-empty-state icon="&#x23F3;" message="No active sessions"></app-empty-state>
+    } @else {
+      @for (session of activeSessions(); track session.sessionId) {
+        <div class="active-session-card">
+          <div class="session-info">
+            <app-status-indicator
+              [status]="session.status === 'running' ? 'running' : 'paused'"
+              [pulse]="session.status === 'running'"></app-status-indicator>
+            <div class="session-details">
+              <div class="session-id">{{ session.sessionId }}</div>
+              <div class="session-task">{{ session.taskTitle }}</div>
+            </div>
+          </div>
+          <div class="session-task-id">{{ session.taskId }}</div>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+<!-- Active Tasks Section -->
+<section class="command-center-section">
+  <div class="section-header">
+    <h2 class="section-title">Active Tasks</h2>
+    <div class="task-count-badge">{{ activeTaskCount() }} In Progress</div>
+  </div>
+  <div class="tasks-list">
+    @if (activeTasks().length === 0) {
+      <app-empty-state icon="&#x2611;" message="No active tasks"></app-empty-state>
+    } @else {
+      @for (task of activeTasks(); track task.taskId) {
+        <div class="active-task-card">
+          <div class="task-info">
+            <div class="task-id">{{ task.taskId }}</div>
+            <div class="task-title">{{ task.title }}</div>
+          </div>
+          <div class="task-meta">
+            <span class="task-type">{{ task.type }}</span>
+            <span class="task-priority priority-{{ task.priority.toLowerCase() }}">{{ task.priority }}</span>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</section>

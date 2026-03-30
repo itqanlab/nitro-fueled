@@ -1,0 +1,42 @@
+<div class="settings-tab-panel subscriptions-panel">
+  <div>
+    <h2 class="panel-title">Subscriptions</h2>
+    <p class="panel-description">Mock OAuth connections for provider subscriptions and bundled model access.</p>
+  </div>
+
+  <div class="subscription-list">
+    @for (subscription of subscriptions(); track subscription.id) {
+      <article class="subscription-card" [class.subscription-card--inactive]="!subscription.isActive">
+        <div class="subscription-card__identity">
+          <div class="provider-badge">{{ subscription.iconLabel }}</div>
+          <div>
+            <h3 class="subscription-title">{{ subscription.provider }}</h3>
+            <p class="subscription-meta">{{ subscription.supportedModels.length }} supported models in this mock plan</p>
+          </div>
+        </div>
+
+        <div class="subscription-card__status-row">
+          <span class="entry-status status-{{ subscription.connectionStatus }}">{{ subscription.connectionStatus }}</span>
+          <button class="toggle-action" type="button" [attr.aria-pressed]="subscription.isActive" (click)="onToggle(subscription.id)">
+            {{ subscription.isActive ? 'Active' : 'Inactive' }}
+          </button>
+          @if (subscription.connectionStatus === 'connected') {
+            <button class="secondary-action" type="button" (click)="onDisconnect(subscription.id)">Disconnect</button>
+          } @else {
+            <button class="primary-action" type="button" (click)="onConnect(subscription.id)">Connect</button>
+          }
+        </div>
+
+        <div class="subscription-models">
+          @for (model of subscription.availableModels; track model) {
+            <span class="model-chip">{{ model }}</span>
+          } @empty {
+            <span class="helper-text">Connect this service to load its mock model list.</span>
+          }
+        </div>
+      </article>
+    } @empty {
+      <p class="empty-state">No subscriptions configured.</p>
+    }
+  </div>
+</div>

@@ -1,0 +1,52 @@
+<div
+  class="status-bar"
+  role="status"
+  aria-live="polite"
+  aria-label="Editor status bar"
+>
+  <div class="status-bar__left">
+    <span class="status-item" aria-label="Cursor position">
+      Line {{ store.cursorPosition().line }}, Col {{ store.cursorPosition().col }}
+    </span>
+    <span class="status-separator" aria-hidden="true">|</span>
+    <span class="status-item" aria-label="Total lines">
+      {{ store.cursorPosition().totalLines }} lines
+    </span>
+    <span class="status-separator" aria-hidden="true">|</span>
+    <span class="status-item">Markdown</span>
+    @if (store.isDirty()) {
+      <span class="status-separator" aria-hidden="true">|</span>
+      <span class="status-item status-item--unsaved" aria-label="Unsaved changes">
+        Unsaved changes
+      </span>
+    }
+  </div>
+
+  <div class="status-bar__right">
+    @if (store.selectedAgent() !== null) {
+      <button
+        type="button"
+        class="status-btn"
+        [attr.aria-label]="'Preview diff from version ' + (store.selectedAgent()?.currentVersion ?? 1)"
+      >
+        Preview Diff from v{{ store.selectedAgent()?.currentVersion ?? 1 }}
+      </button>
+    }
+    <button
+      type="button"
+      class="status-btn"
+      aria-label="Save draft"
+      (click)="onSaveDraft()"
+    >
+      Save Draft
+    </button>
+    <button
+      type="button"
+      class="status-btn status-btn--primary"
+      [attr.aria-label]="'Save as version ' + ((store.selectedAgent()?.currentVersion ?? 0) + 1)"
+      (click)="onSaveVersion()"
+    >
+      Save as v{{ (store.selectedAgent()?.currentVersion ?? 0) + 1 }}
+    </button>
+  </div>
+</div>

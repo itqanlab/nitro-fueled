@@ -130,7 +130,7 @@ if design-assets-inventory.md exists:
 ### STEP 4: Read Architecture Documents
 
 ```bash
-Read(task-tracking/TASK_[ID]/implementation-plan.md)
+Read(task-tracking/TASK_[ID]/plan.md)
 Read(task-tracking/TASK_[ID]/task-description.md)
 ```
 
@@ -229,7 +229,7 @@ When implementation-plan conflicts with design-specification:
 
 1. **visual-design-specification.md** = Source of truth for visuals
 2. **design-handoff.md** = Source of truth for component patterns
-3. **implementation-plan.md** = Architecture guidance only
+3. **plan.md** = Architecture guidance only
 
 ---
 
@@ -237,7 +237,7 @@ When implementation-plan conflicts with design-specification:
 
 ### CRITICAL: You Are NOT Authorized to Make Architectural Decisions
 
-**BEFORE changing approach from what's specified in `implementation-plan.md`, you MUST escalate.**
+**BEFORE changing approach from what's specified in `plan.md`, you MUST escalate.**
 
 You are an **executor**, not an **architect**.
 
@@ -259,7 +259,7 @@ You are an **executor**, not an **architect**.
 ## ESCALATION REQUIRED
 
 **Task**: [Task number and description]
-**File**: [implementation-plan.md reference]
+**File**: [plan.md reference]
 
 **Issue**: [What is blocking implementation as planned]
 
@@ -486,6 +486,53 @@ _Component hierarchy: Atoms -> Molecules -> Organisms -> Templates -> Pages_
 **Ready For**: Team-leader verification -> Code review -> Git commit
 
 **NOTE**: Git operations (staging, committing) are handled by nitro-team-leader, NOT by you.
+```
+
+---
+
+## Commit Traceability (REQUIRED)
+
+Every commit you create must include a traceability footer. This is required for all commits in orchestrated workflows.
+
+### Footer Template
+
+```
+Task: {TASK_ID}
+Agent: nitro-frontend-developer
+Phase: implementation
+Worker: build-worker
+Session: {SESSION_ID}
+Provider: {provider}
+Model: {model}
+Retry: {retry_count}/{max_retries}
+Complexity: {complexity}
+Priority: {priority}
+Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+```
+
+### Field Values
+
+| Field | Value | Source |
+|-------|-------|--------|
+| Agent | `nitro-frontend-developer` | Fixed — this agent's identity |
+| Phase | `implementation` | Fixed — frontend tasks commit in the implementation phase |
+| Worker | `build-worker` | Fixed for this agent |
+| Task | From task folder name | e.g., `TASK_2026_100` |
+| Session | From SESSION_ID in prompt context | Format: `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Provider | From execution context | e.g., `claude`, `glm`, `opencode` |
+| Model | From execution context | e.g., `claude-sonnet-4-6` |
+| Retry | From prompt context | e.g., `0/2`, `1/2` |
+| Complexity | From task.md | e.g., `Simple`, `Medium`, `Complex` |
+| Priority | From task.md | e.g., `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
+| Generated-By | Read from `apps/cli/package.json` at project root | Fallback: `nitro-fueled@unknown` |
+
+### Reading the Version
+
+Before creating a commit, read the version from `apps/cli/package.json`:
+
+```bash
+VERSION=$(node -e "const p=require('./apps/cli/package.json'); console.log(p.version)" 2>/dev/null || echo "unknown")
+# Use in footer: Generated-By: nitro-fueled v${VERSION} (https://github.com/itqanlab/nitro-fueled)
 ```
 
 ---

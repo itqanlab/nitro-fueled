@@ -1,0 +1,142 @@
+<div class="panel-header">
+  <span class="panel-agent-name">{{ agentName() }}</span>
+  <span class="panel-version-badge" [attr.aria-label]="'Version ' + currentVersion()">
+    v{{ currentVersion() }}
+  </span>
+</div>
+
+<div class="panel-body">
+  <div class="field-group">
+    <label class="field-label" for="meta-name">Name</label>
+    <input
+      id="meta-name"
+      type="text"
+      class="field-input"
+      [ngModel]="store.metadata().name"
+      (ngModelChange)="onNameChange($event)"
+      placeholder="agent-name"
+      aria-label="Agent name"
+    />
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" for="meta-display-name">Display Name</label>
+    <input
+      id="meta-display-name"
+      type="text"
+      class="field-input"
+      [ngModel]="store.metadata().displayName"
+      (ngModelChange)="onDisplayNameChange($event)"
+      placeholder="Human-readable name"
+      aria-label="Display name"
+    />
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" for="meta-category">Category</label>
+    <div class="select-wrapper">
+      <select
+        id="meta-category"
+        class="field-select"
+        [ngModel]="store.metadata().category"
+        (ngModelChange)="onCategoryChange($event)"
+        aria-label="Agent category"
+      >
+        @for (opt of categoryOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Tags</label>
+    <div class="tags-container" role="group" aria-label="Agent tags">
+      @for (tag of tags(); track tag) {
+        <span class="tag-chip">
+          {{ tag }}
+          <button
+            type="button"
+            class="tag-remove"
+            (click)="removeTag(tag)"
+            [attr.aria-label]="'Remove tag ' + tag"
+          >×</button>
+        </span>
+      }
+      <input
+        type="text"
+        class="tag-input"
+        placeholder="Add tag..."
+        aria-label="Add new tag"
+        (keydown)="onTagKeydown($event, tagInput)"
+        #tagInput
+      />
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" for="meta-type">Type</label>
+    <div class="select-wrapper">
+      <select
+        id="meta-type"
+        class="field-select"
+        [ngModel]="store.metadata().type"
+        (ngModelChange)="onTypeChange($event)"
+        aria-label="Agent type"
+      >
+        @for (opt of typeOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Used In</label>
+    <div class="field-readonly" aria-label="Projects using this agent">{{ usedIn() || '—' }}</div>
+  </div>
+
+  <div class="panel-divider" role="separator"></div>
+
+  <app-mcp-tool-access />
+  <app-knowledge-scope />
+
+  <div class="panel-divider" role="separator"></div>
+
+  <div class="field-group">
+    <label class="field-label" for="meta-changelog">Version Changelog</label>
+    <textarea
+      id="meta-changelog"
+      class="field-textarea"
+      [ngModel]="store.metadata().changelog"
+      (ngModelChange)="onChangelogChange($event)"
+      placeholder="Describe changes in this version..."
+      aria-label="Version changelog"
+      rows="4"
+    ></textarea>
+  </div>
+
+  <div class="field-group">
+    <div class="breaking-change-row">
+      <div class="breaking-change-info">
+        <span class="field-label breaking-change-label" [class.breaking-change-label--active]="isBreakingChange()">
+          Breaking Change
+        </span>
+        <span class="breaking-change-desc">Incompatible with previous version</span>
+      </div>
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.toggle-btn--on]="isBreakingChange()"
+        role="switch"
+        [attr.aria-checked]="isBreakingChange()"
+        aria-label="Toggle breaking change"
+        (click)="onBreakingChangeToggle()"
+      >
+        <span class="toggle-thumb"></span>
+      </button>
+    </div>
+  </div>
+
+  <app-compatibility-list />
+</div>

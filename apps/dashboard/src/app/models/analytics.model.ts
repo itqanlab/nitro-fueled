@@ -1,0 +1,113 @@
+export type TrendDirection = 'up' | 'down' | 'neutral';
+
+export interface AnalyticsTrend {
+  readonly direction: TrendDirection;
+  readonly percent: number;
+  readonly goodWhenDown?: boolean;
+}
+
+export interface AnalyticsStatCard {
+  readonly label: string;
+  readonly value: string;
+  readonly unit?: string;
+  readonly trend?: AnalyticsTrend;
+  readonly sub: string;
+  readonly colorKey: 'warning' | 'success' | 'accent' | 'text-secondary';
+}
+
+export interface ProviderCost {
+  readonly name: string;
+  readonly percent: number;
+  readonly amount: number;
+  readonly colorClass: 'blue' | 'green' | 'orange' | 'gray';
+}
+
+export interface ClientCost {
+  readonly name: string;
+  readonly amount: number;
+  readonly budget: number;
+  readonly colorClass: 'fill-accent' | 'fill-warning' | 'fill-success';
+}
+
+export interface AgentPerformance {
+  readonly name: string;
+  readonly online: boolean;
+  readonly tasks: number;
+  readonly avgDuration: string;
+  readonly tokensPerTask: string;
+  readonly costPerTask: number;
+  readonly successRate: number;
+}
+
+export interface DailyCostEntry {
+  readonly day: number;
+  readonly amount: number;
+}
+
+export interface DailyCostBar {
+  readonly day: number;
+  readonly amount: number;
+  readonly heightPercent: number;
+  readonly colorClass: string;
+}
+
+export interface TeamBreakdown {
+  readonly name: string;
+  readonly cost: number;
+  readonly tasks: number;
+  readonly agents: number;
+  readonly avgCost: number;
+  readonly budgetUsed: number;
+  readonly budgetTotal: number;
+}
+
+export interface TeamCardView {
+  readonly name: string;
+  readonly cost: number;
+  readonly tasks: number;
+  readonly agents: number;
+  readonly avgCost: number;
+  readonly budgetUsed: number;
+  readonly budgetTotal: number;
+  readonly budgetPercent: number;
+  readonly budgetClass: string;
+  readonly avgCostFormatted: string;
+}
+
+export interface AgentRow {
+  readonly name: string;
+  readonly online: boolean;
+  readonly tasks: number;
+  readonly avgDuration: string;
+  readonly tokensPerTask: string;
+  readonly costPerTask: number;
+  readonly successRate: number;
+  readonly badgeClass: string;
+}
+
+export interface ClientBar {
+  readonly name: string;
+  readonly amount: number;
+  readonly budget: number;
+  readonly colorClass: string;
+  readonly budgetPercent: number;
+}
+
+export type FilterPeriod = '7d' | '30d' | 'month' | 'custom';
+
+export interface AnalyticsFilterOptions {
+  readonly clients: readonly string[];
+  readonly teams: readonly string[];
+  readonly projects: readonly string[];
+}
+
+export interface AnalyticsData {
+  readonly statCards: readonly AnalyticsStatCard[];
+  readonly providerCosts: readonly ProviderCost[];
+  readonly clientCosts: readonly ClientCost[];
+  readonly agentPerformance: readonly AgentPerformance[];
+  readonly dailyCosts: readonly DailyCostEntry[];
+  readonly dailyBudgetLimit: number;
+  readonly teamBreakdowns: readonly TeamBreakdown[];
+  readonly filterOptions: AnalyticsFilterOptions;
+}

@@ -1,0 +1,231 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title">Task Queue</h1>
+    <div class="running-badge" [class.has-running]="runningCount() > 0">
+      @if (runningCount() > 0) {
+        <span class="running-dot"></span>
+        {{ runningCount() }} Running
+      } @else {
+        No active tasks
+      }
+    </div>
+  </div>
+  <div class="page-header-right">
+    <button
+      class="btn btn-primary"
+      type="button"
+      [class.btn-running]="autoPilotState() === 'running'"
+      [disabled]="isAutoPilotBusy()"
+      [attr.aria-label]="autoPilotState() === 'running' ? 'Auto-Pilot is running' : autoPilotState() === 'starting' ? 'Auto-Pilot is starting' : 'Start Auto-Pilot'"
+      (click)="onStartAutoPilot()"
+    >
+      @if (autoPilotState() === 'running') {
+        <span class="btn-dot running-dot--small"></span>
+        Auto-Pilot Running
+      } @else if (autoPilotState() === 'starting') {
+        <span class="btn-dot running-dot--small"></span>
+        Starting Auto-Pilot...
+      } @else {
+        &#x25B6; Start Auto-Pilot
+      }
+    </button>
+  </div>
+</div>
+
+@if (autoPilotError()) {
+  <div class="auto-pilot-note auto-pilot-note--error" role="status">{{ autoPilotError() }}</div>
+} @else if (autoPilotSessionId()) {
+  <div class="auto-pilot-note" role="status">
+    Session {{ autoPilotSessionId() }} is {{ autoPilotState() === 'running' ? 'running' : 'starting' }}.
+  </div>
+}
+
+<!-- Toolbar: Filters + View Toggle -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <!-- Search input -->
+    <div class="search-wrapper">
+      <span class="search-icon" aria-hidden="true">&#x2315;</span>
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Search by ID or title..."
+        aria-label="Search tasks"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+      />
+    </div>
+
+    <!-- Status filter chips -->
+    <div class="filter-chips" role="group" aria-label="Filter by status">
+      @for (option of filterOptions; track option.value) {
+        <button
+          class="filter-chip"
+          type="button"
+          [class.active]="statusFilter() === option.value"
+          [attr.aria-pressed]="statusFilter() === option.value"
+          (click)="setStatusFilter(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="toolbar-right">
+    <!-- View mode toggle -->
+    <div class="view-toggle" role="group" aria-label="View mode">
+      <button
+        class="view-btn"
+        type="button"
+        [class.active]="viewMode() === 'list'"
+        aria-label="List view"
+        (click)="setViewMode('list')"
+      >
+        &#x2630;
+      </button>
+      <button
+        class="view-btn"
+        type="button"
+        [class.active]="viewMode() === 'kanban'"
+        aria-label="Kanban view"
+        (click)="setViewMode('kanban')"
+      >
+        &#x2016;
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- List View -->
+@if (viewMode() === 'list') {
+  <section class="task-list" aria-label="Task list">
+    @if (filteredTasks().length === 0) {
+      <div class="empty-state" role="status">
+        No tasks match the current filter.
+      </div>
+    } @else {
+      @for (task of filteredTasks(); track task.id) {
+        <div
+          class="task-row"
+          [ngClass]="[statusClassMap[task.status]]"
+          [class.task-row--running]="task.status === 'IN_PROGRESS'"
+          [class.task-row--clickable]="task.status === 'IN_PROGRESS' && task.sessionId"
+          [attr.role]="task.status === 'IN_PROGRESS' && task.sessionId ? 'button' : null"
+          [attr.tabindex]="task.status === 'IN_PROGRESS' && task.sessionId ? '0' : null"
+          [attr.aria-label]="task.id + ': ' + task.title"
+          (click)="onTaskClick(task)"
+          (keydown.enter)="onTaskClick(task)"
+          (keydown.space)="onTaskClick(task)"
+        >
+          <!-- Status indicator -->
+          <div class="task-row-indicator" [attr.aria-hidden]="true">
+            @if (task.status === 'IN_PROGRESS') {
+              <span class="live-dot"></span>
+            } @else {
+              <span
+                class="status-dot"
+                [ngClass]="statusClassMap[task.status]"
+              ></span>
+            }
+          </div>
+
+          <!-- Task ID + Title -->
+          <div class="task-row-main">
+            <div class="task-row-id">{{ task.id }}</div>
+            <div class="task-row-title">{{ task.title }}</div>
+          </div>
+
+          <!-- Status badge -->
+          <div class="task-row-status">
+            <span class="status-badge" [ngClass]="statusClassMap[task.status]">
+              {{ statusLabelMap[task.status] }}
+            </span>
+          </div>
+
+          <!-- Phase (if running) -->
+          <div class="task-row-phase">
+            @if (task.phase) {
+              <span class="phase-badge">{{ task.phase }}</span>
+            }
+          </div>
+
+          <!-- Session ID -->
+          <div class="task-row-session">
+            @if (task.sessionId) {
+              <span class="session-id-text">{{ task.sessionId.slice(-16) }}</span>
+            }
+          </div>
+
+          <!-- Priority -->
+          <div class="task-row-priority">
+            <span class="priority-badge" [ngClass]="priorityClassMap[task.priority]">
+              {{ task.priority }}
+            </span>
+          </div>
+
+          <!-- Last activity -->
+          <div class="task-row-activity">
+            <span class="activity-text">{{ task.lastActivity }}</span>
+          </div>
+
+          <!-- Navigate arrow (running tasks only) -->
+          @if (task.status === 'IN_PROGRESS' && task.sessionId) {
+            <div class="task-row-nav" aria-hidden="true">&#x2192;</div>
+          }
+        </div>
+      }
+    }
+  </section>
+}
+
+<!-- Kanban View -->
+@if (viewMode() === 'kanban') {
+  <div class="kanban-board" role="region" aria-label="Kanban board">
+    @for (col of kanbanColumns(); track col.status) {
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title">{{ statusLabelMap[col.status] }}</span>
+          <span class="kanban-col-count">{{ col.tasks.length }}</span>
+        </div>
+        <div class="kanban-col-body">
+          @if (col.tasks.length === 0) {
+            <div class="kanban-empty">—</div>
+          } @else {
+            @for (task of col.tasks; track task.id) {
+              <div
+                class="kanban-card"
+                [class.kanban-card--running]="task.status === 'IN_PROGRESS'"
+                [class.kanban-card--clickable]="task.status === 'IN_PROGRESS' && task.sessionId"
+                [attr.role]="task.status === 'IN_PROGRESS' && task.sessionId ? 'button' : null"
+                [attr.tabindex]="task.status === 'IN_PROGRESS' && task.sessionId ? '0' : null"
+                [attr.aria-label]="task.id + ': ' + task.title"
+                (click)="onTaskClick(task)"
+                (keydown.enter)="onTaskClick(task)"
+                (keydown.space)="onTaskClick(task)"
+              >
+                <div class="kanban-card-header">
+                  <span class="kanban-task-id">{{ task.id }}</span>
+                  @if (task.status === 'IN_PROGRESS') {
+                    <span class="live-dot live-dot--sm"></span>
+                  }
+                </div>
+                <div class="kanban-task-title">{{ task.title }}</div>
+                <div class="kanban-card-footer">
+                  <span class="priority-badge" [ngClass]="priorityClassMap[task.priority]">
+                    {{ task.priority }}
+                  </span>
+                  @if (task.phase) {
+                    <span class="phase-badge">{{ task.phase }}</span>
+                  }
+                </div>
+                <div class="kanban-activity">{{ task.lastActivity }}</div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

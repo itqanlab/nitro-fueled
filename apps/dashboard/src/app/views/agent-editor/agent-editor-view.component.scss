@@ -1,0 +1,15 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  margin: -24px;
+  height: calc(100vh - 48px - 40px);
+  overflow: hidden;
+}
+
+.editor-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
