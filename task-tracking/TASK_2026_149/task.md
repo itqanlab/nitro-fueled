@@ -57,9 +57,14 @@ All data from mock constants. No real key validation.
 
 ## File Scope
 
+- `apps/dashboard/src/app/models/settings.model.ts`
+- `apps/dashboard/src/app/services/settings.service.ts`
+- `apps/dashboard/src/app/services/settings-provider.constants.ts`
+- `apps/dashboard/src/app/views/settings/settings.component.ts`
+- `apps/dashboard/src/app/views/settings/settings.component.html`
 - `apps/dashboard/src/app/views/settings/api-keys/api-keys.component.ts`
-- `apps/dashboard/src/app/views/settings/settings.component.ts` (wire tab)
-- `apps/dashboard/src/app/services/settings.service.ts` (add API key methods)
+- `apps/dashboard/src/app/views/settings/api-keys/api-keys.component.html`
+- `apps/dashboard/src/app/views/settings/api-keys/api-keys.component.scss`
 
 ## Parallelism
 

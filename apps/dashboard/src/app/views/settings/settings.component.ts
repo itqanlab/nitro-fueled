@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { SettingsService } from '../../services/settings.service';
+import { ApiKeysComponent } from './api-keys/api-keys.component';
 
 type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping';
 
@@ -20,7 +21,7 @@ const SETTINGS_TABS: readonly TabDefinition[] = [
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, ApiKeysComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,8 +32,6 @@ export class SettingsComponent {
   public readonly tabs: readonly TabDefinition[] = SETTINGS_TABS;
   public readonly activeTab = signal<SettingsTab>('api-keys');
 
-  // Computed signals from the service — OnPush will detect changes correctly
-  public readonly apiKeys = this.settingsService.apiKeys;
   public readonly launchers = this.settingsService.launchers;
   public readonly subscriptions = this.settingsService.subscriptions;
   public readonly mappings = this.settingsService.mappings;

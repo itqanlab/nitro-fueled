@@ -19,31 +19,7 @@
   <div class="settings-content">
     @switch (activeTab()) {
       @case ('api-keys') {
-        <div class="settings-tab-panel">
-          <h2 class="panel-title">API Keys</h2>
-          <p class="panel-description">Manage your provider API keys. Keys are masked for security.</p>
-          <div class="entries-list">
-            @for (key of apiKeys(); track key.id) {
-              <div class="entry-row">
-                <div class="entry-info">
-                  <span class="entry-provider">{{ key.provider }}</span>
-                  <span class="entry-key">{{ key.key }}</span>
-                  <span class="entry-status status-{{ key.status }}">{{ key.status }}</span>
-                </div>
-                <div class="entry-models">
-                  @if (key.detectedModels.length > 0) {
-                    <span class="models-count">{{ key.detectedModels.length }} models detected</span>
-                  }
-                </div>
-                <div class="entry-toggle">
-                  <span class="toggle-label">{{ key.isActive ? 'Active' : 'Inactive' }}</span>
-                </div>
-              </div>
-            } @empty {
-              <p class="empty-state">No API keys configured.</p>
-            }
-          </div>
-        </div>
+        <app-api-keys></app-api-keys>
       }
       @case ('launchers') {
         <div class="settings-tab-panel">

@@ -1,4 +1,5 @@
 export type ApiKeyStatus = 'valid' | 'invalid' | 'untested';
+export type ApiProviderId = 'anthropic' | 'openai' | 'google' | 'mistral' | 'groq';
 export type LauncherType = 'cli' | 'ide' | 'desktop';
 export type LauncherStatus = 'detected' | 'manual' | 'missing';
 export type SubscriptionConnectionStatus = 'connected' | 'disconnected' | 'expired';
@@ -6,10 +7,19 @@ export type SubscriptionConnectionStatus = 'connected' | 'disconnected' | 'expir
 export interface ApiKeyEntry {
   readonly id: string;
   readonly key: string;
+  readonly label?: string;
+  readonly providerId?: ApiProviderId;
   readonly provider: string;
   readonly status: ApiKeyStatus;
   readonly isActive: boolean;
   readonly detectedModels: readonly string[];
+}
+
+export interface ApiProviderOption {
+  readonly id: ApiProviderId;
+  readonly name: string;
+  readonly iconLabel: string;
+  readonly modelIds: readonly string[];
 }
 
 export interface LauncherEntry {
