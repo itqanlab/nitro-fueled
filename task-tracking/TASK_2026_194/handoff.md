@@ -15,7 +15,7 @@
 - `apps/cli/scaffold/.claude/skills/orchestration/SKILL.md` (modified, scaffold sync for canonical format)
 
 ## Commits
-- Pending implementation commit for TASK_2026_194
+- `ba61722`: `fix(mcp-cortex): normalize session ids for TASK_2026_194`
 
 ## Decisions
 - Kept normalization at MCP tool boundaries so legacy callers continue to work without rewriting existing session directories or DB rows.
