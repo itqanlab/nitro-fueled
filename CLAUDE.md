@@ -30,7 +30,7 @@ libs/                      # Shared libraries
 
 ## Key Docs
 - `docs/nitro-fueled-design.md` — Full design doc
-- `docs/mcp-session-orchestrator-design.md` — MCP cortex design (worker management + task DB)
+- `docs/mcp-nitro-cortex-design.md` — MCP cortex design (worker management + task DB)
 - `docs/task-template-guide.md` — Task template usage and orchestration integration
 
 ## Dependencies

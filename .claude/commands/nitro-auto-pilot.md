@@ -370,6 +370,6 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 - Supervisor skill: `.claude/skills/auto-pilot/SKILL.md`
 - Orchestration skill (used by workers): `.claude/skills/orchestration/SKILL.md`
 - Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
-- MCP nitro-cortex design: `docs/mcp-session-orchestrator-design.md`
+- MCP nitro-cortex design: `docs/mcp-nitro-cortex-design.md`
 - Task template guide: `docs/task-template-guide.md`
 - Benchmark suite: `benchmark-suite/config.md`
