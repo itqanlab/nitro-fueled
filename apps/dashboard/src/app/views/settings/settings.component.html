@@ -4,17 +4,7 @@
     <p class="settings-subtitle">Manage API keys, launchers, subscriptions, and model mappings</p>
   </div>
 
-  <nav class="settings-tabs">
-    @for (tab of tabs; track tab.id) {
-      <button
-        class="settings-tab"
-        [ngClass]="{ 'active': activeTab() === tab.id }"
-        (click)="selectTab(tab.id)">
-        <span class="tab-icon">{{ tab.icon }}</span>
-        <span class="tab-label">{{ tab.label }}</span>
-      </button>
-    }
-  </nav>
+  <app-tab-nav [tabs]="tabs" [activeTab]="activeTab()" (tabChange)="selectTab($event)"></app-tab-nav>
 
   <div class="settings-content">
     @switch (activeTab()) {

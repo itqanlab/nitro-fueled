@@ -4,29 +4,8 @@
   <p>Manage Model Context Protocol servers and third-party service connections</p>
 </div>
 
-<!-- Tabs -->
-<div class="tabs" role="tablist" aria-label="MCP navigation">
-  <button
-    class="tab"
-    role="tab"
-    type="button"
-    [class.active]="activeTab === 'servers'"
-    [attr.aria-selected]="activeTab === 'servers'"
-    (click)="switchTab('servers')"
-  >
-    MCP Servers <span class="tab-badge" [class.accent]="activeTab === 'servers'" [class.muted]="activeTab !== 'servers'">{{ servers.length }}</span>
-  </button>
-  <button
-    class="tab"
-    role="tab"
-    type="button"
-    [class.active]="activeTab === 'integrations'"
-    [attr.aria-selected]="activeTab === 'integrations'"
-    (click)="switchTab('integrations')"
-  >
-    Integrations <span class="tab-badge" [class.accent]="activeTab === 'integrations'" [class.muted]="activeTab !== 'integrations'">{{ integrations.length }}</span>
-  </button>
-</div>
+  <!-- Tabs -->
+  <app-tab-nav [tabs]="tabs" [activeTab]="activeTab" (tabChange)="activeTab = $event"></app-tab-nav>
 
 <!-- MCP Servers Tab -->
 @if (activeTab === 'servers') {

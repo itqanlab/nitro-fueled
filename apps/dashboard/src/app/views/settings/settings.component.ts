@@ -6,11 +6,12 @@ import { ApiKeysComponent } from './api-keys/api-keys.component';
 import { LaunchersComponent } from './launchers/launchers.component';
 import { SubscriptionsComponent } from './subscriptions/subscriptions.component';
 import { MappingComponent } from './mapping/mapping.component';
+import { TabNavComponent, TabItem } from '../../shared/tab-nav/tab-nav.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [NgClass, ApiKeysComponent, LaunchersComponent, SubscriptionsComponent, MappingComponent],
+  imports: [NgClass, TabNavComponent, ApiKeysComponent, LaunchersComponent, SubscriptionsComponent, MappingComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

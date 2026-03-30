@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { Task } from '../../models/task.model';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
 @Component({
   selector: 'app-task-card',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, ProgressBarComponent],
   template: `
     @if (task.pipeline.length > 0) {
       <div class="pipeline">
@@ -58,14 +59,7 @@ import { Task } from '../../models/task.model';
 
       @if (task.status !== 'completed') {
         <div class="task-progress">
-          <div class="task-progress-bar">
-            <div
-              class="task-progress-fill"
-              [ngClass]="task.status"
-              [style.width.%]="task.progressPercent"
-            ></div>
-          </div>
-          <div class="task-progress-label">{{ task.progressPercent }}%</div>
+          <app-progress-bar [value]="task.progressPercent" [variant]="task.status" showLabel="true"></app-progress-bar>
         </div>
         <div class="task-actions">
           <button class="btn btn-sm btn-icon" [title]="task.status === 'running' ? 'Pause' : 'Resume'">
@@ -219,25 +213,6 @@ import { Task } from '../../models/task.model';
 
     .task-actions { display: flex; gap: 4px; flex-shrink: 0; }
     .task-progress { width: 100px; flex-shrink: 0; }
-    .task-progress-bar {
-      height: 4px;
-      background: var(--bg-hover);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .task-progress-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.3s;
-    }
-    .task-progress-fill.running { background: var(--running); }
-    .task-progress-fill.paused { background: var(--paused); }
-    .task-progress-label {
-      font-size: 11px;
-      color: var(--text-tertiary);
-      text-align: right;
-      margin-top: 3px;
-    }
 
     .btn {
       display: inline-flex;
