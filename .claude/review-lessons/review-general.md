@@ -525,3 +525,7 @@ Auto-updated after each task's review cycle. Append new findings — do not remo
 - **Example trace files must be annotated with a disclaimer that paths are illustrative and current conventions apply** — when historical trace files reference actual task folders (e.g., TASK_2026_047/design-spec.md) and those folders may still use old artifact names, documentation drift can confuse developers. Add a prominent note at the top of all trace files stating paths are examples and actual task folder naming follows current conventions. (TASK_2026_107)
 - **Renaming tasks must verify historical folders, not just documentation** — when updating example traces that reference specific task IDs (e.g., TASK_2026_047), verify whether the actual task folder exists and update it if needed. Leaving historical folders with old naming creates confusion when developers try to follow the example pattern in real codebase exploration. (TASK_2026_107)
 
+## Specification Cross-References
+
+- **Spec changes must validate all step cross-references** — when modifying a spec file that references step numbers (e.g., "go to Step 5"), verify that all forward and backward step references still point to the correct steps after the change. Split specs across multiple files need explicit cross-reference headers listing which sections in the other file are authoritative. Three tasks (133, 135, 136) shipped contradictory step references that routed execution to wrong branches. [RETRO_2026-03-30_2_since-2026-03-29]
+

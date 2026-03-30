@@ -62,3 +62,7 @@ Check these BEFORE submitting work.
 - Async route handlers must be wrapped with error-catching middleware — unhandled promise rejections crash the process.
 - Never mix callback and Promise patterns in the same handler.
 - Rejection in `Promise.all` cancels ALL concurrent operations — use `Promise.allSettled` when partial success is acceptable.
+
+## Specification Contradictions
+
+- Never have two sections in a spec that define the same rule with different conclusions (e.g., Step 3d allows IMPLEMENTED tasks but Step 5 rejects them). Each rule must have exactly one authoritative location. When splitting a spec across files, add explicit "source of truth for X is in [file:section]" headers. [RETRO_2026-03-30_2_since-2026-03-29]
