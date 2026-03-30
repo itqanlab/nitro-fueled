@@ -99,6 +99,14 @@ export function handleSpawnWorker(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
   }
 
+  // M6: Verify the task exists before inserting the worker row (FK constraint).
+  if (args.task_id) {
+    const taskExists = db.prepare('SELECT id FROM tasks WHERE id = ?').get(args.task_id);
+    if (!taskExists) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found', task_id: args.task_id }) }] };
+    }
+  }
+
   // H2: INSERT the worker row BEFORE spawning the process so that if the process
   // exits immediately (onExit fires), the DB row already exists for the UPDATE.
   // T1: Use JSON.stringify(empty*()) instead of '{}' so parsed structs have correct fields.

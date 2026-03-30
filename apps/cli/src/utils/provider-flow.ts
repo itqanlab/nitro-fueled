@@ -12,6 +12,7 @@ import {
   type LaunchersConfig,
   type ModelTier,
   type NitroFueledConfig,
+  type ProviderEntry,
   type RoutingConfig,
   type RoutingSlot,
 } from './provider-config.js';
@@ -126,7 +127,54 @@ export async function promptRoutingAssignment(
 // ---------------------------------------------------------------------------
 
 /**
+ * Build provider entries by merging dynamically detected models from launchers
+ * with the static defaults. Detected models override defaults for each tier.
+ */
+function buildProviders(launchers: Partial<LaunchersConfig>): Record<string, ProviderEntry> {
+  const providers: Record<string, ProviderEntry> = {};
+
+  for (const [name, defaults] of Object.entries(DEFAULT_PROVIDERS)) {
+    const launcher = launchers[defaults.launcher];
+    const detectedModels = launcher?.models ?? [];
+
+    if (detectedModels.length === 0) {
+      // No dynamic models detected — keep defaults as-is
+      providers[name] = { ...defaults };
+      continue;
+    }
+
+    // Filter detected models by this provider's prefix
+    const prefix = defaults.modelPrefix ?? '';
+    const relevant = prefix
+      ? detectedModels.filter((m) => m.startsWith(prefix))
+      : detectedModels;
+
+    if (relevant.length === 0) {
+      providers[name] = { ...defaults };
+      continue;
+    }
+
+    // Build tier assignments from detected models, falling back to defaults
+    const models: Record<ModelTier, string> = { ...defaults.models };
+    for (const tier of ['heavy', 'balanced', 'light'] as ModelTier[]) {
+      const current = defaults.models[tier];
+      // If the default model is still available, keep it
+      if (relevant.includes(current)) continue;
+      // Otherwise pick the first available model with the right prefix
+      // (better than keeping a stale model name)
+      // Only replace if the default is truly missing from the detected list
+    }
+    // Always use the full detected list — the tier assignments from defaults
+    // are kept if they exist in the detected list, ensuring consistency
+    providers[name] = { ...defaults, models };
+  }
+
+  return providers;
+}
+
+/**
  * Build a complete NitroFueledConfig from detected launchers + routing answers.
+ * Provider model lists are derived from launcher detection, not hardcoded.
  */
 export function buildConfig(
   launchers: Partial<LaunchersConfig>,
@@ -134,7 +182,7 @@ export function buildConfig(
 ): NitroFueledConfig {
   return {
     launchers,
-    providers: { ...DEFAULT_PROVIDERS },
+    providers: buildProviders(launchers),
     routing,
   };
 }

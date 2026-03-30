@@ -70,6 +70,33 @@ function probeLauncher(launcher: string): { available: boolean; reason?: string 
   }
 }
 
+/**
+ * Query `opencode models` for dynamic model discovery.
+ * Returns all model names grouped by prefix.
+ */
+function queryDynamicModels(): Map<string, string[]> {
+  const grouped = new Map<string, string[]>();
+  try {
+    const output = execSync('opencode models', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 15_000,
+    }).trim();
+
+    for (const line of output.split('\n')) {
+      const model = line.trim();
+      if (model.length === 0) continue;
+      const slashIdx = model.indexOf('/');
+      const prefix = slashIdx > 0 ? model.slice(0, slashIdx) : 'opencode';
+      if (!grouped.has(prefix)) grouped.set(prefix, []);
+      grouped.get(prefix)!.push(model);
+    }
+  } catch {
+    // opencode not available or models command failed — return empty
+  }
+  return grouped;
+}
+
 function loadConfig(workingDirectory?: string): ConfigFile {
   const userConfig = join(homedir(), '.nitro-fueled', 'config.json');
   const projectConfig = workingDirectory
@@ -113,6 +140,7 @@ export async function handleGetAvailableProviders(
   args: { working_directory?: string },
 ): Promise<ToolResult> {
   const config = loadConfig(args.working_directory);
+  const dynamicModels = queryDynamicModels();
   const results: ProviderResult[] = [];
 
   for (const [name, providerConfig] of Object.entries(config.providers ?? {})) {
@@ -123,7 +151,23 @@ export async function handleGetAvailableProviders(
 
     const launcher = providerConfig.launcher ?? name;
     const probe = probeLauncher(launcher);
-    results.push({ name, launcher, available: probe.available, reason: probe.reason, models: probe.available ? (providerConfig.models ?? {}) : {} });
+
+    // Enrich config models with dynamically discovered models
+    let models = probe.available ? (providerConfig.models ?? {}) : {};
+    if (probe.available && dynamicModels.size > 0) {
+      // Find the prefix for this provider (e.g., 'openai/', 'zai-coding-plan/')
+      const prefix = (providerConfig as Record<string, unknown>)['modelPrefix'] as string | undefined;
+      if (prefix) {
+        const prefixKey = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+        const discovered = dynamicModels.get(prefixKey) ?? [];
+        if (discovered.length > 0) {
+          // Keep tier assignments from config, add full list of available models
+          models = { ...models, _available: discovered.join(', ') } as Record<string, string>;
+        }
+      }
+    }
+
+    results.push({ name, launcher, available: probe.available, reason: probe.reason, models });
   }
 
   const lines = results.map((p) => {
