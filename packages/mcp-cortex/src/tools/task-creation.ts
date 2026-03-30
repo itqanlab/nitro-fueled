@@ -292,9 +292,7 @@ function buildTaskMd(projectRoot: string, def: TaskDefinition): string {
   content = replaceSection(content, 'References', '- task-tracking/task-template.md', 'File Scope');
   content = replaceSection(content, 'File Scope', buildList(def.fileScope, '- [None]', '- '));
 
-  if (def.parallelism) {
-    content = `${content}\n\n## Parallelism\n\n${def.parallelism}`;
-  }
+  content = `${content}\n\n## Parallelism\n\n${def.parallelism ?? 'No constraints specified.'}`;
 
   return `${content.trimEnd()}\n`;
 }
