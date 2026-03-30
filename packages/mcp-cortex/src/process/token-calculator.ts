@@ -13,6 +13,8 @@ export const CONTEXT_WINDOWS: Record<string, number> = {
   'glm-4.7': 128_000,
   'glm-4.5-air': 128_000,
   'openai/gpt-5.4': 128_000,
+  'openai/gpt-5.4-mini': 128_000,
+  'openai/codex-mini-latest': 128_000,
   'openai/gpt-4.1': 128_000,
   'openai/gpt-4.1-mini': 128_000,
   'openai/o4-mini': 128_000,
@@ -56,6 +58,14 @@ const PRICING: Record<string, ModelPricing> = {
   'openai/gpt-5.4': {
     input_per_mtok: 2.5, output_per_mtok: 10.0,
     cache_creation_per_mtok: 0, cache_read_per_mtok: 1.25,
+  },
+  'openai/gpt-5.4-mini': {
+    input_per_mtok: 0.4, output_per_mtok: 1.6,
+    cache_creation_per_mtok: 0, cache_read_per_mtok: 0.1,
+  },
+  'openai/codex-mini-latest': {
+    input_per_mtok: 0.4, output_per_mtok: 1.6,
+    cache_creation_per_mtok: 0, cache_read_per_mtok: 0.1,
   },
   'openai/gpt-4.1': {
     input_per_mtok: 2.0, output_per_mtok: 8.0,

@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS workers (
   pid                INTEGER,
   working_directory  TEXT,
   model              TEXT,
-  provider           TEXT CHECK(provider IN ('claude','glm','opencode')),
+  provider           TEXT CHECK(provider IN ('claude','glm','opencode','codex')),
   launcher           TEXT CHECK(launcher IN ('print','opencode','codex')),
   log_path           TEXT,
   auto_close         INTEGER NOT NULL DEFAULT 0,
@@ -289,6 +289,40 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
   db.pragma('foreign_keys = ON');
 }
 
+/**
+ * Migrate the workers table CHECK constraint to include 'codex' as a valid provider.
+ * SQLite cannot ALTER CHECK constraints, so we recreate the table preserving data.
+ */
+function migrateWorkersProviderConstraint(db: Database.Database): void {
+  const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='workers'").get() as { sql: string } | undefined;
+  if (!tableInfo) return;
+
+  if (tableInfo.sql.includes("'codex'")) return; // Already up to date
+
+  db.pragma('foreign_keys = OFF');
+
+  db.transaction(() => {
+    db.exec('DROP TABLE IF EXISTS workers_new');
+
+    // Get existing columns to handle schema differences
+    const existingCols = (db.prepare('PRAGMA table_info(workers)').all() as Array<{ name: string }>).map(r => r.name);
+
+    db.exec(WORKERS_TABLE.replace('CREATE TABLE IF NOT EXISTS workers', 'CREATE TABLE workers_new'));
+
+    const newCols = new Set(
+      (db.prepare('PRAGMA table_info(workers_new)').all() as Array<{ name: string }>).map(r => r.name),
+    );
+    const shared = existingCols.filter(c => newCols.has(c));
+    const colList = shared.join(', ');
+
+    db.exec(`INSERT INTO workers_new (${colList}) SELECT ${colList} FROM workers`);
+    db.exec('DROP TABLE workers');
+    db.exec('ALTER TABLE workers_new RENAME TO workers');
+  })();
+
+  db.pragma('foreign_keys = ON');
+}
+
 export function initDatabase(dbPath: string): Database.Database {
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
 
@@ -296,8 +330,9 @@ export function initDatabase(dbPath: string): Database.Database {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
-  // Migrate CHECK constraint before CREATE TABLE IF NOT EXISTS (which won't update existing tables)
+  // Migrate CHECK constraints before CREATE TABLE IF NOT EXISTS (which won't update existing tables)
   migrateTasksCheckConstraint(db);
+  migrateWorkersProviderConstraint(db);
 
   db.exec(TASKS_TABLE);
   db.exec(SESSIONS_TABLE);

@@ -126,8 +126,14 @@ export class JsonlWatcher {
   }
 
   private processMessage(msg: Record<string, unknown>, acc: SessionAccumulator): void {
+    // Detect opencode/codex format: messages have a `part` object with `sessionID`
+    if (msg.part && typeof msg.part === 'object' && 'sessionID' in (msg.part as Record<string, unknown>)) {
+      this.processOpenCodeMessage(msg, acc);
+      return;
+    }
+
     /**
-     * Token accumulation contract:
+     * Token accumulation contract (Claude CLI format):
      * - `result` message: provides the authoritative cumulative total. Its usage fields
      *   OVERWRITE the incremental accumulator (totalInput, totalOutput, etc.), superseding
      *   any per-`assistant` increments accumulated so far.
@@ -187,6 +193,102 @@ export class JsonlWatcher {
       acc.endTurnAt = null;
       acc.autoCloseTriggered = false;
     }
+  }
+
+  /**
+   * Process opencode/codex JSON streaming format.
+   *
+   * Format:
+   * - step_finish: { part: { tokens: { total, input, output, reasoning, cache: { write, read } }, cost, reason } }
+   * - tool_use:    { part: { tool: "read"|"write"|..., state: { input: { filePath?, command?, ... } } } }
+   * - text:        { part: { text: "..." } }
+   * - step_start:  (ignored — no useful data)
+   */
+  private processOpenCodeMessage(msg: Record<string, unknown>, acc: SessionAccumulator): void {
+    const part = msg.part as Record<string, unknown>;
+    const msgType = msg.type as string;
+
+    if (msgType === 'step_finish') {
+      const tokens = part.tokens as Record<string, unknown> | undefined;
+      if (tokens) {
+        const input = tokens.input;
+        const output = tokens.output;
+        const reasoning = tokens.reasoning;
+        const cache = tokens.cache as Record<string, number> | undefined;
+
+        if (isFiniteNonNeg(input)) acc.totalInput += input;
+        if (isFiniteNonNeg(output)) acc.totalOutput += output;
+        if (isFiniteNonNeg(reasoning)) acc.totalOutput += reasoning;
+        if (cache) {
+          if (isFiniteNonNeg(cache.write)) acc.totalCacheCreation += cache.write;
+          if (isFiniteNonNeg(cache.read)) acc.totalCacheRead += cache.read;
+        }
+
+        // Use total input for context tracking (compaction detection)
+        const totalInput = (isFiniteNonNeg(input) ? input : 0) + (cache?.read ?? 0);
+        if (totalInput > 0) {
+          if (acc.lastInputTokens > 0 && totalInput < acc.lastInputTokens * 0.3) {
+            acc.compactionCount++;
+          }
+          acc.lastInputTokens = totalInput;
+        }
+      }
+
+      acc.messageCount++;
+
+      const reason = part.reason as string | undefined;
+      if (reason === 'end_turn') {
+        acc.endTurnAt = Date.now();
+      } else if (reason === 'tool-calls') {
+        acc.endTurnAt = null;
+        acc.autoCloseTriggered = false;
+      }
+
+      // Extract cost if present (opencode provides per-step cost)
+      const cost = part.cost as number | undefined;
+      if (isFiniteNonNeg(cost) && cost > 0) {
+        // Cost is tracked via token calculator, but opencode provides it directly — ignore for now
+      }
+
+      return;
+    }
+
+    if (msgType === 'tool_use') {
+      const toolName = (part.tool as string) ?? '';
+      const state = part.state as Record<string, unknown> | undefined;
+      const input = state?.input as Record<string, string> | undefined;
+
+      acc.toolCalls++;
+      acc.lastActionAt = Date.now();
+
+      if (toolName === 'read' && input?.filePath) {
+        acc.filesRead.add(input.filePath);
+        acc.lastAction = `Read(${shortenPath(input.filePath)})`;
+      } else if ((toolName === 'write' || toolName === 'edit' || toolName === 'apply_patch') && input?.filePath) {
+        acc.filesWritten.add(input.filePath);
+        acc.lastAction = `${toolName.charAt(0).toUpperCase() + toolName.slice(1)}(${shortenPath(input.filePath)})`;
+      } else if (toolName === 'bash' && input?.command) {
+        acc.lastAction = `Bash(${input.command.substring(0, 60)})`;
+      } else if (toolName === 'grep' && input?.pattern) {
+        acc.lastAction = `Grep(${input.pattern.substring(0, 40)})`;
+      } else if (toolName === 'glob' && input?.pattern) {
+        acc.lastAction = `Glob(${input.pattern.substring(0, 40)})`;
+      } else if (toolName === 'skill') {
+        acc.lastAction = `Skill(${(input?.name ?? '...').substring(0, 30)})`;
+      } else {
+        acc.lastAction = `${toolName}(...)`;
+      }
+      return;
+    }
+
+    if (msgType === 'text') {
+      // Text messages don't carry token info but confirm the worker is active
+      acc.lastActionAt = Date.now();
+      return;
+    }
+
+    // step_start and other types — just update lastActionAt
+    acc.lastActionAt = Date.now();
   }
 
   private extractToolCalls(content: ContentBlock[], acc: SessionAccumulator): void {
