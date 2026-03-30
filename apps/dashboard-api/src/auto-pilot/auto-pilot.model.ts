@@ -1,18 +1,32 @@
-export type AutoPilotSessionStatus = 'starting' | 'running' | 'stopped';
+/**
+ * API request/response DTOs for the auto-pilot endpoints.
+ */
+import type { LoopStatus, PriorityStrategy, ProviderType, SupervisorConfig } from './auto-pilot.types';
 
-export interface StartAutoPilotOptions {
-  readonly dryRun?: boolean;
-}
+// ============================================================
+// Start
+// ============================================================
 
 export interface StartAutoPilotRequest {
   readonly taskIds?: ReadonlyArray<string>;
-  readonly options?: StartAutoPilotOptions;
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly buildProvider?: ProviderType;
+  readonly buildModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
 }
 
 export interface StartAutoPilotResponse {
   readonly sessionId: string;
   readonly status: 'starting';
 }
+
+// ============================================================
+// Stop / Pause
+// ============================================================
 
 export interface StopAutoPilotRequest {
   readonly sessionId: string;
@@ -23,17 +37,44 @@ export interface StopAutoPilotResponse {
   readonly stopped: true;
 }
 
-export interface AutoPilotStatusResponse {
+export interface PauseAutoPilotRequest {
   readonly sessionId: string;
-  readonly status: AutoPilotSessionStatus;
-  readonly updatedAt: string;
 }
 
-export interface MockAutoPilotSession {
+export interface PauseAutoPilotResponse {
   readonly sessionId: string;
-  readonly taskIds: ReadonlyArray<string>;
-  readonly dryRun: boolean;
-  readonly createdAt: string;
-  readonly pollCount: number;
-  readonly stopped: boolean;
+  readonly paused: true;
+}
+
+export interface ResumeAutoPilotRequest {
+  readonly sessionId: string;
+}
+
+export interface ResumeAutoPilotResponse {
+  readonly sessionId: string;
+  readonly resumed: true;
+}
+
+// ============================================================
+// Status
+// ============================================================
+
+export interface AutoPilotStatusResponse {
+  readonly sessionId: string;
+  readonly loopStatus: LoopStatus;
+  readonly config: SupervisorConfig;
+  readonly workers: {
+    readonly active: number;
+    readonly completed: number;
+    readonly failed: number;
+  };
+  readonly tasks: {
+    readonly completed: number;
+    readonly failed: number;
+    readonly inProgress: number;
+    readonly remaining: number;
+  };
+  readonly startedAt: string;
+  readonly uptimeMinutes: number;
+  readonly lastHeartbeat: string;
 }

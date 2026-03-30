@@ -162,6 +162,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  transition: all 0.15s;
 }
 
 .filter-dropdown {
@@ -185,11 +186,15 @@
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
+  outline: none;
+  user-select: none;
 }
 
-.filter-dropdown-btn:hover {
+.filter-dropdown-btn:hover, .filter-dropdown-btn:focus {
   border-color: var(--accent);
   background: var(--bg-tertiary);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .filter-dropdown-btn.active {
@@ -235,10 +240,15 @@
   max-height: 300px;
   overflow-y: auto;
   display: none;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  transform: translateY(-5px);
 }
 
 .filter-dropdown-menu.open {
   display: block;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .filter-dropdown-header {
@@ -265,11 +275,14 @@
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   transition: all 0.15s;
+  outline: none;
 }
 
-.clear-btn:hover {
+.clear-btn:hover, .clear-btn:focus {
   border-color: var(--error);
   color: var(--error);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .filter-dropdown-options {
@@ -285,10 +298,13 @@
   padding: 6px 0;
   cursor: pointer;
   transition: background 0.15s;
+  outline: none;
 }
 
-.filter-option:hover {
+.filter-option:hover, .filter-option:focus {
   background: var(--bg-tertiary);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .filter-option input {
@@ -504,6 +520,7 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  transition: all 0.15s;
 }
 
 .active-chip {
@@ -517,6 +534,9 @@
   font-size: 11px;
   font-weight: 500;
   color: var(--accent);
+  transition: all 0.15s;
+  cursor: pointer;
+  user-select: none;
 }
 
 .active-chip-label { white-space: nowrap; }
@@ -535,10 +555,15 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  transition: background 0.15s;
+  transition: all 0.15s;
+  outline: none;
 
-  &:hover { background: var(--accent); color: var(--text-on-accent, #fff); }
-  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  &:hover, &:focus {
+    background: var(--accent);
+    color: var(--text-on-accent, #fff);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 .clear-all-btn {
@@ -551,9 +576,14 @@
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   transition: all 0.15s;
+  outline: none;
 
-  &:hover { border-color: var(--error); color: var(--error); }
-  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  &:hover, &:focus {
+    border-color: var(--error);
+    color: var(--error);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
   &--empty {
     margin-top: 12px;
@@ -803,4 +833,68 @@
   .task-row-priority { display: none; }
   .toolbar-top { flex-direction: column; align-items: flex-start; }
   .toolbar-right { width: 100%; justify-content: space-between; }
+}
+
+/* ---- Color Independence for Filter State Indicators ---- */
+.filter-badge {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.filter-badge-count {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.filter-dropdown-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.filter-dropdown-btn.active {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.filter-dropdown-menu {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.filter-option {
+  color: var(--text-primary);
+}
+
+.filter-option:hover {
+  background: var(--bg-tertiary);
+}
+
+.filter-option input {
+  accent-color: var(--accent); /* Ensure checkbox color matches theme */
+}
+
+.active-chip {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.active-chip-remove:hover {
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+}
+
+.clear-all-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.clear-all-btn:hover {
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  color: var(--error);
 }

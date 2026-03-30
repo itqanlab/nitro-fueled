@@ -1,6 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  computed,
   effect,
   inject,
   signal,
@@ -12,8 +14,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { TabNavComponent, TabItem } from '../../shared/tab-nav/tab-nav.component';
-import type { CortexEvent, CortexWorker, LogSearchResult, WorkerLogEntry, SessionLogSummary } from '../../models/api.types';
-import type { DashboardEvent } from '../../models/api.types';
+import type {
+  CortexEvent,
+  CortexSession,
+  CortexWorker,
+  LogSearchResult,
+  WorkerLogEntry,
+  SessionLogSummary,
+} from '../../models/api.types';
 
 type LogTab = 'events' | 'workers' | 'sessions' | 'search';
 
@@ -35,6 +43,7 @@ interface EventFilters {
 export class LogsComponent {
   private readonly api = inject(ApiService);
   private readonly ws = inject(WebSocketService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public readonly tabs: TabItem[] = [
     { id: 'events', label: 'Events', icon: '\u{1F4CB}' },
@@ -79,8 +88,8 @@ export class LogsComponent {
   );
 
   public readonly sessionsResult = toSignal(
-    this.api.getCortexSessions().pipe(catchError(() => of([] as any[]))),
-    { initialValue: [] as any[] },
+    this.api.getCortexSessions().pipe(catchError(() => of([] as CortexSession[]))),
+    { initialValue: [] as CortexSession[] },
   );
 
   public readonly workerDetailResult = toSignal(
@@ -114,34 +123,7 @@ export class LogsComponent {
     { initialValue: null as LogSearchResult | null },
   );
 
-  public constructor() {
-    effect(() => {
-      const q = this.searchQuery();
-      if (q.length >= 2) {
-        this.search$.next(q);
-      }
-    });
-
-    this.ws.events$.subscribe((event: DashboardEvent) => {
-      const payload = event.payload ?? {};
-      if (payload['id'] && payload['created_at']) {
-        const cortexEvent = payload as unknown as CortexEvent;
-        this.liveEvents.update((prev) => [...prev.slice(-499), cortexEvent]);
-      }
-    });
-  }
-
-  public updateEventFilter(key: string, value: string): void {
-    const current = this.eventFilters();
-    this.eventFilters.set({
-      sessionId: key === 'sessionId' ? value : current.sessionId,
-      taskId: key === 'taskId' ? value : current.taskId,
-      eventType: key === 'eventType' ? value : current.eventType,
-      severity: key === 'severity' ? value : current.severity,
-    });
-  }
-
-  public get filteredEvents(): CortexEvent[] {
+  public readonly filteredEvents = computed(() => {
     const events = this.eventsResult();
     const filters = this.eventFilters();
     let result = events;
@@ -153,7 +135,8 @@ export class LogsComponent {
       result = result.filter((e) => e.task_id?.includes(filters.taskId));
     }
     if (filters.eventType) {
-      result = result.filter((e) => e.event_type.toLowerCase().includes(filters.eventType.toLowerCase()));
+      const et = filters.eventType.toLowerCase();
+      result = result.filter((e) => e.event_type.toLowerCase().includes(et));
     }
     if (filters.severity) {
       const sev = filters.severity.toLowerCase();
@@ -167,6 +150,31 @@ export class LogsComponent {
       });
     }
     return result;
+  });
+
+  public constructor() {
+    effect(() => {
+      const q = this.searchQuery();
+      if (q.length >= 2) {
+        this.search$.next(q);
+      }
+    });
+
+    const sub = this.ws.cortexEvents$.subscribe((event: CortexEvent) => {
+      this.liveEvents.update((prev) => [...prev.slice(-499), event]);
+    });
+
+    this.destroyRef.onDestroy(() => sub.unsubscribe());
+  }
+
+  public updateEventFilter(key: string, value: string): void {
+    const current = this.eventFilters();
+    this.eventFilters.set({
+      sessionId: key === 'sessionId' ? value : current.sessionId,
+      taskId: key === 'taskId' ? value : current.taskId,
+      eventType: key === 'eventType' ? value : current.eventType,
+      severity: key === 'severity' ? value : current.severity,
+    });
   }
 
   public onTabChange(tabId: string): void {
@@ -181,6 +189,11 @@ export class LogsComponent {
   public selectSession(sessionId: string): void {
     this.selectedSessionId.set(sessionId);
     this.sessionSelect$.next(sessionId);
+  }
+
+  public toggleLive(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.isLive.set(checked);
   }
 
   public getEventTypeClass(eventType: string): string {
@@ -234,7 +247,7 @@ export class LogsComponent {
     return worker.id;
   }
 
-  public trackBySessionId(_index: number, session: any): string {
+  public trackBySessionId(_index: number, session: CortexSession): string {
     return session.id;
   }
 }

@@ -6,7 +6,7 @@
     </div>
     <div class="header-actions">
       <label class="live-toggle">
-        <input type="checkbox" [checked]="isLive()" (change)="isLive.set($any($event.target).checked)" />
+        <input type="checkbox" [checked]="isLive()" (change)="toggleLive($event)" />
         <span class="live-indicator" [class.active]="isLive()"></span>
         Live
       </label>
@@ -15,7 +15,6 @@
 
   <app-tab-nav [tabs]="tabs" [activeTab]="activeTab()" (tabChange)="onTabChange($event)"></app-tab-nav>
 
-  <!-- Events Tab -->
   @if (activeTab() === 'events') {
     <div class="tab-content">
       <div class="filter-bar">
@@ -63,14 +62,13 @@
     </div>
   }
 
-  <!-- Workers Tab -->
   @if (activeTab() === 'workers') {
     <div class="tab-content">
       <div class="workers-layout">
         <div class="workers-list">
-          <div class="list-header">Workers ({{ workers().length }})</div>
-          @for (worker of workers(); track worker.id) {
-            <div class="worker-item" [class.selected]="selectedWorkerId() === worker.id" (click)="selectedWorkerId.set(worker.id)">
+          <div class="list-header">Workers ({{ workersResult().length }})</div>
+          @for (worker of workersResult(); track worker.id) {
+            <div class="worker-item" [class.selected]="selectedWorkerId() === worker.id" (click)="selectWorker(worker.id)">
               <div class="worker-item-header">
                 <span class="worker-status-dot" [ngClass]="getWorkerStatusClass(worker.status)"></span>
                 <span class="worker-label">{{ worker.label }}</span>
@@ -83,8 +81,8 @@
           }
         </div>
         <div class="worker-detail">
-          @if (workerDetail()) {
-            @let detail = workerDetail();
+          @if (workerDetailResult()) {
+            @let detail = workerDetailResult();
             <div class="detail-header">
               <h3>{{ detail.worker.label }}</h3>
               <span class="detail-status" [ngClass]="getWorkerStatusClass(detail.worker.status)">{{ detail.worker.status }}</span>
@@ -137,14 +135,13 @@
     </div>
   }
 
-  <!-- Sessions Tab -->
   @if (activeTab() === 'sessions') {
     <div class="tab-content">
       <div class="workers-layout">
         <div class="workers-list">
-          <div class="list-header">Sessions ({{ sessions().length }})</div>
-          @for (session of sessions(); track session.id) {
-            <div class="worker-item" [class.selected]="selectedSessionId() === session.id" (click)="selectedSessionId.set(session.id)">
+          <div class="list-header">Sessions ({{ sessionsResult().length }})</div>
+          @for (session of sessionsResult(); track session.id) {
+            <div class="worker-item" [class.selected]="selectedSessionId() === session.id" (click)="selectSession(session.id)">
               <div class="worker-item-header">
                 <span class="worker-label">{{ session.id }}</span>
               </div>
@@ -156,8 +153,8 @@
           }
         </div>
         <div class="worker-detail">
-          @if (sessionDetail()) {
-            @let detail = sessionDetail();
+          @if (sessionDetailResult()) {
+            @let detail = sessionDetailResult();
             <div class="detail-header">
               <h3>{{ detail.sessionId }}</h3>
             </div>
@@ -202,7 +199,6 @@
     </div>
   }
 
-  <!-- Search Tab -->
   @if (activeTab() === 'search') {
     <div class="tab-content">
       <div class="search-bar">
@@ -211,8 +207,8 @@
         <input class="filter-input" type="text" placeholder="Task filter..." [ngModel]="searchTaskFilter()" (ngModelChange)="searchTaskFilter.set($event)" />
       </div>
 
-      @if (searchResults()) {
-        @let results = searchResults();
+      @if (searchResultData()) {
+        @let results = searchResultData();
         <div class="search-meta">Found {{ results.total }} results for "{{ results.query }}"</div>
         @for (event of results.events; track event.id) {
           <div class="event-row" [ngClass]="getEventTypeClass(event.event_type)">

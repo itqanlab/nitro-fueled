@@ -27,7 +27,7 @@ import type {
   PipelineData,
 } from '../../models/api.types';
 import { adaptTaskDetail } from './task-detail.adapters';
-import type { TaskDetailViewModel, PhaseBarEntry, WorkerIdDisplay } from './task-detail.model';
+import type { TaskDetailViewModel, PhaseBarEntry } from './task-detail.model';
 
 type TaskDataBundle = {
   taskData: FullTaskData | null;
@@ -100,7 +100,7 @@ export class TaskDetailComponent {
   public readonly vm = signal<TaskDetailViewModel | null>(null);
   public readonly loading = signal(true);
 
-  public readonly statusColorMap: Record<string, string> = {
+  public readonly statusColorMap: Readonly<Record<string, string>> = {
     CREATED: 'default',
     IN_PROGRESS: 'processing',
     IMPLEMENTED: 'blue',
@@ -112,7 +112,7 @@ export class TaskDetailComponent {
     CANCELLED: 'default',
   };
 
-  public readonly priorityColorMap: Record<string, string> = {
+  public readonly priorityColorMap: Readonly<Record<string, string>> = {
     'P0-Critical': 'red',
     'P1-High': 'orange',
     'P2-Medium': 'blue',
@@ -129,7 +129,7 @@ export class TaskDetailComponent {
     return model ? formatTokenCount(model.totalOutputTokens) : '0';
   });
 
-  public readonly phaseBars = computed<PhaseBarEntry[]>(() => {
+  public readonly phaseBars = computed<readonly PhaseBarEntry[]>(() => {
     const model = this.vm();
     if (!model || model.phases.length === 0) return [];
     const maxDuration = model.phases.reduce(
@@ -145,12 +145,23 @@ export class TaskDetailComponent {
       }));
   });
 
-  public readonly workerIdDisplays = computed<WorkerIdDisplay[]>(() => {
+  public readonly workerRows = computed(() => {
     const model = this.vm();
     if (!model) return [];
     return model.workers.map(w => ({
-      id: w.id,
-      truncated: w.id.length > 12 ? w.id.slice(0, 12) + '\u2026' : w.id,
+      ...w,
+      idTruncated: w.id.length > 12 ? w.id.slice(0, 12) + '\u2026' : w.id,
+      sessionIdTruncated: w.sessionId.length > 24 ? w.sessionId.slice(0, 24) + '\u2026' : w.sessionId,
+    }));
+  });
+
+  public readonly transitionNodes = computed(() => {
+    const model = this.vm();
+    if (!model) return [];
+    return model.statusTransitions.map(t => ({
+      ...t,
+      statusClass: 'tl-status--' + t.to.toLowerCase().replace(/_/g, '-'),
+      formattedTime: t.timestamp ? new Date(t.timestamp).toLocaleString() : '',
     }));
   });
 

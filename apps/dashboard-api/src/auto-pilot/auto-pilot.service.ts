@@ -1,57 +1,76 @@
-import { Injectable } from '@nestjs/common';
-import {
-  AutoPilotStatusResponse,
-  MockAutoPilotSession,
+/**
+ * AutoPilotService — facade over the SupervisorService.
+ *
+ * Translates REST API requests into supervisor operations. Keeps the
+ * controller thin and the supervisor logic decoupled from HTTP concerns.
+ */
+import { Injectable, Logger } from '@nestjs/common';
+import { SupervisorService } from './supervisor.service';
+import type {
   StartAutoPilotRequest,
   StartAutoPilotResponse,
   StopAutoPilotResponse,
+  PauseAutoPilotResponse,
+  ResumeAutoPilotResponse,
+  AutoPilotStatusResponse,
 } from './auto-pilot.model';
 
 @Injectable()
 export class AutoPilotService {
-  private readonly sessions = new Map<string, MockAutoPilotSession>();
-  private sessionCounter = 0;
+  private readonly logger = new Logger(AutoPilotService.name);
+
+  public constructor(private readonly supervisor: SupervisorService) {}
 
   public start(request: StartAutoPilotRequest): StartAutoPilotResponse {
-    const sessionId = this.createSessionId();
-    this.sessions.set(sessionId, {
-      sessionId,
-      taskIds: request.taskIds ?? [],
-      dryRun: request.options?.dryRun ?? false,
-      createdAt: new Date().toISOString(),
-      pollCount: 0,
-      stopped: false,
+    const sessionId = this.supervisor.start({
+      concurrency: request.concurrency,
+      limit: request.limit,
+      build_provider: request.buildProvider,
+      build_model: request.buildModel,
+      review_provider: request.reviewProvider,
+      review_model: request.reviewModel,
+      priority: request.priority,
+      retries: request.retries,
     });
+
     return { sessionId, status: 'starting' };
   }
 
   public stop(sessionId: string): StopAutoPilotResponse | null {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
+    const currentSession = this.supervisor.getSessionId();
+    if (!currentSession || currentSession !== sessionId) {
       return null;
     }
-    this.sessions.set(sessionId, { ...session, stopped: true });
+    this.supervisor.stop();
     return { sessionId, stopped: true };
   }
 
-  public getStatus(sessionId: string): AutoPilotStatusResponse | null {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
+  public pause(sessionId: string): PauseAutoPilotResponse | null {
+    const currentSession = this.supervisor.getSessionId();
+    if (!currentSession || currentSession !== sessionId) {
       return null;
     }
-    const nextPollCount = session.pollCount + 1;
-    const status = session.stopped ? 'stopped' : nextPollCount >= 2 ? 'running' : 'starting';
-    this.sessions.set(sessionId, { ...session, pollCount: nextPollCount });
-    return {
-      sessionId,
-      status,
-      updatedAt: new Date().toISOString(),
-    };
+    this.supervisor.pause();
+    return { sessionId, paused: true };
   }
 
-  private createSessionId(): string {
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    this.sessionCounter += 1;
-    return `SESSION_${stamp}_${this.sessionCounter}`;
+  public resume(sessionId: string): ResumeAutoPilotResponse | null {
+    const currentSession = this.supervisor.getSessionId();
+    if (!currentSession || currentSession !== sessionId) {
+      return null;
+    }
+    this.supervisor.resume();
+    return { sessionId, resumed: true };
+  }
+
+  public getStatus(sessionId?: string): AutoPilotStatusResponse | null {
+    const status = this.supervisor.getStatus();
+    if (!status) return null;
+    if (sessionId && status.sessionId !== sessionId) return null;
+    return status;
+  }
+
+  public isRunning(): boolean {
+    return this.supervisor.isRunning();
   }
 }

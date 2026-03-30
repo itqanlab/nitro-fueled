@@ -91,7 +91,12 @@ export interface PhaseBarEntry {
   widthPercent: number;
 }
 
-export interface WorkerIdDisplay {
-  id: string;
-  truncated: string;
+export interface TransitionNode extends StatusTransition {
+  statusClass: string;
+  formattedTime: string;
+}
+
+export interface WorkerRow extends WorkerEntry {
+  idTruncated: string;
+  sessionIdTruncated: string;
 }

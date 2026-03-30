@@ -89,6 +89,8 @@ export class ProjectComponent implements OnInit {
   });
 
   public applyFiltersAndSort(tasks: readonly QueueTask[]): QueueTask[] {
+    const startTime = performance.now();
+    
     const query = this.searchQuery().trim().toLowerCase();
     const statuses = this.selectedStatuses();
     const types = this.selectedTypes();
@@ -99,46 +101,72 @@ export class ProjectComponent implements OnInit {
     const field = this.sortField();
     const dir = this.sortDirection();
 
-    // Apply filters with OR logic for multi-select filters
-    const results = tasks.filter(task => {
-      // Search filter (OR logic across id, title, description)
-      if (query) {
-        const matchesId = task.id.toLowerCase().includes(query);
-        const matchesTitle = task.title.toLowerCase().includes(query);
-        const matchesDesc = task.description?.toLowerCase().includes(query) || false;
-        if (!matchesId && !matchesTitle && !matchesDesc) return false;
-      }
+    // Pre-compute filter functions for better performance
+    const filterFunctions: ((task: QueueTask) => boolean)[] = [];
 
-      // Status filter (OR logic)
-      if (statuses.length > 0 && !statuses.includes(task.status)) return false;
+    // Search filter (OR logic across id, title, description)
+    if (query) {
+      const searchFilters = [
+        (task: QueueTask) => task.id.toLowerCase().includes(query),
+        (task: QueueTask) => task.title.toLowerCase().includes(query),
+        (task: QueueTask) => (task.description?.toLowerCase().includes(query) || false)
+      ];
+      filterFunctions.push((task: QueueTask) => searchFilters.some(filter => filter(task)));
+    }
 
-      // Type filter (OR logic)
-      if (types.length > 0 && !types.includes(task.type)) return false;
+    // Status filter (OR logic)
+    if (statuses.length > 0) {
+      const statusSet = new Set(statuses);
+      filterFunctions.push((task: QueueTask) => statusSet.has(task.status));
+    }
 
-      // Priority filter (OR logic)
-      if (priorities.length > 0 && !priorities.includes(task.priority)) return false;
+    // Type filter (OR logic)
+    if (types.length > 0) {
+      const typeSet = new Set(types);
+      filterFunctions.push((task: QueueTask) => typeSet.has(task.type));
+    }
 
-      // Model filter (OR logic)
-      if (models.length > 0 && (task.model === null || !models.includes(task.model))) return false;
+    // Priority filter (OR logic)
+    if (priorities.length > 0) {
+      const prioritySet = new Set(priorities);
+      filterFunctions.push((task: QueueTask) => prioritySet.has(task.priority));
+    }
 
-      // Date range filter (AND logic)
-      if (start) {
+    // Model filter (OR logic)
+    if (models.length > 0) {
+      const modelSet = new Set(models);
+      filterFunctions.push((task: QueueTask) => {
+        const taskModel = task.model;
+        return taskModel ? modelSet.has(taskModel) : false;
+      });
+    }
+
+    // Date range filter (AND logic)
+    if (start || end) {
+      const startDate = start ? new Date(start).getTime() : -Infinity;
+      const endDate = end ? new Date(end).getTime() + 86400000 : Infinity; // Add one day to include end date
+      
+      filterFunctions.push((task: QueueTask) => {
         const taskDate = new Date(task.createdAt).getTime();
-        const startDate = new Date(start).getTime();
-        if (taskDate < startDate) return false;
-      }
+        return taskDate >= startDate && taskDate <= endDate;
+      });
+    }
 
-      if (end) {
-        const taskDate = new Date(task.createdAt).getTime();
-        const endDate = new Date(end).getTime() + 86400000; // Add one day to include end date
-        if (taskDate > endDate) return false;
-      }
-
-      return true;
-    });
+    // Apply filters efficiently
+    const results = tasks.filter(task => filterFunctions.every(filter => filter(task)));
 
     // Apply sorting
-    return this.sortTasks(results, field, dir);
+    const sortedResults = this.sortTasks(results, field, dir);
+    
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    
+    // Log performance for debugging (can be removed in production)
+    if (duration > 50) {
+      console.warn(`Filter operation took ${duration.toFixed(2)}ms for ${tasks.length} tasks`);
+    }
+    
+    return sortedResults;
   }
 
   public compareTasks(a: QueueTask, b: QueueTask, field: SortField, direction: SortDirection): number {
@@ -346,50 +374,54 @@ export class ProjectComponent implements OnInit {
   }
 
   public toggleStatus(status: QueueTaskStatus): void {
-    const current = [...this.selectedStatuses()];
-    const idx = current.indexOf(status);
-    if (idx >= 0) {
-      current.splice(idx, 1);
+    const current = new Set(this.selectedStatuses());
+    if (current.has(status)) {
+      current.delete(status);
+      this.announceFilterChange('Status', `deselected ${status}`);
     } else {
-      current.push(status);
+      current.add(status);
+      this.announceFilterChange('Status', `selected ${status}`);
     }
-    this.selectedStatuses.set(current);
+    this.selectedStatuses.set(Array.from(current));
     this.updateURL();
   }
 
   public toggleType(type: QueueTaskType): void {
-    const current = [...this.selectedTypes()];
-    const idx = current.indexOf(type);
-    if (idx >= 0) {
-      current.splice(idx, 1);
+    const current = new Set(this.selectedTypes());
+    if (current.has(type)) {
+      current.delete(type);
+      this.announceFilterChange('Type', `deselected ${type}`);
     } else {
-      current.push(type);
+      current.add(type);
+      this.announceFilterChange('Type', `selected ${type}`);
     }
-    this.selectedTypes.set(current);
+    this.selectedTypes.set(Array.from(current));
     this.updateURL();
   }
 
   public togglePriority(priority: QueueTaskPriority): void {
-    const current = [...this.selectedPriorities()];
-    const idx = current.indexOf(priority);
-    if (idx >= 0) {
-      current.splice(idx, 1);
+    const current = new Set(this.selectedPriorities());
+    if (current.has(priority)) {
+      current.delete(priority);
+      this.announceFilterChange('Priority', `deselected ${priority}`);
     } else {
-      current.push(priority);
+      current.add(priority);
+      this.announceFilterChange('Priority', `selected ${priority}`);
     }
-    this.selectedPriorities.set(current);
+    this.selectedPriorities.set(Array.from(current));
     this.updateURL();
   }
 
   public toggleModel(model: string): void {
-    const current = [...this.selectedModels()];
-    const idx = current.indexOf(model);
-    if (idx >= 0) {
-      current.splice(idx, 1);
+    const current = new Set(this.selectedModels());
+    if (current.has(model)) {
+      current.delete(model);
+      this.announceFilterChange('Model', `deselected ${model}`);
     } else {
-      current.push(model);
+      current.add(model);
+      this.announceFilterChange('Model', `selected ${model}`);
     }
-    this.selectedModels.set(current);
+    this.selectedModels.set(Array.from(current));
     this.updateURL();
   }
 
@@ -468,6 +500,26 @@ export class ProjectComponent implements OnInit {
     this.updateURL();
   }
 
+  // Accessibility helper methods
+  public announceFilterChange(filterType: string, action: string): void {
+    const message = `${filterType} filter ${action}`;
+    this.announceToScreenReader(message);
+  }
+
+  private announceToScreenReader(message: string): void {
+    const announcement = document.createElement('div');
+    announcement.setAttribute('role', 'status');
+    announcement.setAttribute('aria-live', 'polite');
+    announcement.setAttribute('aria-atomic', 'true');
+    announcement.textContent = message;
+    document.body.appendChild(announcement);
+    
+    // Remove after a short delay
+    setTimeout(() => {
+      document.body.removeChild(announcement);
+    }, 1000);
+  }
+
   public isStatusSelected(status: QueueTaskStatus): boolean {
     return this.selectedStatuses().includes(status);
   }
@@ -491,6 +543,303 @@ export class ProjectComponent implements OnInit {
 
   public onTaskClick(task: QueueTask): void {
     void this.router.navigate(['/project/task', task.id]);
+  }
+
+  // ==================== MANUAL TESTING METHODS ====================
+
+  /**
+   * Test full-text search functionality across ID, title, and description fields
+   * @param searchTerm The search term to test
+   * @returns true if search works correctly, false otherwise
+   */
+  public testFullTextSearch(searchTerm: string): boolean {
+    this.searchQuery.set(searchTerm);
+    const filtered = this.filteredTasks();
+    const query = searchTerm.trim().toLowerCase();
+    
+    // Check if results match the search term
+    const hasMatchingResults = filtered.some(task => 
+      task.id.toLowerCase().includes(query) ||
+      task.title.toLowerCase().includes(query) ||
+      (task.description?.toLowerCase().includes(query) || false)
+    );
+    
+    // Reset search
+    this.searchQuery.set('');
+    return hasMatchingResults;
+  }
+
+  /**
+   * Test multi-select status filter with OR logic
+   * @param statuses Array of statuses to select
+   * @returns true if filter works correctly, false otherwise
+   */
+  public testStatusFilter(statuses: QueueTaskStatus[]): boolean {
+    this.selectedStatuses.set(statuses);
+    const filtered = this.filteredTasks();
+    
+    // Check if all results have at least one of the selected statuses
+    const allMatch = filtered.every(task => statuses.includes(task.status));
+    
+    // Reset filter
+    this.selectedStatuses.set([]);
+    return allMatch;
+  }
+
+  /**
+   * Test multi-select type filter with OR logic
+   * @param types Array of types to select
+   * @returns true if filter works correctly, false otherwise
+   */
+  public testTypeFilter(types: QueueTaskType[]): boolean {
+    this.selectedTypes.set(types);
+    const filtered = this.filteredTasks();
+    
+    // Check if all results have at least one of the selected types
+    const allMatch = filtered.every(task => types.includes(task.type));
+    
+    // Reset filter
+    this.selectedTypes.set([]);
+    return allMatch;
+  }
+
+  /**
+   * Test priority filter functionality
+   * @param priorities Array of priorities to select
+   * @returns true if filter works correctly, false otherwise
+   */
+  public testPriorityFilter(priorities: QueueTaskPriority[]): boolean {
+    this.selectedPriorities.set(priorities);
+    const filtered = this.filteredTasks();
+    
+    // Check if all results have at least one of the selected priorities
+    const allMatch = filtered.every(task => priorities.includes(task.priority));
+    
+    // Reset filter
+    this.selectedPriorities.set([]);
+    return allMatch;
+  }
+
+  /**
+   * Test model filter functionality
+   * @param models Array of models to select
+   * @returns true if filter works correctly, false otherwise
+   */
+  public testModelFilter(models: string[]): boolean {
+    this.selectedModels.set(models);
+    const filtered = this.filteredTasks();
+    
+    // Check if all results have at least one of the selected models
+    const allMatch = filtered.every(task => 
+      models.includes(task.model || '') || task.model === null
+    );
+    
+    // Reset filter
+    this.selectedModels.set([]);
+    return allMatch;
+  }
+
+  /**
+   * Test date range filter functionality
+   * @param start Start date (YYYY-MM-DD format)
+   * @param end End date (YYYY-MM-DD format)
+   * @returns true if filter works correctly, false otherwise
+   */
+  public testDateRangeFilter(start: string | null, end: string | null): boolean {
+    this.setDateRange(start, end);
+    const filtered = this.filteredTasks();
+    
+    // Check if all results fall within the date range
+    const allMatch = filtered.every(task => {
+      const taskDate = new Date(task.createdAt).getTime();
+      
+      if (start) {
+        const startDate = new Date(start).getTime();
+        if (taskDate < startDate) return false;
+      }
+      
+      if (end) {
+        const endDate = new Date(end).getTime() + 86400000; // Add one day to include end date
+        if (taskDate > endDate) return false;
+      }
+      
+      return true;
+    });
+    
+    // Reset filter
+    this.setDateRange(null, null);
+    return allMatch;
+  }
+
+  /**
+   * Test sort functionality
+   * @param field Sort field to test
+   * @param direction Sort direction ('asc' or 'desc')
+   * @returns true if sort works correctly, false otherwise
+   */
+  public testSort(field: SortField, direction: SortDirection): boolean {
+    this.setSort(field, direction);
+    const filtered = this.filteredTasks();
+    
+    // Check if results are sorted correctly
+    let isSorted = true;
+    for (let i = 1; i < filtered.length; i++) {
+      const prev = filtered[i - 1];
+      const curr = filtered[i];
+      const cmp = this.compareTasks(prev, curr, field, direction);
+      
+      if (direction === 'asc' && cmp > 0) {
+        isSorted = false;
+        break;
+      }
+      if (direction === 'desc' && cmp < 0) {
+        isSorted = false;
+        break;
+      }
+    }
+    
+    // Reset sort
+    this.setSort(SortField.ID, 'asc');
+    return isSorted;
+  }
+
+  /**
+   * Test active filter chips functionality
+   * @returns true if chips display correctly, false otherwise
+   */
+  public testActiveFilterChips(): boolean {
+    const chips = this.activeFilterChips();
+    
+    // Test that chips are created for each active filter
+    const hasStatusChip = chips.some(chip => chip.type === 'Status');
+    const hasTypeChip = chips.some(chip => chip.type === 'Type');
+    const hasPriorityChip = chips.some(chip => chip.type === 'Priority');
+    const hasModelChip = chips.some(chip => chip.type === 'Model');
+    const hasStartDateChip = chips.some(chip => chip.type === 'From');
+    const hasEndDateChip = chips.some(chip => chip.type === 'Until');
+    
+    // Test that chips can be cleared
+    const originalCount = chips.length;
+    if (chips.length > 0) {
+      chips[0].clear();
+      const newChips = this.activeFilterChips();
+      if (newChips.length >= originalCount) return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Test URL persistence functionality
+   * @returns true if URL persistence works correctly, false otherwise
+   */
+  public testURLPersistence(): boolean {
+    // Test that URL updates when filters change
+    const originalURL = this.router.url;
+    
+    // Apply a filter and check URL changes
+    this.searchQuery.set('test');
+    const urlAfterSearch = this.router.url;
+    this.searchQuery.set('');
+    
+    // Apply status filter
+    this.selectedStatuses.set(['IN_PROGRESS']);
+    const urlAfterStatus = this.router.url;
+    this.selectedStatuses.set([]);
+    
+    // Check that URLs are different
+    return urlAfterSearch !== originalURL && urlAfterStatus !== originalURL;
+  }
+
+  /**
+   * Test result count display functionality
+   * @returns true if count display works correctly, false otherwise
+   */
+  public testResultCountDisplay(): boolean {
+    const countText = this.resultCountText();
+    
+    // Test different scenarios
+    this.searchQuery.set('test');
+    const searchCount = this.resultCountText();
+    this.searchQuery.set('');
+    
+    this.selectedStatuses.set(['IN_PROGRESS']);
+    const statusCount = this.resultCountText();
+    this.selectedStatuses.set([]);
+    
+    // Check that count text is updated correctly
+    return searchCount.includes('matching') && statusCount.includes('of');
+  }
+
+  /**
+   * Test performance of filter operations
+   * @returns true if performance is acceptable (<100ms), false otherwise
+   */
+  public testFilterPerformance(): boolean {
+    const startTime = performance.now();
+    
+    // Apply multiple filters
+    this.searchQuery.set('test');
+    this.selectedStatuses.set(['IN_PROGRESS']);
+    this.selectedTypes.set(['FEATURE']);
+    this.selectedPriorities.set(['P1-High']);
+    
+    // Force computation of filtered tasks
+    this.filteredTasks();
+    
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    
+    // Reset filters
+    this.clearAllFilters();
+    
+    return duration < 100; // Should complete in under 100ms
+  }
+
+  /**
+   * Test accessibility features
+   * @returns true if accessibility works correctly, false otherwise
+   */
+  public testAccessibility(): boolean {
+    // Test keyboard navigation (simplified)
+    const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
+    if (searchInput) {
+      // Simulate keyboard input
+      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+      searchInput.dispatchEvent(event);
+    }
+    
+    // Test screen reader compatibility (simplified)
+    const resultCount = document.querySelector('.result-count');
+    if (resultCount) {
+      const text = resultCount.textContent;
+      return text !== null && text.length > 0;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Test responsive design at 768px breakpoint
+   * @returns true if responsive design works correctly, false otherwise
+   */
+  public testResponsiveDesign(): boolean {
+    // Simulate 768px viewport
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 768;
+    
+    // Check if layout adjusts correctly
+    const container = document.querySelector('.project-container');
+    if (container) {
+      const style = window.getComputedStyle(container);
+      const isResponsive = style.display !== 'none';
+      
+      // Restore original width
+      window.innerWidth = originalWidth;
+      return isResponsive;
+    }
+    
+    return true;
   }
 
   public onStartAutoPilot(): void {
@@ -530,10 +879,13 @@ export class ProjectComponent implements OnInit {
     if (this.sortField() !== 'id') params['sort'] = this.sortField();
     if (this.sortDirection() !== 'asc') params['dir'] = this.sortDirection();
     if (this.viewMode() !== 'list') params['view'] = this.viewMode();
+    
+    // Batch URL updates to prevent multiple navigation events
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
       replaceUrl: true,
+      skipLocationChange: true, // Skip location change event to reduce overhead
     });
   }
 

@@ -1,46 +1,39 @@
 <div class="task-detail-page">
 
-  <!-- Loading -->
   @if (loading()) {
     <div class="loading-wrapper">
       <nz-spin nzSimple nzTip="Loading task data..."></nz-spin>
     </div>
   }
 
-  <!-- No task ID -->
   @if (!loading() && !taskId()) {
     <nz-empty nzNotFoundContent="No task ID provided"></nz-empty>
   }
 
-  <!-- No data found -->
   @if (!loading() && taskId() && !vm()) {
     <nz-empty nzNotFoundContent="Task not found"></nz-empty>
   }
 
-  <!-- Main content -->
-  @if (vm(); as model) {
-
-    <!-- Header -->
+  @if (vm(); as m) {
     <div class="detail-header">
       <button nz-button nzType="text" (click)="goBack()" aria-label="Back to project">
         &larr; Back
       </button>
       <div class="detail-header-info">
-        <h1 class="detail-title">{{ model.taskId }}</h1>
-        <span class="detail-title-label">{{ model.title }}</span>
+        <h1 class="detail-title">{{ m.taskId }}</h1>
+        <span class="detail-title-label">{{ m.title }}</span>
       </div>
       <div class="detail-header-badges">
-        <nz-tag [nzColor]="statusColorMap[model.status] ?? 'default'">{{ model.status }}</nz-tag>
-        <nz-tag [nzColor]="priorityColorMap[model.priority] ?? 'default'">{{ model.priority }}</nz-tag>
-        <nz-tag>{{ model.type }}</nz-tag>
-        <nz-tag>{{ model.complexity }}</nz-tag>
+        <nz-tag [nzColor]="statusColorMap[m.status] ?? 'default'">{{ m.status }}</nz-tag>
+        <nz-tag [nzColor]="priorityColorMap[m.priority] ?? 'default'">{{ m.priority }}</nz-tag>
+        <nz-tag>{{ m.type }}</nz-tag>
+        <nz-tag>{{ m.complexity }}</nz-tag>
       </div>
     </div>
 
-    <!-- Summary Stats -->
     <div class="stat-row">
       <div class="stat-card">
-        <nz-statistic nzTitle="Total Cost" [nzValue]="model.totalCost" nzPrefix="$" [nzValueStyle]="{ color: 'var(--accent)' }"></nz-statistic>
+        <nz-statistic nzTitle="Total Cost" [nzValue]="m.totalCost" nzPrefix="$" [nzValueStyle]="{ color: 'var(--accent)' }"></nz-statistic>
       </div>
       <div class="stat-card">
         <nz-statistic nzTitle="Input Tokens" [nzValue]="formattedInputTokens()"></nz-statistic>
@@ -49,113 +42,110 @@
         <nz-statistic nzTitle="Output Tokens" [nzValue]="formattedOutputTokens()"></nz-statistic>
       </div>
       <div class="stat-card">
-        <nz-statistic nzTitle="Workers" [nzValue]="model.workers.length"></nz-statistic>
+        <nz-statistic nzTitle="Workers" [nzValue]="m.workers.length"></nz-statistic>
       </div>
       <div class="stat-card">
-        <nz-statistic nzTitle="Phases" [nzValue]="model.phases.length"></nz-statistic>
+        <nz-statistic nzTitle="Phases" [nzValue]="m.phases.length"></nz-statistic>
       </div>
     </div>
 
-    <!-- 1. Core Metadata -->
     <div class="section">
       <div class="section-title">Core Metadata</div>
       <div class="metadata-grid">
         <div class="meta-item">
           <span class="meta-label">Task ID</span>
-          <span class="meta-value">{{ model.taskId }}</span>
+          <span class="meta-value">{{ m.taskId }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Type</span>
-          <span class="meta-value">{{ model.type }}</span>
+          <span class="meta-value">{{ m.type }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Priority</span>
-          <span class="meta-value">{{ model.priority }}</span>
+          <span class="meta-value">{{ m.priority }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Complexity</span>
-          <span class="meta-value">{{ model.complexity }}</span>
+          <span class="meta-value">{{ m.complexity }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Status</span>
-          <nz-tag [nzColor]="statusColorMap[model.status] ?? 'default'">{{ model.status }}</nz-tag>
+          <nz-tag [nzColor]="statusColorMap[m.status] ?? 'default'">{{ m.status }}</nz-tag>
         </div>
         <div class="meta-item">
           <span class="meta-label">Created</span>
-          <span class="meta-value">{{ model.createdAt | date:'medium' }}</span>
+          <span class="meta-value">{{ m.createdAt | date:'medium' }}</span>
         </div>
-        @if (model.updatedAt) {
+        @if (m.updatedAt) {
           <div class="meta-item">
             <span class="meta-label">Updated</span>
-            <span class="meta-value">{{ model.updatedAt | date:'medium' }}</span>
+            <span class="meta-value">{{ m.updatedAt | date:'medium' }}</span>
           </div>
         }
       </div>
     </div>
 
-    <!-- 2. Status Timeline (horizontal) -->
     <div class="section">
       <div class="section-title">Status Timeline</div>
-      @if (model.statusTransitions.length === 0) {
+      @if (m.statusTransitions.length === 0) {
         <nz-empty nzNotFoundContent="No status transitions recorded"></nz-empty>
       } @else {
         <div class="h-timeline" aria-label="Status timeline">
-          <div class="h-timeline-track"></div>
-          @for (transition of model.statusTransitions; track $index) {
+          @for (node of transitionNodes(); track $index) {
             <div class="h-timeline-node">
-              <div class="h-timeline-dot" [ngClass]="'tl-status--' + transition.to.toLowerCase().replace('_', '-')"></div>
+              <div class="h-timeline-dot" [ngClass]="node.statusClass"></div>
               <div class="h-timeline-content">
-                <nz-tag [nzColor]="statusColorMap[transition.to] ?? 'default'" class="h-timeline-tag">{{ transition.to }}</nz-tag>
-                <span class="h-timeline-time">{{ transition.timestamp | date:'shortDate' }}</span>
-                @if (transition.duration) {
-                  <span class="h-timeline-duration">{{ transition.duration }}</span>
+                <nz-tag [nzColor]="statusColorMap[node.to] ?? 'default'" class="h-timeline-tag">{{ node.to }}</nz-tag>
+                <span class="h-timeline-time">{{ node.formattedTime | date:'shortDate' }}</span>
+                @if (node.duration) {
+                  <span class="h-timeline-duration">{{ node.duration }}</span>
                 }
               </div>
+              @if (!$last) {
+                <div class="h-timeline-arrow">&rarr;</div>
+              }
             </div>
           }
         </div>
       }
     </div>
 
-    <!-- 3. Relations & Dependencies -->
     <div class="section">
       <div class="section-title">Relations &amp; Dependencies</div>
       <div class="relations-grid">
         <div class="relations-col">
           <h4>Depends On</h4>
-          @if (model.dependencies.length === 0) {
+          @if (m.dependencies.length === 0) {
             <span class="empty-label">No dependencies</span>
           } @else {
-            @for (dep of model.dependencies; track dep) {
-              <div class="dep-link" (click)="navigateToTask(dep)" role="link" [attr.tabindex]="0">
+            @for (dep of m.dependencies; track dep) {
+              <div class="dep-link" (click)="navigateToTask(dep)" role="link" tabindex="0">
                 {{ dep }}
               </div>
             }
-          }
-        </div>
-        <div class="relations-col">
+          </div>
+          <div class="relations-col">
           <h4>Depended By</h4>
-          @if (model.dependentTasks.length === 0) {
+          @if (m.dependentTasks.length === 0) {
             <span class="empty-label">No dependents found</span>
           } @else {
-            @for (dep of model.dependentTasks; track dep) {
-              <div class="dep-link" (click)="navigateToTask(dep)" role="link" [attr.tabindex]="0">
+            @for (dep of m.dependentTasks; track dep) {
+              <div class="dep-link" (click)="navigateToTask(dep)" role="link" tabindex="0">
                 {{ dep }}
               </div>
             }
-          }
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 4. Reviews -->
     <div class="section">
       <div class="section-title">Reviews</div>
-      @if (model.reviews.length === 0 && (!model.completionReport || model.completionReport.reviewScores.length === 0)) {
+      @if (m.reviews.length === 0 && (!m.completionReport || m.completionReport.reviewScores.length === 0)) {
         <nz-empty nzNotFoundContent="No reviews recorded"></nz-empty>
       } @else {
-        @if (model.reviews.length > 0) {
-          <nz-table [nzData]="model.reviews" [nzShowPagination]="false" nzSize="small">
+        @if (m.reviews.length > 0) {
+          <nz-table [nzData]="m.reviews" [nzShowPagination]="false" nzSize="small">
             <thead>
               <tr>
                 <th scope="col">Type</th>
@@ -165,9 +155,8 @@
                 <th scope="col">Built By</th>
                 <th scope="col">Reviewed By</th>
               </tr>
-            </thead>
             <tbody>
-              @for (r of model.reviews; track r.id) {
+              @for (r of m.reviews; track r.id) {
                 <tr>
                   <td>{{ r.reviewType }}</td>
                   <td>
@@ -184,27 +173,28 @@
             </tbody>
           </nz-table>
         }
-        @if (model.completionReport && model.completionReport.reviewScores.length > 0) {
-          <div class="review-scores">
-            <h4>Completion Report Scores</h4>
-            @for (score of model.completionReport.reviewScores; track score.review) {
-              <div class="score-row">
-                <span class="score-label">{{ score.review }}</span>
-                <span class="score-value">{{ score.score }}/10</span>
+        @if (m.completionReport; as cr) {
+          @if (cr.reviewScores.length > 0) {
+            <div class="review-scores">
+              <h4>Completion Report Scores</h4>
+              @for (score of cr.reviewScores; track score.review) {
+                <div class="score-row">
+                  <span class="score-label">{{ score.review }}</span>
+                  <span class="score-value">{{ score.score }}/10</span>
+                </div>
               </div>
             }
-          </div>
+          }
         }
       }
     </div>
 
-    <!-- 5. Model & Provider Info -->
     <div class="section">
       <div class="section-title">Model &amp; Provider Info</div>
-      @if (model.workers.length === 0) {
+      @if (m.workers.length === 0) {
         <nz-empty nzNotFoundContent="No model data available"></nz-empty>
       } @else {
-        <nz-table [nzData]="model.workers" [nzShowPagination]="false" nzSize="small">
+        <nz-table [nzData]="m.workers" [nzShowPagination]="false" nzSize="small">
           <thead>
             <tr>
               <th scope="col">Model</th>
@@ -212,31 +202,30 @@
               <th scope="col">Input Tokens</th>
               <th scope="col">Output Tokens</th>
               <th scope="col">Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (w of model.workers; track w.id) {
-              <tr>
-                <td class="model-cell">{{ w.model }}</td>
-                <td>{{ w.provider }}</td>
-                <td>{{ w.inputTokens | number }}</td>
-                <td>{{ w.outputTokens | number }}</td>
-                <td>${{ w.cost | number:'1.4-4' }}</td>
               </tr>
-            }
-          </tbody>
-        </nz-table>
+            <tbody>
+              @for (w of workerRows(); track w.id) {
+                <tr>
+                  <td class="model-cell">{{ w.model }}</td>
+                  <td>{{ w.provider }}</td>
+                  <td>{{ w.inputTokens | number }}</td>
+                  <td>{{ w.outputTokens | number }}</td>
+                  <td>${{ w.cost | number:'1.4-4' }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
       }
     </div>
 
-    <!-- 6. Launcher Info -->
     <div class="section">
       <div class="section-title">Launcher Info</div>
-      @if (model.workers.length === 0) {
+      @if (m.workers.length === 0) {
         <nz-empty nzNotFoundContent="No launcher data available"></nz-empty>
       } @else {
         <div class="metadata-grid">
-          @for (w of model.workers; track w.id) {
+          @for (w of workerRows(); track w.id) {
             <div class="launcher-card">
               <div class="launcher-header">
                 <span class="launcher-label">{{ w.label }}</span>
@@ -248,7 +237,7 @@
               </div>
               <div class="meta-item">
                 <span class="meta-label">Session</span>
-                <span class="meta-value" nz-tooltip [nzTooltipTitle]="w.sessionId">{{ w.sessionId }}</span>
+                <span class="meta-value">{{ w.sessionIdTruncated }}</span>
               </div>
               <div class="meta-item">
                 <span class="meta-label">Spawned</span>
@@ -257,22 +246,21 @@
               @if (w.retryNumber > 0) {
                 <div class="meta-item">
                   <span class="meta-label">Retry</span>
-                  <nz-tag nzColor="warning">#{{ w.retryNumber }}</nz-tag>
+                  <nz-tag nzColor="warning">#>{{ w.retryNumber }}</nz-tag>
                 </div>
               }
             </div>
           }
         </div>
       }
-    </div>
+div>
 
-    <!-- 7. Phase Timing -->
     <div class="section">
       <div class="section-title">Phase Timing</div>
-      @if (model.phases.length === 0) {
+      @if (m.phases.length === 0) {
         <nz-empty nzNotFoundContent="No phase timing data available"></nz-empty>
       } @else {
-        <nz-table [nzData]="model.phases" [nzShowPagination]="false" nzSize="small">
+        <nz-table [nzData]="m.phases" [nzShowPagination]="false" nzSize="small">
           <thead>
             <tr>
               <th scope="col">Phase</th>
@@ -281,23 +269,22 @@
               <th scope="col">Input Tokens</th>
               <th scope="col">Output Tokens</th>
               <th scope="col">Outcome</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of model.phases; track p.phase) {
-              <tr>
+              </tr>
+            <tbody>
+              @for (p of m.phases; track p.phase) {
+                <tr>
                 <td>{{ p.phase }}</td>
                 <td class="model-cell">{{ p.model }}</td>
                 <td>{{ p.durationMinutes !== null ? (p.durationMinutes | number:'1.1-1') + ' min' : '&mdash;' }}</td>
+                <td>{{ p.outcome ?? '&mdash;' }}</td>
                 <td>{{ p.inputTokens | number }}</td>
                 <td>{{ p.outputTokens | number }}</td>
                 <td>{{ p.outcome ?? '&mdash;' }}</td>
               </tr>
-            }
-          </tbody>
-        </nz-table>
+            </tbody>
+          </nz-table>
+        }
 
-        <!-- Phase timing chart (precomputed) -->
         @if (phaseBars().length > 0) {
           <div class="phase-chart">
             <div class="phase-chart-title">Timing Breakdown</div>
@@ -312,41 +299,38 @@
                     ></div>
                   </div>
                   <span class="phase-bar-value">{{ bar.durationMinutes | number:'1.1-1' }}m</span>
-                </div>
-              }
+              </div>
             </div>
-          </div>
+          }
         }
       }
     </div>
 
-    <!-- 8. Score & Quality -->
     <div class="section">
       <div class="section-title">Score &amp; Quality</div>
-      @if (model.reviews.length === 0 && (!model.completionReport || model.completionReport.reviewScores.length === 0)) {
+      @if (m.reviews.length === 0 && (!m.completionReport || m.completionReport.reviewScores.length === 0) {
         <nz-empty nzNotFoundContent="No quality scores available"></nz-empty>
       } @else {
         <div class="quality-summary">
-          @for (r of model.reviews; track r.id) {
+          @for (r of m.reviews; track r.id) {
             <div class="quality-card">
-              <div class="quality-score" [ngClass]="r.score >= 7 ? 'quality-good' : r.score >= 4 ? 'quality-warn' : 'quality-bad'">
+              <div class="quality-score" [class]="r.score >= 7 ? 'quality-good' : r.score >= 4 ? 'quality-warn' : 'quality-bad'">
                 {{ r.score }}/10
               </div>
               <div class="quality-type">{{ r.reviewType }}</div>
               <div class="quality-findings">{{ r.findingsCount }} findings, {{ r.criticalCount }} critical</div>
             </div>
           }
-        </div>
+        }
       }
     </div>
 
-    <!-- 9. Worker Activity -->
     <div class="section">
       <div class="section-title">Worker Activity</div>
-      @if (model.workers.length === 0) {
+      @if (m.workers.length === 0) {
         <nz-empty nzNotFoundContent="No worker activity data available"></nz-empty>
       } @else {
-        <nz-table [nzData]="model.workers" [nzShowPagination]="false" nzSize="small">
+        <nz-table [nzData]="workerRows()" [nzShowPagination]="false" nzSize="small">
           <thead>
             <tr>
               <th scope="col">Worker ID</th>
@@ -356,35 +340,34 @@
               <th scope="col">Spawned</th>
               <th scope="col">Retry</th>
               <th scope="col">Outcome</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (w of model.workers; track w.id; let i = $index) {
-              <tr>
-                <td class="id-cell" [title]="w.id">{{ workerIdDisplays()[i].truncated }}</td>
-                <td>{{ w.workerType }}</td>
-                <td>{{ w.label }}</td>
-                <td>
-                  <nz-tag [nzColor]="w.status === 'complete' ? 'green' : w.status === 'failed' ? 'red' : 'blue'">{{ w.status }}</nz-tag>
-                </td>
-                <td>{{ w.spawnTime | date:'short' }}</td>
-                <td>{{ w.retryNumber }}</td>
-                <td>{{ w.outcome ?? '&mdash;' }}</td>
               </tr>
-            }
-          </tbody>
-        </nz-table>
+            <tbody>
+              @for (w of workerRows(); track w.id) {
+                <tr>
+                  <td class="id-cell" [title]="w.id">{{ w.idTruncated }}</td>
+                  <td>{{ w.workerType }}</td>
+                  <td>{{ w.label }}</td>
+                  <td>
+                    <nz-tag [nzColor]="w.status === 'complete' ? 'green' : w.status === 'failed' ? 'red' : 'blue'">{{ w.status }}</nz-tag>
+                  </td>
+                  <td>{{ w.spawnTime | date:'short' }}</td>
+                  <td>{{ w.retryNumber }}</td>
+                  <td>{{ w.outcome ?? '&mdash;' }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
       }
     </div>
 
-    <!-- 10. Acceptance Criteria -->
     <div class="section">
       <div class="section-title">Acceptance Criteria</div>
-      @if (model.acceptanceCriteria.length === 0) {
+      @if (m.acceptanceCriteria.length === 0) {
         <nz-empty nzNotFoundContent="No acceptance criteria defined"></nz-empty>
       } @else {
         <ul class="criteria-list">
-          @for (criterion of model.acceptanceCriteria; track $index) {
+          @for (criterion of m.acceptanceCriteria; track $index) {
             <li class="criteria-item">
               <span class="criteria-bullet">&#x25CB;</span>
               {{ criterion }}
@@ -394,68 +377,65 @@
       }
     </div>
 
-    <!-- 11. File Scope -->
     <div class="section">
       <div class="section-title">File Scope</div>
-      @if (model.fileScope.length === 0 && (!model.completionReport || (model.completionReport.filesCreated.length === 0 && model.completionReport.filesModified.length === 0))) {
+      @if (m.fileScope.length === 0 && (!m.completionReport || (m.completionReport.filesCreated.length === 0 && m.completionReport.filesModified.length === 0)) {
         <nz-empty nzNotFoundContent="No file scope data available"></nz-empty>
       } @else {
-        @if (model.completionReport) {
+        @if (m.completionReport; as cr) {
           <div class="file-sections">
-            @if (model.completionReport.filesCreated.length > 0) {
+            @if (cr.filesCreated.length > 0) {
               <div class="file-group">
                 <h4>Created</h4>
-                @for (f of model.completionReport.filesCreated; track f) {
+                @for (f of cr.filesCreated; track f) {
                   <div class="file-entry file-created">{{ f }}</div>
-                }
               </div>
             }
-            @if (model.completionReport.filesModified.length > 0) {
+          @if (cr.filesModified.length > 0) {
               <div class="file-group">
                 <h4>Modified</h4>
-                @for (f of model.completionReport.filesModified; track f) {
+                @for (f of cr.filesModified; track f) {
                   <div class="file-entry file-modified">{{ f }}</div>
-                }
               </div>
             }
           </div>
-        }
-        @if (model.fileScope.length > 0) {
-          <div class="file-sections">
-            <div class="file-group">
-              <h4>Planned Scope</h4>
-              @for (f of model.fileScope; track f) {
-                <div class="file-entry">{{ f }}</div>
-              }
-            </div>
+          }
+        </div>
+      }
+    }
+    @if (m.fileScope.length > 0) {
+      <div class="file-sections">
+          <div class="file-group">
+                <h4>Planned Scope</h4>
+                @for (f of m.fileScope; track f) {
+                  <div class="file-entry">{{ f }}</div>
+              </div>
+            }
           </div>
         }
       }
     </div>
 
-    <!-- 12. Handoff Artifact -->
     <div class="section">
       <div class="section-title">Handoff Artifact</div>
-      @if (!model.completionReport) {
+      @if (!m.completionReport) {
         <nz-empty nzNotFoundContent="No handoff data available"></nz-empty>
       } @else {
         <div class="handoff-content">
-          @if (model.completionReport.rootCause) {
+          @if (m.completionReport.rootCause) {
             <div class="meta-item">
               <span class="meta-label">Root Cause</span>
-              <span class="meta-value">{{ model.completionReport.rootCause }}</span>
-            </div>
-          }
-          @if (model.completionReport.fix) {
+              <span class="meta-value">{{ m.completionReport.rootCause }}</span>
+          </div>
+          @if (m.completionReport.fix) {
             <div class="meta-item">
               <span class="meta-label">Fix</span>
-              <span class="meta-value">{{ model.completionReport.fix }}</span>
-            </div>
-          }
-          @if (model.completionReport.findingsFixed.length > 0) {
+              <span class="meta-value">{{ m.completionReport.fix }}</span>
+          </div>
+          @if (m.completionReport.findingsFixed.length > 0) {
             <div class="findings-fixed">
               <h4>Findings Fixed</h4>
-              @for (finding of model.completionReport.findingsFixed; track $index) {
+              @for (finding of m.completionReport.findingsFixed; track $index) {
                 <div class="finding-entry">{{ finding }}</div>
               }
             </div>
@@ -464,16 +444,15 @@
       }
     </div>
 
-    <!-- 13. Event Log -->
     <div class="section">
       <div class="section-title">Event Log</div>
-      @if (model.events.length === 0) {
+      @if (m.events.length === 0) {
         <nz-empty nzNotFoundContent="No events recorded"></nz-empty>
       } @else {
         <div class="event-log">
-          @for (event of model.events; track event.id) {
+          @for (event of m.events; track event.id) {
             <div class="event-row">
-              <span class="event-time">{{ event.timestamp | date:'mediumTime' }}</span>
+              <span class="event-time">{{ event.timestamp | date:'HH:mm:ss' }}</span>
               <span class="event-type">{{ event.eventType }}</span>
               <span class="event-source">{{ event.source }}</span>
             </div>
@@ -482,11 +461,10 @@
       }
     </div>
 
-    <!-- Description (full) -->
-    @if (model.description) {
+    @if (m.description) {
       <div class="section">
         <div class="section-title">Description</div>
-        <div class="description-content">{{ model.description }}</div>
+        <div class="description-content">{{ m.description }}</div>
       </div>
     }
 
