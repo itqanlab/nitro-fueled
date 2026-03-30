@@ -80,6 +80,13 @@ export const APP_ROUTES: Routes = [
             (m) => m.ProjectComponent,
           ),
       },
+      {
+        path: 'session/:sessionId',
+        loadComponent: () =>
+          import('./views/session-viewer/session-viewer.component').then(
+            (m) => m.SessionViewerComponent,
+          ),
+      },
     ],
   },
 ];

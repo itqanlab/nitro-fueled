@@ -65,8 +65,10 @@ Build a chat-like UI component that displays a running Claude Code session in re
 - `apps/dashboard/src/app/views/session-viewer/session-viewer.component.html` (new)
 - `apps/dashboard/src/app/views/session-viewer/session-viewer.component.scss` (new)
 - `apps/dashboard/src/app/models/session-viewer.model.ts` (new)
+- `apps/dashboard/src/app/services/session-mock.constants.ts` (new — scripted mock session payloads)
 - `apps/dashboard/src/app/services/session-mock.service.ts` (new — mock message generator)
 - `apps/dashboard/src/app/app.routes.ts` (modified — add /session/:id route)
+- `apps/dashboard/src/app/models/analytics.model.ts` (modified — restore exported analytics view-model type needed for dashboard build verification)
 
 ## Parallelism
 

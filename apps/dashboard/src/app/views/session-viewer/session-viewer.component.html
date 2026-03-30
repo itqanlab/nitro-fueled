@@ -1,0 +1,93 @@
+@if (header(); as session) {
+  <section class="session-viewer-shell">
+    <a class="back-link" routerLink="/project">&#x2190; Back to project queue</a>
+
+    <header class="session-header">
+      <div class="session-meta">
+        <p class="eyebrow">Live Session Viewer</p>
+        <h1 class="session-title">{{ session.taskTitle }}</h1>
+        <div class="session-identifiers">
+          <span>{{ session.taskId }}</span>
+          <span>{{ session.sessionId }}</span>
+        </div>
+      </div>
+
+      <div class="session-stats">
+        <div class="stat-card">
+          <span class="stat-label">Phase</span>
+          <strong>{{ session.currentPhase }}</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Duration</span>
+          <strong>{{ durationLabel() }}</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Status</span>
+          <strong class="status-pill" [ngClass]="statusClassMap[session.status]">
+            {{ session.status }}
+          </strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="stream-frame">
+      <div class="stream-toolbar">
+        <span class="stream-label">Session activity</span>
+        @if (!autoScrollEnabled()) {
+          <button class="jump-button" type="button" (click)="jumpToLive()">
+            Jump to live
+          </button>
+        }
+      </div>
+
+      <div #streamViewport class="stream-viewport" (scroll)="onStreamScroll()">
+        @for (message of displayMessages(); track message.id) {
+          <article class="message-card" [ngClass]="'message-card--' + message.kind">
+            <div class="message-meta">
+              <span class="message-kind">{{ message.kind }}</span>
+              <time>{{ message.timestamp | date: 'HH:mm:ss' }}</time>
+            </div>
+
+            @if (message.kind === 'assistant') {
+              <div class="markdown-body" [innerHTML]="message.html"></div>
+            }
+
+            @if (message.kind === 'tool-call') {
+              <details open>
+                <summary>{{ message.toolName }}</summary>
+                <pre>{{ message.params }}</pre>
+              </details>
+            }
+
+            @if (message.kind === 'tool-result') {
+              <details>
+                <summary>{{ message.toolName }} result</summary>
+                <pre>{{ message.result }}</pre>
+              </details>
+            }
+
+            @if (message.kind === 'status') {
+              <div class="status-event">
+                <span class="phase-chip">{{ message.phase }}</span>
+                <span class="status-pill" [ngClass]="statusClassMap[message.status]">
+                  {{ message.label }}
+                </span>
+              </div>
+              <p class="status-detail">{{ message.detail }}</p>
+            }
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+} @else {
+  <section class="invalid-session-state">
+    <p class="eyebrow">Session Viewer</p>
+    <h1>Invalid session ID</h1>
+    <p>
+      Session IDs must match the expected `SESSION_YYYY-MM-DD_HH-MM-SS` format before the
+      viewer will start a stream.
+    </p>
+    <a class="back-link" routerLink="/project">Return to project queue</a>
+  </section>
+}
