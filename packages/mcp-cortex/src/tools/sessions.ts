@@ -22,12 +22,15 @@ export function handleCreateSession(
     `INSERT INTO sessions (id, source, config, task_limit) VALUES (?, ?, ?, ?)`,
   ).run(id, args.source ?? null, config, args.task_count ?? null);
 
-  let recoveryResult = null;
+  let recoveryResult: { orphaned_claims_released: number; task_ids: string[] } | null = null;
   if (!args.skip_orphan_recovery) {
     const releaseResult = handleReleaseOrphanedClaims(db);
     try {
       const released = JSON.parse((releaseResult.content[0] as { text: string }).text) as { released: number; tasks: string[] };
-      recoveryResult = { orphaned_claims_released: released.released, task_ids: released.tasks };
+      // Only include orphan_recovery in the response when claims were actually released
+      if (released.released > 0) {
+        recoveryResult = { orphaned_claims_released: released.released, task_ids: released.tasks };
+      }
     } catch {
       // If parsing fails, don't block session creation — best-effort logging only
     }
@@ -37,7 +40,7 @@ export function handleCreateSession(
     ok: true,
     session_id: id,
   };
-  if (recoveryResult) {
+  if (recoveryResult !== null) {
     result.orphan_recovery = recoveryResult;
   }
 
@@ -49,6 +52,9 @@ export function handleGetSession(
   args: { session_id: string },
 ): ToolResult {
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
   const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as Record<string, unknown> | undefined;
   if (!session) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }] };
@@ -76,6 +82,9 @@ export function handleUpdateSession(
   args: { session_id: string; fields: Record<string, unknown> },
 ): ToolResult {
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
   const sets: string[] = [];
   const params: unknown[] = [];
 
@@ -128,6 +137,9 @@ export function handleEndSession(
   args: { session_id: string; summary?: string },
 ): ToolResult {
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
   const now = new Date().toISOString();
 
   const info = db.prepare(
@@ -155,6 +167,9 @@ export function handleUpdateHeartbeat(
   args: { session_id: string },
 ): ToolResult {
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
   const now = new Date().toISOString();
 
   const info = db.prepare(

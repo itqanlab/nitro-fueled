@@ -12,6 +12,11 @@ import {
   handleUpdateHeartbeat,
   handleCloseStaleSessions,
 } from './sessions.js';
+import {
+  handleGetOrphanedClaims,
+  handleReleaseOrphanedClaims,
+} from './tasks.js';
+import { toLegacySessionId } from './session-id.js';
 import type Database from 'better-sqlite3';
 
 function makeTempDb(): { db: Database.Database; cleanup: () => void } {
@@ -93,7 +98,7 @@ describe('handleGetSession', () => {
   });
 
   it('returns session not found for unknown session_id', () => {
-    const result = handleGetSession(db, { session_id: 'SESSION_nonexistent' });
+    const result = handleGetSession(db, { session_id: 'SESSION_2099-01-01T00-00-00' });
     const data = parseText(result) as { ok: boolean; reason: string };
     expect(data.ok).toBe(false);
     expect(data.reason).toBe('session_not_found');
@@ -108,7 +113,7 @@ describe('handleGetSession', () => {
   });
 
   it('accepts legacy underscore session IDs on lookup', () => {
-    const result = handleGetSession(db, { session_id: sessionId.replace('T', '_') });
+    const result = handleGetSession(db, { session_id: toLegacySessionId(sessionId) });
     const data = parseText(result) as Record<string, unknown>;
     expect(data.id).toBe(sessionId);
   });
@@ -180,7 +185,7 @@ describe('handleUpdateSession', () => {
 
   it('returns session_not_found for unknown session', () => {
     const result = handleUpdateSession(db, {
-      session_id: 'SESSION_NOPE',
+      session_id: 'SESSION_2099-01-01T00-00-00',
       fields: { loop_status: 'paused' },
     });
     const data = parseText(result) as { ok: boolean; reason: string };
@@ -190,7 +195,7 @@ describe('handleUpdateSession', () => {
 
   it('accepts legacy underscore session IDs when updating', () => {
     const result = handleUpdateSession(db, {
-      session_id: sessionId.replace('T', '_'),
+      session_id: toLegacySessionId(sessionId),
       fields: { loop_status: 'paused' },
     });
     const data = parseText(result) as { ok: boolean };
@@ -232,16 +237,16 @@ describe('handleListSessions', () => {
   });
 
   it('filters by status when provided', () => {
-    // Insert sessions directly with unique IDs
+    // Use valid canonical session IDs so handler-level validation passes
     db.prepare(`INSERT INTO sessions (id, source, config, loop_status) VALUES (?, ?, '{}', 'running')`).run(
-      'SESSION_TEST_FILTER_A', 'source-a',
+      'SESSION_2099-01-01T00-00-01', 'source-a',
     );
     db.prepare(`INSERT INTO sessions (id, source, config, loop_status) VALUES (?, ?, '{}', 'running')`).run(
-      'SESSION_TEST_FILTER_B', 'source-b',
+      'SESSION_2099-01-01T00-00-02', 'source-b',
     );
 
-    // End the first session
-    handleEndSession(db, { session_id: 'SESSION_TEST_FILTER_A' });
+    // End the first session using direct SQL to avoid format issues with hardcoded IDs
+    db.prepare(`UPDATE sessions SET loop_status = 'stopped' WHERE id = ?`).run('SESSION_2099-01-01T00-00-01');
 
     const runningResult = handleListSessions(db, { status: 'running' });
     const runningData = parseText(runningResult) as unknown[];
@@ -295,7 +300,7 @@ describe('handleEndSession', () => {
   });
 
   it('returns session_not_found for unknown session', () => {
-    const result = handleEndSession(db, { session_id: 'SESSION_NOPE' });
+    const result = handleEndSession(db, { session_id: 'SESSION_2099-01-01T00-00-00' });
     const data = parseText(result) as { ok: boolean; reason: string };
     expect(data.ok).toBe(false);
     expect(data.reason).toBe('session_not_found');
@@ -306,6 +311,14 @@ describe('handleEndSession', () => {
     const row = db.prepare('SELECT ended_at FROM sessions WHERE id = ?').get(sessionId) as { ended_at: string };
     expect(row.ended_at).toBeTruthy();
     expect(() => new Date(row.ended_at)).not.toThrow();
+  });
+
+  it('accepts legacy underscore session IDs when ending', () => {
+    const result = handleEndSession(db, { session_id: toLegacySessionId(sessionId) });
+    const data = parseText(result) as { ok: boolean; final_counters: Record<string, number> };
+    expect(data.ok).toBe(true);
+    const row = db.prepare('SELECT loop_status FROM sessions WHERE id = ?').get(sessionId) as { loop_status: string };
+    expect(row.loop_status).toBe('stopped');
   });
 });
 
@@ -332,14 +345,14 @@ describe('handleUpdateHeartbeat', () => {
   });
 
   it('returns session_not_found for unknown session', () => {
-    const result = handleUpdateHeartbeat(db, { session_id: 'SESSION_NOPE' });
+    const result = handleUpdateHeartbeat(db, { session_id: 'SESSION_2099-01-01T00-00-00' });
     const data = parseText(result) as { ok: boolean; reason: string };
     expect(data.ok).toBe(false);
     expect(data.reason).toBe('session_not_found');
   });
 
   it('accepts legacy underscore session IDs', () => {
-    const result = handleUpdateHeartbeat(db, { session_id: sessionId.replace('T', '_') });
+    const result = handleUpdateHeartbeat(db, { session_id: toLegacySessionId(sessionId) });
     const data = parseText(result) as { ok: boolean };
     expect(data.ok).toBe(true);
   });
@@ -408,5 +421,226 @@ describe('handleCloseStaleSessions', () => {
     const data = parseText(result) as { ok: boolean; closed_sessions: number };
     expect(data.ok).toBe(true);
     expect(data.closed_sessions).toBe(1);
+  });
+});
+
+// --- Orphan claim tests ---
+
+function insertTask(db: Database.Database, taskId: string, sessionId: string | null, claimedAt: string | null = null, claimTimeoutMs: number | null = null): void {
+  db.prepare(
+    `INSERT INTO tasks (id, title, type, priority, status, session_claimed, claimed_at, claim_timeout_ms)
+     VALUES (?, ?, 'FEATURE', 'P2-Medium', 'IN_PROGRESS', ?, ?, ?)`,
+  ).run(taskId, `Task ${taskId}`, sessionId, claimedAt, claimTimeoutMs);
+}
+
+describe('handleGetOrphanedClaims', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('returns empty orphaned array when no tasks are claimed', () => {
+    const result = handleGetOrphanedClaims(db);
+    const data = parseText(result) as { orphaned: unknown[] };
+    expect(Array.isArray(data.orphaned)).toBe(true);
+    expect(data.orphaned).toHaveLength(0);
+  });
+
+  it('returns empty orphaned array when claimed task session is still running', () => {
+    const sessionResult = handleCreateSession(db, { skip_orphan_recovery: true });
+    const sessionId = (parseText(sessionResult) as { session_id: string }).session_id;
+
+    insertTask(db, 'TASK_2026_TST1', sessionId, new Date().toISOString());
+
+    const result = handleGetOrphanedClaims(db);
+    const data = parseText(result) as { orphaned: unknown[] };
+    expect(data.orphaned).toHaveLength(0);
+  });
+
+  it('returns orphaned tasks when session is dead (stopped)', () => {
+    const sessionResult = handleCreateSession(db, { skip_orphan_recovery: true });
+    const sessionId = (parseText(sessionResult) as { session_id: string }).session_id;
+
+    insertTask(db, 'TASK_2026_TST2', sessionId, new Date().toISOString());
+
+    // Stop the session so it is considered dead
+    handleEndSession(db, { session_id: sessionId });
+
+    const result = handleGetOrphanedClaims(db);
+    const data = parseText(result) as { orphaned: Array<{ task_id: string; claimed_by: string }> };
+    expect(data.orphaned).toHaveLength(1);
+    expect(data.orphaned[0]!.task_id).toBe('TASK_2026_TST2');
+    expect(data.orphaned[0]!.claimed_by).toBe(sessionId);
+  });
+
+  it('returns orphaned tasks when claimed by a nonexistent session', () => {
+    insertTask(db, 'TASK_2026_TST3', 'SESSION_GHOST_9999', new Date().toISOString());
+
+    const result = handleGetOrphanedClaims(db);
+    const data = parseText(result) as { orphaned: Array<{ task_id: string }> };
+    expect(data.orphaned.some(o => o.task_id === 'TASK_2026_TST3')).toBe(true);
+  });
+});
+
+describe('TTL expiration detection', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('detects TTL-expired claim even when session is still running', () => {
+    const sessionResult = handleCreateSession(db, { skip_orphan_recovery: true });
+    const sessionId = (parseText(sessionResult) as { session_id: string }).session_id;
+
+    // claimed_at set to 2 minutes ago, timeout = 1 minute (60000 ms)
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    insertTask(db, 'TASK_2026_TTL1', sessionId, twoMinutesAgo, 60_000);
+
+    const result = handleGetOrphanedClaims(db);
+    const data = parseText(result) as { orphaned: Array<{ task_id: string; stale_for_ms: number }> };
+
+    const found = data.orphaned.find(o => o.task_id === 'TASK_2026_TTL1');
+    expect(found).toBeDefined();
+    expect(found!.stale_for_ms).toBeGreaterThan(60_000);
+  });
+
+  it('does not report a claim as orphaned when TTL has not expired and session is running', () => {
+    const sessionResult = handleCreateSession(db, { skip_orphan_recovery: true });
+    const sessionId = (parseText(sessionResult) as { session_id: string }).session_id;
+
+    // claimed_at = just now, timeout = 1 hour (should not expire)
+    insertTask(db, 'TASK_2026_TTL2', sessionId, new Date().toISOString(), 3_600_000);
+
+    const result = handleGetOrphanedClaims(db);
+    const data = parseText(result) as { orphaned: Array<{ task_id: string }> };
+    expect(data.orphaned.some(o => o.task_id === 'TASK_2026_TTL2')).toBe(false);
+  });
+});
+
+describe('handleReleaseOrphanedClaims', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('returns released: 0 when no orphans exist', () => {
+    const result = handleReleaseOrphanedClaims(db);
+    const data = parseText(result) as { released: number; tasks: string[] };
+    expect(data.released).toBe(0);
+    expect(data.tasks).toHaveLength(0);
+  });
+
+  it('releases orphaned claims and resets status to CREATED', () => {
+    insertTask(db, 'TASK_2026_REL1', 'SESSION_DEAD_111', new Date().toISOString());
+
+    const result = handleReleaseOrphanedClaims(db);
+    const data = parseText(result) as { released: number; tasks: string[] };
+    expect(data.released).toBe(1);
+    expect(data.tasks).toContain('TASK_2026_REL1');
+
+    const row = db.prepare('SELECT status, session_claimed FROM tasks WHERE id = ?').get('TASK_2026_REL1') as { status: string; session_claimed: string | null };
+    expect(row.status).toBe('CREATED');
+    expect(row.session_claimed).toBeNull();
+  });
+
+  it('logs an orphan_recovery event with correct event_type and details structure', () => {
+    insertTask(db, 'TASK_2026_REL2', 'SESSION_DEAD_222', new Date().toISOString());
+
+    handleReleaseOrphanedClaims(db);
+
+    const event = db.prepare(
+      `SELECT event_type, data FROM events WHERE task_id = ? AND event_type = 'orphan_recovery'`,
+    ).get('TASK_2026_REL2') as { event_type: string; data: string } | undefined;
+
+    expect(event).toBeDefined();
+    expect(event!.event_type).toBe('orphan_recovery');
+
+    const payload = JSON.parse(event!.data) as { details: { was_claimed_by: string; stale_for_ms: number } };
+    expect(payload.details).toBeDefined();
+    expect(payload.details.was_claimed_by).toBe('SESSION_DEAD_222');
+    expect(typeof payload.details.stale_for_ms).toBe('number');
+  });
+
+  it('logs session_id = "system" on orphan_recovery events', () => {
+    insertTask(db, 'TASK_2026_REL3', 'SESSION_DEAD_333', new Date().toISOString());
+
+    handleReleaseOrphanedClaims(db);
+
+    const event = db.prepare(
+      `SELECT session_id FROM events WHERE task_id = ? AND event_type = 'orphan_recovery'`,
+    ).get('TASK_2026_REL3') as { session_id: string } | undefined;
+
+    expect(event).toBeDefined();
+    expect(event!.session_id).toBe('system');
+  });
+});
+
+describe('create_session auto-recovery', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('auto-releases orphaned claims on session creation and includes orphan_recovery in response', () => {
+    insertTask(db, 'TASK_2026_AUTO1', 'SESSION_DEAD_AUTO', new Date().toISOString());
+
+    const result = handleCreateSession(db, {});
+    const data = parseText(result) as { ok: boolean; session_id: string; orphan_recovery?: { orphaned_claims_released: number; task_ids: string[] } };
+
+    expect(data.ok).toBe(true);
+    expect(data.orphan_recovery).toBeDefined();
+    expect(data.orphan_recovery!.orphaned_claims_released).toBe(1);
+    expect(data.orphan_recovery!.task_ids).toContain('TASK_2026_AUTO1');
+
+    const row = db.prepare('SELECT status, session_claimed FROM tasks WHERE id = ?').get('TASK_2026_AUTO1') as { status: string; session_claimed: string | null };
+    expect(row.status).toBe('CREATED');
+    expect(row.session_claimed).toBeNull();
+  });
+
+  it('skip_orphan_recovery: true suppresses auto-recovery', () => {
+    insertTask(db, 'TASK_2026_SKIP1', 'SESSION_DEAD_SKIP', new Date().toISOString());
+
+    const result = handleCreateSession(db, { skip_orphan_recovery: true });
+    const data = parseText(result) as { ok: boolean; orphan_recovery?: unknown };
+
+    expect(data.ok).toBe(true);
+    expect(data.orphan_recovery).toBeUndefined();
+
+    // Task should still be claimed — recovery was skipped
+    const row = db.prepare('SELECT session_claimed FROM tasks WHERE id = ?').get('TASK_2026_SKIP1') as { session_claimed: string | null };
+    expect(row.session_claimed).toBe('SESSION_DEAD_SKIP');
+  });
+
+  it('orphan_recovery field is absent when no orphans were released', () => {
+    // No orphaned tasks — fresh DB with no claims
+    const result = handleCreateSession(db, {});
+    const data = parseText(result) as { ok: boolean; orphan_recovery?: unknown };
+    expect(data.ok).toBe(true);
+    // orphan_recovery should be absent (not included) when released count is 0
+    expect(data.orphan_recovery).toBeUndefined();
   });
 });

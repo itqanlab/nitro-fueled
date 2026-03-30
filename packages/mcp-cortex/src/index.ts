@@ -129,12 +129,12 @@ server.registerTool('upsert_task', {
 server.registerTool('get_orphaned_claims', {
   description: 'Query tasks claimed by dead sessions or expired TTL. Returns array of {task_id, title, status, claimed_by, claimed_at, stale_for_ms}.',
   inputSchema: {},
-}, (args) => handleGetOrphanedClaims(db));
+}, () => handleGetOrphanedClaims(db));
 
 server.registerTool('release_orphaned_claims', {
-  description: 'Release all orphaned task claims atomically. Resets claims to CREATED, logs CLAIM_RELEASED events. Returns {released: N, tasks: [...]}.',
+  description: 'Release all orphaned task claims atomically. Resets claims to CREATED, logs orphan_recovery events. Returns {released: N, tasks: [...]}.',
   inputSchema: {},
-}, (args) => handleReleaseOrphanedClaims(db));
+}, () => handleReleaseOrphanedClaims(db));
 
 // --- Handoff tools ---
 

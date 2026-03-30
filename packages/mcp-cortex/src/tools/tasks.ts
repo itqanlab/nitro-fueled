@@ -4,6 +4,10 @@ import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
 import { normalizeSessionId } from './session-id.js';
 
+// Sentinel used for system-initiated events that have no associated user session.
+// Do not apply normalizeSessionId() to this value — it is intentionally non-canonical.
+const SYSTEM_SESSION_ID = 'system';
+
 const VALID_STATUSES = new Set([
   'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
   'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
@@ -108,6 +112,9 @@ export function handleClaimTask(
 ): { content: Array<{ type: 'text'; text: string }> } {
   const now = new Date().toISOString();
   const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
 
   const result = db.transaction(() => {
     const row = db.prepare(
@@ -119,7 +126,8 @@ export function handleClaimTask(
       if (!existing) {
         return { ok: false, reason: 'task_not_found' };
       }
-      return { ok: false, claimed_by: existing.session_claimed ? normalizeSessionId(existing.session_claimed) : null };
+      const claimedBy = existing.session_claimed ? normalizeSessionId(existing.session_claimed) : null;
+      return { ok: false, claimed_by: claimedBy ?? existing.session_claimed };
     }
 
     db.prepare(
@@ -309,7 +317,8 @@ function detectOrphanedClaims(db: Database.Database): Array<{
     const claimedAt = task.claimed_at ? new Date(task.claimed_at).getTime() : 0;
     const claimTimeout = task.claim_timeout_ms ?? null;
 
-    const isSessionDead = !activeSessions.has(task.session_claimed);
+    const normalizedClaim = normalizeSessionId(task.session_claimed) ?? task.session_claimed;
+    const isSessionDead = !activeSessions.has(normalizedClaim);
     const isTtlExpired = claimTimeout !== null && (now - claimedAt) > claimTimeout;
 
     if (isSessionDead || isTtlExpired) {
@@ -339,32 +348,44 @@ export function handleReleaseOrphanedClaims(
   db: Database.Database,
 ): { content: Array<{ type: 'text'; text: string }> } {
   const orphaned = detectOrphanedClaims(db);
-  const now = new Date().toISOString();
   const releasedTaskIds: string[] = [];
 
-  for (const task of orphaned) {
-    const claimedAt = task.claimed_at ? new Date(task.claimed_at).getTime() : 0;
-    const staleForMs = Date.now() - claimedAt;
+  // Fix 1: Wrap entire release loop in a transaction for atomicity.
+  // If any step fails, no partial releases are committed.
+  db.transaction(() => {
+    const now = new Date().toISOString();
 
-    db.prepare(
-      `UPDATE tasks
-       SET session_claimed = NULL, claimed_at = NULL, status = 'CREATED', updated_at = ?
-       WHERE id = ?`,
-    ).run(now, task.task_id);
+    for (const task of orphaned) {
+      // Fix 6 (bonus): Guard against concurrent release — skip event if task was
+      // already reclaimed or released between detectOrphanedClaims and this UPDATE.
+      const info = db.prepare(
+        `UPDATE tasks
+         SET session_claimed = NULL, claimed_at = NULL, status = 'CREATED', updated_at = ?
+         WHERE id = ? AND session_claimed IS NOT NULL`,
+      ).run(now, task.task_id);
 
-    releasedTaskIds.push(task.task_id);
+      if (info.changes === 0) {
+        // Concurrently reclaimed or already released — do not log a spurious event
+        continue;
+      }
 
-    const eventData = JSON.stringify({
-      task_id: task.task_id,
-      was_claimed_by: task.claimed_by,
-      stale_for_ms: staleForMs,
-    });
+      releasedTaskIds.push(task.task_id);
 
-    db.prepare(
-      `INSERT INTO events (session_id, task_id, source, event_type, data)
-       VALUES (?, ?, ?, ?, ?)`,
-    ).run('system', task.task_id, 'orphan_recovery', eventData);
-  }
+      // Fix 3: event_type = 'orphan_recovery', payload wrapped under 'details' key
+      // Fix 4: reuse stale_for_ms from detectOrphanedClaims instead of recomputing
+      const eventData = JSON.stringify({
+        details: {
+          was_claimed_by: task.claimed_by,
+          stale_for_ms: task.stale_for_ms,
+        },
+      });
+
+      db.prepare(
+        `INSERT INTO events (session_id, task_id, source, event_type, data)
+         VALUES (?, ?, ?, ?, ?)`,
+      ).run(SYSTEM_SESSION_ID, task.task_id, SYSTEM_SESSION_ID, 'orphan_recovery', eventData);
+    }
+  })();
 
   return {
     content: [{

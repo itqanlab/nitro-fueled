@@ -352,6 +352,25 @@ function migrateWorkersProviderConstraint(db: Database.Database): void {
   db.pragma('foreign_keys = ON');
 }
 
+/**
+ * One-shot data migration: normalize any session_claimed values still in the legacy
+ * underscore format (SESSION_YYYY-MM-DD_HH-MM-SS) to the canonical T-format.
+ * This repairs rows written before TASK_2026_194 deployed the normalization fix.
+ * Safe to run on every startup — the WHERE clause ensures it is a no-op once migrated.
+ */
+function migrateSessionClaimedFormat(db: Database.Database): void {
+  try {
+    db.prepare(
+      `UPDATE tasks
+       SET session_claimed = SUBSTR(session_claimed, 1, 18) || 'T' || SUBSTR(session_claimed, 20)
+       WHERE session_claimed LIKE 'SESSION_____-__-____%'
+         AND session_claimed NOT LIKE 'SESSION_____-__-__T%'`,
+    ).run();
+  } catch {
+    // Table may not exist yet on a fresh install — safe to ignore
+  }
+}
+
 export function initDatabase(dbPath: string): Database.Database {
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
 
@@ -378,6 +397,9 @@ export function initDatabase(dbPath: string): Database.Database {
   applyMigrations(db, 'tasks', TASK_MIGRATIONS);
   applyMigrations(db, 'sessions', SESSION_MIGRATIONS);
   applyMigrations(db, 'workers', WORKER_MIGRATIONS);
+
+  // Repair legacy session_claimed values written before the T-separator normalization fix.
+  migrateSessionClaimedFormat(db);
 
   return db;
 }
