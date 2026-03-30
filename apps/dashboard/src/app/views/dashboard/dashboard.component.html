@@ -14,26 +14,29 @@
     <div class="total-tasks-badge">{{ totalTasks() }} Total</div>
   </div>
   <div class="stat-grid">
-    <app-stat-card label="CREATED" [valueClass]="getStatusValueClass('CREATED')">
+    <app-stat-card label="CREATED" [valueClass]="statusClassMap['CREATED']">
       {{ taskBreakdown().CREATED }}
     </app-stat-card>
-    <app-stat-card label="IN PROGRESS" [valueClass]="getStatusValueClass('IN_PROGRESS')">
+    <app-stat-card label="IN PROGRESS" [valueClass]="statusClassMap['IN_PROGRESS']">
       {{ taskBreakdown().IN_PROGRESS }}
     </app-stat-card>
-    <app-stat-card label="IMPLEMENTED" [valueClass]="getStatusValueClass('IMPLEMENTED')">
+    <app-stat-card label="IMPLEMENTED" [valueClass]="statusClassMap['IMPLEMENTED']">
       {{ taskBreakdown().IMPLEMENTED }}
     </app-stat-card>
-    <app-stat-card label="IN REVIEW" [valueClass]="getStatusValueClass('IN_REVIEW')">
+    <app-stat-card label="IN REVIEW" [valueClass]="statusClassMap['IN_REVIEW']">
       {{ taskBreakdown().IN_REVIEW }}
     </app-stat-card>
-    <app-stat-card label="COMPLETE" [valueClass]="getStatusValueClass('COMPLETE')">
+    <app-stat-card label="COMPLETE" [valueClass]="statusClassMap['COMPLETE']">
       {{ taskBreakdown().COMPLETE }}
     </app-stat-card>
-    <app-stat-card label="FAILED" [valueClass]="getStatusValueClass('FAILED')">
+    <app-stat-card label="FAILED" [valueClass]="statusClassMap['FAILED']">
       {{ taskBreakdown().FAILED }}
     </app-stat-card>
-    <app-stat-card label="BLOCKED" [valueClass]="getStatusValueClass('BLOCKED')">
+    <app-stat-card label="BLOCKED" [valueClass]="statusClassMap['BLOCKED']">
       {{ taskBreakdown().BLOCKED }}
+    </app-stat-card>
+    <app-stat-card label="CANCELLED" [valueClass]="statusClassMap['CANCELLED']">
+      {{ taskBreakdown().CANCELLED }}
     </app-stat-card>
   </div>
 </section>
@@ -81,7 +84,9 @@
       @for (session of activeSessions(); track session.sessionId) {
         <div class="active-session-card">
           <div class="session-info">
-            <div class="session-status-indicator" [class]="getSessionStatusClass(session.status)"></div>
+            <div class="session-status-indicator"
+               [class.status-running]="session.status === 'running'"
+               [class.status-paused]="session.status === 'paused'"></div>
             <div class="session-details">
               <div class="session-id">{{ session.sessionId }}</div>
               <div class="session-task">{{ session.taskTitle }}</div>

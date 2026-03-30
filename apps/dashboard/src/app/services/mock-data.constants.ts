@@ -936,7 +936,7 @@ export const MOCK_TASK_STATUS_BREAKDOWN: TaskStatusBreakdown = {
   COMPLETE: 47,
   FAILED: 2,
   BLOCKED: 1,
-  total: 78,
+  CANCELLED: 0,
 };
 
 export const MOCK_TOKEN_COST_SUMMARY: TokenCostSummary = {

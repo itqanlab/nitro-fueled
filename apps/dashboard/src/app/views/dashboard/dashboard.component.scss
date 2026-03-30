@@ -86,11 +86,11 @@
 }
 
 .stat-card-value.status-implemented {
-  color: #a78bfa;
+  color: var(--purple);
 }
 
 .stat-card-value.status-in-review {
-  color: #fbbf24;
+  color: var(--warning);
 }
 
 .stat-card-value.status-complete {
@@ -102,7 +102,11 @@
 }
 
 .stat-card-value.status-blocked {
-  color: #ef4444;
+  color: var(--error);
+}
+
+.stat-card-value.status-cancelled {
+  color: var(--text-tertiary);
 }
 
 /* Token & Cost Grid */

@@ -1,9 +1,10 @@
-import { Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 import { MockDataService } from '../../services/mock-data.service';
 import type {
   CommandCenterData,
   TaskStatusBreakdown,
+  TaskStatusKey,
   ActiveSession,
   ActiveTask,
 } from '../../models/dashboard.model';
@@ -14,9 +15,22 @@ import type {
   imports: [StatCardComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
   private readonly mockData = inject(MockDataService);
+
+  // Precomputed status → CSS class map; evaluated once, not per render
+  public readonly statusClassMap: Record<TaskStatusKey, string> = {
+    CREATED: 'status-created',
+    IN_PROGRESS: 'status-in-progress',
+    IMPLEMENTED: 'status-implemented',
+    IN_REVIEW: 'status-in-review',
+    COMPLETE: 'status-complete',
+    FAILED: 'status-failed',
+    BLOCKED: 'status-blocked',
+    CANCELLED: 'status-cancelled',
+  };
 
   private readonly commandCenterData = computed<CommandCenterData>(() =>
     this.mockData.getCommandCenterData(),
@@ -27,8 +41,11 @@ export class DashboardComponent {
     this.commandCenterData().taskBreakdown,
   );
 
-  // Total tasks prominently displayed
-  public readonly totalTasks = computed(() => this.taskBreakdown().total);
+  // Total tasks derived from breakdown fields (not a stored literal)
+  public readonly totalTasks = computed(() => {
+    const b = this.taskBreakdown();
+    return b.CREATED + b.IN_PROGRESS + b.IMPLEMENTED + b.IN_REVIEW + b.COMPLETE + b.FAILED + b.BLOCKED + b.CANCELLED;
+  });
 
   // Token and cost summary
   public readonly tokenCost = computed(() => this.commandCenterData().tokenCost);
@@ -36,11 +53,13 @@ export class DashboardComponent {
   public readonly totalCost = computed(() => this.tokenCost().totalCost);
   public readonly recentSessions = computed(() => this.tokenCost().recentSessions);
 
-  // Active sessions
+  // Active sessions — count only 'running' (not paused)
   public readonly activeSessions = computed<readonly ActiveSession[]>(
     () => this.commandCenterData().activeSessions,
   );
-  public readonly activeSessionCount = computed(() => this.activeSessions().length);
+  public readonly activeSessionCount = computed(
+    () => this.activeSessions().filter(s => s.status === 'running').length,
+  );
 
   // Active tasks (IN_PROGRESS)
   public readonly activeTasks = computed<readonly ActiveTask[]>(
@@ -55,31 +74,4 @@ export class DashboardComponent {
     if (tokens >= 1000) return `${(tokens / 1000).toFixed(0)}K`;
     return tokens.toString();
   });
-
-  // Status value classes for stat cards
-  public readonly getStatusValueClass = (status: string): string => {
-    switch (status) {
-      case 'CREATED':
-        return 'status-created';
-      case 'IN_PROGRESS':
-        return 'status-in-progress';
-      case 'IMPLEMENTED':
-        return 'status-implemented';
-      case 'IN_REVIEW':
-        return 'status-in-review';
-      case 'COMPLETE':
-        return 'status-complete';
-      case 'FAILED':
-        return 'status-failed';
-      case 'BLOCKED':
-        return 'status-blocked';
-      default:
-        return '';
-    }
-  };
-
-  // Session status indicator class
-  public readonly getSessionStatusClass = (status: string): string => {
-    return status === 'running' ? 'status-running' : 'status-paused';
-  };
 }

@@ -11,7 +11,8 @@ export type TaskStatusKey =
   | 'IN_REVIEW'
   | 'COMPLETE'
   | 'FAILED'
-  | 'BLOCKED';
+  | 'BLOCKED'
+  | 'CANCELLED';
 
 export interface TaskStatusBreakdown {
   readonly CREATED: number;
@@ -21,7 +22,7 @@ export interface TaskStatusBreakdown {
   readonly COMPLETE: number;
   readonly FAILED: number;
   readonly BLOCKED: number;
-  readonly total: number;
+  readonly CANCELLED: number;
 }
 
 // Token and cost summary
@@ -47,12 +48,15 @@ export interface ActiveSession {
 }
 
 // Active tasks (IN_PROGRESS)
+export type ActiveTaskType = 'FEATURE' | 'BUGFIX' | 'REFACTORING' | 'CHORE' | 'DOCS' | 'TEST';
+export type ActiveTaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
+
 export interface ActiveTask {
   readonly taskId: string;
   readonly title: string;
   readonly status: 'IN_PROGRESS';
-  readonly type: string;
-  readonly priority: string;
+  readonly type: ActiveTaskType;
+  readonly priority: ActiveTaskPriority;
 }
 
 // Complete command center data
