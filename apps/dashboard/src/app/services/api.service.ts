@@ -10,6 +10,7 @@ interface HealthResponse {
 }
 
 import type { ActiveSessionSummary } from '../models/sessions-panel.model';
+import type { ProgressCenterSnapshot } from '../models/progress-center.model';
 
 import type {
   TaskRecord,
@@ -155,6 +156,10 @@ export class ApiService {
 
   public getSessions(): Observable<SessionSummary[]> {
     return this.http.get<SessionSummary[]>(`${this.base}/sessions`);
+  }
+
+  public getProgressCenter(): Observable<ProgressCenterSnapshot> {
+    return this.http.get<ProgressCenterSnapshot>(`${this.base}/progress-center`);
   }
 
   public getSession(id: string): Observable<SessionData> {

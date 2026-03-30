@@ -13,6 +13,7 @@ import { OrchestrationFlowsService } from './orchestration-flows.service';
 import { LogsController } from './logs.controller';
 import { LogsService } from './logs.service';
 import { ReportsService } from './reports.service';
+import { ProgressCenterService } from './progress-center.service';
 
 @Module({
   controllers: [DashboardController, LogsController],
@@ -36,7 +37,8 @@ import { ReportsService } from './reports.service';
     WsAuthGuard,
     OrchestrationFlowsService,
     LogsService,
+    ProgressCenterService,
   ],
-  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, ReportsService, OrchestrationFlowsService, LogsService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService],
 })
 export class DashboardModule {}

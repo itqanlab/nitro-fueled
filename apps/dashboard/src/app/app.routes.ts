@@ -15,6 +15,13 @@ export const APP_ROUTES: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'analytics', component: AnalyticsComponent },
       {
+        path: 'progress',
+        loadComponent: () =>
+          import('./views/progress-center/progress-center.component').then(
+            (m) => m.ProgressCenterComponent,
+          ),
+      },
+      {
         path: 'reports',
         loadComponent: () =>
           import('./views/reports/reports.component').then(

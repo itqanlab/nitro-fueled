@@ -27,6 +27,7 @@ import { AnalyticsService } from './analytics.service';
 import { CortexService } from './cortex.service';
 import { OrchestrationFlowsService } from './orchestration-flows.service';
 import { ReportsService } from './reports.service';
+import { ProgressCenterService } from './progress-center.service';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
@@ -47,6 +48,7 @@ export class DashboardController {
     private readonly cortexService: CortexService,
     private readonly orchestrationFlowsService: OrchestrationFlowsService,
     private readonly reportsService: ReportsService,
+    private readonly progressCenterService: ProgressCenterService,
   ) {}
 
   // === Health ===
@@ -235,6 +237,19 @@ export class DashboardController {
   @Get('sessions')
   public getSessions(): ReturnType<SessionsService['getSessions']> {
     return this.sessionsService.getSessions();
+  }
+
+  @ApiTags('sessions')
+  @ApiOperation({ summary: 'Get progress center snapshot', description: 'Returns active session progress, health, ETA, and recent activity feed data' })
+  @ApiResponse({ status: 200, description: 'Real-time progress center snapshot' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Get('progress-center')
+  public getProgressCenter() {
+    const snapshot = this.progressCenterService.getSnapshot();
+    if (snapshot === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return snapshot;
   }
 
   @ApiTags('sessions')
