@@ -55,7 +55,7 @@ Load this file when `cortex_available = true` to understand which DB paths apply
 
 ### Step 7a: Read Current Task State
 
-- **cortex path**: Call `get_tasks(status=undefined)` filtered by task_id, OR use cached task list from Step 2. Belt-and-suspenders: also read `task-tracking/TASK_YYYY_NNN/status` file. If both present and differ, file takes precedence.
+- **cortex path**: For single-task completion checks, call `get_task_context(task_id)` (preferred) or use the cached task roster from Step 2. Do **not** call `get_tasks(status: "COMPLETE")` for verification. If a broad `get_tasks()` read is needed for reconciliation, pass a small `limit` to avoid oversized responses.
 - **fallback path**: Read `task-tracking/TASK_YYYY_NNN/status` file only.
 
 ### Step 7c: Suspicious Transition — BLOCKED write

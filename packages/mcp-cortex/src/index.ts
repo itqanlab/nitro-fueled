@@ -8,7 +8,7 @@ import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
 import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
-import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession } from './tools/sessions.js';
+import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession, handleUpdateHeartbeat, handleCloseStaleSessions } from './tools/sessions.js';
 import { handleSpawnWorker, handleListWorkers, handleGetWorkerStats, handleGetWorkerActivity, handleKillWorker } from './tools/workers.js';
 import { FileWatcher, EmitQueue, handleSubscribeWorker, handleGetPendingEvents, handleEmitEvent } from './events/subscriptions.js';
 import { JsonlWatcher } from './process/jsonl-watcher.js';
@@ -46,6 +46,7 @@ server.registerTool('get_tasks', {
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
+    limit: z.number().int().min(1).max(200).optional().describe('Max tasks to return (default unlimited, max 200)'),
   },
 }, (args) => handleGetTasks(db, args));
 
@@ -57,6 +58,7 @@ server.registerTool('query_tasks', {
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
+    limit: z.number().int().min(1).max(200).optional().describe('Max tasks to return (default unlimited, max 200)'),
   },
 }, (args) => handleGetTasks(db, args));
 
@@ -232,6 +234,20 @@ server.registerTool('end_session', {
     summary: z.string().optional().describe('Optional summary of session results'),
   },
 }, (args) => handleEndSession(db, args));
+
+server.registerTool('update_heartbeat', {
+  description: 'Update the last_heartbeat timestamp for a session. Should be called on each supervisor poll cycle.',
+  inputSchema: {
+    session_id: z.string().describe('Session ID to update heartbeat for'),
+  },
+}, (args) => handleUpdateHeartbeat(db, args));
+
+server.registerTool('close_stale_sessions', {
+  description: 'Close sessions that have not sent a heartbeat within the configured TTL. Default TTL is 30 minutes.',
+  inputSchema: {
+    ttl_minutes: z.number().int().min(1).max(1440).optional().describe('Time-to-live in minutes (default: 30, max: 1440/24h)'),
+  },
+}, (args) => handleCloseStaleSessions(db, args));
 
 // --- Worker lifecycle tools ---
 

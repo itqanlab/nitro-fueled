@@ -109,18 +109,38 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 1. Call `list_workers(session_id=SESSION_ID, status_filter: 'running', compact: true)` and derive `slots = concurrency_limit - running_workers_in_this_session`.
    Never compute `slots` from global active workers across all sessions.
 2. If `slots <= 0`, skip to Step 6.
-3. Choose candidates from the Step 3 classifications, prioritizing reviewable tasks before buildable tasks.
-4. If `get_next_wave(session_id, slots)` exists, use it as the atomic selector/claimer.
-5. Otherwise, use the `get_tasks()` result plus `claim_task(task_id, SESSION_ID)` before each spawn.
-6. Treat `claim_task(task_id, SESSION_ID)` as the cross-session deduplication guard. If another session already claimed the task, skip it and select the next candidate.
+3. Partition candidates from the Step 3 classifications into two sets:
+   - `build_candidates`: tasks in `READY_FOR_BUILD` state (CREATED, deps satisfied), ordered by priority (P0 > P1 > P2 > P3), then by task ID ascending.
+   - `review_candidates`: tasks in `READY_FOR_REVIEW` state (IMPLEMENTED, deps satisfied), ordered by priority, then by task ID ascending.
+4. **Apply the configured priority strategy** (default: `build-first`) to allocate slots:
+
+   **`build-first` (default)**:
+   - Fill slots starting with `build_candidates`.
+   - Any remaining slots go to `review_candidates`.
+   - Guarantee: at least 1 slot goes to builds when `build_candidates` is non-empty.
+
+   **`review-first`**:
+   - Fill slots starting with `review_candidates`.
+   - Any remaining slots go to `build_candidates`.
+   - Guarantee: at least 1 slot goes to reviews when `review_candidates` is non-empty.
+
+   **`balanced`**:
+   - Reserve ≥1 slot for builds and ≥1 slot for reviews (when both candidate sets are non-empty).
+   - With `slots = 1` and both sets non-empty: allocate to builds.
+   - With `slots ≥ 2`: first slot to builds, second to reviews, remaining alternate starting with builds.
+   - When only one candidate set is non-empty, all slots go to that set.
+
+5. If `get_next_wave(session_id, slots)` exists, use it as the atomic selector/claimer.
+6. Otherwise, use the `get_tasks()` result plus `claim_task(task_id, SESSION_ID)` before each spawn.
+7. Treat `claim_task(task_id, SESSION_ID)` as the cross-session deduplication guard. If another session already claimed the task, skip it and select the next candidate.
    This claim step is what prevents duplicate assignment when multiple supervisor sessions run concurrently.
-7. Apply any serialized-review exclusions from session DB state.
-8. Do **not** read `state.md` to calculate the live queue on this path.
+8. Apply any serialized-review exclusions from session DB state.
+9. Do **not** read `state.md` to calculate the live queue on this path.
 
 **Fallback path (`cortex_available = false`):**
 
 1. Order the cached fallback queue in `{SESSION_DIR}state.md`.
-2. Prefer review work before build work.
+2. Apply the same priority strategy as the preferred path, partitioning into build and review candidates and allocating slots accordingly.
 
 ### Step 5: Spawn Workers
 
@@ -175,7 +195,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 1. Treat `get_pending_events()` as the primary completion signal.
 2. For a Build Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
 3. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
-4. If the loop is reconciling a worker without an event, call `get_tasks()` or `get_task_context(task_id)` to read the DB state.
+4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks. Avoid `get_tasks(status: "COMPLETE")`; if `get_tasks()` is needed for broader reconciliation, always provide a bounded `limit`.
 5. Release or update the task through MCP (`release_task()` / `update_task()`) as required by the implementation.
 6. Update the session DB record with completed/failed worker bookkeeping.
 7. Re-evaluate only the affected dependents using the latest `get_tasks()` data; do not do file-based downstream checks.

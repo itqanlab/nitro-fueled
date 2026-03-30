@@ -58,7 +58,7 @@ const UPDATABLE_COLUMNS = new Set([
 
 export function handleGetTasks(
   db: Database.Database,
-  args: { status?: string; type?: string; priority?: string; unblocked?: boolean },
+  args: { status?: string; type?: string; priority?: string; unblocked?: boolean; limit?: number },
 ): { content: Array<{ type: 'text'; text: string }> } {
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -77,7 +77,10 @@ export function handleGetTasks(
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id`).all(...params) as Array<Record<string, unknown>>;
+  const limit = args.limit !== undefined ? Math.min(Math.max(1, Math.trunc(args.limit)), 200) : undefined;
+  const limitClause = limit !== undefined ? ' LIMIT ?' : '';
+  const queryParams = limit !== undefined ? [...params, limit] : params;
+  const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id${limitClause}`).all(...queryParams) as Array<Record<string, unknown>>;
 
   if (args.unblocked) {
     const completeTasks = new Set(

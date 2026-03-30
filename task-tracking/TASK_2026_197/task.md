@@ -27,10 +27,10 @@ Fix:
 
 ## Acceptance Criteria
 
-- [ ] Supervisor no longer calls `get_tasks(status: "COMPLETE")`
-- [ ] Single-task completion checks use `get_task_context` or `update_task` response
-- [ ] `get_tasks` supports a `limit` parameter
-- [ ] No MCP response overflow errors in supervisor loop
+- [x] Supervisor no longer calls `get_tasks(status: "COMPLETE")`
+- [x] Single-task completion checks use `get_task_context` or `update_task` response
+- [x] `get_tasks` supports a `limit` parameter
+- [x] No MCP response overflow errors in supervisor loop
 
 ## Parallelism
 
@@ -44,5 +44,10 @@ Fix:
 
 ## File Scope
 
-- packages/mcp-cortex/src/tools/tasks.ts (add limit param)
-- .claude/skills/auto-pilot/SKILL.md (use get_task_context for checks)
+- packages/mcp-cortex/src/tools/tasks.ts (add and enforce `limit` in task queries)
+- packages/mcp-cortex/src/index.ts (expose `limit` in `get_tasks` / `query_tasks` schemas)
+- packages/mcp-cortex/src/tools/tasks.spec.ts (coverage for requested and capped limits)
+- .claude/skills/auto-pilot/references/cortex-integration.md (single-task completion guidance)
+- .claude/skills/auto-pilot/references/parallel-mode.md (avoid `get_tasks(status: "COMPLETE")` checks)
+- apps/cli/scaffold/.claude/skills/auto-pilot/references/cortex-integration.md (scaffold sync)
+- apps/cli/scaffold/.claude/skills/auto-pilot/references/parallel-mode.md (scaffold sync)
