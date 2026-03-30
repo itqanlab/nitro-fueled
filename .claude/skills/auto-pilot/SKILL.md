@@ -33,7 +33,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 1. **Read registry at startup; read task.md files just-in-time before each spawn** -- build the dependency graph
 2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority
-3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW)
+3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
 4. **Monitor worker health** on a configurable interval
 5. **Handle completions**: check if state transitioned, decide next action
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
@@ -73,13 +73,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 When the loop starts, merge command-line overrides with these defaults. Write the active configuration into `{SESSION_DIR}state.md`. Written as part of Session Lifecycle startup (after Session Directory is created).
 
-> **Concurrency and Review+Test phase**: Spawning a Review Lead + Test Lead for one task consumes 2 concurrency slots (one per worker). A task in the review/test phase uses 2 of the available slots. Example: `concurrency_limit=3`, one task reaches IMPLEMENTED → spawn both workers (2 slots used) → 1 slot remains for a Build Worker.
->
-> If `concurrency_limit == 1`: spawn Review Lead first (higher priority — it owns state
-> transitions). Note: with concurrency_limit == 1, the Test Lead will likely never execute —
-> once Review Lead sets the registry to COMPLETE, the Supervisor closes the task before
-> a slot opens for the Test Lead. Users with concurrency_limit == 1 should accept that
-> test coverage may be skipped for tasks that complete in a single review cycle.
+> **2-session worker model**: Each task uses at most 2 MCP sessions — a Build Worker (CREATED → IMPLEMENTED) and a Review+Fix Worker (IMPLEMENTED → COMPLETE). The Review+Fix Worker runs reviews as parallel Agent sub-agents within its session, then applies fixes and completes the task. Each worker consumes exactly 1 concurrency slot. Example: `concurrency_limit=3` → 3 tasks can be worked on simultaneously, each with 1 worker active.
 
 ---
 

@@ -25,15 +25,8 @@ All event types and their exact log row formats for `{SESSION_DIR}log.md`.
 | Kill failed | `\| {HH:MM:SS} \| auto-pilot \| KILL FAILED — TASK_X: {error} \|` |
 | State transitioned (success) | `\| {HH:MM:SS} \| auto-pilot \| STATE TRANSITIONED — TASK_X: {old_state} -> {new_state} \|` |
 | No transition (failure) | `\| {HH:MM:SS} \| auto-pilot \| NO TRANSITION — TASK_X: expected {expected_state}, still {current_state} (retry {N}/{limit}) \|` |
-| Build done | `\| {HH:MM:SS} \| auto-pilot \| BUILD DONE — TASK_X: IMPLEMENTED, spawning Review Worker \|` |
-| Review done | `\| {HH:MM:SS} \| auto-pilot \| REVIEW DONE — TASK_X: COMPLETE \|` |
-| Test Lead spawned | `\| {HH:MM:SS} \| auto-pilot \| SPAWNED {worker_id} for TASK_X (TestLead: {TaskType}) \|` |
-| Test Lead done | `\| {HH:MM:SS} \| auto-pilot \| TEST DONE — TASK_X: test-report.md written \|` |
-| Test Lead skipped | `\| {HH:MM:SS} \| auto-pilot \| TEST SKIP — TASK_X: task type {type} does not require tests \|` |
-| Both done (clean) | `\| {HH:MM:SS} \| auto-pilot \| REVIEW AND TEST CLEAN — TASK_X: no findings, spawning Completion Worker \|` |
-| Both done (issues) | `\| {HH:MM:SS} \| auto-pilot \| REVIEW AND TEST DONE — TASK_X: findings or failures found, spawning Fix Worker \|` |
-| Fix done | `\| {HH:MM:SS} \| auto-pilot \| FIX DONE — TASK_X: COMPLETE \|` |
-| Completion done | `\| {HH:MM:SS} \| auto-pilot \| COMPLETION DONE — TASK_X: COMPLETE \|` |
+| Build done | `\| {HH:MM:SS} \| auto-pilot \| BUILD DONE — TASK_X: IMPLEMENTED, spawning Review+Fix Worker \|` |
+| Review+Fix done | `\| {HH:MM:SS} \| auto-pilot \| REVIEWFIX DONE — TASK_X: COMPLETE \|` |
 | Retry scheduled | `\| {HH:MM:SS} \| auto-pilot \| RETRY — TASK_X: attempt {N}/{retry_limit} \|` |
 | Task blocked (max retries) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: exceeded {retry_limit} retries \|` |
 | Task blocked (cycle) | `\| {HH:MM:SS} \| auto-pilot \| BLOCKED — TASK_X: dependency cycle with TASK_Y \|` |
