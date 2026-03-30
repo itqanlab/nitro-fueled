@@ -37,6 +37,8 @@ and loops until all tasks are complete or blocked.
 /nitro-auto-pilot --sequential                       # Process backlog inline (no MCP workers)
 /nitro-auto-pilot --sequential TASK_YYYY_NNN         # Process single task inline
 /nitro-auto-pilot --sequential --limit 3             # Process up to 3 tasks inline
+/nitro-auto-pilot --priority review-first             # Clear review backlog before starting new builds
+/nitro-auto-pilot --priority balanced                 # Reserve slots for both builds and reviews
 ```
 
 ### Parameters
@@ -56,6 +58,7 @@ and loops until all tasks are complete or blocked.
 | --role          | builder\|reviewer\|both       | builder | Which role to test the model in. `reviewer` and `both` require `--compare` |
 | --reviewer      | model-id string              | —       | Override the reviewer model for evaluation (defaults to baseline or system default) |
 | --sequential    | flag                         | false   | Process tasks inline in same session instead of spawning MCP workers. No concurrency, no health checks, no polling overhead. Compatible with [TASK_ID] and --limit N. |
+| --priority      | build-first\|review-first\|balanced | build-first | Slot allocation strategy. `build-first`: CREATED tasks fill slots first, remaining go to IMPLEMENTED. `review-first`: IMPLEMENTED tasks fill slots first, remaining go to CREATED. `balanced`: reserve ≥1 slot for builds and ≥1 for reviews. |
 
 ## Execution Steps
 
@@ -100,6 +103,7 @@ Parse $ARGUMENTS for:
 - `--reviewer <model-id>` -> overrides the model used for Review Workers in evaluation.
   Defaults to `--compare` model if A/B mode, or no review phase if single-model builder.
 - `--sequential` flag -> sequential mode (set `sequential_mode = true`). **If `--sequential` is present, skip Step 3c** (MCP validation) entirely — jump to Step 4 after Steps 3a and 3b. All other pre-flight checks still run. **Then skip Steps 5–6** and jump directly to the Sequential Mode sequence in SKILL.md.
+- `--priority build-first|review-first|balanced` -> override slot allocation strategy. `build-first` (default): fill slots with CREATED tasks first, remaining slots for IMPLEMENTED. `review-first`: fill slots with IMPLEMENTED tasks first, remaining for CREATED. `balanced`: reserve at least 1 slot for builds and 1 for reviews. Invalid values exit with an error immediately.
 
 ### Step 3: Pre-Flight Checks
 
@@ -164,7 +168,9 @@ If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
    - The only pre-flight validations are: dependency checks (4c), circular dependency detection (4d), and registry-level completeness (4b uses registry columns only).
 4. Use `sizing-rules.md` (already read in step 1). If it was not found, use the inline fallback limits in Validation D below.
 5. Initialize two collections: `blocking_issues = []`, `warnings = []`.
-6. **Initialize session directory**: Capture the startup timestamp once (see session-lifecycle.md Step 1), then call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Register that same `SESSION_ID` in `task-tracking/active-sessions.md`. Create `{SESSION_DIR}state.md` with `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command. Do not generate a second local timestamp-based session ID.
+6. **Initialize session directory**: Capture the startup timestamp once (see session-lifecycle.md Step 1), then:
+    a. **Close stale sessions**: Call MCP `close_stale_sessions()` to mark any running sessions without a recent heartbeat (default TTL: 30 minutes) as stopped. This happens before creating the new session to avoid ghost sessions.
+    b. Call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Register that same `SESSION_ID` in `task-tracking/active-sessions.md`. Create `{SESSION_DIR}state.md` with `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command. Do not generate a second local timestamp-based session ID.
 7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `{SESSION_DIR}`. Then skip to Step 6 (dry-run handler).
 
 **4b. Validation A: Task Completeness — Registry-Only (Warning)**
@@ -320,8 +326,8 @@ Dependency Graph:
 
 Execution Order:
   Wave 1 (immediate):
-    Review: TASK_2026_005 (P1-High, FEATURE) -- Review Worker
     Build:  TASK_2026_003 (P0-Critical, FEATURE) -- Build Worker
+    Review: TASK_2026_005 (P1-High, FEATURE) -- Review Worker
   Wave 2 (after 003):
     Build:  TASK_2026_004 (P1-High, BUGFIX) -- Build Worker
   Blocked: TASK_2026_006 (dependency cycle)

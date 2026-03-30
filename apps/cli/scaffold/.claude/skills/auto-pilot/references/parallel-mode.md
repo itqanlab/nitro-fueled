@@ -164,19 +164,19 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 2. Persist active-worker state in `{SESSION_DIR}state.md`.
 
 ### Step 6: Monitor Workers
-
 **Preferred path (`cortex_available = true`):**
 
-1. Sleep for the configured interval (`sleep 30` for event-driven mode, or the polling interval when event subscriptions are unavailable).
-2. Call `get_pending_events()` and handle every returned event in the same tick.
-3. Call `list_workers(compact: true)` to refresh the active-worker set.
-4. For workers with no completion event, call `get_worker_activity(worker_id)` only when a health check is due.
-5. Escalate to `get_worker_stats(worker_id)` only for unclear or degraded health.
-6. Persist changed worker-health counters with `update_session()`.
-7. If `log_event()` is available, emit health warnings there.
-8. Do **not** append heartbeat rows to `log.md`.
-9. Do **not** rewrite `state.md`.
-10. Do **not** poll task `status` files for completion.
+1. Sleep for the configured interval (`sleep 30` for event-driven mode, or polling interval when event subscriptions are unavailable).
+2. Call `update_heartbeat(session_id)` to record that this session is alive.
+3. Call `get_pending_events()` and handle every returned event in the same tick.
+4. Call `list_workers(compact: true)` to refresh the active-worker set.
+5. For workers with no completion event, call `get_worker_activity(worker_id)` only when a health check is due.
+6. Escalate to `get_worker_stats(worker_id)` only for unclear or degraded health.
+7. Persist changed worker-health counters with `update_session()`.
+8. If `log_event()` is available, emit health warnings there.
+9. Do **not** append heartbeat rows to `log.md`.
+10. Do **not** rewrite `state.md`.
+11. Do **not** poll task `status` files for completion.
 
 **Two-strike stuck detection:**
 
