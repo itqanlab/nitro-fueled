@@ -9,7 +9,7 @@ import { normalizeSessionId } from './session-id.js';
 const SYSTEM_SESSION_ID = 'system';
 
 const VALID_STATUSES = new Set([
-  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'CREATED', 'IN_PROGRESS', 'PREPPED', 'IMPLEMENTING', 'IMPLEMENTED', 'IN_REVIEW',
   'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
 ]);
 

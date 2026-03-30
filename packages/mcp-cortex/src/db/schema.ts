@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED';
+export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'PREPPED' | 'IMPLEMENTING' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED';
 export const CANONICAL_TASK_TYPES = [
   'FEATURE',
   'BUGFIX',
@@ -26,7 +26,7 @@ const DB_TASK_TYPES = [
 ] as const;
 export type TaskType = typeof DB_TASK_TYPES[number];
 export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
-export type WorkerType = 'build' | 'review';
+export type WorkerType = 'build' | 'prep' | 'implement' | 'review' | 'cleanup';
 export type WorkerStatus = 'active' | 'completed' | 'failed' | 'killed';
 export type LoopStatus = 'running' | 'paused' | 'stopped';
 export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished';
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title            TEXT NOT NULL,
   type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
   priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-  status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+  status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
   complexity       TEXT,
   model            TEXT,
   dependencies     TEXT NOT NULL DEFAULT '[]',
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS workers (
   id                 TEXT PRIMARY KEY,
   session_id         TEXT NOT NULL REFERENCES sessions(id),
   task_id            TEXT REFERENCES tasks(id),
-  worker_type        TEXT NOT NULL CHECK(worker_type IN ('build','review')),
+  worker_type        TEXT NOT NULL CHECK(worker_type IN ('build','prep','implement','review','cleanup')),
   label              TEXT,
   status             TEXT NOT NULL CHECK(status IN ('active','completed','failed','killed')) DEFAULT 'active',
   pid                INTEGER,
@@ -128,7 +128,7 @@ const HANDOFFS_TABLE = `
 CREATE TABLE IF NOT EXISTS handoffs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id      TEXT NOT NULL REFERENCES tasks(id),
-  worker_type  TEXT NOT NULL CHECK(worker_type IN ('build','review')),
+  worker_type  TEXT NOT NULL CHECK(worker_type IN ('build','prep','implement','review','cleanup')),
   files_changed TEXT NOT NULL DEFAULT '[]',
   commits      TEXT NOT NULL DEFAULT '[]',
   decisions    TEXT NOT NULL DEFAULT '[]',
@@ -267,7 +267,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
   const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").get() as { sql: string } | undefined;
   if (!tableInfo) return; // Table doesn't exist yet, CREATE TABLE will handle it
 
-  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'");
+  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'") || !tableInfo.sql.includes("'PREPPED'") || !tableInfo.sql.includes("'IMPLEMENTING'");
   const needsTypeMigration = !tableInfo.sql.includes("'OPS'") || !tableInfo.sql.includes("'DESIGN'");
   if (!needsStatusMigration && !needsTypeMigration) return; // Already up to date
 
@@ -284,7 +284,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
         title            TEXT NOT NULL,
         type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
         priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
         complexity       TEXT,
         model            TEXT,
         dependencies     TEXT NOT NULL DEFAULT '[]',
@@ -326,7 +326,7 @@ function migrateWorkersProviderConstraint(db: Database.Database): void {
   const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='workers'").get() as { sql: string } | undefined;
   if (!tableInfo) return;
 
-  if (tableInfo.sql.includes("'codex'")) return; // Already up to date
+  if (tableInfo.sql.includes("'codex'") && tableInfo.sql.includes("'prep'")) return; // Already up to date
 
   db.pragma('foreign_keys = OFF');
 
@@ -347,6 +347,38 @@ function migrateWorkersProviderConstraint(db: Database.Database): void {
     db.exec(`INSERT INTO workers_new (${colList}) SELECT ${colList} FROM workers`);
     db.exec('DROP TABLE workers');
     db.exec('ALTER TABLE workers_new RENAME TO workers');
+  })();
+
+  db.pragma('foreign_keys = ON');
+}
+
+/**
+ * Migrate the handoffs table CHECK constraint to include new worker types (prep, implement, cleanup).
+ * SQLite cannot ALTER CHECK constraints, so we recreate the table preserving data.
+ */
+function migrateHandoffsWorkerTypeConstraint(db: Database.Database): void {
+  const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='handoffs'").get() as { sql: string } | undefined;
+  if (!tableInfo) return;
+
+  if (tableInfo.sql.includes("'prep'")) return; // Already up to date
+
+  db.pragma('foreign_keys = OFF');
+
+  db.transaction(() => {
+    db.exec('DROP TABLE IF EXISTS handoffs_new');
+
+    db.exec(HANDOFFS_TABLE.replace('CREATE TABLE IF NOT EXISTS handoffs', 'CREATE TABLE handoffs_new'));
+
+    const existingCols = (db.prepare('PRAGMA table_info(handoffs)').all() as Array<{ name: string }>).map(r => r.name);
+    const newCols = new Set(
+      (db.prepare('PRAGMA table_info(handoffs_new)').all() as Array<{ name: string }>).map(r => r.name),
+    );
+    const shared = existingCols.filter(c => newCols.has(c));
+    const colList = shared.join(', ');
+
+    db.exec(`INSERT INTO handoffs_new (${colList}) SELECT ${colList} FROM handoffs`);
+    db.exec('DROP TABLE handoffs');
+    db.exec('ALTER TABLE handoffs_new RENAME TO handoffs');
   })();
 
   db.pragma('foreign_keys = ON');
@@ -381,6 +413,7 @@ export function initDatabase(dbPath: string): Database.Database {
   // Migrate CHECK constraints before CREATE TABLE IF NOT EXISTS (which won't update existing tables)
   migrateTasksCheckConstraint(db);
   migrateWorkersProviderConstraint(db);
+  migrateHandoffsWorkerTypeConstraint(db);
 
   db.exec(TASKS_TABLE);
   db.exec(SESSIONS_TABLE);

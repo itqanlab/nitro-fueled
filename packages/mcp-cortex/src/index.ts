@@ -42,7 +42,7 @@ const server = new McpServer({
 server.registerTool('get_tasks', {
   description: 'Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE. Use compact=true to omit description/acceptance_criteria/file_scope (saves ~80% tokens).',
   inputSchema: {
-    status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
+    status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
@@ -55,7 +55,7 @@ server.registerTool('get_tasks', {
 server.registerTool('query_tasks', {
   description: 'Alias for get_tasks. Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE. Use compact=true to omit description/acceptance_criteria/file_scope (saves ~80% tokens).',
   inputSchema: {
-    status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
+    status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
@@ -76,7 +76,7 @@ server.registerTool('release_task', {
   description: 'Release a claimed task, clearing the claim and setting a new status.',
   inputSchema: {
     task_id: z.string().describe('Task ID to release'),
-    new_status: z.enum(['CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).describe('New status to set'),
+    new_status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).describe('New status to set'),
   },
 }, (args) => handleReleaseTask(db, args));
 
@@ -141,25 +141,40 @@ server.registerTool('release_orphaned_claims', {
 // --- Handoff tools ---
 
 server.registerTool('write_handoff', {
-  description: 'Record a Build-to-Review handoff: files changed, commits, decisions, and risks for a task. Handoff records are immutable — no update tool exists.',
+  description: 'Record a worker handoff for a task. For build/review/implement/cleanup: pass files_changed, commits, decisions, risks. For prep: pass implementation_plan_summary, files_to_touch, batches, key_decisions, gotchas. Handoff records are immutable.',
   inputSchema: {
     task_id: z.string().max(200).describe('Task ID this handoff belongs to'),
-    worker_type: z.enum(['build', 'review']).describe('Worker type writing the handoff'),
+    worker_type: z.enum(['build', 'prep', 'implement', 'review', 'cleanup']).describe('Worker type writing the handoff'),
+    // Build/review/implement/cleanup fields
     files_changed: z.array(z.object({
       path: z.string().max(1000).describe('File path'),
       action: z.string().max(50).describe('new | modified | deleted'),
       lines: z.number().optional().describe('Line count or diff size'),
-    })).max(500).describe('Files changed in this work unit'),
-    commits: z.array(z.string().max(200)).max(200).describe('Commit hashes included in this handoff'),
-    decisions: z.array(z.string().max(2000)).max(100).describe('Key architectural or implementation decisions'),
-    risks: z.array(z.string().max(2000)).max(100).describe('Known risks, edge cases, or areas needing extra review'),
+    })).max(500).optional().describe('Files changed in this work unit (build/review/implement/cleanup)'),
+    commits: z.array(z.string().max(200)).max(200).optional().describe('Commit hashes included in this handoff (build/review/implement/cleanup)'),
+    decisions: z.array(z.string().max(2000)).max(100).optional().describe('Key architectural or implementation decisions (build/review/implement/cleanup)'),
+    risks: z.array(z.string().max(2000)).max(100).optional().describe('Known risks, edge cases, or areas needing extra review (build/review/implement/cleanup)'),
+    // Prep-specific fields
+    implementation_plan_summary: z.string().max(10000).optional().describe('Condensed implementation plan for the developer (prep only)'),
+    files_to_touch: z.array(z.object({
+      path: z.string().max(1000).describe('File path'),
+      action: z.enum(['new', 'modify', 'delete']).describe('Action to take on the file'),
+      why: z.string().max(2000).describe('Reason for the change'),
+    })).max(500).optional().describe('Files to touch with actions and reasons (prep only)'),
+    batches: z.array(z.object({
+      summary: z.string().max(2000).describe('Batch summary'),
+      files: z.array(z.string().max(1000)).max(100).describe('Files in this batch'),
+    })).max(50).optional().describe('Implementation batches (prep only)'),
+    key_decisions: z.array(z.string().max(2000)).max(100).optional().describe('Key decisions made during prep (prep only)'),
+    gotchas: z.array(z.string().max(2000)).max(100).optional().describe('Gotchas and pitfalls to watch for (prep only)'),
   },
 }, (args) => handleWriteHandoff(db, args));
 
 server.registerTool('read_handoff', {
-  description: 'Return the most recent handoff record for a task (parsed JSON fields).',
+  description: 'Return the most recent handoff record for a task filtered by worker_type. Defaults to "build" when worker_type is omitted (backward compatible). Use worker_type="prep" to read prep handoffs.',
   inputSchema: {
     task_id: z.string().max(200).describe('Task ID to retrieve handoff for'),
+    worker_type: z.enum(['build', 'prep', 'implement', 'review', 'cleanup']).optional().describe('Worker type to filter by (default: "build")'),
   },
 }, (args) => handleReadHandoff(db, args));
 
@@ -258,7 +273,7 @@ server.registerTool('spawn_worker', {
   inputSchema: {
     session_id: z.string().describe('Session ID this worker belongs to'),
     task_id: z.string().optional().describe('Task ID this worker is executing'),
-    worker_type: z.enum(['build', 'review']).describe('Worker type'),
+    worker_type: z.enum(['build', 'prep', 'implement', 'review', 'cleanup']).describe('Worker type'),
     prompt: z.string().describe('Full prompt to send to the worker'),
     working_directory: z.string().describe('Project directory to run in'),
     label: z.string().describe('Label for the worker'),
