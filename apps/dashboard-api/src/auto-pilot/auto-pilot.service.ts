@@ -1,76 +1,112 @@
 /**
- * AutoPilotService — facade over the SupervisorService.
+ * AutoPilotService — thin facade over SessionManagerService.
  *
- * Translates REST API requests into supervisor operations. Keeps the
- * controller thin and the supervisor logic decoupled from HTTP concerns.
+ * Translates camelCase HTTP-layer DTOs into snake_case SupervisorConfig
+ * keys and delegates all operations to SessionManagerService.
  */
 import { Injectable, Logger } from '@nestjs/common';
-import { SupervisorService } from './supervisor.service';
+import { SessionManagerService } from './session-manager.service';
 import type {
-  StartAutoPilotRequest,
-  StartAutoPilotResponse,
-  StopAutoPilotResponse,
-  PauseAutoPilotResponse,
-  ResumeAutoPilotResponse,
-  AutoPilotStatusResponse,
+  CreateSessionRequest,
+  CreateSessionResponse,
+  UpdateSessionConfigRequest,
+  UpdateSessionConfigResponse,
+  SessionActionResponse,
+  ListSessionsResponse,
 } from './auto-pilot.model';
+import type {
+  SessionStatusResponse,
+  SupervisorConfig,
+  UpdateConfigRequest,
+} from './auto-pilot.types';
 
 @Injectable()
 export class AutoPilotService {
   private readonly logger = new Logger(AutoPilotService.name);
 
-  public constructor(private readonly supervisor: SupervisorService) {}
+  public constructor(private readonly sessionManager: SessionManagerService) {}
 
-  public start(request: StartAutoPilotRequest): StartAutoPilotResponse {
-    const sessionId = this.supervisor.start({
-      concurrency: request.concurrency,
-      limit: request.limit,
-      build_provider: request.buildProvider,
-      build_model: request.buildModel,
-      review_provider: request.reviewProvider,
-      review_model: request.reviewModel,
-      priority: request.priority,
-      retries: request.retries,
-    });
+  // ============================================================
+  // Session lifecycle
+  // ============================================================
+
+  public createSession(request: CreateSessionRequest): CreateSessionResponse {
+    const config: Partial<SupervisorConfig> = {};
+
+    if (request.concurrency !== undefined) config.concurrency = request.concurrency;
+    if (request.limit !== undefined) config.limit = request.limit;
+    if (request.buildProvider !== undefined) config.build_provider = request.buildProvider;
+    if (request.buildModel !== undefined) config.build_model = request.buildModel;
+    if (request.reviewProvider !== undefined) config.review_provider = request.reviewProvider;
+    if (request.reviewModel !== undefined) config.review_model = request.reviewModel;
+    if (request.priority !== undefined) config.priority = request.priority;
+    if (request.retries !== undefined) config.retries = request.retries;
+
+    const sessionId = this.sessionManager.createSession(config);
 
     return { sessionId, status: 'starting' };
   }
 
-  public stop(sessionId: string): StopAutoPilotResponse | null {
-    const currentSession = this.supervisor.getSessionId();
-    if (!currentSession || currentSession !== sessionId) {
-      return null;
-    }
-    this.supervisor.stop();
-    return { sessionId, stopped: true };
+  public stopSession(sessionId: string): SessionActionResponse | null {
+    const stopped = this.sessionManager.stopSession(sessionId);
+    if (!stopped) return null;
+
+    return { sessionId, action: 'stopped' };
   }
 
-  public pause(sessionId: string): PauseAutoPilotResponse | null {
-    const currentSession = this.supervisor.getSessionId();
-    if (!currentSession || currentSession !== sessionId) {
-      return null;
-    }
-    this.supervisor.pause();
-    return { sessionId, paused: true };
+  public pauseSession(sessionId: string): SessionActionResponse | null {
+    const paused = this.sessionManager.pauseSession(sessionId);
+    if (!paused) return null;
+
+    return { sessionId, action: 'paused' };
   }
 
-  public resume(sessionId: string): ResumeAutoPilotResponse | null {
-    const currentSession = this.supervisor.getSessionId();
-    if (!currentSession || currentSession !== sessionId) {
-      return null;
-    }
-    this.supervisor.resume();
-    return { sessionId, resumed: true };
+  public resumeSession(sessionId: string): SessionActionResponse | null {
+    const resumed = this.sessionManager.resumeSession(sessionId);
+    if (!resumed) return null;
+
+    return { sessionId, action: 'resumed' };
   }
 
-  public getStatus(sessionId?: string): AutoPilotStatusResponse | null {
-    const status = this.supervisor.getStatus();
-    if (!status) return null;
-    if (sessionId && status.sessionId !== sessionId) return null;
-    return status;
+  // ============================================================
+  // Config update
+  // ============================================================
+
+  public updateSessionConfig(
+    sessionId: string,
+    request: UpdateSessionConfigRequest,
+  ): UpdateSessionConfigResponse | null {
+    const patch: UpdateConfigRequest = {};
+
+    if (request.concurrency !== undefined) patch.concurrency = request.concurrency;
+    if (request.limit !== undefined) patch.limit = request.limit;
+    if (request.buildProvider !== undefined) patch.build_provider = request.buildProvider;
+    if (request.buildModel !== undefined) patch.build_model = request.buildModel;
+    if (request.reviewProvider !== undefined) patch.review_provider = request.reviewProvider;
+    if (request.reviewModel !== undefined) patch.review_model = request.reviewModel;
+    if (request.priority !== undefined) patch.priority = request.priority;
+    if (request.retries !== undefined) patch.retries = request.retries;
+    if (request.pollIntervalMs !== undefined) patch.poll_interval_ms = request.pollIntervalMs;
+
+    const updated = this.sessionManager.updateSessionConfig(sessionId, patch);
+    if (!updated) return null;
+
+    const runner = this.sessionManager.getRunner(sessionId);
+    if (!runner) return null;
+
+    return { sessionId, config: runner.getConfig() };
   }
 
-  public isRunning(): boolean {
-    return this.supervisor.isRunning();
+  // ============================================================
+  // Query
+  // ============================================================
+
+  public getSessionStatus(sessionId: string): SessionStatusResponse | null {
+    return this.sessionManager.getSessionStatus(sessionId);
+  }
+
+  public listSessions(): ListSessionsResponse {
+    const sessions = this.sessionManager.listSessions();
+    return { sessions };
   }
 }

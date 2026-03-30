@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AutoPilotController } from './auto-pilot.controller';
 import { AutoPilotService } from './auto-pilot.service';
-import { SupervisorService } from './supervisor.service';
+import { SessionManagerService } from './session-manager.service';
 import { SupervisorDbService } from './supervisor-db.service';
 import { WorkerManagerService } from './worker-manager.service';
 import { PromptBuilderService } from './prompt-builder.service';
@@ -10,11 +10,11 @@ import { PromptBuilderService } from './prompt-builder.service';
   controllers: [AutoPilotController],
   providers: [
     AutoPilotService,
-    SupervisorService,
+    SessionManagerService,
     SupervisorDbService,
     WorkerManagerService,
     PromptBuilderService,
   ],
-  exports: [AutoPilotService, SupervisorService],
+  exports: [AutoPilotService, SessionManagerService],
 })
 export class AutoPilotModule {}

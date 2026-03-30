@@ -1,11 +1,13 @@
 /**
- * AutoPilotController — REST endpoints for the persistent supervisor.
+ * AutoPilotController — REST endpoints for session-centric supervisor management.
  *
- * POST /api/auto-pilot/start   — Start a supervisor session
- * POST /api/auto-pilot/stop    — Stop the active session
- * POST /api/auto-pilot/pause   — Pause (workers keep running, no new spawns)
- * POST /api/auto-pilot/resume  — Resume a paused session
- * GET  /api/auto-pilot/status  — Get current session status
+ * POST   /api/sessions            — Create a new supervisor session
+ * GET    /api/sessions            — List all sessions
+ * GET    /api/sessions/:id        — Get session detail
+ * PATCH  /api/sessions/:id/config — Update session config
+ * POST   /api/sessions/:id/pause  — Pause session
+ * POST   /api/sessions/:id/resume — Resume session
+ * POST   /api/sessions/:id/stop   — Stop session
  */
 import {
   BadRequestException,
@@ -16,18 +18,20 @@ import {
   HttpStatus,
   NotFoundException,
   Param,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AutoPilotService } from './auto-pilot.service';
 import type {
-  StartAutoPilotRequest,
-  StartAutoPilotResponse,
-  StopAutoPilotResponse,
-  PauseAutoPilotResponse,
-  ResumeAutoPilotResponse,
-  AutoPilotStatusResponse,
+  CreateSessionRequest,
+  CreateSessionResponse,
+  UpdateSessionConfigRequest,
+  UpdateSessionConfigResponse,
+  SessionActionResponse,
+  ListSessionsResponse,
 } from './auto-pilot.model';
+import type { SessionStatusResponse } from './auto-pilot.types';
 
 const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/;
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
@@ -39,106 +43,148 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-@ApiTags('auto-pilot')
-@Controller('api/auto-pilot')
+@ApiTags('sessions')
+@Controller('api/sessions')
 export class AutoPilotController {
   public constructor(private readonly autoPilotService: AutoPilotService) {}
 
-  @Post('start')
-  @HttpCode(HttpStatus.OK)
+  // ============================================================
+  // Session lifecycle
+  // ============================================================
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Start a persistent supervisor session',
-    description: 'Starts the supervisor loop that spawns and monitors workers. Only one session can run at a time.',
+    summary: 'Create a new supervisor session',
+    description:
+      'Creates and starts a new supervisor session with the given config. Multiple sessions can run concurrently.',
   })
-  @ApiResponse({ status: 200, description: 'Supervisor session started' })
-  @ApiResponse({ status: 400, description: 'Invalid request or supervisor already running' })
-  public start(@Body() body: unknown): StartAutoPilotResponse {
+  @ApiResponse({ status: 201, description: 'Session created and starting' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  public createSession(@Body() body: unknown): CreateSessionResponse {
+    const request = this.parseCreateBody(body);
     try {
-      return this.autoPilotService.start(this.parseStartBody(body));
+      return this.autoPilotService.createSession(request);
     } catch (err) {
-      throw new BadRequestException(String(err instanceof Error ? err.message : err));
+      throw new BadRequestException(
+        String(err instanceof Error ? err.message : err),
+      );
     }
   }
 
-  @Post('stop')
+  @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Stop the active supervisor session' })
-  @ApiResponse({ status: 200, description: 'Supervisor session stopped' })
-  public stop(@Body() body: unknown): StopAutoPilotResponse {
-    const request = this.parseSessionBody(body);
-    const response = this.autoPilotService.stop(request.sessionId);
-    if (!response) {
-      throw new NotFoundException('No active session matches the given sessionId');
-    }
-    return response;
+  @ApiOperation({ summary: 'List all active sessions' })
+  @ApiResponse({ status: 200, description: 'List of active sessions' })
+  public listSessions(): ListSessionsResponse {
+    return this.autoPilotService.listSessions();
   }
 
-  @Post('pause')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Pause the supervisor (workers keep running, no new spawns)' })
-  @ApiResponse({ status: 200, description: 'Supervisor paused' })
-  public pause(@Body() body: unknown): PauseAutoPilotResponse {
-    const request = this.parseSessionBody(body);
-    const response = this.autoPilotService.pause(request.sessionId);
-    if (!response) {
-      throw new NotFoundException('No active session matches the given sessionId');
-    }
-    return response;
-  }
-
-  @Post('resume')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Resume a paused supervisor session' })
-  @ApiResponse({ status: 200, description: 'Supervisor resumed' })
-  public resume(@Body() body: unknown): ResumeAutoPilotResponse {
-    const request = this.parseSessionBody(body);
-    const response = this.autoPilotService.resume(request.sessionId);
-    if (!response) {
-      throw new NotFoundException('No paused session matches the given sessionId');
-    }
-    return response;
-  }
-
-  @Get('status')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get current supervisor session status' })
-  @ApiResponse({ status: 200, description: 'Current supervisor status' })
-  public getStatus(): AutoPilotStatusResponse {
-    const response = this.autoPilotService.getStatus();
-    if (!response) {
-      throw new NotFoundException('No active supervisor session');
-    }
-    return response;
-  }
-
-  @Get('status/:sessionId')
+  @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get status for a specific session' })
-  @ApiParam({ name: 'sessionId', description: 'Supervisor session id' })
+  @ApiParam({ name: 'id', description: 'Session ID (SESSION_YYYY-MM-DDTHH-MM-SS)' })
   @ApiResponse({ status: 200, description: 'Session status' })
-  public getSessionStatus(@Param('sessionId') sessionId: string): AutoPilotStatusResponse {
-    if (!SESSION_ID_RE.test(sessionId)) {
-      throw new BadRequestException('sessionId must match SESSION_YYYY-MM-DDTHH-MM-SS format');
-    }
-    const response = this.autoPilotService.getStatus(sessionId);
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  public getSession(@Param('id') id: string): SessionStatusResponse {
+    this.validateSessionId(id);
+    const response = this.autoPilotService.getSessionStatus(id);
     if (!response) {
-      throw new NotFoundException('Session not found or not active');
+      throw new NotFoundException(`Session ${id} not found`);
     }
     return response;
   }
 
-  @Get('running')
+  // ============================================================
+  // Session config
+  // ============================================================
+
+  @Patch(':id/config')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Check if the supervisor is running' })
-  public isRunning(): { running: boolean } {
-    return { running: this.autoPilotService.isRunning() };
+  @ApiOperation({ summary: 'Update session configuration' })
+  @ApiParam({ name: 'id', description: 'Session ID (SESSION_YYYY-MM-DDTHH-MM-SS)' })
+  @ApiResponse({ status: 200, description: 'Session config updated' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID or config' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  public updateConfig(
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ): UpdateSessionConfigResponse {
+    this.validateSessionId(id);
+    const request = this.parseUpdateConfigBody(body);
+    const response = this.autoPilotService.updateSessionConfig(id, request);
+    if (!response) {
+      throw new NotFoundException(`Session ${id} not found`);
+    }
+    return response;
   }
 
   // ============================================================
-  // Request parsing
+  // Session actions
   // ============================================================
 
-  private parseStartBody(body: unknown): StartAutoPilotRequest {
+  @Post(':id/pause')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Pause session (workers keep running, no new spawns)' })
+  @ApiParam({ name: 'id', description: 'Session ID (SESSION_YYYY-MM-DDTHH-MM-SS)' })
+  @ApiResponse({ status: 200, description: 'Session paused' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  public pauseSession(@Param('id') id: string): SessionActionResponse {
+    this.validateSessionId(id);
+    const response = this.autoPilotService.pauseSession(id);
+    if (!response) {
+      throw new NotFoundException(`Session ${id} not found`);
+    }
+    return response;
+  }
+
+  @Post(':id/resume')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resume a paused session' })
+  @ApiParam({ name: 'id', description: 'Session ID (SESSION_YYYY-MM-DDTHH-MM-SS)' })
+  @ApiResponse({ status: 200, description: 'Session resumed' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  public resumeSession(@Param('id') id: string): SessionActionResponse {
+    this.validateSessionId(id);
+    const response = this.autoPilotService.resumeSession(id);
+    if (!response) {
+      throw new NotFoundException(`Session ${id} not found`);
+    }
+    return response;
+  }
+
+  @Post(':id/stop')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Stop and destroy a session' })
+  @ApiParam({ name: 'id', description: 'Session ID (SESSION_YYYY-MM-DDTHH-MM-SS)' })
+  @ApiResponse({ status: 200, description: 'Session stopped' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  public stopSession(@Param('id') id: string): SessionActionResponse {
+    this.validateSessionId(id);
+    const response = this.autoPilotService.stopSession(id);
+    if (!response) {
+      throw new NotFoundException(`Session ${id} not found`);
+    }
+    return response;
+  }
+
+  // ============================================================
+  // Validation helpers
+  // ============================================================
+
+  private validateSessionId(id: string): void {
+    if (!SESSION_ID_RE.test(id)) {
+      throw new BadRequestException(
+        'Session ID must match SESSION_YYYY-MM-DDTHH-MM-SS format',
+      );
+    }
+  }
+
+  private parseCreateBody(body: unknown): CreateSessionRequest {
     if (body === undefined || body === null) return {};
     if (!isRecord(body)) {
       throw new BadRequestException('Request body must be a JSON object');
@@ -146,11 +192,14 @@ export class AutoPilotController {
 
     const result: Record<string, unknown> = {};
 
-    // taskIds
     if (body['taskIds'] !== undefined) {
       const taskIds = body['taskIds'];
-      if (!Array.isArray(taskIds)) throw new BadRequestException('taskIds must be an array');
-      if (taskIds.length > MAX_TASK_IDS) throw new BadRequestException(`taskIds max ${MAX_TASK_IDS}`);
+      if (!Array.isArray(taskIds)) {
+        throw new BadRequestException('taskIds must be an array');
+      }
+      if (taskIds.length > MAX_TASK_IDS) {
+        throw new BadRequestException(`taskIds max ${MAX_TASK_IDS}`);
+      }
       for (const id of taskIds) {
         if (typeof id !== 'string' || !TASK_ID_RE.test(id)) {
           throw new BadRequestException('Each taskId must match TASK_YYYY_NNN');
@@ -159,7 +208,6 @@ export class AutoPilotController {
       result['taskIds'] = taskIds;
     }
 
-    // concurrency
     if (body['concurrency'] !== undefined) {
       const c = body['concurrency'];
       if (typeof c !== 'number' || c < 1 || c > 10) {
@@ -168,7 +216,6 @@ export class AutoPilotController {
       result['concurrency'] = c;
     }
 
-    // limit
     if (body['limit'] !== undefined) {
       const l = body['limit'];
       if (typeof l !== 'number' || l < 1 || l > 100) {
@@ -177,17 +224,20 @@ export class AutoPilotController {
       result['limit'] = l;
     }
 
-    // providers
     for (const key of ['buildProvider', 'reviewProvider'] as const) {
       if (body[key] !== undefined) {
-        if (typeof body[key] !== 'string' || !VALID_PROVIDERS.has(body[key] as string)) {
-          throw new BadRequestException(`${key} must be one of: ${[...VALID_PROVIDERS].join(', ')}`);
+        if (
+          typeof body[key] !== 'string' ||
+          !VALID_PROVIDERS.has(body[key] as string)
+        ) {
+          throw new BadRequestException(
+            `${key} must be one of: ${[...VALID_PROVIDERS].join(', ')}`,
+          );
         }
         result[key] = body[key];
       }
     }
 
-    // models
     for (const key of ['buildModel', 'reviewModel'] as const) {
       if (body[key] !== undefined) {
         if (typeof body[key] !== 'string') {
@@ -197,15 +247,18 @@ export class AutoPilotController {
       }
     }
 
-    // priority
     if (body['priority'] !== undefined) {
-      if (typeof body['priority'] !== 'string' || !VALID_PRIORITIES.has(body['priority'] as string)) {
-        throw new BadRequestException(`priority must be one of: ${[...VALID_PRIORITIES].join(', ')}`);
+      if (
+        typeof body['priority'] !== 'string' ||
+        !VALID_PRIORITIES.has(body['priority'] as string)
+      ) {
+        throw new BadRequestException(
+          `priority must be one of: ${[...VALID_PRIORITIES].join(', ')}`,
+        );
       }
       result['priority'] = body['priority'];
     }
 
-    // retries
     if (body['retries'] !== undefined) {
       const r = body['retries'];
       if (typeof r !== 'number' || r < 0 || r > 5) {
@@ -214,17 +267,83 @@ export class AutoPilotController {
       result['retries'] = r;
     }
 
-    return result as StartAutoPilotRequest;
+    return result as CreateSessionRequest;
   }
 
-  private parseSessionBody(body: unknown): { sessionId: string } {
+  private parseUpdateConfigBody(body: unknown): UpdateSessionConfigRequest {
     if (!isRecord(body)) {
       throw new BadRequestException('Request body must be a JSON object');
     }
-    const sessionId = body['sessionId'];
-    if (typeof sessionId !== 'string' || !SESSION_ID_RE.test(sessionId)) {
-      throw new BadRequestException('sessionId must match SESSION_YYYY-MM-DDTHH-MM-SS format');
+
+    const result: Record<string, unknown> = {};
+
+    if (body['concurrency'] !== undefined) {
+      const c = body['concurrency'];
+      if (typeof c !== 'number' || c < 1 || c > 10) {
+        throw new BadRequestException('concurrency must be 1-10');
+      }
+      result['concurrency'] = c;
     }
-    return { sessionId };
+
+    if (body['limit'] !== undefined) {
+      const l = body['limit'];
+      if (typeof l !== 'number' || l < 1 || l > 100) {
+        throw new BadRequestException('limit must be 1-100');
+      }
+      result['limit'] = l;
+    }
+
+    for (const key of ['buildProvider', 'reviewProvider'] as const) {
+      if (body[key] !== undefined) {
+        if (
+          typeof body[key] !== 'string' ||
+          !VALID_PROVIDERS.has(body[key] as string)
+        ) {
+          throw new BadRequestException(
+            `${key} must be one of: ${[...VALID_PROVIDERS].join(', ')}`,
+          );
+        }
+        result[key] = body[key];
+      }
+    }
+
+    for (const key of ['buildModel', 'reviewModel'] as const) {
+      if (body[key] !== undefined) {
+        if (typeof body[key] !== 'string') {
+          throw new BadRequestException(`${key} must be a string`);
+        }
+        result[key] = body[key];
+      }
+    }
+
+    if (body['priority'] !== undefined) {
+      if (
+        typeof body['priority'] !== 'string' ||
+        !VALID_PRIORITIES.has(body['priority'] as string)
+      ) {
+        throw new BadRequestException(
+          `priority must be one of: ${[...VALID_PRIORITIES].join(', ')}`,
+        );
+      }
+      result['priority'] = body['priority'];
+    }
+
+    if (body['retries'] !== undefined) {
+      const r = body['retries'];
+      if (typeof r !== 'number' || r < 0 || r > 5) {
+        throw new BadRequestException('retries must be 0-5');
+      }
+      result['retries'] = r;
+    }
+
+    if (body['pollIntervalMs'] !== undefined) {
+      const p = body['pollIntervalMs'];
+      if (typeof p !== 'number' || p < 5000 || p > 300000) {
+        throw new BadRequestException('pollIntervalMs must be 5000-300000');
+      }
+      result['pollIntervalMs'] = p;
+    }
+
+    return result as UpdateSessionConfigRequest;
   }
 }

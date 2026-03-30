@@ -102,6 +102,18 @@ export interface StartRequest {
   retries?: number;
 }
 
+export type UpdateConfigRequest = Partial<Pick<SupervisorConfig,
+  | 'concurrency'
+  | 'limit'
+  | 'build_provider'
+  | 'build_model'
+  | 'review_provider'
+  | 'review_model'
+  | 'priority'
+  | 'retries'
+  | 'poll_interval_ms'
+>>;
+
 export interface SessionStatusResponse {
   sessionId: string;
   loopStatus: LoopStatus;

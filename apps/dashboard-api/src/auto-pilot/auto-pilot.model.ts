@@ -1,14 +1,21 @@
 /**
- * API request/response DTOs for the auto-pilot endpoints.
+ * API request/response DTOs for the session-centric auto-pilot endpoints.
+ *
+ * Uses camelCase field names for the HTTP API layer. The facade
+ * (auto-pilot.service.ts) maps these to snake_case SupervisorConfig keys.
  */
-import type { LoopStatus, PriorityStrategy, ProviderType, SupervisorConfig } from './auto-pilot.types';
+import type {
+  PriorityStrategy,
+  ProviderType,
+  SupervisorConfig,
+  SessionStatusResponse,
+} from './auto-pilot.types';
 
 // ============================================================
-// Start
+// Create Session
 // ============================================================
 
-export interface StartAutoPilotRequest {
-  readonly taskIds?: ReadonlyArray<string>;
+export interface CreateSessionRequest {
   readonly concurrency?: number;
   readonly limit?: number;
   readonly buildProvider?: ProviderType;
@@ -19,62 +26,45 @@ export interface StartAutoPilotRequest {
   readonly retries?: number;
 }
 
-export interface StartAutoPilotResponse {
+export interface CreateSessionResponse {
   readonly sessionId: string;
   readonly status: 'starting';
 }
 
 // ============================================================
-// Stop / Pause
+// Update Session Config
 // ============================================================
 
-export interface StopAutoPilotRequest {
-  readonly sessionId: string;
+export interface UpdateSessionConfigRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly buildProvider?: ProviderType;
+  readonly buildModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
+  readonly pollIntervalMs?: number;
 }
 
-export interface StopAutoPilotResponse {
+export interface UpdateSessionConfigResponse {
   readonly sessionId: string;
-  readonly stopped: true;
-}
-
-export interface PauseAutoPilotRequest {
-  readonly sessionId: string;
-}
-
-export interface PauseAutoPilotResponse {
-  readonly sessionId: string;
-  readonly paused: true;
-}
-
-export interface ResumeAutoPilotRequest {
-  readonly sessionId: string;
-}
-
-export interface ResumeAutoPilotResponse {
-  readonly sessionId: string;
-  readonly resumed: true;
-}
-
-// ============================================================
-// Status
-// ============================================================
-
-export interface AutoPilotStatusResponse {
-  readonly sessionId: string;
-  readonly loopStatus: LoopStatus;
   readonly config: SupervisorConfig;
-  readonly workers: {
-    readonly active: number;
-    readonly completed: number;
-    readonly failed: number;
-  };
-  readonly tasks: {
-    readonly completed: number;
-    readonly failed: number;
-    readonly inProgress: number;
-    readonly remaining: number;
-  };
-  readonly startedAt: string;
-  readonly uptimeMinutes: number;
-  readonly lastHeartbeat: string;
+}
+
+// ============================================================
+// Session Actions (Stop / Pause / Resume)
+// ============================================================
+
+export interface SessionActionResponse {
+  readonly sessionId: string;
+  readonly action: 'stopped' | 'paused' | 'resumed';
+}
+
+// ============================================================
+// List Sessions
+// ============================================================
+
+export interface ListSessionsResponse {
+  readonly sessions: ReadonlyArray<SessionStatusResponse>;
 }
