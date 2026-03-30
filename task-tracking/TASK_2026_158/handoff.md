@@ -1,23 +1,40 @@
 # Handoff — TASK_2026_158
 
-## Files Changed
-- apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.ts (modified, 144 lines)
-- apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.html (modified, 91 lines)
-- apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.scss (modified, 259 lines)
-- apps/dashboard/src/app/services/api.service.ts (modified, +7 -0)
-- apps/dashboard-api/src/dashboard/dashboard.controller.ts (verified, no changes needed — endpoint already existed)
+## Summary
 
-## Commits
-- (pending commit)
+Session monitoring layer connecting the project page to the session viewer. All deliverables were implemented as part of dependent tasks (TASK_2026_155, 156, 157) and verified during this build cycle.
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.ts` | 144 lines — panel logic, API call, WebSocket, mock fallback |
+| `apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.html` | 91 lines — card template with active + recent sections |
+| `apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.scss` | 259 lines — CSS var-based styles, phase/status colors |
+| `apps/dashboard/src/app/models/sessions-panel.model.ts` | 13 lines — SessionStatus, SessionPhase, ActiveSessionSummary |
+| `apps/dashboard/src/app/services/api.service.ts` | +7 — `getActiveSessionsEnhanced()` method |
+| `apps/dashboard/src/app/views/project/project.component.ts` | Modified — imports SessionsPanelComponent |
+| `apps/dashboard/src/app/views/project/project.component.html` | Modified — embeds `<app-sessions-panel>` in sidebar |
+| `apps/dashboard-api/src/dashboard/sessions.service.ts` | 183 lines — session store, enhanced data |
+| `apps/dashboard-api/src/dashboard/dashboard.controller.ts` | Session endpoints at `/api/v1/sessions/*` |
+| `apps/dashboard-api/src/dashboard/dashboard.gateway.ts` | WebSocket `sessions:changed` broadcast |
 
 ## Decisions
-- Used `computed()` signal for `truncatedActivities` instead of a method call in the template, following the Angular performance lesson about template expressions not calling methods.
-- Used `takeUntilDestroyed(DestroyRef)` instead of manual `Subject`/`takeUntil` pattern for simpler cleanup.
-- Kept mock data as fallback when the API returns empty — allows development without a running backend.
-- WebSocket now handles both `sessions:changed` and `session:update` events, triggering a full reload instead of in-place patching. This is simpler and avoids stale closure issues with partial updates.
-- Replaced `span` with `div` for session-status badges in the template to fix Angular NgClass binding (span was being overwritten by [ngClass] per template binding lesson).
+
+1. **`computed()` for truncated activities** — avoids template method calls per Angular performance lesson.
+2. **`takeUntilDestroyed(DestroyRef)`** — simpler cleanup than manual Subject/takeUntil pattern.
+3. **Mock data fallback** — allows development without running backend.
+4. **Full reload on WebSocket events** — handles both `sessions:changed` and `session:update`; avoids stale closure issues with partial patching.
+5. **Sessions co-located in DashboardModule** — consistent with existing NestJS structure rather than separate `sessions/` module.
 
 ## Known Risks
-- The enhanced sessions endpoint returns randomized phase/status data from the backend (see `getActiveSessionsEnhanced()` in `sessions.service.ts`). Once real session data is available, the backend needs to derive phase and status from actual session state instead of random selection.
-- The `loadSessions()` method is called on every WebSocket event. If sessions update frequently, this creates many HTTP requests. A debounce or throttle could be added if needed.
-- The `startedAt.slice(11, 16)` in the template assumes ISO format — if the backend returns a different format, the time display will be wrong.
+
+- **Randomized backend data**: `getActiveSessionsEnhanced()` returns random phase/status. Needs real session state derivation once available.
+- **No scroll position preservation**: Navigating to session viewer destroys project component. Would need router state service.
+- **Frequent HTTP reloads**: `loadSessions()` fires on every WebSocket event. Debounce recommended if updates are high-frequency.
+- **Pre-existing build error**: `settings.component.ts` type error blocks full `nx build dashboard` (unrelated to this task).
+
+## Testing
+
+- `npx tsc --noEmit` in `apps/dashboard-api` — 0 errors
+- All TASK_2026_158 files compile without errors

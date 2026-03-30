@@ -130,18 +130,7 @@ Write to `task-tracking/retrospectives/RETRO_{YYYY-MM-DD}.md` (create the `retro
 |-------|------|-----------|-------------------|
 ```
 
-#### 5b. Commit Retrospective Artifacts
-
-After writing the retrospective file, commit:
-
-```bash
-git add task-tracking/retrospectives/RETRO_[DATE].md
-# If review-lessons or anti-patterns were modified in this run:
-git add .claude/review-lessons/ .claude/anti-patterns.md
-git commit -m "docs(retro): add RETRO_[DATE] retrospective"
-```
-
-#### 5c. Auto-Apply Safe Updates
+#### 5b. Auto-Apply Safe Updates
 
 Only apply entries that pass Step 4 (no conflicts, not duplicates) and are within the volume cap:
 
@@ -149,6 +138,18 @@ Only apply entries that pass Step 4 (no conflicts, not duplicates) and are withi
 - Patterns that have a matching violated lesson in 3+ tasks → promote to `.claude/anti-patterns.md` as a new entry, tagged `[RETRO_{YYYY-MM-DD}]`.
 
 **Idempotency rule**: Before writing any entry, search the target file for an existing `[RETRO_{YYYY-MM-DD}_{SCOPE}]` tag where `{SCOPE}` is `all`, `session`, or `since-{date}` matching the current run's scope. If found, skip all writes — this retrospective scope has already been applied.
+
+#### 5c. Commit Retrospective Artifacts
+
+After writing the retrospective report (5a) and applying all safe updates (5b), commit everything together:
+
+```bash
+git add task-tracking/retrospectives/RETRO_[DATE].md
+git add .claude/review-lessons/ .claude/anti-patterns.md
+git commit -m "docs(retro): add RETRO_[DATE] retrospective"
+```
+
+> Always stage `review-lessons/` and `anti-patterns.md` unconditionally — git will silently skip files with no changes, so this is safe even when no lessons were auto-applied.
 
 #### 5d. Present to User
 
