@@ -91,15 +91,18 @@ If COMPLETE, warn and confirm. If BLOCKED or CANCELLED, error.
 
 **4a. Preparation**
 
-1. Read `task-tracking/registry.md` (or reuse if already read from Step 3a).
+1. **Parallel initial reads**: In a single round, read ALL of the following simultaneously:
+   - `task-tracking/registry.md` (or reuse if already read from Step 3)
+   - `task-tracking/active-sessions.md` (for stale session cleanup and Concurrent Session Guard — reuse in session startup Step 5)
+   - `task-tracking/sizing-rules.md` (for Validation D — if missing, use inline fallbacks)
+   All three reads are independent and MUST be issued in parallel.
 2. Determine scope based on invocation mode:
    - **Single-task mode** (`/nitro-auto-pilot TASK_YYYY_NNN`): scope = the specified task ID plus its transitive dependencies only. Warnings for out-of-scope tasks are still printed to the user but do NOT trigger an abort.
    - **All-tasks or dry-run mode**: scope = all CREATED and IMPLEMENTED tasks.
 3. **Do NOT read task.md files here.** Pre-flight validation runs against the registry only. Full task.md reads happen JIT at spawn time.
-4. Read `task-tracking/sizing-rules.md` for sizing limits.
-   - If the file does not exist, use the inline fallback limits in Validation D below.
+4. Use `sizing-rules.md` (already read in step 1). If it was not found, use the inline fallback limits in Validation D below.
 5. Initialize two collections: `blocking_issues = []`, `warnings = []`.
-6. **Initialize session directory**: Capture the startup timestamp once, then call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Create `{SESSION_DIR}state.md` with a `Loop Status: PENDING` header. Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command.
+6. **Initialize session directory**: Capture the startup timestamp once, then call `create_session(source='auto-pilot', task_count=N, config=JSON)` and use the returned DB `SESSION_ID` as the canonical ID for the rest of the run. Create directory `task-tracking/sessions/{SESSION_ID}/`. Register that same `SESSION_ID` in `task-tracking/active-sessions.md`. Create `{SESSION_DIR}state.md` with a `Loop Status: PENDING` header — do NOT set to RUNNING until the first worker is successfully spawned (Step 5 of the Core Loop). Create `{SESSION_DIR}log.md` with the unified log header if it does not exist. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all subsequent log writes in this command. Do not generate a second local timestamp-based session ID.
 7. **Dry-run shortcut**: If `--dry-run` is active, run all validations (4b through 4f) and print the Pre-Flight Report (4g), but do NOT write to `{SESSION_DIR}`. Then skip to Step 6 (dry-run handler).
 
 **4b. Validation A: Task Completeness — Registry-Only (Warning)**

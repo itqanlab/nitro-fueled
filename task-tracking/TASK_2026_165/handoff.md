@@ -3,7 +3,7 @@
 ## Files Changed
 - `.claude/skills/auto-pilot/references/session-lifecycle.md` (modified — DB `create_session()` is now the canonical supervisor session source)
 - `.claude/skills/auto-pilot/references/parallel-mode.md` (modified — concurrency slots now count only this session's active workers)
-- `.claude/skills/auto-pilot/references/pause-continue.md` (modified — resume scanning now targets DB-backed auto-pilot session IDs)
+- `.claude/skills/auto-pilot/SKILL.md` (modified — clarifies DB-backed session identity as the canonical supervisor session source)
 - `.claude/commands/nitro-auto-pilot.md` (modified — command docs now use DB-backed supervisor session IDs and startup registration)
 - `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` (modified — scaffold mirror updated for DB-backed session IDs)
 - `apps/cli/scaffold/.claude/skills/auto-pilot/references/parallel-mode.md` (modified — scaffold mirror updated for per-session worker counting)
@@ -13,6 +13,7 @@
 - `task-tracking/TASK_2026_165/tasks.md` (new)
 - `task-tracking/TASK_2026_165/task.md` (modified — file scope populated)
 - `task-tracking/TASK_2026_165/handoff.md` (new)
+- `task-tracking/TASK_2026_165/session-analytics.md` (modified — updated for the follow-up implementation pass)
 
 ## Commits
 - Pending in this implementation commit: the handoff is committed together with the spec changes for TASK_2026_165.

@@ -23,6 +23,8 @@ The supervisor startup follows this exact order:
 6. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
 7. **Enter Core Loop**
 
+Every per-session artifact and MCP call must reuse that exact DB `session_id`. Do not create a separate timestamp-based fallback ID and do not rename session directories after startup.
+
 ### Files inside the session directory
 
 | File | Written by | Purpose |
@@ -53,6 +55,8 @@ The supervisor startup follows this exact order:
 7. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
 8. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
    subsequent state and log writes.
+
+The `active-sessions.md` row, session directory name, and any later `list_workers(session_id=...)` calls must all use the same `SESSION_ID` value returned by `create_session()`.
 
 > **When `cortex_available = true`**: After Session Directory creation and before entering the Core Loop, call:
 > 1. `sync_tasks_from_files()` — full task metadata import (bootstrap; safe to re-run)

@@ -68,7 +68,7 @@ Additionally, the concurrency slot calculation uses ALL active workers globally 
 
 - `.claude/skills/auto-pilot/references/parallel-mode.md` (modified — count active workers per session and document `claim_task(task_id, SESSION_ID)` as the cross-session guard)
 - `.claude/skills/auto-pilot/references/session-lifecycle.md` (modified — require `create_session()` before disk session artifacts and use DB-issued supervisor session IDs)
-- `.claude/skills/auto-pilot/references/pause-continue.md` (modified — resume logic now refers to DB-backed supervisor session IDs)
+- `.claude/skills/auto-pilot/SKILL.md` (modified — reinforce DB-backed session identity as the canonical source for multi-session supervision)
 - `.claude/commands/nitro-auto-pilot.md` (modified — use DB-backed supervisor session ID format and create the DB session during initialization)
 - `apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md` (modified — mirror DB session registration and DB-issued session ID usage)
 - `apps/cli/scaffold/.claude/skills/auto-pilot/references/parallel-mode.md` (modified — mirror per-session slot calculation and claim-task dedupe guidance)

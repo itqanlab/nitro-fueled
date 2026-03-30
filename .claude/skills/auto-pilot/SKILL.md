@@ -78,6 +78,8 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 7. **Persist session state in the DB** for compaction survival
 8. **Loop** until the backlog is drained, all remaining tasks are blocked, or `--limit` is reached
 
+Session registration and worker-slot accounting are multi-session safe only when every session uses the DB `session_id` returned by `create_session()` as its canonical identifier.
+
 ### What You Never Do
 
 - Write code, implement tasks, verify code quality, or handle task artifacts — workers do all of that
@@ -124,6 +126,7 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 - **Registry** (`registry.md`) is a generated artifact — the Supervisor does NOT read it inside the DB-backed loop.
 - **Session log** (`{SESSION_DIR}log.md`) is an optional rendered artifact from DB events. The loop itself uses MCP logging when available.
 - **State** (`{SESSION_DIR}state.md`) is an optional debug snapshot written outside the monitoring loop. Compaction recovery comes from DB re-query, not from `state.md`.
+- **Session identity** comes from `create_session()`. Use the returned DB session ID for `SESSION_DIR`, `state.md`, `log.md`, `active-sessions.md`, and all per-session MCP calls.
 
 ---
 

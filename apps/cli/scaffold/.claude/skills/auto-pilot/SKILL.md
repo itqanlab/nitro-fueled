@@ -180,14 +180,26 @@ Detection runs at **Step 2** — see Step 2 for the `get_tasks()` soft-check and
 `cortex_available` flag logic. Calling `get_tasks()` is the authoritative detection
 method because it tests actual functionality, not just tool list presence.
 
-This is a **soft check** — the supervisor proceeds either way. `cortex_available` is a
-session flag that controls which code path is used in Steps 2-7. It is NOT re-checked
-per loop iteration.
+**Default behavior** (allowFileFallback not set, or set to false):
+If `get_tasks()` fails, **STOP IMMEDIATELY** and display:
+`"FATAL: nitro-cortex DB unavailable. The Supervisor requires nitro-cortex to be operational. Set \"allowFileFallback\": true in .nitro-fueled/config.json to enable degraded file-based mode, then restart."`
+
+**With `"allowFileFallback": true`** (opt-in degraded mode, set in `.nitro-fueled/config.json`):
+If `get_tasks()` fails, set `cortex_available = false` and proceed with file-based fallback
+paths documented in `references/parallel-mode.md`. This degrades task coordination
+but allows the Supervisor to run without the cortex DB.
+
+`cortex_available` is a session flag — it is NOT re-checked per loop iteration.
 
 > **Bootstrap note**: On first run against a new project, call `sync_tasks_from_files()`
 > once to import existing task-tracking files into the nitro-cortex DB before calling
 > `get_tasks()`. This only needs to run once (safe to re-run — upsert). After the initial
 > sync, all subsequent state changes go through the MCP tools and the DB stays current.
+>
+> **Startup reconciliation**: On every startup when `cortex_available = true`, also call
+> `reconcile_status_files()` immediately after `sync_tasks_from_files()`. This fixes any
+> status drift from the previous session (file wins). This is best-effort — if it fails
+> or the tool is unavailable, log a warning and proceed. Do not abort startup.
 
 ---
 
@@ -213,6 +225,8 @@ The supervisor startup follows this exact order:
 5. **Session Directory creation** — create `task-tracking/sessions/{session_id}/`, create log.md, register in active-sessions.md
 6. **Log stale archive results** — after Session Directory is created, append stale archive check log entries
 7. **Enter Core Loop**
+
+Every per-session artifact and MCP call must reuse that exact DB `session_id`. Do not create a separate timestamp-based fallback ID and do not rename session directories after startup.
 
 ### Files inside the session directory
 
@@ -243,7 +257,17 @@ The supervisor startup follows this exact order:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STARTED — {N} tasks, {N} unblocked, concurrency {N} |`
 7. Register in `task-tracking/active-sessions.md` (append row — see ## Active Sessions File section below).
 8. Store `SESSION_DIR = task-tracking/sessions/{SESSION_ID}/` as the working path for all
-    subsequent state and log writes.
+     subsequent state and log writes.
+
+The `active-sessions.md` row, session directory name, and any later `list_workers(session_id=...)` calls must all use the same `SESSION_ID` value returned by `create_session()`.
+
+> **When `cortex_available = true`**: After Session Directory creation and before entering the Core Loop, call:
+> 1. `sync_tasks_from_files()` — full task metadata import (bootstrap; safe to re-run)
+> 2. `reconcile_status_files()` — status-only drift fix (runs every startup; file wins)
+>
+> Both calls are best-effort. On failure: log a warning and continue. Do not abort.
+>
+> On this path, steady-state loop persistence lives in the DB via `update_session()`. `state.md` is not rewritten during monitoring.
 
 **On stop** (normal completion, compaction limit, MCP unreachable, manual):
 
@@ -251,7 +275,8 @@ The supervisor startup follows this exact order:
 2. Append final log entry to `{SESSION_DIR}log.md`:
    `| {HH:MM:SS} | auto-pilot | SUPERVISOR STOPPED — {completed} completed, {failed} failed, {blocked} blocked |`
 3. Remove this session's row from `task-tracking/active-sessions.md`.
-4. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (optional staging/cleanup bookkeeping only — never auto-commit).
+4. **Render log.md from events (when cortex available)**: When `cortex_available = true`, at session end, call `query_events(session_id=SESSION_ID)` and render the results as a pipe-table to `{SESSION_DIR}log.md`. This ensures log.md is a complete DB-derived artifact. If `query_events` fails, keep any existing file as-is or skip writing it. This is best-effort.
+5. Proceed to Step 8b (append to `orchestrator-history.md`), then Step 8c (generate analytics.md), then Step 8d (optional staging/cleanup bookkeeping only — never auto-commit).
 
 ---
 
@@ -286,9 +311,9 @@ Auto-pilot row:
 Orchestration skill row:
 `| {SESSION_ID} | orchestrate | {HH:MM} | 1 | task-tracking/sessions/{SESSION_ID}/ |`
 
-> The `Started` column uses `HH:MM` (display-only; the authoritative timestamp is the SESSION_ID itself). Full datetime with timezone offset is not required here.
+> The `Started` column uses `HH:MM` (display-only; the authoritative timestamp is the SESSION_ID itself).
 
-The `Tasks` column is static (set at startup, not updated as tasks complete). It represents the initial task count for the session, not live progress.
+The `Tasks` column is static (set at startup, not updated as tasks complete).
 
 ---
 
@@ -303,11 +328,11 @@ Runs at supervisor startup **after MCP validation and Concurrent Session Guard, 
    - Lines starting with `?? task-tracking/sessions/{SESSION_ID}/` (untracked directory): record SESSION_ID from the path.
    - Lines starting with `M `, ` M`, or `??` for a specific file path: record the file and its parent SESSION_ID (if under sessions/).
    - Lines for `task-tracking/orchestrator-history.md`: record for separate handling in step 7.
-3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}` — discard any that do not match.
+3. Filter: skip any line whose path includes `state.md` or `active-sessions.md` — these are runtime files and must never be committed. Validate extracted SESSION_IDs against pattern `SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}` for auto-pilot sessions and `SESSION_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}` for orchestration worker sessions — discard any that do not match either form.
 4. Read `task-tracking/active-sessions.md` (if missing, treat as empty — all sessions are ended).
 5. For each uncommitted file under `task-tracking/sessions/{SESSION_ID}/`:
     - Check active-sessions.md for the session row.
-    - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'all')` and check if any worker belongs to this session). If MCP confirms workers exist for this session → skip (live session). If MCP shows no workers but the row exists → it is a crashed supervisor; treat as ended (stage its artifacts).
+    - If the row has **Source `auto-pilot`**: additionally verify the session is still reachable via MCP `list_workers` (call `list_workers(status_filter: 'running', compact: true)` and check if any worker belongs to this session). If MCP confirms running workers exist for this session → skip (live session). If MCP shows no running workers but the row exists → it is a crashed supervisor; treat as ended (stage its artifacts).
     - If the row has **Source `orchestrate`** (Build/Review Worker): these rows are always stale (workers can be killed at any time per the design). Stage their artifacts.
     - If the session has **no row** in active-sessions.md → treat as ended. Stage its artifacts.
     > **Fallback when MCP is unavailable**: If `list_workers` fails, do NOT stage `auto-pilot` source sessions (too risky). Log: `STALE ARCHIVE WARNING — MCP unavailable, skipping live-session verification for {SESSION_ID}`. Still stage `orchestrate`-source sessions (always safe).
@@ -324,8 +349,12 @@ Runs at supervisor startup **after MCP validation and Concurrent Session Guard, 
     ```
     Print: `STALE ARCHIVE — staged stale orchestrator-history.md (awaiting user commit)`
 8. If no stale artifacts found: Print `STALE ARCHIVE — no stale session artifacts found`
-9. **Do NOT run `git commit`**. The stale archive check stages files only; any commit requires explicit user instruction.
-10. All git operations here are **best-effort**: if staging fails (nothing to stage, lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
+9. **Do NOT run `git commit`**. The stale archive check stages files only. The actual commit happens later:
+   - If `stale_staged[]` is non-empty, the Pre-Flight Report (Step 4g) displays:
+     `"Stale session artifacts staged: {list of SESSION_IDs}. These will be committed when you next run /commit or git commit."`
+   - The supervisor proceeds regardless — staged files do not block startup.
+   - **Rationale**: Git commits require explicit user instruction. The supervisor must not commit autonomously.
+10. All git staging operations here are **best-effort**: if staging fails (lock, permissions), print a warning and continue. A failure here must NEVER prevent the supervisor from starting.
 
 ### Session Log Entries
 
