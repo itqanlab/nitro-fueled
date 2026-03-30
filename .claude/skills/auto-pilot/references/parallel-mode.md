@@ -884,12 +884,14 @@ If the registry shows a state that does not match the expected transition for th
 **7d. IF state transitioned to expected end state (validated):**
 
 - If new state is **IMPLEMENTED** (Build Worker succeeded):
+  - Output: `COMPLETE task=<task_id> → IMPLEMENTED`
   - Log: `"BUILD DONE — TASK_X: IMPLEMENTED, queuing Review Worker"`
   - Move worker from active to completed list in state
   - Task will be picked up as READY_FOR_REVIEW on next loop iteration (Step 3)
   - **With cortex_available = true**: call `release_task(task_id, "IMPLEMENTED")` to release the claim and update DB status atomically. If `release_task` fails: log `"RELEASE FAILED — TASK_X: {error}"` and continue. The status file is the authoritative state — a DB sync failure is non-fatal.
 
 - If new state is **COMPLETE** (FixWorker or CompletionWorker succeeded):
+  - Output: `COMPLETE task=<task_id> → COMPLETE`
   - Remove worker from active workers in state.
   - Append a row to `## Completed Tasks This Session` in `{SESSION_DIR}state.md`:
     `| {task_id} | COMPLETE | {worker_type} | {YYYY-MM-DD HH:MM:SS +ZZZZ} |`
@@ -897,6 +899,7 @@ If the registry shows a state that does not match the expected transition for th
   - **With cortex_available = true**: call `release_task(task_id, "COMPLETE")` to release the claim and update DB status atomically. If `release_task` fails: log `"RELEASE FAILED — TASK_X: {error}"` and continue. The status file is the authoritative state — a DB sync failure is non-fatal.
 
 - If worker_type is **ReviewFix** and state is **COMPLETE**:
+  - Output: `COMPLETE task=<task_id> → COMPLETE`
   - Remove worker from active workers.
   - Append to `## Completed Tasks This Session`: `| {task_id} | COMPLETE | ReviewFix | {timestamp} |`
   - Log: `"REVIEWFIX DONE — TASK_X: COMPLETE"`

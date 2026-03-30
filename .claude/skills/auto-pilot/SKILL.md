@@ -34,23 +34,21 @@ description: >
 4. **Use MCP for provider info** — `get_available_providers()` and `get_provider_stats()` replace all config file reads.
 5. **Spawn → sleep atomic sequence** — after the last `spawn_worker` in a wave, call `Bash: sleep 30` as the immediate next tool call. This is how you enter the monitoring loop. No text output between spawn and sleep.
 
----
+### Per-Phase Output Budget
 
----
-
-## Per-Phase Output Budget
-
-**HARD RULE**: All structured data (tables, wave headers, queue summaries, routing plans, analysis, notes) goes to `log.md` and `state.md` ONLY. The conversation receives exactly ONE line per event — nothing more.
+**Re-read this section after every compaction.** All structured data (tables, wave headers, queue summaries, routing plans, analysis, notes) goes to `log.md` and `state.md` ONLY. The conversation receives exactly ONE line per event — nothing more.
 
 | Phase | Conversation Output (EXACTLY this — nothing else) |
 |-------|---------------------------------------------------|
 | **Spawn** | `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` — one line per worker |
-| **Heartbeat** | `[HH:MM] monitoring — <N> active, <N> complete, <N> failed` |
-| **Completion** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
-| **Session end** | `SESSION COMPLETE — <N> complete, <N> failed, <N> blocked` |
+| **Heartbeat** | `[HH:MM] monitoring — {N} active, {N} complete, {N} failed` |
+| **Completion (Build Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
+| **Completion (Review+Fix Worker)** | `COMPLETE task=<task_id> → COMPLETE` (or `FAILED` / `BLOCKED`) |
+| **Session end** | `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` |
 | **All structured data** | Tables, queues, state snapshots, notes, analysis — `log.md` and `state.md` ONLY. **Never printed to conversation.** |
 | **Explanatory text** | Any sentence explaining what the supervisor is about to do, what it decided, or how monitoring works — **banned from conversation**. Decisions go to `log.md`. |
 
+---
 
 Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
 
@@ -301,3 +299,4 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
 11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
 12. **Review Workers take priority** -- finishing tasks is more valuable than starting new ones
+13. **One line per event** — all structured output (tables, queues, wave summaries) goes to `log.md` and `state.md`; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
