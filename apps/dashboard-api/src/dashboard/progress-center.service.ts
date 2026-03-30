@@ -69,7 +69,7 @@ export class ProgressCenterService {
     events: ReadonlyArray<CortexEvent>,
   ): ProgressCenterSession {
     const sessionWorkers = workers.filter((worker) => worker.session_id === session.id);
-    const sessionTaskIds = this.collectSessionTaskIds(session.id, sessionWorkers, events);
+    const sessionTaskIds = collectSessionTaskIds(session.id, sessionWorkers, events);
     const taskSnapshots = sessionTaskIds
       .map((taskId) => this.buildTaskSnapshot(taskId, sessionWorkers, taskMap.get(taskId), phaseAverages))
       .filter((task): task is ProgressCenterTask => task !== null)
@@ -125,21 +125,6 @@ export class ProgressCenterService {
       updatedAt: trace.events[trace.events.length - 1]?.created_at ?? null,
       phases,
     };
-  }
-
-  private collectSessionTaskIds(
-    sessionId: string,
-    workers: ReadonlyArray<CortexWorker>,
-    events: ReadonlyArray<CortexEvent>,
-  ): readonly string[] {
-    const ids = new Set<string>();
-    for (const worker of workers) {
-      if (worker.task_id !== '') ids.add(worker.task_id);
-    }
-    for (const event of events) {
-      if (event.session_id === sessionId && event.task_id) ids.add(event.task_id);
-    }
-    return [...ids];
   }
 
   private buildHealth(
