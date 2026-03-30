@@ -41,7 +41,13 @@ Research questions:
 
 ## File Scope
 
-- None (research-only)
+- `task-tracking/TASK_2026_174/task-description.md`
+- `task-tracking/TASK_2026_174/plan.md`
+- `task-tracking/TASK_2026_174/tasks.md`
+- `task-tracking/TASK_2026_174/investigation.md`
+- `task-tracking/TASK_2026_174/follow-on-tasks.md`
+- `task-tracking/TASK_2026_174/handoff.md`
+- `task-tracking/TASK_2026_174/session-analytics.md`
 
 ## Parallelism
 
