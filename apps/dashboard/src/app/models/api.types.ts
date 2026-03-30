@@ -613,3 +613,30 @@ export interface CreateTaskResponse {
   tasks: CreatedTask[];
   autoSplit?: boolean;
 }
+
+// ── Command Console types ────────────────────────────────────────────────────
+
+export interface CommandCatalogEntry {
+  readonly name: string;
+  readonly slashCommand: string;
+  readonly description: string;
+  readonly category: string;
+  readonly args?: readonly string[];
+}
+
+export interface CommandSuggestion {
+  readonly command: string;
+  readonly label: string;
+  readonly reason: string;
+}
+
+export interface CommandExecuteRequest {
+  readonly command: string;
+  readonly args?: Record<string, unknown>;
+}
+
+export interface CommandExecuteResult {
+  readonly success: boolean;
+  readonly output: string;
+  readonly data?: Record<string, unknown>;
+}

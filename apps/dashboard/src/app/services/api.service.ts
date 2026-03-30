@@ -51,6 +51,10 @@ import type {
   WorkerLogEntry,
   SessionLogSummary,
   LogSearchResult,
+  CommandCatalogEntry,
+  CommandSuggestion,
+  CommandExecuteRequest,
+  CommandExecuteResult,
 } from '../models/api.types';
 import type { ReportsOverview } from '../models/reports.model';
 
@@ -360,5 +364,22 @@ export class ApiService {
     if (extra?.limit !== undefined) params = params.set('limit', String(extra.limit));
     if (extra?.offset !== undefined) params = params.set('offset', String(extra.offset));
     return this.http.get<LogSearchResult>(`${this.base}/logs/search`, { params });
+  }
+
+  // ── Command Console ──────────────────────────────────────────────────────
+
+  public getCommandCatalog(): Observable<CommandCatalogEntry[]> {
+    return this.http.get<CommandCatalogEntry[]>(`${this.base}/command-console/catalog`);
+  }
+
+  public getCommandSuggestions(params?: { route?: string; taskId?: string }): Observable<CommandSuggestion[]> {
+    let httpParams = new HttpParams();
+    if (params?.route) httpParams = httpParams.set('route', params.route);
+    if (params?.taskId) httpParams = httpParams.set('taskId', params.taskId);
+    return this.http.get<CommandSuggestion[]>(`${this.base}/command-console/suggestions`, { params: httpParams });
+  }
+
+  public executeCommand(req: CommandExecuteRequest): Observable<CommandExecuteResult> {
+    return this.http.post<CommandExecuteResult>(`${this.base}/command-console/execute`, req);
   }
 }

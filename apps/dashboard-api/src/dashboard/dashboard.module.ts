@@ -14,9 +14,11 @@ import { LogsController } from './logs.controller';
 import { LogsService } from './logs.service';
 import { ReportsService } from './reports.service';
 import { ProgressCenterService } from './progress-center.service';
+import { CommandConsoleController } from './command-console.controller';
+import { CommandConsoleService } from './command-console.service';
 
 @Module({
-  controllers: [DashboardController, LogsController],
+  controllers: [DashboardController, LogsController, CommandConsoleController],
   providers: [
     DiffService,
     WorkerTreeService,
@@ -38,7 +40,8 @@ import { ProgressCenterService } from './progress-center.service';
     OrchestrationFlowsService,
     LogsService,
     ProgressCenterService,
+    CommandConsoleService,
   ],
-  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService],
 })
 export class DashboardModule {}

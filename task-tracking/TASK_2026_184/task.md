@@ -52,5 +52,12 @@ This console bridges the gap between the visual dashboard and the power of CLI c
 
 ## File Scope
 
-- apps/dashboard/src/app/components/command-console/ (new component directory)
-- apps/dashboard-api/src/dashboard/ (command execution endpoint)
+- apps/dashboard-api/src/dashboard/command-console.service.ts (new)
+- apps/dashboard-api/src/dashboard/command-console.controller.ts (new)
+- apps/dashboard-api/src/dashboard/dashboard.module.ts (modified)
+- apps/dashboard/src/app/models/api.types.ts (modified)
+- apps/dashboard/src/app/services/api.service.ts (modified)
+- apps/dashboard/src/app/components/command-console/command-console.component.ts (new)
+- apps/dashboard/src/app/components/command-console/command-console.component.html (new)
+- apps/dashboard/src/app/components/command-console/command-console.component.scss (new)
+- apps/dashboard/src/app/layout/layout.component.ts (modified)
