@@ -76,6 +76,7 @@ export class ProjectComponent implements OnInit {
   public readonly statusDropdownOpen = signal(false);
   public readonly typeDropdownOpen = signal(false);
   public readonly priorityDropdownOpen = signal(false);
+  public readonly modelDropdownOpen = signal(false);
 
   public readonly allStatuses: readonly QueueTaskStatus[] = KANBAN_COLUMNS;
   public readonly allTypes: readonly QueueTaskType[] = ['FEATURE', 'BUGFIX', 'REFACTOR', 'DOCS', 'TEST', 'CHORE'];
@@ -89,8 +90,6 @@ export class ProjectComponent implements OnInit {
   });
 
   public applyFiltersAndSort(tasks: readonly QueueTask[]): QueueTask[] {
-    const startTime = performance.now();
-    
     const query = this.searchQuery().trim().toLowerCase();
     const statuses = this.selectedStatuses();
     const types = this.selectedTypes();
@@ -157,14 +156,6 @@ export class ProjectComponent implements OnInit {
 
     // Apply sorting
     const sortedResults = this.sortTasks(results, field, dir);
-    
-    const endTime = performance.now();
-    const duration = endTime - startTime;
-    
-    // Log performance for debugging (can be removed in production)
-    if (duration > 50) {
-      console.warn(`Filter operation took ${duration.toFixed(2)}ms for ${tasks.length} tasks`);
-    }
     
     return sortedResults;
   }
@@ -342,9 +333,14 @@ export class ProjectComponent implements OnInit {
   public onSortChange(event: Event): void {
     if (event.target instanceof HTMLSelectElement) {
       const value = event.target.value;
-      const [field, direction] = value.split('-') as [SortField, SortDirection];
-      this.sortField.set(field);
-      this.sortDirection.set(direction);
+      const lastDash = value.lastIndexOf('-');
+      if (lastDash === -1) return;
+      const field = value.slice(0, lastDash);
+      const direction = value.slice(lastDash + 1);
+      const validFields = new Set<string>(Object.values(SortField));
+      if (!validFields.has(field) || (direction !== 'asc' && direction !== 'desc')) return;
+      this.sortField.set(field as SortField);
+      this.sortDirection.set(direction as SortDirection);
       this.updateURL();
     }
   }
@@ -513,11 +509,13 @@ export class ProjectComponent implements OnInit {
     announcement.setAttribute('aria-atomic', 'true');
     announcement.textContent = message;
     document.body.appendChild(announcement);
-    
-    // Remove after a short delay
-    setTimeout(() => {
-      document.body.removeChild(announcement);
+
+    const timerId = setTimeout(() => {
+      if (document.body.contains(announcement)) {
+        document.body.removeChild(announcement);
+      }
     }, 1000);
+    this.destroyRef.onDestroy(() => clearTimeout(timerId));
   }
 
   public isStatusSelected(status: QueueTaskStatus): boolean {
@@ -880,12 +878,10 @@ export class ProjectComponent implements OnInit {
     if (this.sortDirection() !== 'asc') params['dir'] = this.sortDirection();
     if (this.viewMode() !== 'list') params['view'] = this.viewMode();
     
-    // Batch URL updates to prevent multiple navigation events
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
       replaceUrl: true,
-      skipLocationChange: true, // Skip location change event to reduce overhead
     });
   }
 
@@ -893,22 +889,38 @@ export class ProjectComponent implements OnInit {
     const params = this.route.snapshot.queryParamMap;
     if (params.has('q')) this.searchQuery.set(params.get('q')!);
     if (params.has('status')) {
-      this.selectedStatuses.set(params.get('status')!.split(',') as QueueTaskStatus[]);
+      const validStatuses = new Set<string>(this.allStatuses);
+      const parsed = params.get('status')!.split(',').filter(s => validStatuses.has(s)) as QueueTaskStatus[];
+      if (parsed.length > 0) this.selectedStatuses.set(parsed);
     }
     if (params.has('type')) {
-      this.selectedTypes.set(params.get('type')!.split(',') as QueueTaskType[]);
+      const validTypes = new Set<string>(this.allTypes);
+      const parsed = params.get('type')!.split(',').filter(t => validTypes.has(t)) as QueueTaskType[];
+      if (parsed.length > 0) this.selectedTypes.set(parsed);
     }
     if (params.has('priority')) {
-      this.selectedPriorities.set(params.get('priority')!.split(',') as QueueTaskPriority[]);
+      const validPriorities = new Set<string>(this.allPriorities);
+      const parsed = params.get('priority')!.split(',').filter(p => validPriorities.has(p)) as QueueTaskPriority[];
+      if (parsed.length > 0) this.selectedPriorities.set(parsed);
     }
     if (params.has('model')) {
       this.selectedModels.set(params.get('model')!.split(','));
     }
     if (params.has('startDate')) this.startDate.set(params.get('startDate'));
     if (params.has('endDate')) this.endDate.set(params.get('endDate'));
-    if (params.has('sort')) this.sortField.set(params.get('sort') as SortField);
-    if (params.has('dir')) this.sortDirection.set(params.get('dir') as SortDirection);
-    if (params.has('view')) this.viewMode.set(params.get('view') as QueueViewMode);
+    if (params.has('sort')) {
+      const validSortFields = new Set<string>(Object.values(SortField));
+      const sort = params.get('sort')!;
+      if (validSortFields.has(sort)) this.sortField.set(sort as SortField);
+    }
+    if (params.has('dir')) {
+      const dir = params.get('dir')!;
+      if (dir === 'asc' || dir === 'desc') this.sortDirection.set(dir);
+    }
+    if (params.has('view')) {
+      const view = params.get('view')!;
+      if (view === 'list' || view === 'kanban') this.viewMode.set(view);
+    }
   }
 
   private startPolling(sessionId: string): void {

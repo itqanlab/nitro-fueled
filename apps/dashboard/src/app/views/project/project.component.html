@@ -66,8 +66,6 @@
         [value]="searchQuery()"
         (input)="onSearchInput($event)"
         (keydown.escape)="clearSearch()"
-        (keydown.enter)="clearSearch()"
-        (keydown.space)="clearSearch()"
       />
     </div>
 
@@ -294,6 +292,49 @@
       </div>
     </div>
 
+    <!-- Model filter dropdown -->
+    @if (availableModels().length > 0) {
+      <div class="filter-dropdown" role="group" aria-label="Filter by model">
+        <button
+          class="filter-dropdown-btn"
+          type="button"
+          [attr.aria-expanded]="false"
+          [attr.aria-label]="'Model filter: ' + (selectedModels().length > 0 ? selectedModels().length + ' selected' : 'none selected')"
+          (click)="modelDropdownOpen.set(!modelDropdownOpen())"
+          (keydown.enter)="modelDropdownOpen.set(!modelDropdownOpen())"
+          (keydown.space)="modelDropdownOpen.set(!modelDropdownOpen())"
+        >
+          <span class="filter-dropdown-label">Model</span>
+          @if (selectedModels().length > 0) {
+            <span class="filter-dropdown-count">{{ selectedModels().length }}</span>
+          }
+          <span class="filter-dropdown-arrow">&#x25BC;</span>
+        </button>
+        <div class="filter-dropdown-menu" [class.open]="modelDropdownOpen()" role="listbox" aria-labelledby="model-filter">
+          <div class="filter-dropdown-header">
+            <h3 class="dropdown-title" id="model-filter">Model</h3>
+            <button class="clear-btn" type="button" (click)="clearModelFilter()" aria-label="Clear model filter">
+              Clear
+            </button>
+          </div>
+          <div class="filter-dropdown-options">
+            @for (m of availableModels(); track m) {
+              <label class="filter-option" role="option">
+                <input
+                  type="checkbox"
+                  [checked]="isModelSelected(m)"
+                  (change)="toggleModel(m)"
+                  [attr.aria-label]="'Filter by model: ' + m"
+                  aria-describedby="model-filter"
+                />
+                <span class="filter-option-label">{{ m }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- Date range filter -->
     <div class="filter-group filter-group--date" role="group" aria-label="Filter by date range">
       <span class="filter-group-label">Date:</span>
@@ -366,7 +407,6 @@
           (click)="onTaskClick(task)"
           (keydown.enter)="onTaskClick(task)"
           (keydown.space)="onTaskClick(task)"
-          (keydown.escape)="onTaskClick(task)"
         >
           <!-- Status indicator -->
           <div class="task-row-indicator" aria-hidden="true">
@@ -451,7 +491,6 @@
                 (click)="onTaskClick(task)"
                 (keydown.enter)="onTaskClick(task)"
                 (keydown.space)="onTaskClick(task)"
-                (keydown.escape)="onTaskClick(task)"
               >
                 <div class="kanban-card-header">
                   <span class="kanban-task-id">{{ task.id }}</span>
