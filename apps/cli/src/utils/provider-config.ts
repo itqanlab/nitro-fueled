@@ -74,14 +74,6 @@ export function getProjectConfigPath(cwd: string): string {
   return resolve(cwd, '.nitro-fueled', 'config.json');
 }
 
-/**
- * @deprecated Use getGlobalConfigPath() or getProjectConfigPath() instead.
- * Kept for backward-compat with existing callers (run.ts, config.ts --reset).
- */
-export function getConfigPath(cwd: string): string {
-  return getProjectConfigPath(cwd);
-}
-
 // ---------------------------------------------------------------------------
 // Type guards
 // ---------------------------------------------------------------------------
