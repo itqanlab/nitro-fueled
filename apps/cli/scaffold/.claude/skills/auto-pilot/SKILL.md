@@ -56,7 +56,8 @@ description: >
 |-------|---------------------------------------------------|
 | **Spawn** | `SPAWNED worker=<id> task=<task_id> provider=<provider/model>` — one line per worker |
 | **Heartbeat** | `[HH:MM] monitoring — {N} active, {N} complete, {N} failed` |
-| **Completion (Build Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
+| **Completion (Prep Worker)** | `COMPLETE task=<task_id> → PREPPED` (or `FAILED` / `BLOCKED`) |
+| **Completion (Build/Implement Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
 | **Completion (Review+Fix Worker)** | `COMPLETE task=<task_id> → COMPLETE` (or `FAILED` / `BLOCKED`) |
 | **Session end** | `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` |
 | **All structured data** | Tables, queues, state snapshots, notes, analysis — DB/session artifacts only. **Never printed to conversation.** |
@@ -64,7 +65,19 @@ description: >
 
 ---
 
-Autonomous loop that processes the task backlog by spawning, monitoring, and managing **Build Workers** and **Review Workers** via MCP nitro-cortex.
+Autonomous loop that processes the task backlog by spawning, monitoring, and managing workers via MCP nitro-cortex.
+
+### Worker Mode: single vs split
+
+Tasks can run in **single** mode (one Build Worker: CREATED → IMPLEMENTED) or **split** mode (Prep Worker: CREATED → PREPPED, then Implement Worker: PREPPED → IMPLEMENTED). The Supervisor auto-selects based on task Complexity when the `Worker Mode` field is absent:
+
+| Complexity | Default Worker Mode |
+|------------|-------------------|
+| Simple | single |
+| Medium | split |
+| Complex | split |
+
+In both modes, the Review+Fix Worker handles IMPLEMENTED → COMPLETE.
 
 ## Quick Start
 
@@ -83,11 +96,13 @@ Autonomous loop that processes the task backlog by spawning, monitoring, and man
 
 ### Primary Responsibilities
 
-1. **Re-query DB state each tick** -- `get_tasks()` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
-2. **Identify actionable tasks** (CREATED or IMPLEMENTED) and order by priority strategy (default: build-first)
-3. **Spawn appropriate worker type** based on task state (Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW)
+1. **Re-query DB state each tick** -- `get_tasks(compact: true)` for tasks, `list_workers()` for workers, `get_pending_events()` for completions
+2. **Identify actionable tasks** (CREATED, PREPPED, or IMPLEMENTED) and order by priority strategy (default: build-first)
+3. **Spawn appropriate worker type** based on task state and Worker Mode:
+   - **single mode**: Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW
+   - **split mode**: Prep Worker for CREATED/IN_PROGRESS, Implement Worker for PREPPED/IMPLEMENTING, Review+Fix Worker for IMPLEMENTED/IN_REVIEW
 4. **Monitor worker health** on a configurable interval
-5. **Handle completions**: react to DB events, then re-query the DB for the next tick
+5. **Handle completions**: react to DB events; reconcile task state for any worker that exits without emitting a state-change event (advance or mark FAILED); re-query the DB for the next tick
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
 7. **Persist session state in the DB** for compaction survival
 8. **Loop** until the backlog is drained, all remaining tasks are blocked, or `--limit` is reached
@@ -106,11 +121,11 @@ Session registration and worker-slot accounting are multi-session safe only when
 
 | Need | Use THIS | NEVER use |
 |------|----------|-----------|
-| Task list/status | `get_tasks()` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
-| Task list/status during pre-flight | `get_tasks()` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
+| Task list/status | `get_tasks(compact: true)` MCP — filter to active statuses only, **NEVER `status: "COMPLETE"`** | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling, `get_tasks(status: "COMPLETE")` |
+| Task list/status during pre-flight | `get_tasks(compact: true)` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
 | Task metadata before spawn | `get_task_context(task_id)` MCP | `cat task.md`, `Read task.md`, `Bash` on task files |
 | Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
-| Task state transitions | `get_pending_events()` and `get_tasks()` MCP | Per-task `status` files, `registry.md`, task-folder polling |
+| Task state transitions | `get_pending_events()` and `get_tasks(compact: true)` MCP | Per-task `status` files, `registry.md`, task-folder polling |
 
 **File reads are ONLY acceptable when:** MCP tools are confirmed unavailable (`cortex_available = false`). Inside the DB-backed loop, `registry.md`, task `status` files, and `task.md` are all banned.
 
@@ -133,7 +148,7 @@ Session registration and worker-slot accounting are multi-session safe only when
 
 > Stuck detection is server-side (120s inactivity). `escalate_to_user` requires cortex_available=true — auto-disabled otherwise. Merge overrides with defaults and write to `{SESSION_DIR}state.md` at startup.
 
-> **2-session worker model**: Build Worker (CREATED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). Each worker = 1 concurrency slot.
+> **Worker model**: In single mode: Build Worker (CREATED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). In split mode: Prep Worker (CREATED → PREPPED) + Implement Worker (PREPPED → IMPLEMENTED) + Review+Fix Worker (IMPLEMENTED → COMPLETE). Each worker = 1 concurrency slot.
 
 ---
 
@@ -254,13 +269,13 @@ but allows the Supervisor to run without the cortex DB.
 > **Load reference**: Read `references/parallel-mode.md` for all 8 steps of the Core Loop.
 
 The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
-1. Reconstruct current state from `list_workers()` + `get_tasks()`
-2. Read the current task queue from `get_tasks()`
+1. Reconstruct current state from `list_workers()` + `get_tasks(compact: true)`
+2. Read the current task queue from `get_tasks(compact: true)`
 3. Build the dependency view from DB fields only
 4. Order/select spawn candidates
 5. Spawn workers with DB-backed task metadata
 6. Monitor workers with `get_pending_events()` + worker health MCP calls
-7. Handle completions and re-query the DB
+7. Handle completions: react to DB events; reconcile task state for any worker that exits without emitting a state-change event (advance or mark FAILED); re-query the DB for the next tick
 8. Stop or continue; write optional artifacts only after the loop tick ends
 
 ## Compaction Survival
@@ -268,7 +283,7 @@ The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
 When compaction happens, recovery is:
 
 1. `list_workers(compact: true)`
-2. `get_tasks()`
+2. `get_tasks(compact: true)`
 3. `get_session(session_id)` if session counters are needed
 
 Do **not** recover by reading `state.md` on the DB-backed path.
@@ -332,6 +347,7 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 8. **A completed task triggers immediate re-evaluation** of the dependency graph
 9. **Graceful degradation** -- one failure never crashes the loop
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
-11. **Spawn the right worker type** -- Build Worker for CREATED/IN_PROGRESS, Review Worker for IMPLEMENTED/IN_REVIEW
-12. **Build-first by default** -- CREATED (build) tasks fill slots before IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
+11. **Spawn the right worker type** -- Determine Worker Mode (single/split) from task metadata or Complexity auto-selection. In single mode: Build Worker for CREATED, Review Worker for IMPLEMENTED. In split mode: Prep Worker for CREATED, Implement Worker for PREPPED, Review Worker for IMPLEMENTED. Default routing (data-driven from 143-worker analysis): Prep → claude/claude-sonnet-4-6, Implement → glm/glm-5.1 (retry with claude on fail), Review → claude/claude-sonnet-4-6. Prep Workers always use `nitro-software-architect`.
+12. **Build-first by default** -- CREATED (build/prep) tasks fill slots before PREPPED (implement) and IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
 13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
+14. **Supervisor is authoritative for task state on worker exit** — after detecting a worker process exit without a matching state-change event, the Supervisor reconciles the expected vs. actual task state and acts (advance or mark FAILED). Workers are untrusted for state transitions on abnormal exit; the Supervisor is the single source of truth.
