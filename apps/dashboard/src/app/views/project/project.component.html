@@ -30,20 +30,7 @@
   <div class="session-form-panel" role="dialog" aria-label="New Session Form">
     <h3 class="session-form-title">New Session</h3>
     <div class="form-row">
-      <label class="form-label" for="session-concurrency">Concurrency</label>
-      <input
-        id="session-concurrency"
-        type="number"
-        class="form-input"
-        min="1"
-        max="10"
-        [value]="sessionConfig().concurrency ?? 2"
-        aria-label="Concurrency"
-        (change)="onConcurrencyChange($event)"
-      />
-    </div>
-    <div class="form-row">
-      <label class="form-label" for="session-limit">Limit</label>
+      <label class="form-label" for="session-limit">Task Limit</label>
       <input
         id="session-limit"
         type="number"
@@ -51,7 +38,7 @@
         min="1"
         max="100"
         [value]="sessionConfig().limit ?? 10"
-        aria-label="Limit"
+        aria-label="Task limit"
         (change)="onLimitChange($event)"
       />
     </div>
@@ -97,6 +84,107 @@
         <option value="opencode">OpenCode</option>
       </select>
     </div>
+
+    <!-- Advanced Options (collapsible) -->
+    <div class="advanced-options">
+      <button
+        class="advanced-toggle"
+        type="button"
+        [attr.aria-expanded]="advancedOpen()"
+        aria-controls="advanced-options-body"
+        (click)="toggleAdvanced()"
+        (keydown.enter)="toggleAdvanced()"
+        (keydown.space)="toggleAdvanced()"
+      >
+        <span class="advanced-toggle-label">Advanced Options</span>
+        <span class="advanced-toggle-arrow" [class.open]="advancedOpen()">&#x25BC;</span>
+      </button>
+      @if (advancedOpen()) {
+        <div class="advanced-options-body" id="advanced-options-body" role="group" aria-label="Advanced session options">
+          <div class="form-row">
+            <label class="form-label" for="session-supervisor-model">Supervisor Model</label>
+            <select
+              id="session-supervisor-model"
+              class="form-select"
+              [value]="sessionConfig().supervisorModel ?? 'claude-haiku-4-5-20251001'"
+              aria-label="Supervisor model"
+              (change)="onSupervisorModelChange($event)"
+            >
+              <option value="claude-haiku-4-5-20251001">Haiku (default)</option>
+              <option value="claude-sonnet-4-6">Sonnet</option>
+              <option value="claude-opus-4-6">Opus</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-concurrency">Concurrency</label>
+            <input
+              id="session-concurrency"
+              type="number"
+              class="form-input"
+              min="1"
+              max="10"
+              [value]="sessionConfig().concurrency ?? 2"
+              aria-label="Concurrency"
+              (change)="onConcurrencyChange($event)"
+            />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-retries">Max Retries</label>
+            <input
+              id="session-retries"
+              type="number"
+              class="form-input"
+              min="0"
+              max="5"
+              [value]="sessionConfig().retries ?? 2"
+              aria-label="Max retries"
+              (change)="onRetriesChange($event)"
+            />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-max-compactions">Max Compactions</label>
+            <input
+              id="session-max-compactions"
+              type="number"
+              class="form-input"
+              min="0"
+              max="10"
+              [value]="sessionConfig().maxCompactions ?? 3"
+              aria-label="Max compactions"
+              (change)="onMaxCompactionsChange($event)"
+            />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-poll-interval">Poll Interval</label>
+            <select
+              id="session-poll-interval"
+              class="form-select"
+              [value]="sessionConfig().pollIntervalMs ?? 30000"
+              aria-label="Poll interval"
+              (change)="onPollIntervalChange($event)"
+            >
+              <option value="10000">10 seconds</option>
+              <option value="30000">30 seconds (default)</option>
+              <option value="60000">1 minute</option>
+              <option value="120000">2 minutes</option>
+              <option value="300000">5 minutes</option>
+            </select>
+          </div>
+          <div class="form-row form-row--checkbox">
+            <label class="form-label" for="session-dry-run">Dry Run</label>
+            <input
+              id="session-dry-run"
+              type="checkbox"
+              class="form-checkbox"
+              [checked]="sessionConfig().dryRun ?? false"
+              aria-label="Dry run mode"
+              (change)="onDryRunChange($event)"
+            />
+          </div>
+        </div>
+      }
+    </div>
+
     @if (createSessionError()) {
       <div class="error-msg" role="alert">{{ createSessionError() }}</div>
     }

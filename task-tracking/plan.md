@@ -317,6 +317,12 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 - [ ] Per-task model/provider editing and cost tracking (Wave 2-5)
 - [ ] Live session monitoring and controls in dashboard UI (Wave 2-3)
 
+#### Task Map — Wave 0 (Supervisor hotfixes, run before Wave 1)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_241 | Supervisor: Reconcile Task State on Worker Exit | COMPLETE | P0-Critical |
+| TASK_2026_242 | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | COMPLETE | P1-High |
+
 #### Task Map — Wave 1 (no dependencies, can run in parallel)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|

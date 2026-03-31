@@ -275,6 +275,10 @@ export interface CreateSessionRequest {
   readonly reviewModel?: string;
   readonly priority?: PriorityStrategy;
   readonly retries?: number;
+  readonly supervisorModel?: string;
+  readonly maxCompactions?: number;
+  readonly pollIntervalMs?: number;
+  readonly dryRun?: boolean;
 }
 
 export interface CreateSessionResponse {

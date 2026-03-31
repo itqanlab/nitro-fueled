@@ -51,6 +51,11 @@
             <div class="session-meta">
               <span class="session-started">{{ startedAtLabels().get(session.sessionId) }}</span>
             </div>
+            <div class="session-config-summary">
+              <span class="config-chip">&#x26A1; {{ session.config.concurrency }}x</span>
+              <span class="config-chip">{{ session.config.implement_model || session.config.implement_provider }}</span>
+              <span class="config-chip">retry {{ session.config.retries }}</span>
+            </div>
             @if (heartbeatStatusMap().get(session.sessionId); as hbStatus) {
               <div class="session-heartbeat" [ngClass]="hbStatus.cssClass">
                 <span class="heartbeat-icon">&#x2665;</span>

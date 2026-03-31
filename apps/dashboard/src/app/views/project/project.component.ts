@@ -77,6 +77,7 @@ export class ProjectComponent implements OnInit {
   public readonly createSessionPending = signal(false);
   public readonly createSessionError = signal<string | null>(null);
   public readonly sessionFormOpen = signal(false);
+  public readonly advancedOpen = signal(false);
   public readonly sessionConfig = signal<CreateSessionRequest>(this.loadSavedConfig());
   public readonly activeSessions = signal<SessionStatusResponse[]>([]);
   public readonly sessionsLoading = signal(false);
@@ -579,6 +580,7 @@ export class ProjectComponent implements OnInit {
 
   private readonly VALID_PRIORITIES = ['build-first', 'review-first', 'balanced'] as const;
   private readonly VALID_PROVIDERS = ['claude', 'glm', 'opencode', 'codex'] as const;
+  private readonly VALID_SUPERVISOR_MODELS = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'] as const;
 
   public onPriorityChange(event: Event): void {
     const val = (event.target as HTMLSelectElement).value;
@@ -596,6 +598,39 @@ export class ProjectComponent implements OnInit {
     const val = (event.target as HTMLSelectElement).value;
     if (!(this.VALID_PROVIDERS as readonly string[]).includes(val)) return;
     this.sessionConfig.update(c => ({ ...c, reviewProvider: val as typeof this.VALID_PROVIDERS[number] }));
+  }
+
+  public toggleAdvanced(): void {
+    this.advancedOpen.set(!this.advancedOpen());
+  }
+
+  public onSupervisorModelChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    if (!(this.VALID_SUPERVISOR_MODELS as readonly string[]).includes(val)) return;
+    this.sessionConfig.update(c => ({ ...c, supervisorModel: val }));
+  }
+
+  public onRetriesChange(event: Event): void {
+    const val = +(event.target as HTMLInputElement).value;
+    if (!Number.isFinite(val) || val < 0 || val > 5) return;
+    this.sessionConfig.update(c => ({ ...c, retries: val }));
+  }
+
+  public onMaxCompactionsChange(event: Event): void {
+    const val = +(event.target as HTMLInputElement).value;
+    if (!Number.isFinite(val) || val < 0 || val > 10) return;
+    this.sessionConfig.update(c => ({ ...c, maxCompactions: val }));
+  }
+
+  public onPollIntervalChange(event: Event): void {
+    const val = +(event.target as HTMLSelectElement).value;
+    if (!Number.isFinite(val) || val <= 0) return;
+    this.sessionConfig.update(c => ({ ...c, pollIntervalMs: val }));
+  }
+
+  public onDryRunChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).checked;
+    this.sessionConfig.update(c => ({ ...c, dryRun: val }));
   }
 
   public onCreateSession(): void {
@@ -696,6 +731,16 @@ export class ProjectComponent implements OnInit {
           result[key] = obj[key];
         }
       }
+      const validSupervisorModels = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'] as const;
+      if (
+        typeof obj['supervisorModel'] === 'string' &&
+        (validSupervisorModels as readonly string[]).includes(obj['supervisorModel'])
+      ) {
+        result['supervisorModel'] = obj['supervisorModel'];
+      }
+      if (typeof obj['maxCompactions'] === 'number') result['maxCompactions'] = obj['maxCompactions'];
+      if (typeof obj['pollIntervalMs'] === 'number') result['pollIntervalMs'] = obj['pollIntervalMs'];
+      if (typeof obj['dryRun'] === 'boolean') result['dryRun'] = obj['dryRun'];
       return result as CreateSessionRequest;
     } catch {
       return {};
