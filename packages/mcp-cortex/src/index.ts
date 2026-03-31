@@ -5,7 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { join } from 'node:path';
 import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
-import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims, handleBulkUpdateTasks } from './tools/tasks.js';
+import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims, handleBulkUpdateTasks, handleGetBacklogSummary } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
 import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession, handleUpdateHeartbeat, handleCloseStaleSessions } from './tools/sessions.js';
@@ -67,6 +67,13 @@ server.registerTool('query_tasks', {
     compact: z.boolean().optional().describe('When true, return only lightweight columns (id, title, status, type, priority, complexity, dependencies, model). Omits description, acceptance_criteria, file_scope. Recommended for listing/routing.'),
   },
 }, (args) => handleGetTasks(db, args));
+
+server.registerTool('get_backlog_summary', {
+  description: 'Returns task counts grouped by status as a flat object, e.g. {CREATED:37,IN_PROGRESS:5,COMPLETE:55,total:130}. Always under 500 chars. Use instead of query_tasks when you only need counts for supervisor routing decisions. Optional group_by="priority" returns a nested breakdown by priority.',
+  inputSchema: {
+    group_by: z.enum(['priority']).optional().describe('Optional grouping: "priority" returns counts nested by priority. Omit for status-only summary.'),
+  },
+}, (args) => handleGetBacklogSummary(db, args));
 
 server.registerTool('claim_task', {
   description: 'Atomic claim on a task. Returns {ok: true} or {ok: false, claimed_by: session_id}.',

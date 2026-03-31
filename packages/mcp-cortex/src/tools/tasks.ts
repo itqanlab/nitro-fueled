@@ -397,6 +397,41 @@ export function handleBulkUpdateTasks(
   return { content: [{ type: 'text' as const, text: JSON.stringify({ succeeded, failed, results }, null, 2) }] };
 }
 
+export function handleGetBacklogSummary(
+  db: Database.Database,
+  args: { group_by?: string },
+): { content: Array<{ type: 'text'; text: string }> } {
+  if (args.group_by === 'priority') {
+    const rows = db.prepare(
+      'SELECT priority, status, COUNT(*) AS count FROM tasks GROUP BY priority, status ORDER BY priority, status',
+    ).all() as Array<{ priority: string; status: string; count: number }>;
+
+    const grouped: Record<string, Record<string, number>> = {};
+    let total = 0;
+    for (const row of rows) {
+      const p = row.priority ?? 'unknown';
+      grouped[p] = grouped[p] ?? {};
+      grouped[p][row.status] = row.count;
+      total += row.count;
+    }
+
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ by_priority: grouped, total }) }] };
+  }
+
+  const rows = db.prepare(
+    'SELECT status, COUNT(*) AS count FROM tasks GROUP BY status ORDER BY status',
+  ).all() as Array<{ status: string; count: number }>;
+
+  const counts: Record<string, number> = {};
+  let total = 0;
+  for (const row of rows) {
+    counts[row.status] = row.count;
+    total += row.count;
+  }
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ...counts, total }) }] };
+}
+
 function detectOrphanedClaims(db: Database.Database): Array<{
   task_id: string;
   title: string;
