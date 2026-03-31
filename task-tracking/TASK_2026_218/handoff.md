@@ -9,7 +9,7 @@
 - apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.scss (modified — config-chip styles)
 
 ## Commits
-- (pending — implementation commit to follow)
+- 46bab51: docs: add TASK_2026_242 completion bookkeeping (contains TASK_2026_218 implementation — committed by concurrent session)
 
 ## Decisions
 - Concurrency moved from basic form section to Advanced Options (per task spec)

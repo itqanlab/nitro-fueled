@@ -326,7 +326,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 #### Task Map — Wave 1 (no dependencies, can run in parallel)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_222 | Extend Cortex DB Schema -- Agents, Workflows, Launchers, Compatibility | CREATED | P1-High |
+| TASK_2026_222 | Extend Cortex DB Schema -- Agents, Workflows, Launchers, Compatibility | COMPLETE | P1-High |
 | TASK_2026_229 | Extend Cortex Schema for Worker Telemetry | COMPLETE | P1-High |
 | TASK_2026_244 | Dashboard API: Wire Supervisor Events to WebSocket Gateway | CREATED | P0-Critical |
 | TASK_2026_247 | Sessions List: Checkbox Selection and Compare Button | CREATED | P2-Medium |
@@ -335,7 +335,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 #### Task Map — Wave 2 (depends on Wave 1)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_218 | Session Creation Advanced Options Panel (incl. supervisor model selector) | CREATED | P1-High |
+| TASK_2026_218 | Session Creation Advanced Options Panel (incl. supervisor model selector) | COMPLETE | P1-High |
 | TASK_2026_230 | Instrument Worker Lifecycle -- Emit Telemetry Events | CREATED | P1-High |
 | TASK_2026_243 | Per-Task Model/Provider Editor in Dashboard | CREATED | P1-High |
 | TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CREATED | P1-High |

@@ -2,6 +2,13 @@
 
 ---
 
+## Task Completion Entry — TASK_2026_218
+| Worker | Task | Type | Result | Cost | Duration |
+|--------|------|------|--------|------|----------|
+| interactive | TASK_2026_218 | FEATURE | COMPLETE | unknown | 12m |
+
+---
+
 ## Task Completion Entry — TASK_2026_242
 | Worker | Task | Type | Result | Cost | Duration |
 |--------|------|------|--------|------|----------|
@@ -13,6 +20,13 @@
 | Worker | Task | Type | Result | Cost | Duration |
 |--------|------|------|--------|------|----------|
 | interactive | TASK_2026_216 | FEATURE | COMPLETE | unknown | 35m |
+
+---
+
+## Task Completion Entry — TASK_2026_222
+| Worker | Task | Type | Result | Cost | Duration |
+|--------|------|------|--------|------|----------|
+| interactive | TASK_2026_222 | FEATURE | COMPLETE | unknown | 10m |
 
 ---
 
