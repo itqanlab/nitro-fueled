@@ -4,18 +4,18 @@
     <p class="page-subtitle">Browse all past auto-pilot and orchestration sessions</p>
   </div>
 
-  @if (unavailable) {
+  @if (unavailable()) {
     <div class="unavailable-banner" role="alert">
       Cortex DB unavailable — session history cannot be loaded at this time.
     </div>
   }
 
-  @if (loading && !unavailable) {
+  @if (loading() && !unavailable()) {
     <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 6 }"></nz-skeleton>
   }
 
-  @if (!loading || unavailable) {
-    @if (enriched().length === 0 && !unavailable) {
+  @if (!loading() || unavailable()) {
+    @if (enriched().length === 0 && !unavailable()) {
       <nz-empty nzNotFoundContent="No session history available"></nz-empty>
     } @else if (enriched().length > 0) {
       <nz-table

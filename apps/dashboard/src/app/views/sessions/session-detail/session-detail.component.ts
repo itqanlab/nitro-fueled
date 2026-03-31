@@ -1,15 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, of, switchMap } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
@@ -85,6 +85,7 @@ interface EnrichedDetail {
 export class SessionDetailComponent {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly detailRaw = toSignal(
     this.route.paramMap.pipe(
@@ -97,16 +98,15 @@ export class SessionDetailComponent {
           : of(null as SessionHistoryDetail | null);
       }),
     ),
-    { initialValue: null as SessionHistoryDetail | null },
   );
 
-  public loading = true;
-  public unavailable = false;
+  public readonly loading = computed(() => this.detailRaw() === undefined);
+  public readonly unavailable = computed(() => this.detailRaw() === null);
   public readonly logExpanded = signal(false);
 
   public readonly detail = computed<EnrichedDetail | null>(() => {
     const raw = this.detailRaw();
-    if (!raw) return null;
+    if (!raw) return null; // covers both undefined (loading) and null (error)
     return {
       source: raw.source,
       startedAt: raw.startedAt,
@@ -154,19 +154,8 @@ export class SessionDetailComponent {
         this.drainError.set('Failed to request session stop. Please try again.');
         return of(null);
       }),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe();
-  }
-
-  public constructor() {
-    effect(() => {
-      const raw = this.detailRaw();
-      if (raw !== null) {
-        this.loading = false;
-        this.unavailable = false;
-      } else if (!this.loading) {
-        this.unavailable = true;
-      }
-    });
   }
 
   public toggleLog(): void {

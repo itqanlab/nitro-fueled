@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
@@ -47,11 +46,10 @@ export class SessionsListComponent {
     this.api.getSessionHistory().pipe(
       catchError(() => of(null as SessionHistoryListItem[] | null)),
     ),
-    { initialValue: null as SessionHistoryListItem[] | null },
   );
 
-  public loading = true;
-  public unavailable = false;
+  public readonly loading = computed(() => this.sessionsRaw() === undefined);
+  public readonly unavailable = computed(() => this.sessionsRaw() === null);
 
   public readonly enriched = computed<EnrichedSession[]>(() => {
     const raw = this.sessionsRaw();
@@ -72,18 +70,6 @@ export class SessionsListComponent {
       mode: s.mode,
     }));
   });
-
-  public constructor() {
-    effect(() => {
-      const raw = this.sessionsRaw();
-      if (raw !== null) {
-        this.loading = false;
-        this.unavailable = false;
-      } else if (!this.loading) {
-        this.unavailable = true;
-      }
-    });
-  }
 
   private statusColor(status: SessionEndStatus): string {
     switch (status) {

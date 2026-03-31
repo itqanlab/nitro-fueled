@@ -212,6 +212,24 @@ export class CortexService {
   // Session Lifecycle
   // ============================================================
 
+  public requestSessionDrain(sessionId: string): boolean {
+    if (!existsSync(this.dbPath)) return false;
+    let db: Database.Database | null = null;
+    try {
+      db = new Database(this.dbPath, { fileMustExist: true });
+      const now = new Date().toISOString();
+      const result = db.prepare(
+        `UPDATE sessions SET drain_requested = 1, updated_at = ? WHERE id = ?`,
+      ).run(now, sessionId);
+      return (result as { changes: number }).changes > 0;
+    } catch (err) {
+      this.logger.error(`requestSessionDrain failed: ${String(err)}`);
+      return false;
+    } finally {
+      db?.close();
+    }
+  }
+
   public closeStaleSession(ttlMinutes = 30): { closed_sessions: number } | null {
     if (!existsSync(this.dbPath)) return null;
     let db: Database.Database | null = null;

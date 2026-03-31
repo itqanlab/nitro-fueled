@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { CortexService } from './cortex.service';
 import type { CortexSession, CortexWorker, CortexEvent, CortexTaskTrace } from './cortex.types';
 
@@ -68,6 +68,7 @@ export interface SessionHistoryDetail {
   readonly timeline: readonly SessionHistoryTimelineEvent[];
   readonly workers: readonly SessionHistoryWorker[];
   readonly logContent: string | null;
+  readonly drainRequested: boolean;
 }
 
 @Injectable()
@@ -129,6 +130,7 @@ export class SessionsHistoryService {
         outputTokens: w.output_tokens,
       })),
       logContent,
+      drainRequested: session.drain_requested,
     };
   }
 
@@ -256,13 +258,21 @@ export class SessionsHistoryService {
 
   private async readLogContent(sessionId: string): Promise<string | null> {
     const projectRoot = process.cwd();
+    const resolvedRoot = resolve(projectRoot);
     const candidates = [
       join(projectRoot, 'task-tracking', 'sessions', sessionId, 'log.md'),
       join(projectRoot, '.nitro', 'sessions', sessionId, 'log.md'),
     ];
+    const LOG_CAP = 102400; // 100 KB
     for (const filePath of candidates) {
+      // Defense-in-depth: verify the resolved path stays within project root
+      const resolvedPath = resolve(filePath);
+      if (!resolvedPath.startsWith(resolvedRoot + sep)) continue;
       try {
-        const content = await readFile(filePath, 'utf-8');
+        let content = await readFile(filePath, 'utf-8');
+        if (content.length > LOG_CAP) {
+          content = '...[truncated]\n' + content.slice(content.length - LOG_CAP);
+        }
         if (content.trim()) return content;
       } catch {
         continue;

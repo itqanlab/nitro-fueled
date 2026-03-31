@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Query,
   Body,
@@ -265,6 +266,29 @@ export class DashboardController {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
     }
     return snapshot;
+  }
+
+  @ApiTags('sessions')
+  @ApiOperation({ summary: 'Request session drain', description: 'Sets drain_requested=1 on the session, signaling the supervisor to stop after the current task finishes.' })
+  @ApiParam({ name: 'id', description: 'Session ID', example: 'SESSION_2026-03-15_10-30-00' })
+  @ApiResponse({ status: 200, description: 'Drain requested' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Patch('sessions/:id/stop')
+  @HttpCode(HttpStatus.OK)
+  public requestSessionDrain(@Param('id') id: string): { sessionId: string; action: string } {
+    if (!SESSION_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid session ID format' });
+    }
+    if (!this.cortexService.isAvailable()) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    const ok = this.cortexService.requestSessionDrain(id);
+    if (!ok) {
+      throw new NotFoundException({ error: 'Session not found' });
+    }
+    return { sessionId: id, action: 'drain_requested' };
   }
 
   @ApiTags('sessions')
