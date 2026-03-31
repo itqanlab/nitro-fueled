@@ -5,7 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { join } from 'node:path';
 import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
-import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims } from './tools/tasks.js';
+import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims, handleBulkUpdateTasks } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
 import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession, handleUpdateHeartbeat, handleCloseStaleSessions } from './tools/sessions.js';
@@ -579,6 +579,16 @@ server.registerTool('bulk_create_tasks', {
     })).min(1).max(20).describe('Array of task definitions to create'),
   },
 }, (args) => handleBulkCreateTasks(db, projectRoot, args));
+
+server.registerTool('bulk_update_tasks', {
+  description: 'Update multiple tasks in a single DB transaction. Returns per-task success/failure summary. Invalid task IDs or unparsable fields are reported as errors without blocking other updates.',
+  inputSchema: {
+    updates: z.array(z.object({
+      task_id: z.string().max(200).describe('Task ID to update'),
+      fields: z.string().describe('JSON string of fields to update (same format as update_task)'),
+    })).min(1).max(50).describe('Array of {task_id, fields} update descriptors (max 50)'),
+  },
+}, (args) => handleBulkUpdateTasks(db, args, projectRoot));
 
 // --- Agent tools ---
 

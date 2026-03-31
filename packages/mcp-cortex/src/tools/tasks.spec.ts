@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { initDatabase } from '../db/schema.js';
 import { handleCreateSession, handleUpdateSession } from './sessions.js';
 import { toLegacySessionId } from './session-id.js';
-import { handleClaimTask, handleGetTasks, handleGetOrphanedClaims, handleReleaseOrphanedClaims } from './tasks.js';
+import { handleClaimTask, handleGetTasks, handleGetOrphanedClaims, handleReleaseOrphanedClaims, handleBulkUpdateTasks } from './tasks.js';
 import { handleGetNextWave } from './wave.js';
 import type Database from 'better-sqlite3';
 
@@ -370,5 +370,104 @@ describe('orphaned claim recovery', () => {
       expect(result.released).toBe(0);
       expect(result.tasks).toEqual([]);
     });
+  });
+});
+
+describe('handleBulkUpdateTasks', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('updates multiple tasks in a single call', () => {
+    insertTask(db, 'TASK_2026_001');
+    insertTask(db, 'TASK_2026_002');
+
+    const result = parseText(handleBulkUpdateTasks(db, {
+      updates: [
+        { task_id: 'TASK_2026_001', fields: JSON.stringify({ status: 'IN_PROGRESS' }) },
+        { task_id: 'TASK_2026_002', fields: JSON.stringify({ status: 'COMPLETE' }) },
+      ],
+    })) as { succeeded: number; failed: number; results: Array<{ task_id: string; ok: boolean }> };
+
+    expect(result.succeeded).toBe(2);
+    expect(result.failed).toBe(0);
+    expect(result.results).toHaveLength(2);
+    expect(result.results.every(r => r.ok)).toBe(true);
+
+    const row1 = db.prepare('SELECT status FROM tasks WHERE id = ?').get('TASK_2026_001') as { status: string };
+    const row2 = db.prepare('SELECT status FROM tasks WHERE id = ?').get('TASK_2026_002') as { status: string };
+    expect(row1.status).toBe('IN_PROGRESS');
+    expect(row2.status).toBe('COMPLETE');
+  });
+
+  it('reports invalid task_id as error without blocking other updates', () => {
+    insertTask(db, 'TASK_2026_001');
+
+    const result = parseText(handleBulkUpdateTasks(db, {
+      updates: [
+        { task_id: 'NOT_A_VALID_ID', fields: JSON.stringify({ status: 'COMPLETE' }) },
+        { task_id: 'TASK_2026_001', fields: JSON.stringify({ status: 'IN_PROGRESS' }) },
+      ],
+    })) as { succeeded: number; failed: number; results: Array<{ task_id: string; ok: boolean; error?: string }> };
+
+    expect(result.succeeded).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(result.results[0]).toMatchObject({ ok: false, error: 'invalid_task_id_format' });
+    expect(result.results[1]).toMatchObject({ task_id: 'TASK_2026_001', ok: true });
+  });
+
+  it('reports task_not_found for non-existent task_id', () => {
+    const result = parseText(handleBulkUpdateTasks(db, {
+      updates: [
+        { task_id: 'TASK_2026_999', fields: JSON.stringify({ status: 'COMPLETE' }) },
+      ],
+    })) as { succeeded: number; failed: number; results: Array<{ ok: boolean; error?: string }> };
+
+    expect(result.failed).toBe(1);
+    expect(result.results[0]).toMatchObject({ ok: false, error: 'task_not_found' });
+  });
+
+  it('reports invalid JSON in fields as per-task error', () => {
+    insertTask(db, 'TASK_2026_001');
+
+    const result = parseText(handleBulkUpdateTasks(db, {
+      updates: [
+        { task_id: 'TASK_2026_001', fields: 'not-valid-json' },
+      ],
+    })) as { succeeded: number; failed: number; results: Array<{ ok: boolean; error?: string }> };
+
+    expect(result.failed).toBe(1);
+    expect(result.results[0]).toMatchObject({ ok: false, error: 'invalid_json_in_fields' });
+  });
+
+  it('rejects updates array exceeding 50 items', () => {
+    const updates = Array.from({ length: 51 }, (_, i) => ({
+      task_id: `TASK_2026_${String(i + 1).padStart(3, '0')}`,
+      fields: JSON.stringify({ status: 'COMPLETE' }),
+    }));
+
+    const result = parseText(handleBulkUpdateTasks(db, { updates })) as { ok: boolean; reason: string };
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain('50');
+  });
+
+  it('rejects non-updatable columns', () => {
+    insertTask(db, 'TASK_2026_001');
+
+    const result = parseText(handleBulkUpdateTasks(db, {
+      updates: [
+        { task_id: 'TASK_2026_001', fields: JSON.stringify({ nonexistent_col: 'value' }) },
+      ],
+    })) as { succeeded: number; failed: number; results: Array<{ ok: boolean; error?: string }> };
+
+    expect(result.failed).toBe(1);
+    expect(result.results[0]?.error).toContain('not updatable');
   });
 });

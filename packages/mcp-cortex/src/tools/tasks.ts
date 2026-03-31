@@ -60,7 +60,7 @@ export function generateRegistryFromDb(db: Database.Database, projectRoot: strin
 const UPDATABLE_COLUMNS = new Set([
   'title', 'type', 'priority', 'status', 'complexity', 'model',
   'dependencies', 'description', 'acceptance_criteria', 'file_scope',
-  'session_claimed', 'claimed_at',
+  'session_claimed', 'claimed_at', 'preferred_provider', 'worker_mode',
 ]);
 
 // Lightweight columns returned when compact=true. Excludes description,
@@ -296,6 +296,105 @@ export function handleUpdateTask(
   }
 
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true }) }] };
+}
+
+interface BulkUpdateResult {
+  task_id: string;
+  ok: boolean;
+  error?: string;
+}
+
+export function handleBulkUpdateTasks(
+  db: Database.Database,
+  args: { updates: Array<{ task_id: string; fields: string }> },
+  projectRoot?: string,
+): ToolResult {
+  if (!Array.isArray(args.updates) || args.updates.length === 0) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'updates array is required and must not be empty' }) }], isError: true };
+  }
+
+  if (args.updates.length > 50) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'updates array exceeds maximum of 50 items' }) }], isError: true };
+  }
+
+  // Pre-parse all fields strings so parse errors surface as per-task errors, not a hard abort
+  const parsed: Array<{ task_id: string; fields: Record<string, unknown> | null; parseError?: string }> = [];
+  for (const item of args.updates) {
+    if (!TASK_ID_RE.test(item.task_id ?? '')) {
+      parsed.push({ task_id: item.task_id ?? '', fields: null, parseError: 'invalid_task_id_format' });
+      continue;
+    }
+    try {
+      parsed.push({ task_id: item.task_id, fields: JSON.parse(item.fields) as Record<string, unknown> });
+    } catch {
+      parsed.push({ task_id: item.task_id, fields: null, parseError: 'invalid_json_in_fields' });
+    }
+  }
+
+  const results: BulkUpdateResult[] = [];
+  const statusChanges: Array<{ task_id: string; status: string }> = [];
+
+  // Single transaction — valid updates commit, invalid ones are skipped without rolling back
+  db.transaction(() => {
+    const now = new Date().toISOString();
+
+    for (const update of parsed) {
+      if (!update.fields) {
+        results.push({ task_id: update.task_id, ok: false, error: update.parseError });
+        continue;
+      }
+
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let hasColumnError = false;
+
+      for (const [key, value] of Object.entries(update.fields)) {
+        if (!UPDATABLE_COLUMNS.has(key)) {
+          results.push({ task_id: update.task_id, ok: false, error: `column '${key}' not updatable` });
+          hasColumnError = true;
+          break;
+        }
+        sets.push(`${key} = ?`);
+        params.push(typeof value === 'object' && value !== null ? JSON.stringify(value) : value);
+      }
+
+      if (hasColumnError) continue;
+
+      if (sets.length === 0) {
+        results.push({ task_id: update.task_id, ok: false, error: 'no fields provided' });
+        continue;
+      }
+
+      sets.push('updated_at = ?');
+      params.push(now, update.task_id);
+
+      const info = db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+      if (info.changes === 0) {
+        results.push({ task_id: update.task_id, ok: false, error: 'task_not_found' });
+        continue;
+      }
+
+      results.push({ task_id: update.task_id, ok: true });
+
+      const newStatus = update.fields['status'];
+      if (typeof newStatus === 'string' && VALID_STATUSES.has(newStatus)) {
+        statusChanges.push({ task_id: update.task_id, status: newStatus });
+      }
+    }
+  })();
+
+  if (projectRoot !== undefined && statusChanges.length > 0) {
+    for (const { task_id, status } of statusChanges) {
+      writeStatusFile(projectRoot, task_id, status);
+    }
+    generateRegistryFromDb(db, projectRoot);
+  }
+
+  const succeeded = results.filter(r => r.ok).length;
+  const failed = results.filter(r => !r.ok).length;
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ succeeded, failed, results }, null, 2) }] };
 }
 
 function detectOrphanedClaims(db: Database.Database): Array<{
