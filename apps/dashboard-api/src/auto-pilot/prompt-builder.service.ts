@@ -6,7 +6,7 @@
  * spawned from a Claude Code conversation or from this persistent service.
  */
 import { Injectable } from '@nestjs/common';
-import type { ProviderType, WorkerType, SupervisorConfig, CustomFlow } from './auto-pilot.types';
+import type { ProviderType, CustomFlow } from './auto-pilot.types';
 
 export interface BuildPromptOpts {
   taskId: string;
@@ -55,7 +55,17 @@ export class PromptBuilderService {
    Complete ALL batches until tasks.md shows all tasks COMPLETE.`;
 
     const customFlowSection = opts.customFlow
-      ? `\nCUSTOM FLOW OVERRIDE (flow: "${opts.customFlow.name}", id: ${opts.customFlow.id}):\nThis task has a custom orchestration flow assigned. Use this agent sequence instead of the default type-based strategy:\n${opts.customFlow.steps.map((s, i) => `Step ${i + 1}: ${s.agent} (${s.label})`).join('\n')}\nRun the agents in this exact order. Do not use the default FEATURE/BUGFIX/etc. auto-detection strategy.\n`
+      ? (() => {
+          const flow = opts.customFlow!;
+          const safeName = flow.name.replace(/[\r\n]/g, ' ').slice(0, 80);
+          const safeId = flow.id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+          const steps = flow.steps.map((s, i) => {
+            const safeAgent = s.agent.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+            const safeLabel = s.label.replace(/[\r\n]/g, ' ').slice(0, 120);
+            return `Step ${i + 1}: ${safeAgent} (${safeLabel})`;
+          });
+          return `\nCUSTOM FLOW OVERRIDE (flow: "${safeName}", id: ${safeId}):\nThis task has a custom orchestration flow assigned. Use this agent sequence instead of the default type-based strategy:\n${steps.join('\n')}\nRun the agents in this exact order. Do not use the default FEATURE/BUGFIX/etc. auto-detection strategy.\n`;
+        })()
       : '';
 
     return `Run /orchestrate ${opts.taskId}

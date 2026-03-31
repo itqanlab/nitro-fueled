@@ -126,12 +126,13 @@ CREATE TABLE IF NOT EXISTS workers (
 
 const CUSTOM_FLOWS_TABLE = `
 CREATE TABLE IF NOT EXISTS custom_flows (
-  id           TEXT PRIMARY KEY,
-  name         TEXT NOT NULL,
-  description  TEXT,
-  steps        TEXT NOT NULL DEFAULT '[]',
-  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  description    TEXT,
+  source_flow_id TEXT,
+  phases_json    TEXT NOT NULL DEFAULT '[]',
+  created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
 const HANDOFFS_TABLE = `
@@ -307,6 +308,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
         session_claimed  TEXT,
         claimed_at       TEXT,
         claim_timeout_ms INTEGER,
+        custom_flow_id   TEXT,
         created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
         updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       )

@@ -385,11 +385,20 @@ export class SessionRunner {
     let customFlow: CustomFlow | null = null;
     if (isBuild && candidate.customFlowId) {
       customFlow = this.supervisorDb.getCustomFlow(candidate.customFlowId);
+      if (customFlow && customFlow.steps.length === 0) {
+        this.logger.warn(`Custom flow ${customFlow.id} has no steps for ${candidate.id} — using built-in flow`);
+        this.supervisorDb.logEvent(
+          this.sessionId, candidate.id, 'supervisor', 'CUSTOM_FLOW_FALLBACK',
+          { flowId: customFlow.id, reason: 'flow has zero steps' },
+        );
+        customFlow = null;
+      }
       if (customFlow) {
-        this.logger.log(`Custom flow '${customFlow.name}' (${customFlow.id}) assigned to ${candidate.id}`);
+        const safeName = customFlow.name.replace(/[\r\n]/g, ' ').slice(0, 80);
+        this.logger.log(`Custom flow '${safeName}' (${customFlow.id}) assigned to ${candidate.id}`);
         this.supervisorDb.logEvent(
           this.sessionId, candidate.id, 'supervisor', 'CUSTOM_FLOW_APPLIED',
-          { flowId: customFlow.id, flowName: customFlow.name, stepCount: customFlow.steps.length },
+          { flowId: customFlow.id, flowName: safeName, stepCount: customFlow.steps.length },
         );
       } else {
         this.logger.warn(`Custom flow ${candidate.customFlowId} not found for ${candidate.id} — using built-in flow`);
