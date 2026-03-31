@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CortexService } from '../dashboard/cortex.service';
-import type { CortexModelPerformance, CortexWorker } from '../dashboard/cortex.service';
+import type { CortexModelPerformance, CortexBuilderQuality, CortexWorker } from '../dashboard/cortex.service';
 import type {
   ModelPerformanceRowDto,
   ModelPerformanceResponseDto,
@@ -23,14 +23,14 @@ export class AnalyticsService {
   public getModelPerformance(filters?: { taskType?: string }): ModelPerformanceResponseDto | null {
     const rows = this.cortex.getModelPerformance({ taskType: filters?.taskType });
     if (!rows) return null;
-    const data = rows.map(this.mapModelPerf);
+    const data = rows.map((r) => this.mapModelPerf(r));
     return { data, total: data.length };
   }
 
   public getModelPerformanceById(modelId: string): ModelPerformanceResponseDto | null {
     const rows = this.cortex.getModelPerformance({ model: modelId });
     if (!rows) return null;
-    const data = rows.map(this.mapModelPerf);
+    const data = rows.map((r) => this.mapModelPerf(r));
     return { data, total: data.length };
   }
 
@@ -38,19 +38,15 @@ export class AnalyticsService {
   // Launcher Metrics
   // ============================================================
 
-  public getLauncherMetrics(launcherId?: string): LauncherMetricsResponseDto | null {
-    const workers = this.cortex.getWorkers();
+  public getLauncherMetrics(launcherId: string): LauncherMetricsResponseDto | null {
+    const workers = this.cortex.getWorkers({ launcher: launcherId });
     if (!workers) return null;
 
-    const filtered = launcherId
-      ? workers.filter((w) => w.launcher === launcherId)
-      : workers;
+    if (workers.length === 0) {
+      throw new NotFoundException(`No workers found for launcher: ${launcherId}`);
+    }
 
-    const grouped = this.groupWorkersByLauncher(filtered);
-    const data = Array.from(grouped.entries()).map(([launcher, ws]) =>
-      this.aggregateLauncherWorkers(launcher, ws),
-    );
-
+    const data = [this.aggregateLauncherWorkers(launcherId, workers)];
     return { data, total: data.length };
   }
 
@@ -59,14 +55,14 @@ export class AnalyticsService {
   // ============================================================
 
   public getRoutingRecommendations(): RoutingRecommendationsResponseDto | null {
-    const rows = this.cortex.getModelPerformance();
-    if (!rows) return null;
+    const qualityRows = this.cortex.getBuilderQuality();
+    if (!qualityRows) return null;
 
-    const byTaskType = this.groupPerfByTaskType(rows);
+    const byTaskType = this.groupBuilderQualityByTaskType(qualityRows);
     const recommendations: RoutingRecommendationDto[] = [];
 
     for (const [taskType, candidates] of byTaskType.entries()) {
-      const best = this.pickBestModel(candidates);
+      const best = this.pickBestBuilderModel(candidates);
       if (!best) continue;
       recommendations.push(this.buildRecommendation(taskType, best));
     }
@@ -83,40 +79,22 @@ export class AnalyticsService {
     return {
       model: r.model,
       taskType: r.task_type,
-      complexity: r.complexity,
       phaseCount: r.phase_count,
       reviewCount: r.review_count,
       avgDurationMinutes: r.avg_duration_minutes,
       totalInputTokens: r.total_input_tokens,
       totalOutputTokens: r.total_output_tokens,
       avgReviewScore: r.avg_review_score,
-      avgCostUsd: r.avg_cost_usd,
-      failureRate: r.failure_rate,
-      lastRun: r.last_run,
     };
-  }
-
-  private groupWorkersByLauncher(workers: CortexWorker[]): Map<string, CortexWorker[]> {
-    const map = new Map<string, CortexWorker[]>();
-    for (const w of workers) {
-      const key = w.launcher || 'unknown';
-      const existing = map.get(key);
-      if (existing) {
-        existing.push(w);
-      } else {
-        map.set(key, [w]);
-      }
-    }
-    return map;
   }
 
   private aggregateLauncherWorkers(launcher: string, workers: CortexWorker[]): LauncherMetricsDto {
     const total = workers.length;
     const completedCount = workers.filter((w) => this.isWorkerComplete(w)).length;
     const failedCount = workers.filter((w) => this.isWorkerFailed(w)).length;
-    const totalCost = workers.reduce((sum, w) => sum + w.cost, 0);
-    const totalInputTokens = workers.reduce((sum, w) => sum + w.input_tokens, 0);
-    const totalOutputTokens = workers.reduce((sum, w) => sum + w.output_tokens, 0);
+    const totalCost = workers.reduce((sum, w) => sum + (w.cost ?? 0), 0);
+    const totalInputTokens = workers.reduce((sum, w) => sum + (w.input_tokens ?? 0), 0);
+    const totalOutputTokens = workers.reduce((sum, w) => sum + (w.output_tokens ?? 0), 0);
 
     return {
       launcher,
@@ -133,26 +111,17 @@ export class AnalyticsService {
   private isWorkerComplete(w: CortexWorker): boolean {
     const outcome = (w.outcome ?? '').toUpperCase();
     const status = (w.status ?? '').toLowerCase();
-    return (
-      outcome === 'COMPLETE' ||
-      outcome === 'IMPLEMENTED' ||
-      status === 'done'
-    );
+    return outcome === 'COMPLETE' || outcome === 'IMPLEMENTED' || status === 'done';
   }
 
   private isWorkerFailed(w: CortexWorker): boolean {
     const outcome = (w.outcome ?? '').toUpperCase();
     const status = (w.status ?? '').toLowerCase();
-    return (
-      outcome === 'FAILED' ||
-      outcome === 'STUCK' ||
-      status === 'failed' ||
-      status === 'killed'
-    );
+    return outcome === 'FAILED' || outcome === 'STUCK' || status === 'failed' || status === 'killed';
   }
 
-  private groupPerfByTaskType(rows: CortexModelPerformance[]): Map<string, CortexModelPerformance[]> {
-    const map = new Map<string, CortexModelPerformance[]>();
+  private groupBuilderQualityByTaskType(rows: CortexBuilderQuality[]): Map<string, CortexBuilderQuality[]> {
+    const map = new Map<string, CortexBuilderQuality[]>();
     for (const r of rows) {
       const key = r.task_type ?? 'UNKNOWN';
       const existing = map.get(key);
@@ -165,45 +134,41 @@ export class AnalyticsService {
     return map;
   }
 
-  private pickBestModel(candidates: CortexModelPerformance[]): CortexModelPerformance | null {
+  private pickBestBuilderModel(candidates: CortexBuilderQuality[]): CortexBuilderQuality | null {
     if (candidates.length === 0) return null;
 
-    // Primary: highest avg_review_score (nulls sorted last)
-    // Secondary: lowest avg_duration_minutes as tiebreaker
+    // Primary sort: highest avg_builder_score (nulls sorted last).
+    // Tiebreaker: highest review_count (more evidence = more trustworthy).
     return candidates.reduce((best, current) => {
-      const bestScore = best.avg_review_score ?? -1;
-      const curScore = current.avg_review_score ?? -1;
+      const bestScore = best.avg_builder_score ?? -1;
+      const curScore = current.avg_builder_score ?? -1;
 
       if (curScore > bestScore) return current;
-      if (curScore === bestScore) {
-        const bestDur = best.avg_duration_minutes ?? Infinity;
-        const curDur = current.avg_duration_minutes ?? Infinity;
-        return curDur < bestDur ? current : best;
-      }
+      if (curScore === bestScore && current.review_count > best.review_count) return current;
       return best;
     });
   }
 
-  private buildRecommendation(
-    taskType: string,
-    perf: CortexModelPerformance,
-  ): RoutingRecommendationDto {
+  private buildRecommendation(taskType: string, quality: CortexBuilderQuality): RoutingRecommendationDto {
     let reason: string;
-    if (perf.avg_review_score !== null) {
-      reason = `Highest avg review score (${perf.avg_review_score.toFixed(1)}/10) across ${perf.phase_count} phases`;
-    } else if (perf.avg_duration_minutes !== null) {
-      reason = `Fastest avg phase duration (${perf.avg_duration_minutes.toFixed(1)}m) — no review scores available`;
+    if (quality.avg_builder_score !== null) {
+      reason = `Best builder quality score (${quality.avg_builder_score.toFixed(1)}/10) across ${quality.review_count} reviewed tasks`;
     } else {
-      reason = `Only model with data for this task type (${perf.phase_count} phases)`;
+      reason = `Only model with builder data for this task type (${quality.review_count} reviews)`;
     }
 
     return {
       taskType,
-      recommendedModel: perf.model,
+      recommendedModel: quality.model,
       reason,
-      avgReviewScore: perf.avg_review_score,
-      avgDurationMinutes: perf.avg_duration_minutes,
-      evidenceCount: perf.phase_count,
+      avgBuilderScore: quality.avg_builder_score,
+      avgDurationMinutes: null,
+      evidenceCount: quality.review_count,
     };
+  }
+
+  /** @internal exposed for logging in controller — strips newlines and truncates */
+  public static sanitizeForLog(value: string): string {
+    return value.replace(/[\r\n\t]/g, ' ').slice(0, 200);
   }
 }

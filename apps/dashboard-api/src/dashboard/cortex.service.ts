@@ -10,6 +10,7 @@ import {
   queryWorkers,
   queryTaskTrace,
   queryModelPerformance,
+  queryBuilderQuality,
   queryPhaseTiming,
   queryEventsSince,
 } from './cortex-queries';
@@ -22,6 +23,7 @@ import type {
   CortexEvent,
   CortexTaskTrace,
   CortexModelPerformance,
+  CortexBuilderQuality,
   CortexPhaseTiming,
 } from './cortex.types';
 
@@ -34,6 +36,7 @@ export type {
   CortexEvent,
   CortexTaskTrace,
   CortexModelPerformance,
+  CortexBuilderQuality,
   CortexPhaseTiming,
 };
 
@@ -131,7 +134,7 @@ export class CortexService {
   // Workers
   // ============================================================
 
-  public getWorkers(filters?: { sessionId?: string; status?: string }): CortexWorker[] | null {
+  public getWorkers(filters?: { sessionId?: string; status?: string; launcher?: string }): CortexWorker[] | null {
     const db = this.openDb();
     if (!db) return null;
     try {
@@ -172,6 +175,20 @@ export class CortexService {
       return queryModelPerformance(db, filters);
     } catch (err) {
       this.logger.error(`getModelPerformance failed: ${String(err)}`);
+      return null;
+    } finally {
+      db.close();
+    }
+  }
+
+  /** Returns avg review scores grouped by the model that built the task (model_that_built). */
+  public getBuilderQuality(): CortexBuilderQuality[] | null {
+    const db = this.openDb();
+    if (!db) return null;
+    try {
+      return queryBuilderQuality(db);
+    } catch (err) {
+      this.logger.error(`getBuilderQuality failed: ${String(err)}`);
       return null;
     } finally {
       db.close();

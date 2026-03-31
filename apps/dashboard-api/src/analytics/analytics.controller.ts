@@ -36,7 +36,7 @@ export class AnalyticsController {
   ): ModelPerformanceResponseDto {
     const result = this.analyticsService.getModelPerformanceById(modelId);
     if (!result) {
-      this.logger.warn(`getModelPerformanceById(${modelId}): cortex DB unavailable`);
+      this.logger.warn(`getModelPerformanceById: cortex DB unavailable (model=${AnalyticsService.sanitizeForLog(modelId)})`);
       throw new ServiceUnavailableException('Cortex DB is not available');
     }
     return result;
@@ -48,16 +48,17 @@ export class AnalyticsController {
   public getLauncherMetrics(
     @Param('launcherId') launcherId: string,
   ): LauncherMetricsResponseDto {
+    // NotFoundException propagates as 404 when launcherId has no matching workers
     const result = this.analyticsService.getLauncherMetrics(launcherId);
     if (!result) {
-      this.logger.warn(`getLauncherMetrics(${launcherId}): cortex DB unavailable`);
+      this.logger.warn(`getLauncherMetrics: cortex DB unavailable (launcher=${AnalyticsService.sanitizeForLog(launcherId)})`);
       throw new ServiceUnavailableException('Cortex DB is not available');
     }
     return result;
   }
 
   @Get('routing-recommendations')
-  @ApiOperation({ summary: 'Model routing recommendations per task type, derived from performance data' })
+  @ApiOperation({ summary: 'Model routing recommendations per task type, derived from builder quality scores' })
   public getRoutingRecommendations(): RoutingRecommendationsResponseDto {
     const result = this.analyticsService.getRoutingRecommendations();
     if (!result) {

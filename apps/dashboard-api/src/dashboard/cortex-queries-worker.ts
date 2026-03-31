@@ -11,6 +11,7 @@ import type {
   CortexTaskTrace,
   CortexModelPerformance,
   CortexPhaseTiming,
+  CortexBuilderQuality,
   RawWorker,
   RawPhase,
   RawReview,
@@ -18,6 +19,7 @@ import type {
   RawEvent,
   ModelPerfRow,
   PhaseTimingRow,
+  BuilderQualityRow,
 } from './cortex.types';
 
 const WORKER_COLS =
@@ -78,7 +80,7 @@ export function mapEvent(row: RawEvent): CortexEvent {
 // Query functions
 // ============================================================
 
-export function queryWorkers(db: Database.Database, filters?: { sessionId?: string; status?: string }): CortexWorker[] {
+export function queryWorkers(db: Database.Database, filters?: { sessionId?: string; status?: string; launcher?: string }): CortexWorker[] {
   let sql = `SELECT ${WORKER_COLS} FROM workers`;
   const params: string[] = [];
   const conditions: string[] = [];
@@ -89,6 +91,10 @@ export function queryWorkers(db: Database.Database, filters?: { sessionId?: stri
   if (filters?.status) {
     conditions.push('status = ?');
     params.push(filters.status);
+  }
+  if (filters?.launcher) {
+    conditions.push('launcher = ?');
+    params.push(filters.launcher);
   }
   if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ');
   sql += ' ORDER BY spawn_time DESC';
@@ -220,6 +226,31 @@ export function queryPhaseTiming(db: Database.Database): CortexPhaseTiming[] {
   ).map((r): CortexPhaseTiming => ({
     phase: r.phase, count: r.count, avg_duration_minutes: r.avg_duration_minutes,
     min_duration_minutes: r.min_duration_minutes, max_duration_minutes: r.max_duration_minutes,
+  }));
+}
+
+/**
+ * Returns average review scores grouped by the model that BUILT the task (model_that_built),
+ * not the model that performed the review. Use this for routing recommendations.
+ */
+export function queryBuilderQuality(db: Database.Database): CortexBuilderQuality[] {
+  const sql = `
+    SELECT
+      r.model_that_built AS model,
+      t.type AS task_type,
+      COUNT(r.id) AS review_count,
+      AVG(r.score) AS avg_builder_score
+    FROM reviews r
+    LEFT JOIN tasks t ON r.task_id = t.id
+    WHERE r.model_that_built IS NOT NULL AND r.model_that_built != ''
+    GROUP BY r.model_that_built, t.type
+    ORDER BY r.model_that_built ASC, t.type ASC
+  `;
+  return (db.prepare(sql).all() as BuilderQualityRow[]).map((r): CortexBuilderQuality => ({
+    model: r.model,
+    task_type: r.task_type,
+    review_count: r.review_count,
+    avg_builder_score: r.avg_builder_score,
   }));
 }
 

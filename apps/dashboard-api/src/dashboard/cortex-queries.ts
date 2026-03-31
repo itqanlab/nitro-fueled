@@ -13,6 +13,7 @@ export {
   queryWorkers,
   queryTaskTrace,
   queryModelPerformance,
+  queryBuilderQuality,
   queryPhaseTiming,
   queryEventsSince,
   mapWorker,

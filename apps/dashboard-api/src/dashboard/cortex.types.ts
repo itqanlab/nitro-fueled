@@ -144,6 +144,14 @@ export interface CortexModelPerformance {
   last_run: string | null;
 }
 
+/** Quality of work produced by a model (grouped by model_that_built + task_type). */
+export interface CortexBuilderQuality {
+  model: string;
+  task_type: string | null;
+  review_count: number;
+  avg_builder_score: number | null;
+}
+
 export interface CortexPhaseTiming {
   phase: string;
   count: number;
@@ -263,6 +271,13 @@ export interface ModelPerfRow {
   avg_cost_usd: number | null;
   failure_rate: number | null;
   last_run: string | null;
+}
+
+export interface BuilderQualityRow {
+  model: string;
+  task_type: string | null;
+  review_count: number;
+  avg_builder_score: number | null;
 }
 
 export interface PhaseTimingRow {

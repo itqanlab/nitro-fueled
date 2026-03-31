@@ -2,7 +2,7 @@
  * DTOs for the analytics endpoints (model performance, launcher metrics, routing recommendations).
  */
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 // ============================================================
 // Model Performance
@@ -12,19 +12,16 @@ export class ModelPerformanceRowDto {
   @ApiProperty({ example: 'claude-sonnet-4-6', description: 'Model identifier' })
   public readonly model!: string;
 
-  @ApiPropertyOptional({ example: 'FEATURE', description: 'Task type filter used for this row' })
+  @ApiProperty({ example: 'FEATURE', description: 'Task type for this row', nullable: true })
   public readonly taskType!: string | null;
-
-  @ApiPropertyOptional({ example: 'Medium', description: 'Complexity bucket' })
-  public readonly complexity!: string | null;
 
   @ApiProperty({ example: 42, description: 'Number of phases this model participated in' })
   public readonly phaseCount!: number;
 
-  @ApiProperty({ example: 18, description: 'Number of reviews this model performed' })
+  @ApiProperty({ example: 18, description: 'Number of reviews this model performed as reviewer' })
   public readonly reviewCount!: number;
 
-  @ApiPropertyOptional({ example: 14.5, description: 'Average phase duration in minutes' })
+  @ApiProperty({ example: 14.5, description: 'Average phase duration in minutes', nullable: true })
   public readonly avgDurationMinutes!: number | null;
 
   @ApiProperty({ example: 1200000, description: 'Total input tokens consumed' })
@@ -33,17 +30,8 @@ export class ModelPerformanceRowDto {
   @ApiProperty({ example: 480000, description: 'Total output tokens generated' })
   public readonly totalOutputTokens!: number;
 
-  @ApiPropertyOptional({ example: 8.2, description: 'Average review score (0–10)' })
+  @ApiProperty({ example: 8.2, description: 'Average score given by this model when acting as reviewer (0–10)', nullable: true })
   public readonly avgReviewScore!: number | null;
-
-  @ApiPropertyOptional({ example: 0.05, description: 'Average cost per worker run in USD' })
-  public readonly avgCostUsd!: number | null;
-
-  @ApiPropertyOptional({ example: 0.02, description: 'Failure rate (0–1)' })
-  public readonly failureRate!: number | null;
-
-  @ApiPropertyOptional({ example: '2026-03-30T12:00:00.000Z', description: 'Last run timestamp' })
-  public readonly lastRun!: string | null;
 }
 
 export class ModelPerformanceResponseDto {
@@ -106,10 +94,10 @@ export class RoutingRecommendationDto {
   @ApiProperty({ example: 'Highest avg review score (8.5/10) across 12 phases', description: 'Human-readable reason for recommendation' })
   public readonly reason!: string;
 
-  @ApiPropertyOptional({ example: 8.5, description: 'Average review score for this model × task_type' })
-  public readonly avgReviewScore!: number | null;
+  @ApiProperty({ example: 8.5, description: 'Average score received on work built by this model (0–10)', nullable: true })
+  public readonly avgBuilderScore!: number | null;
 
-  @ApiPropertyOptional({ example: 14.2, description: 'Average phase duration in minutes' })
+  @ApiProperty({ example: 14.2, description: 'Average phase duration in minutes', nullable: true })
   public readonly avgDurationMinutes!: number | null;
 
   @ApiProperty({ example: 12, description: 'Number of phases used as evidence' })
