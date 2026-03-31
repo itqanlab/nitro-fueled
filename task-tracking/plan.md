@@ -349,7 +349,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 #### Task Map — Wave 3 (depends on Wave 2)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_219 | Queue Empty State and Re-Run Affordance | CREATED | P2-Medium |
+| TASK_2026_219 | Queue Empty State and Re-Run Affordance | COMPLETE | P2-Medium |
 | TASK_2026_249 | Cortex Schema: Session Cost Breakdown Columns and Summary | CREATED | P2-Medium |
 | TASK_2026_261 | Tick Scheduler Service -- Spawn Claude Code Processes per Tick | CREATED | P0-Critical |
 | TASK_2026_260 | Dashboard UI: Tick Health Dashboard Card | CREATED | P2-Medium |
@@ -433,6 +433,11 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 
 **Supervisor Guidance**: PROCEED
 **Guidance Note**: v0.2.0 architecture revised again -- now tick-based supervisor. The dashboard-api NestJS supervisor (SessionRunner) already runs in-process with setInterval ticks. Critical gaps being addressed: (1) Wire supervisor events to WebSocket (244, P0), (2) Server restart recovery (257), (3) Worker heartbeat verification (262), (4) Tick-mode CLI prompt (245), (5) Tick scheduler service (261). Run Wave 1 in parallel (244, 222, 229, 247, 254 -- all independent). Then Wave 2 (245, 257, 258, 259, 262 + existing 218, 230, 243). Priority: 244 is P0-Critical -- it unblocks all real-time frontend features and the tick architecture. Phase 17 (Subtask Support) is queued after Phase 16 -- TASK_2026_263 depends on TASK_2026_222 from Phase 16 Wave 1.
+
+### Research & Investigation Tasks
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_212 | GPT-5.4 PREP Worker Kill Rate — Root Cause Investigation | COMPLETE | P2-Medium |
 
 ## Decisions Log
 
