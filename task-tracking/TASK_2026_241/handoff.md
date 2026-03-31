@@ -5,7 +5,7 @@
 - `.claude/skills/auto-pilot/SKILL.md` (modified, +4 -2)
 
 ## Commits
-- (pending — included in implementation commit)
+- 8dc2acd: docs(auto-pilot): add supervisor worker-exit reconciliation protocol for TASK_2026_241
 
 ## Decisions
 - Reconciliation subsection inserted after Step 7 items 1–4 (event-driven path intact), not between them; reconciliation is a fallback branch for the event-missing case.
