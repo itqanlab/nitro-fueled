@@ -1,4 +1,4 @@
-# Task: Dashboard API: Spawn Session Endpoint with Supervisor Model
+# Task: Dashboard API: Wire Supervisor Events to WebSocket Gateway
 
 
 ## Metadata
@@ -14,43 +14,44 @@
 | Poll Interval         | default |
 | Health Check Interval | default |
 | Max Retries           | default |
-| Worker Mode           | [single | split]                                                              |
-
-
-
-
-
+| Worker Mode           | split |
 
 
 ## Description
 
-Extend the existing POST /api/sessions endpoint to accept a supervisor_model field in the CreateSessionRequest body. Valid values: claude-haiku-4-5-20251001 (default), claude-sonnet-4-6, claude-opus-4-6. The session-runner should pass this model when spawning the supervisor Claude Code process (the --model flag on the claude CLI invocation). Workers continue to use per-task model settings from the task metadata, independent of the supervisor model. Update SupervisorConfig type to include supervisor_model field. Update DEFAULT_SUPERVISOR_CONFIG to default to claude-haiku-4-5-20251001. Update session creation validation to accept the new field. The key insight is that the supervisor loop is a state machine (query tasks, check health, spawn workers, route completions) that does not need an expensive model -- Haiku can run it for pennies while workers use the right model per task.
+The SessionRunner already runs a tick-based supervisor loop via setInterval inside the NestJS process. However, the emitEvent method only logs to debug -- supervisor events (worker:spawned, worker:completed, worker:failed, worker:killed, task:claimed, task:completed, task:blocked, supervisor:started, supervisor:stopped, supervisor:heartbeat) are never broadcast to the frontend via WebSocket.
+
+Wire SessionRunner events through the existing DashboardGateway WebSocket server. Add an EventEmitter2 or direct injection pattern so SessionRunner (which is NOT injectable -- it is a plain class instantiated by SessionManagerService) can push events to the gateway. The gateway should emit these as 'supervisor-event' messages on a per-session room (clients join a room matching the sessionId). This enables the frontend to show real-time worker spawns, completions, failures, and health without polling.
+
+Also add the supervisor_model field to SupervisorConfig (haiku default) so the session creation can specify which model the supervisor process uses when spawning workers.
 
 ## Dependencies
 
-- TASK_2026_243
+- None
 
 ## Acceptance Criteria
 
-- [ ] SupervisorConfig type includes supervisor_model field with type string
-- [ ] DEFAULT_SUPERVISOR_CONFIG defaults supervisor_model to claude-haiku-4-5-20251001
-- [ ] POST /api/sessions accepts supervisor_model in request body with validation (only claude-haiku-4-5-20251001, claude-sonnet-4-6, claude-opus-4-6 accepted)
-- [ ] SessionRunner passes supervisor_model as --model flag when spawning the supervisor Claude Code process
-- [ ] Worker spawn continues to use per-task model from task metadata, not supervisor_model
+- [ ] SessionRunner events are broadcast via DashboardGateway WebSocket as 'supervisor-event' messages
+- [ ] Clients can join a session-specific room to receive only that session's events
+- [ ] SupervisorConfig includes supervisor_model field defaulting to claude-haiku-4-5-20251001
+- [ ] All existing supervisor event types (worker:spawned, worker:completed, etc.) flow through WebSocket
+- [ ] No regression in existing session lifecycle (start/pause/resume/stop)
 
 ## References
 
-- task-tracking/task-template.md
+- apps/dashboard-api/src/auto-pilot/session-runner.ts (emitEvent method)
+- apps/dashboard-api/src/dashboard/dashboard.gateway.ts (existing WebSocket gateway)
+- apps/dashboard-api/src/auto-pilot/auto-pilot.types.ts (SupervisorEvent type)
 
 ## File Scope
 
-- apps/dashboard-api/src/auto-pilot/auto-pilot.types.ts (SupervisorConfig update)
-- apps/dashboard-api/src/auto-pilot/auto-pilot.model.ts (CreateSessionRequest update)
-- apps/dashboard-api/src/auto-pilot/auto-pilot.controller.ts (validation update)
-- apps/dashboard-api/src/auto-pilot/session-runner.ts (pass model flag at spawn)
-- apps/dashboard-api/src/auto-pilot/session-manager.service.ts (pass config through)
+- apps/dashboard-api/src/auto-pilot/session-runner.ts (wire emitEvent to gateway)
+- apps/dashboard-api/src/auto-pilot/session-manager.service.ts (pass event emitter)
+- apps/dashboard-api/src/auto-pilot/auto-pilot.types.ts (add supervisor_model to config)
+- apps/dashboard-api/src/dashboard/dashboard.gateway.ts (add supervisor-event emission + rooms)
+- apps/dashboard-api/src/auto-pilot/auto-pilot.module.ts (EventEmitter2 wiring if needed)
 
 
 ## Parallelism
 
-Can run in parallel with TASK_2026_243, TASK_2026_222, TASK_2026_229. No file overlap with dashboard frontend tasks. Wave 1.
+Can run in parallel with TASK_2026_222, TASK_2026_229, TASK_2026_247. No file overlap with schema tasks. Wave 1.

@@ -1,4 +1,4 @@
-# Task: Auto-Pilot Skill: Respect Supervisor Model from Session Config
+# Task: Tick-Mode Auto-Pilot Skill Prompt
 
 
 ## Metadata
@@ -7,47 +7,51 @@
 |-----------------------|-------------------------------------------------------------------------------|
 | Type                  | FEATURE |
 | Priority              | P1-High |
-| Complexity            | Simple |
+| Complexity            | Medium |
 | Preferred Tier        | auto |
 | Model                 | default |
 | Testing               | optional |
 | Poll Interval         | default |
 | Health Check Interval | default |
 | Max Retries           | default |
-| Worker Mode           | [single | split]                                                              |
-
-
-
-
-
+| Worker Mode           | split |
 
 
 ## Description
 
-Update the auto-pilot skill (SKILL.md and supporting references) to read the supervisor_model from session config when the supervisor is launched via the dashboard API. Currently the auto-pilot skill runs as a Claude Code session with whatever model was specified at launch time. This task ensures that when the dashboard spawns a supervisor process, it passes the configured supervisor_model (e.g., haiku) as the --model flag, and the skill's worker spawn logic continues to use per-task model settings from task metadata independently. The skill itself does not need code changes -- this is primarily about ensuring the session-runner in the dashboard-api correctly wires the supervisor_model to the Claude CLI --model flag, and documenting the model separation in the skill reference files.
+Create a new auto-pilot reference document (.claude/skills/auto-pilot/references/tick-mode.md) that defines single-tick supervisor behavior for the CLI-mode auto-pilot. The tick-mode prompt instructs the Claude Code session to:
+
+1. Read all state from cortex DB via MCP tools (tasks, workers, events, session config)
+2. Make ONE round of decisions (spawn workers for unblocked tasks, reconcile finished/stuck workers, handle retries)
+3. Write all decisions back to DB via MCP tools (claim tasks, log events, update statuses)
+4. Exit cleanly with a structured JSON summary of actions taken
+
+The prompt must be fully self-contained -- no context carries over from previous ticks. Each tick is a fresh Claude Code process with no memory of prior ticks. Update SKILL.md to reference tick-mode.md and add a 'tick' execution mode alongside the existing 'parallel' and 'sequential' modes. The dashboard-api tick scheduler (separate task) will invoke this prompt repeatedly on an interval.
 
 ## Dependencies
 
-- TASK_2026_244 -- provides the supervisor_model field in SupervisorConfig and session spawn logic
+- TASK_2026_244 -- provides the supervisor_model field and WebSocket event wiring
 
 ## Acceptance Criteria
 
-- [ ] Auto-pilot SKILL.md documents that the supervisor model is controlled by session config, not hardcoded
-- [ ] Worker prompts reference confirms workers use per-task model, not supervisor model
-- [ ] Session-runner spawns supervisor Claude process with --model flag from config.supervisor_model
-- [ ] No regression in existing auto-pilot behavior when supervisor_model is not provided (defaults to haiku)
+- [ ] .claude/skills/auto-pilot/references/tick-mode.md exists with complete single-tick prompt
+- [ ] Prompt reads all state from MCP DB tools (no file reads, no carried-over context)
+- [ ] Prompt makes exactly one round of decisions then exits
+- [ ] Exit produces structured JSON summary (workers spawned, tasks completed, errors)
+- [ ] SKILL.md updated to reference tick-mode and document the 'tick' execution mode
 
 ## References
 
-- task-tracking/task-template.md
+- .claude/skills/auto-pilot/SKILL.md (existing skill)
+- .claude/skills/auto-pilot/references/parallel-mode.md (existing parallel reference)
+- apps/dashboard-api/src/auto-pilot/session-runner.ts (tick logic to mirror)
 
 ## File Scope
 
-- .claude/skills/auto-pilot/SKILL.md (documentation update)
-- .claude/skills/auto-pilot/references/parallel-mode.md (model separation docs)
-- apps/dashboard-api/src/auto-pilot/session-runner.ts (verify --model flag wiring)
+- .claude/skills/auto-pilot/references/tick-mode.md (new file)
+- .claude/skills/auto-pilot/SKILL.md (add tick mode reference)
 
 
 ## Parallelism
 
-Must run after TASK_2026_244. Can run in parallel with TASK_2026_243 and TASK_2026_246. Wave 2.
+Depends on TASK_2026_244. Can run in parallel with TASK_2026_243 and Wave 2 frontend tasks. Wave 2.

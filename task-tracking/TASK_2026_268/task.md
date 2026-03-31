@@ -36,7 +36,7 @@ Use NG-ZORRO components: nz-collapse, nz-tag, nz-progress, nz-list.
 
 ## Dependencies
 
-- TASK_2026_268 -- provides subtask data in API response
+- TASK_2026_269 -- provides subtask data in API response
 
 ## Acceptance Criteria
 

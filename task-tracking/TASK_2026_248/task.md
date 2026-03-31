@@ -24,12 +24,12 @@
 
 ## Description
 
-Build the session comparison view that displays two sessions side-by-side. The comparison shows: supervisor model used, total cost, cost per task, average task duration, success rate, and worker model breakdown. Data comes from the existing session summary and cost breakdown APIs (TASK_2026_246 provides cost data, existing get_session_summary provides the rest). The route /sessions/compare reads session IDs from query params. Uses NG-ZORRO grid and statistic components for the layout.
+Build the session comparison view that displays two sessions side-by-side. The comparison shows: supervisor model used, total cost, cost per task, average task duration, success rate, and worker model breakdown. Data comes from the existing session summary and cost breakdown APIs (TASK_2026_250 provides cost data, existing get_session_summary provides the rest). The route /sessions/compare reads session IDs from query params. Uses NG-ZORRO grid and statistic components for the layout.
 
 ## Dependencies
 
-- TASK_2026_246 -- provides cost breakdown data per session
-- TASK_2026_248 -- provides the sessions list compare button that navigates here
+- TASK_2026_250 -- provides cost breakdown data per session via API
+- TASK_2026_247 -- provides the sessions list compare button that navigates here
 
 ## Acceptance Criteria
 
@@ -53,4 +53,4 @@ Build the session comparison view that displays two sessions side-by-side. The c
 
 ## Parallelism
 
-Must run after TASK_2026_246 and TASK_2026_248. Wave 4.
+Must run after TASK_2026_250 and TASK_2026_247. Wave 4.

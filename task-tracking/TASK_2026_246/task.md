@@ -24,18 +24,16 @@
 
 ## Description
 
-Display a cost breakdown card in the session detail view showing supervisor cost vs worker cost with model labels. Read cost_breakdown data from the session detail API endpoint (provided by TASK_2026_246). Show a card with: supervisor model label + cost, per-worker-model cost rows, total cost. Use NG-ZORRO card and statistic components for consistent styling.
+Display a cost breakdown card in the session detail view showing supervisor cost vs worker cost with model labels. Read cost_breakdown data from the session detail API endpoint (provided by TASK_2026_250). Show a card with: supervisor model label + cost, per-worker-model cost rows, total cost. Use NG-ZORRO card and statistic components for consistent styling.
 
 ## Dependencies
 
-- TASK_2026_246 -- provides cost_breakdown data in the session detail API response
+- TASK_2026_250 -- provides cost_breakdown data in the session detail API response
 
 ## Acceptance Criteria
 
 - [ ] Session detail view displays cost breakdown card with supervisor vs worker cost split
-- [ ] Each model tier shows its own cost row (e.g., haiku: $0.02, sonnet: ## Acceptance Criteria
-
-.50)
+- [ ] Each model tier shows its own cost row (e.g., haiku: $0.02, sonnet: $1.50)
 - [ ] Total cost shown at bottom of card
 - [ ] Card handles missing cost data gracefully (shows 'No cost data' placeholder)
 
@@ -52,4 +50,4 @@ Display a cost breakdown card in the session detail view showing supervisor cost
 
 ## Parallelism
 
-Must run after TASK_2026_246. Can run in parallel with other dashboard tasks. Wave 4.
+Must run after TASK_2026_250. Can run in parallel with other dashboard tasks. Wave 4.
