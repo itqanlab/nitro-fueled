@@ -301,6 +301,15 @@ export class ProjectComponent implements OnInit {
   });
 
   public readonly runningCount = computed(() => this.allTasks.filter(task => task.status === 'IN_PROGRESS').length);
+  public readonly completedCount = computed(() => this.allTasks.filter(t => t.status === 'COMPLETE').length);
+  public readonly failedCount = computed(() => this.allTasks.filter(t => t.status === 'FAILED').length);
+  public readonly cancelledCount = computed(() => this.allTasks.filter(t => t.status === 'CANCELLED').length);
+  public readonly queueProcessed = computed(() => {
+    const tasks = this.allTasks;
+    if (tasks.length === 0) return false;
+    const terminal = new Set<QueueTaskStatus>(['COMPLETE', 'FAILED', 'CANCELLED']);
+    return tasks.every(t => terminal.has(t.status));
+  });
   public readonly kanbanColumns = computed(() =>
     KANBAN_COLUMNS.map(status => ({ status, tasks: this.filteredTasks().filter(task => task.status === status) }))
   );

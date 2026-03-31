@@ -608,6 +608,44 @@
   </div>
 }
 
+<!-- Queue Empty State Banner -->
+@if (queueProcessed()) {
+  <div class="queue-empty-banner" role="status" aria-live="polite" aria-label="Queue empty — all tasks processed">
+    <div class="queue-empty-icon" aria-hidden="true">&#x2714;</div>
+    <h2 class="queue-empty-title">Queue Empty</h2>
+    <p class="queue-empty-subtitle">All tasks have been processed</p>
+    <div class="queue-empty-stats" role="group" aria-label="Task outcome summary">
+      <div class="queue-stat">
+        <span class="queue-stat-value queue-stat-value--complete">{{ completedCount() }}</span>
+        <span class="queue-stat-label">Completed</span>
+      </div>
+      @if (failedCount() > 0) {
+        <div class="queue-stat">
+          <span class="queue-stat-value queue-stat-value--failed">{{ failedCount() }}</span>
+          <span class="queue-stat-label">Failed</span>
+        </div>
+      }
+      @if (cancelledCount() > 0) {
+        <div class="queue-stat">
+          <span class="queue-stat-value queue-stat-value--cancelled">{{ cancelledCount() }}</span>
+          <span class="queue-stat-label">Cancelled</span>
+        </div>
+      }
+    </div>
+    <button
+      class="btn btn-primary"
+      type="button"
+      [disabled]="createSessionPending()"
+      aria-label="Launch a new session"
+      (click)="openSessionForm()"
+      (keydown.enter)="openSessionForm()"
+      (keydown.space)="openSessionForm()"
+    >
+      Launch New Session
+    </button>
+  </div>
+}
+
 <!-- List View -->
 @if (viewMode() === 'list') {
   <section class="task-list" role="region" aria-label="Task list">
