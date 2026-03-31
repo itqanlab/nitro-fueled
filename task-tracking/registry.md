@@ -218,7 +218,7 @@
 | TASK_2026_213 | CREATED     | REFACTORING | Refactor Command Console Controller — NestJS DTO Validation | 2026-03-30 | default |
 | TASK_2026_214 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_215 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
-| TASK_2026_216 | CREATED     | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
+| TASK_2026_216 | IMPLEMENTED | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
 | TASK_2026_217 | CREATED     | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
 | TASK_2026_218 | CREATED     | FEATURE | Session Creation Advanced Options Panel | 2026-03-30 | default |
 | TASK_2026_219 | CREATED     | FEATURE | Session View — Empty Queue State & Completion Banner | 2026-03-30 | default |
@@ -246,7 +246,7 @@
 | TASK_2026_241 | COMPLETE    | BUGFIX  | Supervisor: Reconcile Task State on Worker Exit (Don't Trust Worker Self-Reporting) | 2026-03-31 | default |
 | TASK_2026_242 | CREATED     | BUGFIX  | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | 2026-03-31 | default |
 | TASK_2026_243 | CREATED     | FEATURE | Per-Task Model/Provider Editor in Dashboard | 2026-03-31 | default |
-| TASK_2026_244 | IMPLEMENTED | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
+| TASK_2026_244 | COMPLETE    | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
 | TASK_2026_245 | CREATED     | FEATURE | Tick-Mode Auto-Pilot Skill Prompt | 2026-03-31 | default |
 | TASK_2026_246 | CREATED     | FEATURE | Dashboard UI: Session Cost Breakdown Card | 2026-03-31 | default |
 | TASK_2026_247 | CREATED     | FEATURE | Sessions List: Checkbox Selection and Compare Button | 2026-03-31 | default |
@@ -289,3 +289,11 @@
 | TASK_2026_284 | CREATED     | FEATURE | AI-Assisted Three-Way Merge on Update (--ai-merge) | 2026-03-31 | default |
 | TASK_2026_285 | CREATED     | FEATURE | Update Change Summary — AI-Powered Diff Explanation | 2026-03-31 | default |
 | TASK_2026_286 | CREATED     | FEATURE | Generate .codex/ Configuration and Agent Files on Init | 2026-03-31 | default |
+| TASK_2026_287 | CREATED     | FEATURE | Cortex DB Schema: Task Artifact Tables | 2026-03-31 | default |
+| TASK_2026_288 | CREATED     | FEATURE | MCP Tools: Task Artifact CRUD Operations | 2026-03-31 | default |
+| TASK_2026_289 | CREATED     | REFACTORING | Worker Prompts: MCP-Only Artifact Access (Eliminate File I/O) | 2026-03-31 | default |
+| TASK_2026_290 | CREATED     | REFACTORING | Supervisor: Drop File-Based Fallback Paths, DB-Only Mode | 2026-03-31 | default |
+| TASK_2026_291 | CREATED     | REFACTORING | CLI and MCP — DB-Only Task Creation, Remove File-Based Artifacts | 2026-03-31 | default |
+| TASK_2026_292 | CREATED     | FEATURE | Cortex DB: Skill Invocations Table and MCP Analytics Tools | 2026-03-31 | default |
+| TASK_2026_293 | CREATED     | FEATURE | Dashboard API: Skill Usage Analytics Endpoint | 2026-03-31 | default |
+| TASK_2026_294 | CREATED     | FEATURE | Dashboard UI: Skill Usage Bubble Chart (D3 Circle Pack) | 2026-03-31 | default |
