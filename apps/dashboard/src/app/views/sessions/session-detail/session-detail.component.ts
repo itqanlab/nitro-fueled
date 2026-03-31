@@ -106,13 +106,16 @@ export class SessionDetailComponent {
     this.isDraining.set(true);
     this.drainError.set(null);
     this.api.drainSession(sessionId).pipe(
-      catchError(() => {
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        this.isDraining.set(false);
+      },
+      error: () => {
         this.isDraining.set(false);
         this.drainError.set('Failed to request session stop. Please try again.');
-        return of(null);
-      }),
-      takeUntilDestroyed(this.destroyRef),
-    ).subscribe();
+      },
+    });
   }
 
   private statusColor(status: LoopStatus): string {

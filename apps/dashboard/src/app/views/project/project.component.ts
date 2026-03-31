@@ -559,303 +559,6 @@ export class ProjectComponent implements OnInit {
     void this.router.navigate(['/project/task', task.id]);
   }
 
-  // ==================== MANUAL TESTING METHODS ====================
-
-  /**
-   * Test full-text search functionality across ID, title, and description fields
-   * @param searchTerm The search term to test
-   * @returns true if search works correctly, false otherwise
-   */
-  public testFullTextSearch(searchTerm: string): boolean {
-    this.searchQuery.set(searchTerm);
-    const filtered = this.filteredTasks();
-    const query = searchTerm.trim().toLowerCase();
-    
-    // Check if results match the search term
-    const hasMatchingResults = filtered.some(task => 
-      task.id.toLowerCase().includes(query) ||
-      task.title.toLowerCase().includes(query) ||
-      (task.description?.toLowerCase().includes(query) || false)
-    );
-    
-    // Reset search
-    this.searchQuery.set('');
-    return hasMatchingResults;
-  }
-
-  /**
-   * Test multi-select status filter with OR logic
-   * @param statuses Array of statuses to select
-   * @returns true if filter works correctly, false otherwise
-   */
-  public testStatusFilter(statuses: QueueTaskStatus[]): boolean {
-    this.selectedStatuses.set(statuses);
-    const filtered = this.filteredTasks();
-    
-    // Check if all results have at least one of the selected statuses
-    const allMatch = filtered.every(task => statuses.includes(task.status));
-    
-    // Reset filter
-    this.selectedStatuses.set([]);
-    return allMatch;
-  }
-
-  /**
-   * Test multi-select type filter with OR logic
-   * @param types Array of types to select
-   * @returns true if filter works correctly, false otherwise
-   */
-  public testTypeFilter(types: QueueTaskType[]): boolean {
-    this.selectedTypes.set(types);
-    const filtered = this.filteredTasks();
-    
-    // Check if all results have at least one of the selected types
-    const allMatch = filtered.every(task => types.includes(task.type));
-    
-    // Reset filter
-    this.selectedTypes.set([]);
-    return allMatch;
-  }
-
-  /**
-   * Test priority filter functionality
-   * @param priorities Array of priorities to select
-   * @returns true if filter works correctly, false otherwise
-   */
-  public testPriorityFilter(priorities: QueueTaskPriority[]): boolean {
-    this.selectedPriorities.set(priorities);
-    const filtered = this.filteredTasks();
-    
-    // Check if all results have at least one of the selected priorities
-    const allMatch = filtered.every(task => priorities.includes(task.priority));
-    
-    // Reset filter
-    this.selectedPriorities.set([]);
-    return allMatch;
-  }
-
-  /**
-   * Test model filter functionality
-   * @param models Array of models to select
-   * @returns true if filter works correctly, false otherwise
-   */
-  public testModelFilter(models: string[]): boolean {
-    this.selectedModels.set(models);
-    const filtered = this.filteredTasks();
-    
-    // Check if all results have at least one of the selected models
-    const allMatch = filtered.every(task => 
-      models.includes(task.model || '') || task.model === null
-    );
-    
-    // Reset filter
-    this.selectedModels.set([]);
-    return allMatch;
-  }
-
-  /**
-   * Test date range filter functionality
-   * @param start Start date (YYYY-MM-DD format)
-   * @param end End date (YYYY-MM-DD format)
-   * @returns true if filter works correctly, false otherwise
-   */
-  public testDateRangeFilter(start: string | null, end: string | null): boolean {
-    this.setDateRange(start, end);
-    const filtered = this.filteredTasks();
-    
-    // Check if all results fall within the date range
-    const allMatch = filtered.every(task => {
-      const taskDate = new Date(task.createdAt).getTime();
-      
-      if (start) {
-        const startDate = new Date(start).getTime();
-        if (taskDate < startDate) return false;
-      }
-      
-      if (end) {
-        const endDate = new Date(end).getTime() + 86400000; // Add one day to include end date
-        if (taskDate > endDate) return false;
-      }
-      
-      return true;
-    });
-    
-    // Reset filter
-    this.setDateRange(null, null);
-    return allMatch;
-  }
-
-  /**
-   * Test sort functionality
-   * @param field Sort field to test
-   * @param direction Sort direction ('asc' or 'desc')
-   * @returns true if sort works correctly, false otherwise
-   */
-  public testSort(field: SortField, direction: SortDirection): boolean {
-    this.setSort(field, direction);
-    const filtered = this.filteredTasks();
-    
-    // Check if results are sorted correctly
-    let isSorted = true;
-    for (let i = 1; i < filtered.length; i++) {
-      const prev = filtered[i - 1];
-      const curr = filtered[i];
-      const cmp = this.compareTasks(prev, curr, field, direction);
-      
-      if (direction === 'asc' && cmp > 0) {
-        isSorted = false;
-        break;
-      }
-      if (direction === 'desc' && cmp < 0) {
-        isSorted = false;
-        break;
-      }
-    }
-    
-    // Reset sort
-    this.setSort(SortField.ID, 'asc');
-    return isSorted;
-  }
-
-  /**
-   * Test active filter chips functionality
-   * @returns true if chips display correctly, false otherwise
-   */
-  public testActiveFilterChips(): boolean {
-    const chips = this.activeFilterChips();
-    
-    // Test that chips are created for each active filter
-    const hasStatusChip = chips.some(chip => chip.type === 'Status');
-    const hasTypeChip = chips.some(chip => chip.type === 'Type');
-    const hasPriorityChip = chips.some(chip => chip.type === 'Priority');
-    const hasModelChip = chips.some(chip => chip.type === 'Model');
-    const hasStartDateChip = chips.some(chip => chip.type === 'From');
-    const hasEndDateChip = chips.some(chip => chip.type === 'Until');
-    
-    // Test that chips can be cleared
-    const originalCount = chips.length;
-    if (chips.length > 0) {
-      chips[0].clear();
-      const newChips = this.activeFilterChips();
-      if (newChips.length >= originalCount) return false;
-    }
-    
-    return true;
-  }
-
-  /**
-   * Test URL persistence functionality
-   * @returns true if URL persistence works correctly, false otherwise
-   */
-  public testURLPersistence(): boolean {
-    // Test that URL updates when filters change
-    const originalURL = this.router.url;
-    
-    // Apply a filter and check URL changes
-    this.searchQuery.set('test');
-    const urlAfterSearch = this.router.url;
-    this.searchQuery.set('');
-    
-    // Apply status filter
-    this.selectedStatuses.set(['IN_PROGRESS']);
-    const urlAfterStatus = this.router.url;
-    this.selectedStatuses.set([]);
-    
-    // Check that URLs are different
-    return urlAfterSearch !== originalURL && urlAfterStatus !== originalURL;
-  }
-
-  /**
-   * Test result count display functionality
-   * @returns true if count display works correctly, false otherwise
-   */
-  public testResultCountDisplay(): boolean {
-    const countText = this.resultCountText();
-    
-    // Test different scenarios
-    this.searchQuery.set('test');
-    const searchCount = this.resultCountText();
-    this.searchQuery.set('');
-    
-    this.selectedStatuses.set(['IN_PROGRESS']);
-    const statusCount = this.resultCountText();
-    this.selectedStatuses.set([]);
-    
-    // Check that count text is updated correctly
-    return searchCount.includes('matching') && statusCount.includes('of');
-  }
-
-  /**
-   * Test performance of filter operations
-   * @returns true if performance is acceptable (<100ms), false otherwise
-   */
-  public testFilterPerformance(): boolean {
-    const startTime = performance.now();
-    
-    // Apply multiple filters
-    this.searchQuery.set('test');
-    this.selectedStatuses.set(['IN_PROGRESS']);
-    this.selectedTypes.set(['FEATURE']);
-    this.selectedPriorities.set(['P1-High']);
-    
-    // Force computation of filtered tasks
-    this.filteredTasks();
-    
-    const endTime = performance.now();
-    const duration = endTime - startTime;
-    
-    // Reset filters
-    this.clearAllFilters();
-    
-    return duration < 100; // Should complete in under 100ms
-  }
-
-  /**
-   * Test accessibility features
-   * @returns true if accessibility works correctly, false otherwise
-   */
-  public testAccessibility(): boolean {
-    // Test keyboard navigation (simplified)
-    const searchInput = document.querySelector('input[placeholder="Search tasks..."]');
-    if (searchInput) {
-      // Simulate keyboard input
-      const event = new KeyboardEvent('keydown', { key: 'Enter' });
-      searchInput.dispatchEvent(event);
-    }
-    
-    // Test screen reader compatibility (simplified)
-    const resultCount = document.querySelector('.result-count');
-    if (resultCount) {
-      const text = resultCount.textContent;
-      return text !== null && text.length > 0;
-    }
-    
-    return true;
-  }
-
-  /**
-   * Test responsive design at 768px breakpoint
-   * @returns true if responsive design works correctly, false otherwise
-   */
-  public testResponsiveDesign(): boolean {
-    // Simulate 768px viewport
-    const originalWidth = window.innerWidth;
-    window.innerWidth = 768;
-    
-    // Check if layout adjusts correctly
-    const container = document.querySelector('.project-container');
-    if (container) {
-      const style = window.getComputedStyle(container);
-      const isResponsive = style.display !== 'none';
-      
-      // Restore original width
-      window.innerWidth = originalWidth;
-      return isResponsive;
-    }
-    
-    return true;
-  }
-
   public openSessionForm(): void {
     this.sessionFormOpen.set(true);
   }
@@ -874,19 +577,25 @@ export class ProjectComponent implements OnInit {
     this.sessionConfig.set({ ...this.sessionConfig(), limit: val });
   }
 
+  private readonly VALID_PRIORITIES = ['build-first', 'review-first', 'balanced'] as const;
+  private readonly VALID_PROVIDERS = ['claude', 'glm', 'opencode', 'codex'] as const;
+
   public onPriorityChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value as 'build-first' | 'review-first' | 'balanced';
-    this.sessionConfig.set({ ...this.sessionConfig(), priority: val });
+    const val = (event.target as HTMLSelectElement).value;
+    if (!(this.VALID_PRIORITIES as readonly string[]).includes(val)) return;
+    this.sessionConfig.update(c => ({ ...c, priority: val as typeof this.VALID_PRIORITIES[number] }));
   }
 
   public onImplementProviderChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value as 'claude' | 'glm' | 'opencode' | 'codex';
-    this.sessionConfig.set({ ...this.sessionConfig(), implementProvider: val });
+    const val = (event.target as HTMLSelectElement).value;
+    if (!(this.VALID_PROVIDERS as readonly string[]).includes(val)) return;
+    this.sessionConfig.update(c => ({ ...c, implementProvider: val as typeof this.VALID_PROVIDERS[number] }));
   }
 
   public onReviewProviderChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value as 'claude' | 'glm' | 'opencode' | 'codex';
-    this.sessionConfig.set({ ...this.sessionConfig(), reviewProvider: val });
+    const val = (event.target as HTMLSelectElement).value;
+    if (!(this.VALID_PROVIDERS as readonly string[]).includes(val)) return;
+    this.sessionConfig.update(c => ({ ...c, reviewProvider: val as typeof this.VALID_PROVIDERS[number] }));
   }
 
   public onCreateSession(): void {
@@ -907,19 +616,31 @@ export class ProjectComponent implements OnInit {
   }
 
   public onPauseSession(id: string): void {
-    this.apiService.pauseAutoSession(id).subscribe({ next: () => this.loadSessions() });
+    this.apiService.pauseAutoSession(id).subscribe({
+      next: () => this.loadSessions(),
+      error: () => this.loadSessions(),
+    });
   }
 
   public onResumeSession(id: string): void {
-    this.apiService.resumeAutoSession(id).subscribe({ next: () => this.loadSessions() });
+    this.apiService.resumeAutoSession(id).subscribe({
+      next: () => this.loadSessions(),
+      error: () => this.loadSessions(),
+    });
   }
 
   public onStopSession(id: string): void {
-    this.apiService.stopAutoSession(id).subscribe({ next: () => this.loadSessions() });
+    this.apiService.stopAutoSession(id).subscribe({
+      next: () => this.loadSessions(),
+      error: () => this.loadSessions(),
+    });
   }
 
   public onDrainSession(id: string): void {
-    this.apiService.drainSession(id).subscribe({ next: () => this.loadSessions() });
+    this.apiService.drainSession(id).subscribe({
+      next: () => this.loadSessions(),
+      error: () => this.loadSessions(),
+    });
   }
 
   private loadSessions(): void {
@@ -948,7 +669,34 @@ export class ProjectComponent implements OnInit {
       const raw = localStorage.getItem('nitro-session-config');
       if (!raw) return {};
       const parsed: unknown = JSON.parse(raw);
-      return (typeof parsed === 'object' && parsed !== null) ? parsed as CreateSessionRequest : {};
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+      const obj = parsed as Record<string, unknown>;
+      const result: Record<string, unknown> = {};
+      if (typeof obj['concurrency'] === 'number') result['concurrency'] = obj['concurrency'];
+      if (typeof obj['limit'] === 'number') result['limit'] = obj['limit'];
+      if (typeof obj['retries'] === 'number') result['retries'] = obj['retries'];
+      const validPriorities = ['build-first', 'review-first', 'balanced'] as const;
+      if (
+        typeof obj['priority'] === 'string' &&
+        (validPriorities as readonly string[]).includes(obj['priority'])
+      ) {
+        result['priority'] = obj['priority'];
+      }
+      const validProviders = ['claude', 'glm', 'opencode', 'codex'] as const;
+      for (const key of ['implementProvider', 'implementFallbackProvider', 'reviewProvider', 'prepProvider']) {
+        if (
+          typeof obj[key] === 'string' &&
+          (validProviders as readonly string[]).includes(obj[key] as string)
+        ) {
+          result[key] = obj[key];
+        }
+      }
+      for (const key of ['implementModel', 'implementFallbackModel', 'reviewModel', 'prepModel']) {
+        if (typeof obj[key] === 'string') {
+          result[key] = obj[key];
+        }
+      }
+      return result as CreateSessionRequest;
     } catch {
       return {};
     }

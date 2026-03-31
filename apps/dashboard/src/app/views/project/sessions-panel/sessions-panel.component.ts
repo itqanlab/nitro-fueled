@@ -2,11 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  EventEmitter,
-  Input,
-  Output,
   computed,
   inject,
+  input,
+  output,
   signal,
 } from '@angular/core';
 import { NgClass } from '@angular/common';
@@ -27,11 +26,11 @@ export class SessionsPanelComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
 
-  @Input() sessions: SessionStatusResponse[] = [];
-  @Output() pauseSession = new EventEmitter<string>();
-  @Output() resumeSession = new EventEmitter<string>();
-  @Output() stopSession = new EventEmitter<string>();
-  @Output() drainSession = new EventEmitter<string>();
+  public readonly sessions = input<SessionStatusResponse[]>([]);
+  public readonly pauseSession = output<string>();
+  public readonly resumeSession = output<string>();
+  public readonly stopSession = output<string>();
+  public readonly drainSession = output<string>();
 
   public readonly now = signal(Date.now());
 
@@ -43,13 +42,13 @@ export class SessionsPanelComponent {
   }
 
   public onSessionClick(session: SessionStatusResponse): void {
-    void this.router.navigate(['/session', session.sessionId]);
+    void this.router.navigate(['/session', encodeURIComponent(session.sessionId)]);
   }
 
   public readonly heartbeatStatusMap = computed(() => {
     const nowMs = this.now();
     const map = new Map<string, { label: string; cssClass: string }>();
-    for (const session of this.sessions) {
+    for (const session of this.sessions()) {
       const hb = session.lastHeartbeat;
       if (!hb) {
         map.set(session.sessionId, { label: 'No heartbeat', cssClass: 'heartbeat-stale' });
@@ -77,7 +76,7 @@ export class SessionsPanelComponent {
 
   public readonly startedAtLabels = computed(() => {
     const map = new Map<string, string>();
-    for (const session of this.sessions) {
+    for (const session of this.sessions()) {
       map.set(
         session.sessionId,
         session.startedAt.length >= 16 ? session.startedAt.slice(11, 16) : session.startedAt,

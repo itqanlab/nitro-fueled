@@ -25,7 +25,6 @@ import type {
   GraphData,
   WorkerTree,
   SessionSummary,
-  SessionData,
   AnalyticsCostData,
   AnalyticsEfficiencyData,
   AnalyticsModelsData,
@@ -165,18 +164,8 @@ export class ApiService {
     return this.http.get<SessionSummary[]>(`${this.base}/sessions/active`);
   }
 
-  public getSessions(): Observable<SessionSummary[]> {
-    return this.http.get<SessionSummary[]>(`${this.base}/sessions`);
-  }
-
   public getProgressCenter(): Observable<ProgressCenterSnapshot> {
     return this.http.get<ProgressCenterSnapshot>(`${this.base}/progress-center`);
-  }
-
-  public getSession(id: string): Observable<SessionData> {
-    return this.http.get<SessionData>(
-      `${this.base}/sessions/${encodeURIComponent(id)}`,
-    );
   }
 
   public closeStaleSession(ttlMinutes?: number): Observable<{ closed_sessions: number }> {

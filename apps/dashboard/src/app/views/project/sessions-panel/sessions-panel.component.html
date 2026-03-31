@@ -1,16 +1,16 @@
 <div class="sessions-panel">
   <div class="sessions-panel-header">
     <h2 class="sessions-panel-title">Active Sessions</h2>
-    @if (sessions.length > 0) {
-      <span class="sessions-badge">{{ sessions.length }} active</span>
+    @if (sessions().length > 0) {
+      <span class="sessions-badge">{{ sessions().length }} active</span>
     }
   </div>
 
-  @if (sessions.length === 0) {
+  @if (sessions().length === 0) {
     <div class="sessions-empty">No active sessions</div>
   } @else {
     <div class="sessions-list">
-      @for (session of sessions; track session.sessionId) {
+      @for (session of sessions(); track session.sessionId) {
         <div
           class="session-card"
           [attr.role]="'button'"
