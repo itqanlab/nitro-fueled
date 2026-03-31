@@ -41,10 +41,14 @@ export class ProgressCenterService {
     const workers = this.cortexService.getWorkers({});
     const tasks = this.cortexService.getTasks({});
     const phaseTiming = this.cortexService.getPhaseTiming();
-    const events = this.cortexService.getEventsSince(0);
-    if (sessions === null || workers === null || tasks === null || phaseTiming === null || events === null) {
+    const allEvents = this.cortexService.getEventsSince(0);
+    if (sessions === null || workers === null || tasks === null || phaseTiming === null || allEvents === null) {
       return null;
     }
+    // Limit to recent events to avoid unbounded memory growth on long-running projects.
+    // The full event table can grow to tens of thousands of rows; only the last 2 hours are needed.
+    const eventCutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const events = allEvents.filter((e) => e.created_at >= eventCutoff);
 
     const activeSessions = sessions.filter((session) => isSessionActive(session));
     const taskMap = new Map(tasks.map((task) => [task.id, task]));
@@ -75,8 +79,12 @@ export class ProgressCenterService {
       .filter((task): task is ProgressCenterTask => task !== null)
       .sort((left, right) => right.progressPercent - left.progressPercent);
     const completedTasks = taskSnapshots.filter((task) => isTerminalTaskStatus(task.status)).length;
-    const totalTasks = Math.max(taskSnapshots.length, completedTasks + new Set(sessionWorkers.map((worker) => worker.task_id)).size, 1);
-    const progressPercent = Math.round((completedTasks / totalTasks) * 100);
+    const totalTasks = Math.max(
+      taskSnapshots.length,
+      completedTasks + new Set(sessionWorkers.map((worker) => worker.task_id).filter((id) => id !== '')).size,
+      1,
+    );
+    const sessionProgressPercent = Math.round((completedTasks / totalTasks) * 100);
     const stuckWorkers = sessionWorkers.filter((worker) => isWorkerStuck(worker, session)).length;
     const activeWorkers = sessionWorkers.filter((worker) => worker.status === 'running').length;
     const currentTask = taskSnapshots[0] ?? null;
@@ -87,7 +95,7 @@ export class ProgressCenterService {
       source: session.source,
       startedAt: session.started_at,
       status: sessionStatus(session, stuckWorkers),
-      progressPercent,
+      progressPercent: sessionProgressPercent,
       completedTasks,
       totalTasks,
       activeWorkers,

@@ -60,6 +60,9 @@ export function currentPhase(trace: CortexTaskTrace, status: CortexTask['status'
   const reviewWorker = trace.workers.some((worker) => worker.worker_type.toLowerCase() === 'review' && worker.status === 'running');
   if (reviewWorker) return 'QA';
   const seen = new Set(trace.phases.map((phase) => phase.phase));
+  // Check most advanced phases first so a task that has progressed past Dev is not frozen at Dev.
+  if (seen.has('Completion')) return 'Review';
+  if (seen.has('Review')) return 'QA';
   if (seen.has('Dev')) return 'Dev';
   if (seen.has('Architect')) return 'Architect';
   if (seen.has('PM')) return 'PM';
