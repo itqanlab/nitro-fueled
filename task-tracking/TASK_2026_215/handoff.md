@@ -8,7 +8,7 @@
 - apps/dashboard-api/src/auto-pilot/session-runner.ts (modified, +22 lines) — added custom flow loading and logging in spawnForCandidate
 
 ## Commits
-- (pending — to be added after commit)
+- f93d6b8: feat(auto-pilot): add custom flow routing for TASK_2026_215
 
 ## Decisions
 - Custom flow is resolved before `claimTask()` so that a missing flow (fallback) is detected before the claim, keeping the claim/spawn operation clean
