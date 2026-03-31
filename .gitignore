@@ -20,8 +20,6 @@ task-tracking/active-sessions.md
 .worker-logs/
 .nitro-fueled/
 .nitro/
-# But track the scaffold template for .nitro/
-!apps/cli/scaffold/.nitro/
 
 # Agent worktrees (ephemeral, created by MCP nitro-cortex)
 .claude/worktrees/

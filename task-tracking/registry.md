@@ -184,7 +184,7 @@
 | TASK_2026_179 | IN_PROGRESS | REFACTORING | Replace console.log/console.error with Structured Logger | 2026-03-30 | default |
 | TASK_2026_180 | COMPLETE    | REFACTORING | Migrate @Input/@Output Decorators to Signal-Based input()/output() | 2026-03-30 | default |
 | TASK_2026_181 | COMPLETE    | BUGFIX  | Replace Stale session-orchestrator References in Scaffold with nitro-cortex | 2026-03-30 | default |
-| TASK_2026_182 | IMPLEMENTED | REFACTORING | Remove Deprecated Code — getConfigPath, rxjs/operators Import, prebuild-install | 2026-03-30 | default |
+| TASK_2026_182 | COMPLETE    | REFACTORING | Remove Deprecated Code — getConfigPath, rxjs/operators Import, prebuild-install | 2026-03-30 | default |
 | TASK_2026_183 | COMPLETE    | FEATURE | Real-Time Progress Center — Live Status, Health & ETA | 2026-03-30 | default |
 | TASK_2026_184 | COMPLETE    | FEATURE | Interactive Command Console — Embedded Terminal & Chat in Dashboard | 2026-03-30 | default |
 | TASK_2026_185 | IN_PROGRESS | REFACTORING | MCP Cortex — Health Constants & context_overflow State | 2026-03-30 | default |
@@ -215,7 +215,7 @@
 | TASK_2026_210 | COMPLETE    | FEATURE | Migrate Dashboard Frontend to Session-Centric API | 2026-03-30 | default |
 | TASK_2026_211 | COMPLETE    | BUGFIX  | Untitled | 2026-03-30 | default |
 | TASK_2026_212 | COMPLETE    | RESEARCH | GPT-5.4 Prep Worker Kill Rate — Root Cause Investigation | 2026-03-30 | default |
-| TASK_2026_213 | CREATED     | REFACTORING | Refactor Command Console Controller — NestJS DTO Validation | 2026-03-30 | default |
+| TASK_2026_213 | COMPLETE    | REFACTORING | Refactor Command Console Controller — NestJS DTO Validation | 2026-03-30 | default |
 | TASK_2026_214 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_215 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_216 | COMPLETE    | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
@@ -272,14 +272,14 @@
 | TASK_2026_267 | CREATED     | FEATURE | Review Worker: Holistic Parent Review After Subtask Completion | 2026-03-31 | default |
 | TASK_2026_268 | CREATED     | FEATURE | Dashboard UI: Subtask Tree Display in Task Detail | 2026-03-31 | default |
 | TASK_2026_269 | CREATED     | FEATURE | Dashboard API: Subtask Data in Task Response | 2026-03-31 | default |
-| TASK_2026_270 | CREATED     | FEATURE | MCP Cortex: Launcher-Aware spawn_worker and get_available_providers | 2026-03-31 | default |
+| TASK_2026_270 | COMPLETE    | FEATURE | MCP Cortex: Launcher-Aware spawn_worker and get_available_providers | 2026-03-31 | default |
 | TASK_2026_271 | CREATED     | FEATURE | Autopilot: Prompt Adapter Layer + Supervisor Codex Launcher Routing | 2026-03-31 | default |
 | TASK_2026_272 | CREATED     | RESEARCH | Research — Multi-Launcher Data Model, Compatibility Matrix, and MCP API Spec | 2026-03-31 | default |
 | TASK_2026_273 | CREATED     | RESEARCH | Research — Per-Harness Prompt Templates and Supervisor Routing Spec | 2026-03-31 | default |
 | TASK_2026_274 | COMPLETE    | FEATURE | Enforce preferred_tier at Task Creation and Hard-Route in Supervisor | 2026-03-31 | default |
 | TASK_2026_275 | CREATED     | FEATURE | Add work_type Field to Task Template for Tier Routing | 2026-03-31 | default |
 | TASK_2026_276 | CREATED     | FEATURE | Phase-Level Model Routing in Orchestration Skill | 2026-03-31 | default |
-| TASK_2026_277 | IMPLEMENTED | FEATURE | CLAUDE.md Split — Introduce .nitro/CLAUDE.nitro.md as Nitro's System Prompt | 2026-03-31 | default |
+| TASK_2026_277 | COMPLETE    | FEATURE | CLAUDE.md Split — Introduce .nitro/CLAUDE.nitro.md as Nitro's System Prompt | 2026-03-31 | default |
 | TASK_2026_278 | COMPLETE    | REFACTORING | Scaffold Source Restructure — Replace scaffold/.claude/ with scaffold/nitro/ and scaffold/nitro-root/ | 2026-03-31 | default |
 | TASK_2026_279 | COMPLETE    | REFACTORING | Rename Unprefixed .claude/ Dirs and Files to nitro-* (Structural Rename) | 2026-03-31 | default |
 | TASK_2026_280 | CREATED     | REFACTORING | Update All Internal References After nitro-* Rename | 2026-03-31 | default |
