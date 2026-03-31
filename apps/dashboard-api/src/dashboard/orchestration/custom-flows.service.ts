@@ -27,7 +27,8 @@ interface TaskFlowRow {
 function rowToRecord(row: CustomFlowRow): CustomFlowRecord {
   let phases: CustomFlowPhaseRecord[] = [];
   try {
-    phases = JSON.parse(row.phases_json) as CustomFlowPhaseRecord[];
+    const parsed = JSON.parse(row.phases_json);
+    phases = Array.isArray(parsed) ? (parsed as CustomFlowPhaseRecord[]) : [];
   } catch {
     phases = [];
   }
@@ -161,8 +162,11 @@ export class CustomFlowsService {
     const db = this.openDb();
     if (!db) return false;
     try {
-      const result = db.prepare('DELETE FROM custom_flows WHERE id = ?').run(id);
-      if (result.changes === 0) return false;
+      const existing = db.prepare('SELECT id FROM custom_flows WHERE id = ?').get(id);
+      if (!existing) return false;
+      // Clear FK references on tasks before deleting to avoid dangling custom_flow_id
+      db.prepare(`UPDATE tasks SET custom_flow_id = NULL WHERE custom_flow_id = ?`).run(id);
+      db.prepare('DELETE FROM custom_flows WHERE id = ?').run(id);
       return true;
     } catch (err) {
       this.logger.error(`delete failed: ${String(err)}`);

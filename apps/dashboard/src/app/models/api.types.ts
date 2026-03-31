@@ -455,6 +455,7 @@ export interface CortexTaskContext extends CortexTask {
   readonly description: string;
   readonly acceptance_criteria: string;
   readonly file_scope: string[];
+  readonly custom_flow_id?: string | null;
 }
 
 export interface CortexSession {

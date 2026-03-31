@@ -17,6 +17,7 @@ import { FlowMetadataService } from './flow-metadata.service';
 import { CustomFlowsService } from './custom-flows.service';
 import {
   FlowDefinition,
+  FlowPhase,
   FlowWithMetadata,
   FlowListQuery,
   FlowListResponse,
@@ -67,7 +68,7 @@ export class OrchestrationController {
       // Apply sorting
       if (query.sortBy) {
         filteredFlows.sort((a, b) => {
-          let aValue: any, bValue: any;
+          let aValue: string | number, bValue: string | number;
           
           switch (query.sortBy) {
             case 'name':
@@ -282,7 +283,7 @@ export class OrchestrationController {
       return result;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to create custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to create custom flow', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -291,7 +292,7 @@ export class OrchestrationController {
     try {
       return this.customFlowsService.findAll();
     } catch (error) {
-      throw new HttpException(`Failed to list custom flows: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to list custom flows', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -305,7 +306,7 @@ export class OrchestrationController {
       return flow;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to get custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to get custom flow', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -319,7 +320,7 @@ export class OrchestrationController {
       return result;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to update custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to update custom flow', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -333,7 +334,7 @@ export class OrchestrationController {
       return null;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to delete custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to delete custom flow', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -347,7 +348,7 @@ export class OrchestrationController {
       return result;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to update phases: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to update phases', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -366,7 +367,7 @@ export class OrchestrationController {
       return { taskId, flowId: req.flowId };
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to set flow override: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to set flow override', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -380,7 +381,7 @@ export class OrchestrationController {
       return { taskId, flowId: null };
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(`Failed to clear flow override: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to clear flow override', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -388,9 +389,9 @@ export class OrchestrationController {
    * Apply phase modifications to flow phases
    */
   private applyPhaseModifications(
-    phases: any[], 
-    modifications?: { [phaseOrder: number]: any }
-  ): any[] {
+    phases: FlowPhase[],
+    modifications?: { [phaseOrder: number]: Partial<FlowPhase> }
+  ): FlowPhase[] {
     if (!modifications) {
       return phases;
     }

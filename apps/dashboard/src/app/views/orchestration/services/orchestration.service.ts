@@ -1,5 +1,4 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiService } from '../../../services/api.service';
@@ -55,13 +54,13 @@ export class OrchestrationService {
   });
 
   // Computed signals
-  public flows = this.flowsSignal.asReadonly();
-  public loading = this.loadingSignal.asReadonly();
-  public error = this.errorSignal.asReadonly();
-  public selectedFlow = this.selectedFlowSignal.asReadonly();
+  public readonly flows = this.flowsSignal.asReadonly();
+  public readonly loading = this.loadingSignal.asReadonly();
+  public readonly error = this.errorSignal.asReadonly();
+  public readonly selectedFlow = this.selectedFlowSignal.asReadonly();
 
   // Popular flows computed
-  public popularFlows = computed(() => {
+  public readonly popularFlows = computed(() => {
     const flows = this.flows();
     return flows
       .filter(flow => flow.executionCount && flow.executionCount > 0)
@@ -70,13 +69,13 @@ export class OrchestrationService {
   });
 
   // Flow types computed
-  public flowTypes = computed(() => {
+  public readonly flowTypes = computed(() => {
     const flows = this.flows();
     const types = flows.map(flow => flow.type);
     return [...new Set(types)];
   });
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.loadFlows();
     this.loadCustomFlows();
   }
@@ -345,8 +344,8 @@ export class OrchestrationService {
         // Apply sorting
         if (query?.sortBy) {
           filteredFlows.sort((a, b) => {
-            let aValue: any, bValue: any;
-            
+            let aValue: string | number, bValue: string | number;
+
             switch (query.sortBy) {
               case 'name':
                 aValue = a.name;
@@ -404,7 +403,7 @@ export class OrchestrationService {
   /**
    * Get flow metrics
    */
-  getFlowMetrics(): Observable<any> {
+  getFlowMetrics(): Observable<unknown> {
     // Mock metrics data
     const mockMetrics = {
       totalExecuted: 178,
@@ -424,7 +423,7 @@ export class OrchestrationService {
   /**
    * Clone a flow to create a custom variant
    */
-  cloneFlow(sourceFlowId: string, customName: string): Observable<any> {
+  cloneFlow(sourceFlowId: string, customName: string): Observable<unknown> {
     const sourceFlow = this.flows().find(f => f.id === sourceFlowId);
     if (!sourceFlow) {
       throw new Error('Source flow not found');

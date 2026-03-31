@@ -218,8 +218,8 @@ export class TaskDetailComponent {
     // Initialize the selected override from context data
     effect(() => {
       const context = this.dataSignal()?.contextData;
-      if (context && 'custom_flow_id' in context) {
-        this.selectedFlowOverrideId.set((context as { custom_flow_id?: string | null }).custom_flow_id ?? null);
+      if (context) {
+        this.selectedFlowOverrideId.set(context.custom_flow_id ?? null);
       }
     });
   }
