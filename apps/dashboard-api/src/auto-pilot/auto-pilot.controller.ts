@@ -12,6 +12,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   HttpCode,
@@ -34,8 +35,6 @@ import type {
 import type { SessionStatusResponse } from './auto-pilot.types';
 
 const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/;
-const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
-const MAX_TASK_IDS = 50;
 const VALID_PROVIDERS = new Set(['claude', 'glm', 'opencode', 'codex']);
 const VALID_PRIORITIES = new Set(['build-first', 'review-first', 'balanced']);
 
@@ -133,11 +132,18 @@ export class AutoPilotController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   public pauseSession(@Param('id') id: string): SessionActionResponse {
     this.validateSessionId(id);
-    const response = this.autoPilotService.pauseSession(id);
-    if (!response) {
-      throw new NotFoundException(`Session ${id} not found`);
+    try {
+      const response = this.autoPilotService.pauseSession(id);
+      if (!response) {
+        throw new NotFoundException(`Session ${id} not found`);
+      }
+      return response;
+    } catch (err) {
+      if (err instanceof NotFoundException) throw err;
+      throw new ConflictException(
+        err instanceof Error ? err.message : String(err),
+      );
     }
-    return response;
   }
 
   @Post(':id/resume')
@@ -149,11 +155,18 @@ export class AutoPilotController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   public resumeSession(@Param('id') id: string): SessionActionResponse {
     this.validateSessionId(id);
-    const response = this.autoPilotService.resumeSession(id);
-    if (!response) {
-      throw new NotFoundException(`Session ${id} not found`);
+    try {
+      const response = this.autoPilotService.resumeSession(id);
+      if (!response) {
+        throw new NotFoundException(`Session ${id} not found`);
+      }
+      return response;
+    } catch (err) {
+      if (err instanceof NotFoundException) throw err;
+      throw new ConflictException(
+        err instanceof Error ? err.message : String(err),
+      );
     }
-    return response;
   }
 
   @Post(':id/stop')
@@ -207,22 +220,6 @@ export class AutoPilotController {
     }
 
     const result: Record<string, unknown> = {};
-
-    if (body['taskIds'] !== undefined) {
-      const taskIds = body['taskIds'];
-      if (!Array.isArray(taskIds)) {
-        throw new BadRequestException('taskIds must be an array');
-      }
-      if (taskIds.length > MAX_TASK_IDS) {
-        throw new BadRequestException(`taskIds max ${MAX_TASK_IDS}`);
-      }
-      for (const id of taskIds) {
-        if (typeof id !== 'string' || !TASK_ID_RE.test(id)) {
-          throw new BadRequestException('Each taskId must match TASK_YYYY_NNN');
-        }
-      }
-      result['taskIds'] = taskIds;
-    }
 
     if (body['concurrency'] !== undefined) {
       const c = body['concurrency'];
@@ -287,6 +284,7 @@ export class AutoPilotController {
   }
 
   private parseUpdateConfigBody(body: unknown): UpdateSessionConfigRequest {
+    if (body === undefined || body === null) return {};
     if (!isRecord(body)) {
       throw new BadRequestException('Request body must be a JSON object');
     }

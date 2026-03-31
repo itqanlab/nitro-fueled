@@ -32,6 +32,7 @@ export class SessionRunner {
   private tasksCompleted = 0;
   private tasksFailed = 0;
   private readonly startedAt: string = new Date().toISOString();
+  private readonly onStopped?: (sessionId: string) => void;
 
   public constructor(
     public readonly sessionId: string,
@@ -39,8 +40,10 @@ export class SessionRunner {
     private readonly supervisorDb: SupervisorDbService,
     private readonly workerManager: WorkerManagerService,
     private readonly promptBuilder: PromptBuilderService,
+    onStopped?: (sessionId: string) => void,
   ) {
     this.logger = new Logger(`SessionRunner[${sessionId}]`);
+    this.onStopped = onStopped;
   }
 
   // ============================================================
@@ -518,6 +521,9 @@ export class SessionRunner {
     });
 
     this.logger.log(`Session stopped: ${reason}`);
+
+    // Notify manager so self-terminated sessions are removed from the Map
+    this.onStopped?.(this.sessionId);
   }
 
   private clearTimer(): void {

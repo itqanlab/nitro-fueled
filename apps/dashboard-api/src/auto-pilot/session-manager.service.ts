@@ -17,6 +17,8 @@ import type {
 } from './auto-pilot.types';
 import { DEFAULT_SUPERVISOR_CONFIG } from './auto-pilot.types';
 
+const MAX_CONCURRENT_SESSIONS = 10;
+
 @Injectable()
 export class SessionManagerService implements OnModuleDestroy {
   private readonly logger = new Logger(SessionManagerService.name);
@@ -45,12 +47,17 @@ export class SessionManagerService implements OnModuleDestroy {
       throw new Error('Cortex DB not available. Run a task first to initialize the database.');
     }
 
+    if (this.runners.size >= MAX_CONCURRENT_SESSIONS) {
+      throw new Error(`Session limit reached (max ${MAX_CONCURRENT_SESSIONS} concurrent sessions)`);
+    }
+
     const mergedConfig: SupervisorConfig = { ...DEFAULT_SUPERVISOR_CONFIG, ...config };
     mergedConfig.working_directory = mergedConfig.working_directory || process.cwd();
 
+    const configRecord: Record<string, unknown> = { ...mergedConfig };
     const sessionId = this.supervisorDb.createSession(
       'dashboard-supervisor',
-      mergedConfig as unknown as Record<string, unknown>,
+      configRecord,
       mergedConfig.limit,
     );
 
@@ -60,6 +67,7 @@ export class SessionManagerService implements OnModuleDestroy {
       this.supervisorDb,
       this.workerManager,
       this.promptBuilder,
+      (id) => this.runners.delete(id),
     );
 
     runner.start();
