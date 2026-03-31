@@ -39,7 +39,7 @@
 - packages/mcp-cortex/src/tools/providers.ts (modified)
 
 ## Commits
-- (pending — implementation commit)
+- 7b7ea42: refactor(logging): replace console.log/error with structured loggers for TASK_2026_179
 
 ## Decisions
 - CLI logger (`logger.ts`): thin wrapper around console.* maintaining stdout/stderr separation. Info/log writes to stdout (user-visible), warn/error to stderr, debug gated by DEBUG env var.
