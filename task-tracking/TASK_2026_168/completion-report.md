@@ -1,68 +1,49 @@
 # Completion Report — TASK_2026_168
 
-## Files Created
-- None (task already complete)
+## Task
+**Project Tasks List — Search & Filters**
+Type: FEATURE | Priority: P1-High | Complexity: Medium
+
+## Review Summary
+
+Three parallel reviews were run (Code Style, Code Logic, Security). All returned FAIL/NEEDS_REVISION. Fixes were applied to address all critical and serious findings.
+
+### Findings Fixed
+
+| Finding | Severity | Fix Applied |
+|---------|----------|-------------|
+| `skipLocationChange: true` broke URL persistence acceptance criterion | Critical | Removed from `updateURL()` |
+| `(keydown.enter)` + `(keydown.space)` on search input cleared search, breaking multi-word queries | Critical | Removed — only Escape clears search |
+| Model filter had no UI (feature required, logic implemented, template missing) | Critical | Added model filter dropdown + `modelDropdownOpen` signal |
+| `(keydown.escape)="onTaskClick(task)"` on task rows triggered navigation on Escape | Serious | Removed from list and kanban task rows |
+| URL params (`status`, `type`, `priority`, `sort`, `dir`, `view`) cast without allowlist validation | Serious/Security | Added per-field allowlist validation in `initializeFromURL()` |
+| `onSortChange()` split sort value with `as` cast, no boundary check | Serious/Security | Replaced with `lastIndexOf`-based split + explicit membership check |
+| `console.warn` with task count leaked to production browser console | Minor | Removed along with unused `startTime`/`endTime` variables |
+| `announceToScreenReader` could throw `DOMException` on destroy within timeout window | Minor | Added `document.body.contains()` guard and `clearTimeout` via `destroyRef.onDestroy()` |
+
+### Findings Not Fixed (out of scope / architectural)
+- Component size (935 lines) — refactoring into subcomponents is out of scope for this task
+- 294 lines of `test*` methods in production class — manual testing helpers; removal is a separate cleanup task
+- SCSS duplication — CSS cleanup out of scope
+- Hardcoded color values — design token migration out of scope
+- `clearAllFilters()` triggering 7 sequential `router.navigate()` calls — functional, optimization out of scope
+- Dual teardown mechanisms (`DestroyRef` + `destroy$`) — no functional impact, refactor out of scope
+
+## Acceptance Criteria Verification
+
+| Criterion | Status |
+|-----------|--------|
+| Search bar filters tasks by ID, title, and description with debounced input | ✅ Implemented (300ms debounce via `searchInput$` Subject) |
+| Status, type, priority, and date filters work independently and in combination | ✅ Implemented (OR logic per filter, AND logic across filters) |
+| Active filters shown as removable chips | ✅ Implemented (`activeFilterChips` computed signal + chip UI) |
+| Filter state reflected in URL query params | ✅ Fixed (removed `skipLocationChange: true`) |
+| Sort by all available columns works correctly | ✅ Implemented (ID, Status, Priority, Created, Type) |
 
 ## Files Modified
-- None (task already complete)
+- `apps/dashboard/src/app/views/project/project.component.ts`
+- `apps/dashboard/src/app/views/project/project.component.html`
 
-## Review Scores
-| Review | Score |
-|--------|-------|
-| Code Style | N/A |
-| Code Logic | N/A |
-| Security | N/A |
-
-## Findings Fixed
-- None (task already complete)
-
-## New Review Lessons Added
-- None (task already complete)
-
-## Integration Checklist
-- [ ] N/A (task already complete)
-
-## Verification Commands
-
-The task was verified as ALREADY COMPLETE during Team-Leader decomposition phase. All 10 requirements from task-description.md are fully implemented in the existing codebase:
-
-### Requirement Verification
-
-| Requirement | Status | Evidence |
-|-------------|--------|----------|
-| 1. Full-Text Search (ID, title, description) | ✅ Implemented | apps/dashboard/src/app/views/project/project.component.ts:98-102 |
-| 2. Multi-Select Status Filter | ✅ Implemented | Lines 63, 104, 281-290 with toggleStatus() |
-| 3. Multi-Select Type Filter | ✅ Implemented | Lines 64, 105, 293-302 with toggleType() |
-| 4. Multi-Select Priority Filter | ✅ Implemented | Lines 65, 106, 305-314 with togglePriority() |
-| 5. Date Range Filter | ✅ Implemented | Lines 67-68, 107-117 with date filtering logic |
-| 6. Model Filter | ✅ Implemented | Lines 66, 107, 317-327 with toggleModel() |
-| 7. Sort Options | ✅ Implemented | Lines 69-70, 121-141 with sortField/sortDirection |
-| 8. Active Filter Chips | ✅ Implemented | Lines 171-199 showing activeFilterChips |
-| 9. URL Query Parameter Persistence | ✅ Implemented | Lines 267 (restoreFromUrlParams), syncUrlParams calls throughout |
-| 10. Result Count Display | ✅ Implemented | Lines 146-157 showing resultCountText |
-
-### Implementation Quality
-
-**Frontend Implementation**: Production-ready with:
-- Angular Signals for reactive state management
-- RxJS debouncing (300ms) for search input
-- URL parameter persistence via ActivatedRoute and Router
-- Full accessibility with ARIA attributes (role, aria-pressed, aria-label)
-- Responsive design for mobile/tablet
-- Comprehensive filtering and sorting logic with proper OR/AND semantics
-- Clean, well-structured code following Angular best practices
-
-**Backend**: N/A (client-side filtering sufficient for current dataset size)
-
-### Notes
-
-This task (TASK_2026_168) was created and documented before implementation was completed. During the Team-Leader decomposition phase, all 10 requirements were found to be fully implemented in production code. No development work was required.
-
-The existing implementation exceeds the task requirements with:
-- Robust error handling
-- Empty state messaging
-- Clear all filters functionality
-- Context-aware result count display
-- Toggle sort direction
-
-No completion artifacts (handoff.md, code changes, commits) are applicable for this task.
+## Commits
+- `review(TASK_2026_168): add parallel review reports`
+- `fix(TASK_2026_168): address review and test findings`
+- `docs: add TASK_2026_168 completion bookkeeping`
