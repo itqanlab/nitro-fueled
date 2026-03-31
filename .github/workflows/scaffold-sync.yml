@@ -1,0 +1,24 @@
+name: Scaffold Sync Check
+
+on:
+  pull_request:
+    paths:
+      - '.claude/**'
+      - 'apps/cli/scaffold/.claude/**'
+  push:
+    branches: [main, dev]
+    paths:
+      - '.claude/**'
+      - 'apps/cli/scaffold/.claude/**'
+
+jobs:
+  check-sync:
+    name: Check .claude/ ↔ scaffold sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check scaffold sync
+        run: |
+          chmod +x scripts/check-scaffold-sync.sh
+          ./scripts/check-scaffold-sync.sh

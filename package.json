@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "build": "npm run build --workspaces",
-    "dashboard": "node apps/cli/dist/index.js dashboard"
+    "dashboard": "node apps/cli/dist/index.js dashboard",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "workspaces": [
     "apps/*",

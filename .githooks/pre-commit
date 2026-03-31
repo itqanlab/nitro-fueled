@@ -1,0 +1,8 @@
+#!/bin/bash
+# Pre-commit hook: verify .claude/ files staged for commit have matching scaffold counterparts.
+# Installed via: git config core.hooksPath .githooks  (run `npm install` to set this up)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+exec "$ROOT/scripts/check-scaffold-sync.sh" --staged

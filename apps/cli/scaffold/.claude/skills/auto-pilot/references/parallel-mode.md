@@ -46,6 +46,17 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 4. Treat the DB responses as the complete current truth for this tick.
 5. Do **not** read `state.md`, `active-sessions.md`, `registry.md`, or any task folder file on this path.
 
+**Startup IMPLEMENTED Orphan Detection (best-effort)**:
+
+After completing the three DB calls above, check whether any tasks are at `IMPLEMENTED` status with no running review worker. This condition indicates that a prior session exited before spawning a review worker for these tasks — either due to a `--limit` cutoff or a premature stop.
+
+- If any such orphaned IMPLEMENTED tasks are found: emit a startup warning via `log_event()` if available:
+  ```
+  STARTUP_WARNING: Found N IMPLEMENTED task(s) with no active review worker — TASK_XXX, TASK_YYY. Queuing for immediate review.
+  ```
+- These tasks are already classified as `READY_FOR_REVIEW` by Step 3 and added to `review_candidates` in Step 4. No special handling is needed beyond the warning — the normal queue routing picks them up.
+- This check is best-effort: if the DB call fails, skip the warning and continue.
+
 **Compaction survival (`cortex_available = true`):**
 
 1. After compaction, immediately call `list_workers(compact: true)`.
@@ -320,13 +331,39 @@ This guard applies at **Step 5 (Spawn Workers)**. Before calling `spawn_worker()
 1. Re-query `get_tasks(compact: true)` and `list_workers(compact: true)`.
 2. If actionable tasks remain and slots are available, go to Step 4.
 3. If no actionable tasks remain but workers are still active, go to Step 6.
-4. If no actionable tasks remain and no workers are active, stop the loop.
-5. On stop, optionally render a final debug `state.md` snapshot and/or materialize `log.md` from DB events.
-6. If `query_events(session_id)` exists, use it to render `log.md` at session end.
-7. If `query_events()` or `log_event()` is unavailable, it is acceptable to leave `log.md` absent.
-8. Session history and analytics are end-of-session bookkeeping steps, not loop-body writes.
+4. **Before stopping** — run the Pre-Exit IMPLEMENTED Orphan Guard (see subsection below). Only proceed to step 5 if the guard confirms no orphans exist or slots are exhausted.
+5. If the guard finds no orphans (or records a handoff warning for slot-exhausted orphans), stop the loop.
+6. On stop, optionally render a final debug `state.md` snapshot and/or materialize `log.md` from DB events.
+7. If `query_events(session_id)` exists, use it to render `log.md` at session end.
+8. If `query_events()` or `log_event()` is unavailable, it is acceptable to leave `log.md` absent.
+9. Session history and analytics are end-of-session bookkeeping steps, not loop-body writes.
+
+#### Pre-Exit IMPLEMENTED Orphan Guard (MANDATORY)
+
+This guard runs **before every stop** — whether triggered by `--limit` reached, no actionable tasks remaining, all tasks blocked, or any other termination condition.
+
+**Preferred path (`cortex_available = true`):**
+
+1. From the current `get_tasks(compact: true)` result, identify all tasks with status `IMPLEMENTED`.
+2. From the current `list_workers(compact: true)` result, collect the set of `task_id` values assigned to running review workers.
+3. Compute `orphaned_implemented = IMPLEMENTED tasks with no running review worker`.
+4. If `orphaned_implemented` is non-empty:
+   a. Re-compute `slots = concurrency_limit - running_workers_in_this_session`.
+   b. **If `slots > 0`**: Spawn a Review+Fix Worker for each orphaned task (up to `slots`). **This overrides all stop conditions.** Go to Step 6 (continue the loop — do NOT exit). Do not stop until a subsequent pass of this guard returns empty `orphaned_implemented` with no workers active.
+   c. **If `slots == 0`**: Record the orphaned task IDs in the session summary as a handoff warning and emit via `log_event()` if available:
+      ```
+      HANDOFF_WARNING: IMPLEMENTED orphans with no review worker at session end — TASK_XXX, TASK_YYY. Next session will detect and queue these automatically.
+      ```
+      Then proceed with the stop normally (step 5 above).
+5. If `orphaned_implemented` is empty: no action needed — proceed with the stop normally.
 
 **Fallback path (`cortex_available = false`):**
+
+1. Read task `status` files to find tasks at `IMPLEMENTED`.
+2. Cross-reference against `list_workers()` output to detect orphans.
+3. Apply the same slot check and spawn/warn logic as the preferred path.
+
+**Step 8 stop — fallback path (`cortex_available = false`):**
 
 1. Write final `{SESSION_DIR}state.md` and append the final `log.md` rows.
 2. Run the existing session-history and analytics bookkeeping.
