@@ -25,6 +25,7 @@ export interface SupervisorConfig {
   implement_fallback_model: string;
   review_provider: ProviderType;
   review_model: string;
+  supervisor_model: string;
   priority: PriorityStrategy;
   retries: number;
   poll_interval_ms: number;
@@ -51,6 +52,7 @@ export const DEFAULT_SUPERVISOR_CONFIG: SupervisorConfig = {
   implement_fallback_model: 'claude-sonnet-4-6',
   review_provider: 'claude',
   review_model: 'claude-sonnet-4-6',
+  supervisor_model: 'claude-haiku-4-5-20251001',
   priority: 'build-first',
   retries: 2,
   poll_interval_ms: 30_000,
@@ -151,6 +153,7 @@ export type UpdateConfigRequest = Partial<Pick<SupervisorConfig,
   | 'implement_fallback_model'
   | 'review_provider'
   | 'review_model'
+  | 'supervisor_model'
   | 'priority'
   | 'retries'
   | 'poll_interval_ms'

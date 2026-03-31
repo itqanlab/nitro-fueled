@@ -33,6 +33,7 @@ export class SessionRunner {
   private tasksFailed = 0;
   private readonly startedAt: string = new Date().toISOString();
   private readonly onStopped?: (sessionId: string) => void;
+  private readonly onEvent?: (event: SupervisorEvent) => void;
 
   public constructor(
     public readonly sessionId: string,
@@ -41,9 +42,11 @@ export class SessionRunner {
     private readonly workerManager: WorkerManagerService,
     private readonly promptBuilder: PromptBuilderService,
     onStopped?: (sessionId: string) => void,
+    onEvent?: (event: SupervisorEvent) => void,
   ) {
     this.logger = new Logger(`SessionRunner[${sessionId}]`);
     this.onStopped = onStopped;
+    this.onEvent = onEvent;
   }
 
   // ============================================================
@@ -147,6 +150,7 @@ export class SessionRunner {
 
     try {
       this.supervisorDb.updateHeartbeat(this.sessionId);
+      this.emitEvent('supervisor:heartbeat', { loopStatus: this.loopStatus });
 
       const activeWorkers = this.supervisorDb.getActiveWorkers(this.sessionId);
       this.processWorkerHealth(activeWorkers);
@@ -547,5 +551,6 @@ export class SessionRunner {
     try {
       this.logger.debug(`Event: ${event.type} — ${JSON.stringify(payload)}`);
     } catch { /* best effort */ }
+    this.onEvent?.(event);
   }
 }

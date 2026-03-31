@@ -14,8 +14,10 @@ import type {
   SupervisorConfig,
   SessionStatusResponse,
   UpdateConfigRequest,
+  SupervisorEvent,
 } from './auto-pilot.types';
 import { DEFAULT_SUPERVISOR_CONFIG } from './auto-pilot.types';
+import { DashboardGateway } from '../dashboard/dashboard.gateway';
 
 const MAX_CONCURRENT_SESSIONS = 10;
 
@@ -28,6 +30,7 @@ export class SessionManagerService implements OnModuleDestroy {
     private readonly supervisorDb: SupervisorDbService,
     private readonly workerManager: WorkerManagerService,
     private readonly promptBuilder: PromptBuilderService,
+    private readonly dashboardGateway: DashboardGateway,
   ) {}
 
   public onModuleDestroy(): void {
@@ -61,6 +64,10 @@ export class SessionManagerService implements OnModuleDestroy {
       mergedConfig.limit,
     );
 
+    const onEvent = (event: SupervisorEvent): void => {
+      this.dashboardGateway.emitSupervisorEvent(event);
+    };
+
     const runner = new SessionRunner(
       sessionId,
       mergedConfig,
@@ -68,6 +75,7 @@ export class SessionManagerService implements OnModuleDestroy {
       this.workerManager,
       this.promptBuilder,
       (id) => this.runners.delete(id),
+      onEvent,
     );
 
     runner.start();

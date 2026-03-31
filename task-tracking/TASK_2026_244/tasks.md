@@ -39,7 +39,7 @@
 **Developer**: nitro-backend-developer
 **Tasks**: 4 | **Dependencies**: None
 
-### Task 1.1: Add `supervisor_model` to `SupervisorConfig`, `DEFAULT_SUPERVISOR_CONFIG`, and `UpdateConfigRequest` IN PROGRESS
+### Task 1.1: Add `supervisor_model` to `SupervisorConfig`, `DEFAULT_SUPERVISOR_CONFIG`, and `UpdateConfigRequest` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.types.ts`
 **Spec Reference**: plan.md — Component 1, Type Changes Summary
@@ -58,7 +58,7 @@
 
 ---
 
-### Task 1.2: Add `supervisorModel` to `CreateSessionRequest` and `UpdateSessionConfigRequest` IN PROGRESS
+### Task 1.2: Add `supervisorModel` to `CreateSessionRequest` and `UpdateSessionConfigRequest` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.model.ts`
 **Spec Reference**: plan.md — Component 2
@@ -75,7 +75,7 @@
 
 ---
 
-### Task 1.3: Export `DashboardGateway` from `DashboardModule` IN PROGRESS
+### Task 1.3: Export `DashboardGateway` from `DashboardModule` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/dashboard/dashboard.module.ts`
 **Spec Reference**: plan.md — Component 5, Module Wiring section
@@ -92,7 +92,7 @@
 
 ---
 
-### Task 1.4: Add `DashboardModule` import to `AutoPilotModule` IN PROGRESS
+### Task 1.4: Add `DashboardModule` import to `AutoPilotModule` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.module.ts`
 **Spec Reference**: plan.md — Component 6, Module Wiring section
@@ -120,7 +120,7 @@
 **Developer**: nitro-backend-developer
 **Tasks**: 3 | **Dependencies**: Batch 1 complete
 
-### Task 2.1: Wire `onEvent` callback into `SessionRunner` and add heartbeat emit PENDING
+### Task 2.1: Wire `onEvent` callback into `SessionRunner` and add heartbeat emit IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/session-runner.ts`
 **Spec Reference**: plan.md — Component 8
@@ -145,7 +145,7 @@
 
 ---
 
-### Task 2.2: Add `emitSupervisorEvent`, `handleJoinSession`, `handleLeaveSession` to `DashboardGateway` PENDING
+### Task 2.2: Add `emitSupervisorEvent`, `handleJoinSession`, `handleLeaveSession` to `DashboardGateway` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/dashboard/dashboard.gateway.ts`
 **Spec Reference**: plan.md — Component 4
@@ -171,7 +171,7 @@
 
 ---
 
-### Task 2.3: Map `supervisorModel` → `supervisor_model` in `AutoPilotService` PENDING
+### Task 2.3: Map `supervisorModel` → `supervisor_model` in `AutoPilotService` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.service.ts`
 **Spec Reference**: plan.md — Component 3
@@ -202,7 +202,7 @@
 **Developer**: nitro-backend-developer
 **Tasks**: 2 | **Dependencies**: Batch 1 + Batch 2 complete
 
-### Task 3.1: Inject `DashboardGateway` into `SessionManagerService` and pass `onEvent` callback PENDING
+### Task 3.1: Inject `DashboardGateway` into `SessionManagerService` and pass `onEvent` callback IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/session-manager.service.ts`
 **Spec Reference**: plan.md — Component 7
@@ -226,7 +226,7 @@
 
 ---
 
-### Task 3.2: Add `supervisorModel` validation to `auto-pilot.controller.ts` PENDING
+### Task 3.2: Add `supervisorModel` validation to `auto-pilot.controller.ts` IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.controller.ts`
 **Spec Reference**: plan.md — Component 2 (controller validation layer)
@@ -258,12 +258,12 @@
 
 | Task | File | Status |
 |------|------|--------|
-| 1.1 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.types.ts` | IN PROGRESS |
-| 1.2 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.model.ts` | IN PROGRESS |
-| 1.3 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/dashboard/dashboard.module.ts` | IN PROGRESS |
-| 1.4 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.module.ts` | IN PROGRESS |
-| 2.1 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/session-runner.ts` | PENDING |
-| 2.2 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/dashboard/dashboard.gateway.ts` | PENDING |
-| 2.3 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.service.ts` | PENDING |
-| 3.1 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/session-manager.service.ts` | PENDING |
-| 3.2 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.controller.ts` | PENDING |
+| 1.1 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.types.ts` | IMPLEMENTED |
+| 1.2 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.model.ts` | IMPLEMENTED |
+| 1.3 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/dashboard/dashboard.module.ts` | IMPLEMENTED |
+| 1.4 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.module.ts` | IMPLEMENTED |
+| 2.1 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/session-runner.ts` | IMPLEMENTED |
+| 2.2 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/dashboard/dashboard.gateway.ts` | IMPLEMENTED |
+| 2.3 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.service.ts` | IMPLEMENTED |
+| 3.1 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/session-manager.service.ts` | IMPLEMENTED |
+| 3.2 | `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard-api/src/auto-pilot/auto-pilot.controller.ts` | IMPLEMENTED |

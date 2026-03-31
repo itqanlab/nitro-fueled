@@ -251,7 +251,7 @@ export class AutoPilotController {
       }
     }
 
-    for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel'] as const) {
+    for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel', 'supervisorModel'] as const) {
       if (body[key] !== undefined) {
         if (typeof body[key] !== 'string') {
           throw new BadRequestException(`${key} must be a string`);
@@ -321,7 +321,7 @@ export class AutoPilotController {
       }
     }
 
-    for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel'] as const) {
+    for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel', 'supervisorModel'] as const) {
       if (body[key] !== undefined) {
         if (typeof body[key] !== 'string') {
           throw new BadRequestException(`${key} must be a string`);

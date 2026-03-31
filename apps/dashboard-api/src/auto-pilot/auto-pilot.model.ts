@@ -26,6 +26,7 @@ export interface CreateSessionRequest {
   readonly implementFallbackModel?: string;
   readonly reviewProvider?: ProviderType;
   readonly reviewModel?: string;
+  readonly supervisorModel?: string;
   readonly priority?: PriorityStrategy;
   readonly retries?: number;
 }
@@ -50,6 +51,7 @@ export interface UpdateSessionConfigRequest {
   readonly implementFallbackModel?: string;
   readonly reviewProvider?: ProviderType;
   readonly reviewModel?: string;
+  readonly supervisorModel?: string;
   readonly priority?: PriorityStrategy;
   readonly retries?: number;
   readonly pollIntervalMs?: number;

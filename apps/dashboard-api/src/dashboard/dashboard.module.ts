@@ -46,6 +46,6 @@ import { CommandConsoleService } from './command-console.service';
     ProgressCenterService,
     CommandConsoleService,
   ],
-  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, SessionsHistoryService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, SessionsHistoryService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService, DashboardGateway],
 })
 export class DashboardModule {}

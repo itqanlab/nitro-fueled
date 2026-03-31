@@ -43,6 +43,7 @@ export class AutoPilotService {
     if (request.implementFallbackModel !== undefined) config.implement_fallback_model = request.implementFallbackModel;
     if (request.reviewProvider !== undefined) config.review_provider = request.reviewProvider;
     if (request.reviewModel !== undefined) config.review_model = request.reviewModel;
+    if (request.supervisorModel !== undefined) config.supervisor_model = request.supervisorModel;
     if (request.priority !== undefined) config.priority = request.priority;
     if (request.retries !== undefined) config.retries = request.retries;
 
@@ -99,6 +100,7 @@ export class AutoPilotService {
     if (request.implementFallbackModel !== undefined) patch.implement_fallback_model = request.implementFallbackModel;
     if (request.reviewProvider !== undefined) patch.review_provider = request.reviewProvider;
     if (request.reviewModel !== undefined) patch.review_model = request.reviewModel;
+    if (request.supervisorModel !== undefined) patch.supervisor_model = request.supervisorModel;
     if (request.priority !== undefined) patch.priority = request.priority;
     if (request.retries !== undefined) patch.retries = request.retries;
     if (request.pollIntervalMs !== undefined) patch.poll_interval_ms = request.pollIntervalMs;
