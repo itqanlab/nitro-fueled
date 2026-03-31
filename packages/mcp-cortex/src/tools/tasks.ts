@@ -105,7 +105,8 @@ export function handleGetTasks(
       let deps: unknown;
       try {
         deps = JSON.parse((row['dependencies'] as string) ?? '[]');
-      } catch {
+      } catch (err) {
+        console.error(`[nitro-cortex] get_tasks: failed to parse dependencies for task ${row['id'] as string}, treating as no deps`, err);
         deps = [];
       }
       if (!Array.isArray(deps)) deps = [];

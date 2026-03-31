@@ -389,7 +389,9 @@ export function handleGetSessionSummary(
         if (tokens.total_output != null) totalOutputTokens += tokens.total_output;
         if (tokens.total_cache_creation != null) totalCacheTokens += tokens.total_cache_creation;
         if (tokens.total_cache_read != null) totalCacheTokens += tokens.total_cache_read;
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error(`[nitro-cortex] get_session_summary: failed to parse cost/tokens for worker, skipping`, err);
+      }
     }
 
     // Elapsed time
