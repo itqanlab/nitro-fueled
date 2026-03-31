@@ -70,7 +70,16 @@ Suggested execution wave: Wave 2, after TASK_2026_158 completes (or coordinate t
 
 ## File Scope
 
+- apps/dashboard-api/src/dashboard/sessions-history.service.ts (new)
+- apps/dashboard-api/src/dashboard/dashboard.controller.ts (modified)
+- apps/dashboard-api/src/dashboard/dashboard.module.ts (modified)
+- apps/dashboard/src/app/models/api.types.ts (modified)
+- apps/dashboard/src/app/services/api.service.ts (modified)
+- apps/dashboard/src/app/services/mock-data.constants.ts (modified)
+- apps/dashboard/src/app/app.routes.ts (modified)
 - apps/dashboard/src/app/views/sessions/sessions-list/sessions-list.component.ts (new)
+- apps/dashboard/src/app/views/sessions/sessions-list/sessions-list.component.html (new)
+- apps/dashboard/src/app/views/sessions/sessions-list/sessions-list.component.scss (new)
 - apps/dashboard/src/app/views/sessions/session-detail/session-detail.component.ts (new)
-- apps/dashboard-api/src/sessions/sessions.controller.ts (new or extend)
-- apps/dashboard-api/src/sessions/sessions.service.ts (new or extend)
+- apps/dashboard/src/app/views/sessions/session-detail/session-detail.component.html (new)
+- apps/dashboard/src/app/views/sessions/session-detail/session-detail.component.scss (new)

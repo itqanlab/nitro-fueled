@@ -1,6 +1,6 @@
 # Development Tasks — TASK_2026_202
 
-## Batch 1: DB Schema Migration — PENDING
+## Batch 1: DB Schema Migration — COMPLETE
 
 **Developer**: nitro-backend-developer
 
@@ -22,7 +22,7 @@ the bottom of `initDatabase()` will execute the ALTER TABLE once on first startu
 
 ---
 
-## Batch 2: Backend Drain Infrastructure — PENDING
+## Batch 2: Backend Drain Infrastructure — COMPLETE
 
 **Developer**: nitro-backend-developer
 **Depends on**: Batch 1
@@ -221,7 +221,7 @@ No conflict with existing `POST` endpoint.
 
 ---
 
-## Batch 3: Cortex Types & History Service — PENDING
+## Batch 3: Cortex Types & History Service — COMPLETE
 
 **Developer**: nitro-backend-developer
 **Depends on**: Batch 1
@@ -294,7 +294,7 @@ private deriveEndStatus(session: CortexSession): SessionEndStatus {
 
 ---
 
-## Batch 4: Frontend — PENDING
+## Batch 4: Frontend — COMPLETE
 
 **Developer**: nitro-frontend-developer
 **Depends on**: Batch 2 (PATCH endpoint), Batch 3 (endStatus 'stopped')
