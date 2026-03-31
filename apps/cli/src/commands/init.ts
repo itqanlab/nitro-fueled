@@ -100,8 +100,8 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   createdFiles.push(...cmdResult.files);
 
   // Anti-patterns master (tag catalog — always copy so planner can regenerate)
-  const apMasterSrc = resolve(scaffoldRoot, 'nitro', 'anti-patterns-master.md');
-  const apMasterDest = resolve(cwd, '.claude', 'anti-patterns-master.md');
+  const apMasterSrc = resolve(scaffoldRoot, 'nitro', 'nitro-anti-patterns-master.md');
+  const apMasterDest = resolve(cwd, '.claude', 'nitro-anti-patterns-master.md');
   if (existsSync(apMasterSrc) && (overwrite || !existsSync(apMasterDest))) {
     mkdirSync(resolve(cwd, '.claude'), { recursive: true });
     copyFileSync(apMasterSrc, apMasterDest);

@@ -232,7 +232,7 @@ export function generateAntiPatterns(
   stacks: DetectedStack[],
   scaffoldRoot: string
 ): boolean {
-  const masterPath = resolve(scaffoldRoot, '.claude', 'anti-patterns-master.md');
+  const masterPath = resolve(scaffoldRoot, 'nitro', 'nitro-anti-patterns-master.md');
 
   let masterContent: string;
   try {
