@@ -5,10 +5,11 @@ import { DashboardModule } from '../dashboard/dashboard.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { AutoPilotModule } from '../auto-pilot/auto-pilot.module';
 import { ProvidersModule } from '../providers/providers.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { HttpAuthGuard } from './auth';
 
 @Module({
-  imports: [DashboardModule, TasksModule, AutoPilotModule, ProvidersModule],
+  imports: [DashboardModule, TasksModule, AutoPilotModule, ProvidersModule, AnalyticsModule],
   controllers: [HealthController],
   providers: [
     {
