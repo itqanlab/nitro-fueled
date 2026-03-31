@@ -121,7 +121,19 @@ Do NOT ask the user whether to split. Do NOT create the oversized task. Instead,
 
 When MCP tools are available, this explicit force-create path uses the manual fallback flow below because `create_task` intentionally rejects oversized tasks.
 
-**If all checks pass:** proceed to Step 4.
+**If all checks pass:** proceed to Step 3d.
+
+### Step 3d: Auto-derive preferred_tier
+
+If the user has NOT explicitly set `Preferred Tier` (i.e., the field is absent, blank, or set to `auto`), derive it from complexity:
+
+| Complexity | Derived Preferred Tier |
+|------------|----------------------|
+| Simple     | light                |
+| Medium     | balanced             |
+| Complex    | heavy                |
+
+Overwrite the `Preferred Tier` field in the task data with the derived value before writing `task.md`. Do NOT leave it as `auto` if complexity is known. If complexity is not set, leave as `auto`.
 
 ### Step 4: Create Task Folder and File
 
@@ -143,6 +155,7 @@ Write `task-tracking/TASK_YYYY_NNN/status` with the single word `CREATED` (no tr
 > - Dependencies: comma-separated Task IDs (e.g., `TASK_2026_052, TASK_2026_051`), or `None`
 > - COMPLETE/CANCELLED rows use `—` for both Priority and Dependencies
 > - Legacy rows (pre-TASK_2026_064) missing Priority/Dependencies columns are handled by the Supervisor's Step 2 fallback (treated as P2-Medium, no deps).
+> - **Preferred Tier**: the written task.md must reflect the derived value from Step 3d (e.g., `light`, `balanced`, or `heavy`) — never `auto` when complexity is known.
 
 ### Step 5c: Best-Effort Cortex Upsert (if cortex available)
 
@@ -158,7 +171,8 @@ upsert_task(
     status: "CREATED",
     complexity: "<complexity from Step 3>",
     dependencies: JSON.stringify([<array of dep task IDs, or empty>]),
-    description: "<one-line description from Step 3>"
+    description: "<one-line description from Step 3>",
+    preferred_tier: "<derived preferred_tier from Step 3d>"
   })
 )
 ```

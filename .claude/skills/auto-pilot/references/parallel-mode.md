@@ -182,7 +182,27 @@ After completing the three DB calls above, check whether any tasks are at `IMPLE
      - `READY_FOR_IMPLEMENT` (split mode) → First-Run Implement Worker Prompt
      - `READY_FOR_REVIEW` → First-Run Review+Fix Worker Prompt
    - For retries, use the corresponding Retry prompt template.
-5. **Resolve provider/model** (data-driven defaults from 143-worker analysis):
+5. **Resolve provider/model**:
+
+   **5a. Check `preferred_tier` (hard-routing)**:
+   Before applying any worker-type defaults, read the `preferred_tier` field from the task's DB metadata (returned by `get_task_context()` or the `get_tasks()` row).
+
+   If `preferred_tier` is set to `light`, `balanced`, or `heavy` (NOT `auto` or absent):
+
+   1. Map the tier to a model using the tier→provider map from `get_available_providers()`:
+      - `light` → the provider's light-tier model (e.g., glm-4.7, glm-4.5-air)
+      - `balanced` → the provider's balanced-tier model (e.g., glm-5.1, claude-sonnet-4-6)
+      - `heavy` → the provider's heavy-tier model (e.g., claude-opus-4-6, glm-5.1)
+   2. **Use this model for ALL worker types** (Prep, Implement, Build, Review) for this task — this overrides the worker-type defaults in 5b below.
+   3. **No fallback allowed**: if the tier's provider is unavailable, do NOT silently fall back to the session default model. Instead:
+      a. Log an explicit error via `log_event()` if available:
+         ```
+         TIER_UNAVAILABLE: task=<task_id> required_tier=<tier> provider=<provider> — cannot satisfy tier requirement
+         ```
+      b. Call `update_task(task_id, fields=JSON.stringify({status: 'BLOCKED'}))` to block the task.
+      c. Skip spawning for this task — move on to the next candidate.
+
+   **5b. Apply worker-type defaults** (if preferred_tier is `auto` or absent):
    - **Prep Workers**: default to `claude` provider, `claude-sonnet-4-6` model (100% success, $0.13/worker). Override if the task's Model field is explicitly set.
    - **Implement Workers**: default to `glm` provider, `zai-coding-plan/glm-5.1` model ($0/worker). On first failure, retry with `claude` provider, `claude-sonnet-4-6`. GLM is free — even at 50-60% success rate, the expected cost ($0.80/task) beats claude-only ($1.60/task).
    - **Build Workers** (single mode): default to `claude` provider, `claude-sonnet-4-6` model (97% success, $0.85/worker).
