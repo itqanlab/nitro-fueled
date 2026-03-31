@@ -23,6 +23,7 @@ Model: <model>
 Retry: <attempt>/<max>
 Complexity: <complexity>
 Priority: <priority>
+Operator: <git user.name>
 Generated-By: nitro-fueled v<version> (https://github.com/itqanlab/nitro-fueled)
 ```
 
@@ -53,6 +54,7 @@ Generated-By: nitro-fueled v<version> (https://github.com/itqanlab/nitro-fueled)
 | Retry      | Yes | `0/2`, `1/3`, etc. | Attempt number / max retries (0 = first attempt) |
 | Complexity | Yes | `Simple`, `Medium`, `Complex` | Task complexity from task.md |
 | Priority   | Yes | `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` | Task priority from task.md |
+| Operator   | No  | Git user name from `git config user.name` | Human operator who initiated the task. Omit in fully autonomous (auto-pilot) commits. |
 | Generated-By | Yes | `nitro-fueled v<version> (<url>)` | Package attribution — version read from package.json at commit time |
 
 ---

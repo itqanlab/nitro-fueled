@@ -482,14 +482,14 @@ Every commit made during orchestrated work MUST include a traceability footer. T
 | Field | Source | Format |
 |-------|--------|--------|
 | Task | Task folder name | `TASK_YYYY_NNN` |
-| Session | Current session ID (from Session Logging setup) | `SESSION_YYYY-MM-DD_HH-MM-SS` or `manual` |
+| Session | Current session ID (from Session Logging setup) | `SESSION_YYYY-MM-DDTHH-MM-SS` or `manual` |
 | Provider | Current execution context | `claude`, `glm`, `opencode` |
 | Model | Current execution context | `claude-sonnet-4-6`, `glm-4.7`, etc. |
 | Retry | Worker context or `state.md` | `0/2`, `1/3`, etc. (0 = first attempt) |
 | Complexity | `task.md` Metadata section | `Simple`, `Medium`, `Complex` |
 | Priority | `task.md` Metadata section | `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low` |
 
-**Session ID**: Use `SESSION_YYYY-MM-DD_HH-MM-SS` from the session directory created at skill entry. If the orchestration was invoked directly without an auto-pilot session, use `manual`.
+**Session ID**: Use `SESSION_YYYY-MM-DDTHH-MM-SS` from the session directory created at skill entry. If the orchestration was invoked directly without an auto-pilot session, use `manual`.
 
 ### Field Extraction Guide
 

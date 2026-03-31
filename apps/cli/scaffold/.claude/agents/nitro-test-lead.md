@@ -84,10 +84,10 @@ Before spawning any sub-workers, generate `task-tracking/TASK_{TASK_ID}/test-con
    - **File Scope** section
 
 3. Apply skip decisions:
-   - If `Testing: skip` → write brief `test-report.md` noting "no tests required — Testing: skip" and EXIT.
-   - If Type is DOCUMENTATION → write brief `test-report.md` noting "no tests required — DOCUMENTATION task type" and EXIT.
-   - If Type is RESEARCH → write brief `test-report.md` noting "no tests required — RESEARCH task type" and EXIT.
-   - If Type is CREATIVE → proceed to framework detection; if no framework found, write `test-report.md` noting "no test framework detected — skipping" and EXIT.
+   - If `Testing: skip` → write brief `task-tracking/TASK_{TASK_ID}/test-report.md` noting "no tests required — Testing: skip" and EXIT.
+   - If Type is DOCUMENTATION → write brief `task-tracking/TASK_{TASK_ID}/test-report.md` noting "no tests required — DOCUMENTATION task type" and EXIT.
+   - If Type is RESEARCH → write brief `task-tracking/TASK_{TASK_ID}/test-report.md` noting "no tests required — RESEARCH task type" and EXIT.
+   - If Type is CREATIVE → proceed to framework detection; if no framework found, write `task-tracking/TASK_{TASK_ID}/test-report.md` noting "no test framework detected — skipping" and EXIT.
 
 4. Framework detection — read these files in the project root (each if it exists):
    - `package.json` → check `devDependencies` and `dependencies` for: `vitest`, `jest`, `@jest/core`, `playwright`, `@playwright/test`, `cypress`
@@ -99,7 +99,7 @@ Before spawning any sub-workers, generate `task-tracking/TASK_{TASK_ID}/test-con
    - `go.mod` presence → Go testing (built-in)
    - Result: list of detected frameworks, or `NONE`
 
-5. If no framework detected and type is not CREATIVE → write `test-report.md` noting "no test framework detected — recommend setup" and EXIT.
+5. If no framework detected and type is not CREATIVE → write `task-tracking/TASK_{TASK_ID}/test-report.md` noting "no test framework detected — recommend setup" and EXIT.
 
 6. Test type decision matrix:
 
