@@ -176,7 +176,7 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
    - **Build Workers** (single mode): default to `claude` provider, `claude-sonnet-4-6` model (97% success, $0.85/worker).
    - **Review+Fix Workers**: default to `claude` provider, `claude-sonnet-4-6` model (100% success across 17 reviews, $0.78/worker). Do NOT use gpt-5.4 for reviews ($1.99/worker, 90% success) or glm-4.7 (67% success).
    - Override any default if the task's Model/Provider fields are explicitly set.
-6. Claim the task atomically if Step 4 did not already claim it.
+6. Claim the task atomically if Step 4 did not already claim it. See Step 7 Worker-Exit Reconciliation for the duplicate spawn guard.
 7. Call `spawn_worker(...)` with the resolved prompt, model, and provider.
 8. On success, persist active-worker state to the DB with `update_session()`.
 8. If `subscribe_worker()` is available, register completion conditions immediately.
@@ -219,10 +219,68 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 **Preferred path (`cortex_available = true`):**
 
 1. Treat `get_pending_events()` as the primary completion signal.
-2. For a Prep Worker completion, accept the event as the authoritative signal that the task reached `PREPPED`. The task is now `READY_FOR_IMPLEMENT` — it will be picked up in the next Step 4 cycle.
+2. For a Prep Worker completion, accept the event as the authoritative signal that the task reached `PREPPED`. The task is now `READY_FOR_IMPLEMENT` — it will be picked up in the next Step 4 cycle. If no state-change event is present for an exited worker, apply Worker-Exit Reconciliation — see subsection below.
 3. For a Build Worker or Implement Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
 4. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
 4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks.
+
+### Worker-Exit Reconciliation (Supervisor-Authoritative State)
+
+**Trigger condition**: Apply reconciliation when ALL three conditions are true:
+1. A worker process has exited (detected via `list_workers()` — status changed from `running` to `stopped`/`exited`)
+2. No matching `TASK_STATE_CHANGE` event was emitted by the worker (checked via `get_pending_events()` — no event for this `task_id` in the current tick)
+3. The task is still in an active state (not yet `COMPLETE`, `FAILED`, or `BLOCKED`)
+
+**Expected-state mapping**:
+
+| Worker Type | Pre-Exit Task State | Expected Post-Exit State |
+|-------------|---------------------|--------------------------|
+| Prep Worker | `IN_PROGRESS` | `PREPPED` |
+| Build Worker (single mode) | `IN_PROGRESS` | `IMPLEMENTED` |
+| Implement Worker (split mode) | `IMPLEMENTING` | `IMPLEMENTED` |
+| Review/Fix Worker | `IN_REVIEW` | `COMPLETE` |
+
+**Reconciliation steps**:
+
+1. Call `get_task_context(task_id)` to get the current actual task state.
+2. Compare actual state to expected post-exit state from the mapping table above.
+3. **If actual state matches expected** (RECONCILE_OK):
+   - The worker committed the state change but the event was missed.
+   - Emit an info-level `RECONCILE_OK` event via `log_event()` if available.
+   - Proceed as if the completion event was received — continue with steps 5–7 of the preferred path.
+4. **If actual state does NOT match expected** (RECONCILE_DISCREPANCY):
+   - Apply the action rule for the worker type:
+     - **Prep Worker** → mark task `FAILED` via `update_task(task_id, fields=JSON.stringify({status: "FAILED"}))`
+     - **Build/Implement Worker** → check if `task-tracking/{task_id}/handoff.md` exists:
+       - If `handoff.md` exists: auto-advance to `IMPLEMENTED` via `update_task(task_id, fields=JSON.stringify({status: "IMPLEMENTED"}))`
+       - If `handoff.md` absent: mark task `FAILED` via `update_task(task_id, fields=JSON.stringify({status: "FAILED"}))`
+     - **Review/Fix Worker** → mark task `FAILED` via `update_task(task_id, fields=JSON.stringify({status: "FAILED"}))`
+5. Call `update_task(task_id, fields=JSON.stringify({status: "<resolved_status>"}))` with the resolved status determined in step 4.
+6. Call `release_task(task_id)` to release any claim held by the exited worker.
+7. On the next tick, re-evaluate this task's dependents normally — it will appear in the correct state for the next `get_tasks()` query.
+
+#### Duplicate Spawn Guard
+
+Before spawning any worker in Step 5, check for a running worker already assigned to the same task:
+
+1. Call `list_workers(status_filter: 'running', compact: true)`.
+2. If a worker with the same `task_id` is found with status `running`, **skip spawning** — a live worker is already handling this task.
+3. If a worker with the same `task_id` is found with status `stopped` or `exited`, **do NOT skip** — this is a candidate for reconciliation (see above). Proceed with reconciliation in Step 7, then evaluate whether to spawn a retry worker.
+
+**RECONCILE_DISCREPANCY event schema**:
+
+```json
+{
+  "event": "RECONCILE_DISCREPANCY",
+  "task_id": "<task_id>",
+  "worker_id": "<worker_id>",
+  "worker_type": "<prep|build|implement|review>",
+  "actual_state": "<current task state>",
+  "expected_state": "<expected post-exit state>",
+  "action": "<FAILED|IMPLEMENTED>",
+  "reason": "<handoff_present|handoff_absent|prep_worker_no_heuristic|review_worker_no_heuristic>"
+}
+```
 
 > **NEVER call `get_tasks(status: "COMPLETE")`** — fetching completed tasks in bulk is always wasteful and forbidden inside the loop. COMPLETE tasks are only needed for dependency resolution, which is already handled by `get_next_wave` or by the dependency fields in the current-tick `get_tasks(compact: true)` call (which uses non-terminal status filters). If `get_tasks()` is needed for broader reconciliation, filter to active statuses only: `status` in `[CREATED, IN_PROGRESS, PREPPED, IMPLEMENTING, IMPLEMENTED, IN_REVIEW]` and always use `compact: true` with a bounded `limit`.
 5. Release or update the task through MCP (`release_task()` / `update_task()`) as required by the implementation.

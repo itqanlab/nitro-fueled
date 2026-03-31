@@ -1,13 +1,13 @@
 # Development Tasks — TASK_2026_241
 
-## Batch 1: Reconciliation Protocol — parallel-mode.md — PENDING
+## Batch 1: Reconciliation Protocol — parallel-mode.md — COMPLETE
 
 **Developer**: nitro-systems-developer
 
 ### Task 1.1: Add worker-exit reconciliation sub-protocol to Step 7
 
 **File**: `.claude/skills/auto-pilot/references/parallel-mode.md`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add a new subsection under **Step 7: Handle Completions** (preferred path) titled
 `### Worker-Exit Reconciliation (Supervisor-Authoritative State)`.
@@ -34,7 +34,7 @@ Insert the duplicate spawn guard note as a cross-reference from Step 5 as well (
 ### Task 1.2: Add info-level RECONCILE_OK event to Step 7 preferred path
 
 **File**: `.claude/skills/auto-pilot/references/parallel-mode.md`
-**Status**: PENDING
+**Status**: COMPLETE
 
 At the end of Step 7 preferred path item 3 (currently: `For a Prep Worker completion, accept the event as the authoritative signal...`), add a note: "If no state-change event is present for an exited worker, apply Worker-Exit Reconciliation — see subsection below."
 
@@ -42,14 +42,14 @@ This keeps the existing event-driven path intact while connecting it to the new 
 
 ---
 
-## Batch 2: SKILL.md Key Principles + Core Loop Summary Update — PENDING
+## Batch 2: SKILL.md Key Principles + Core Loop Summary Update — COMPLETE
 
 **Developer**: nitro-systems-developer
 
 ### Task 2.1: Add Key Principle 14 to SKILL.md
 
 **File**: `.claude/skills/auto-pilot/SKILL.md`
-**Status**: PENDING
+**Status**: COMPLETE
 
 In the **Key Principles** section (currently ends at item 13), add:
 
@@ -58,7 +58,7 @@ In the **Key Principles** section (currently ends at item 13), add:
 ### Task 2.2: Update Core Loop Step 7 summary in SKILL.md
 
 **File**: `.claude/skills/auto-pilot/SKILL.md`
-**Status**: PENDING
+**Status**: COMPLETE
 
 In the **Core Loop** section, the Step 7 entry currently reads:
 > `7. Handle completions: react to DB events, then re-query the DB for the next tick`

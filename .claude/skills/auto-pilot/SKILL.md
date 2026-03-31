@@ -102,7 +102,7 @@ In both modes, the Review+Fix Worker handles IMPLEMENTED → COMPLETE.
    - **single mode**: Build Worker for CREATED/IN_PROGRESS, Review+Fix Worker for IMPLEMENTED/IN_REVIEW
    - **split mode**: Prep Worker for CREATED/IN_PROGRESS, Implement Worker for PREPPED/IMPLEMENTING, Review+Fix Worker for IMPLEMENTED/IN_REVIEW
 4. **Monitor worker health** on a configurable interval
-5. **Handle completions**: react to DB events, then re-query the DB for the next tick
+5. **Handle completions**: react to DB events; reconcile task state for any worker that exits without emitting a state-change event (advance or mark FAILED); re-query the DB for the next tick
 6. **Handle failures**: if state didn't transition, respawn same worker type (counts as retry)
 7. **Persist session state in the DB** for compaction survival
 8. **Loop** until the backlog is drained, all remaining tasks are blocked, or `--limit` is reached
@@ -275,7 +275,7 @@ The Core Loop runs in parallel mode (all-tasks, limited, single-task). Steps:
 4. Order/select spawn candidates
 5. Spawn workers with DB-backed task metadata
 6. Monitor workers with `get_pending_events()` + worker health MCP calls
-7. Handle completions and re-query the DB
+7. Handle completions: react to DB events; reconcile task state for any worker that exits without emitting a state-change event (advance or mark FAILED); re-query the DB for the next tick
 8. Stop or continue; write optional artifacts only after the loop tick ends
 
 ## Compaction Survival
@@ -350,3 +350,4 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 11. **Spawn the right worker type** -- Determine Worker Mode (single/split) from task metadata or Complexity auto-selection. In single mode: Build Worker for CREATED, Review Worker for IMPLEMENTED. In split mode: Prep Worker for CREATED, Implement Worker for PREPPED, Review Worker for IMPLEMENTED. Default routing (data-driven from 143-worker analysis): Prep → claude/claude-sonnet-4-6, Implement → glm/glm-5.1 (retry with claude on fail), Review → claude/claude-sonnet-4-6. Prep Workers always use `nitro-software-architect`.
 12. **Build-first by default** -- CREATED (build/prep) tasks fill slots before PREPPED (implement) and IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
 13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)
+14. **Supervisor is authoritative for task state on worker exit** — after detecting a worker process exit without a matching state-change event, the Supervisor reconciles the expected vs. actual task state and acts (advance or mark FAILED). Workers are untrusted for state transitions on abnormal exit; the Supervisor is the single source of truth.
