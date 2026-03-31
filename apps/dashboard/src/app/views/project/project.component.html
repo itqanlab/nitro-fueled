@@ -196,7 +196,7 @@
                 type="checkbox"
                 [checked]="isStatusSelected(status)"
                 (change)="toggleStatus(status)"
-                aria-label="'Filter by status: ' + statusLabelMap[status]"
+                [attr.aria-label]="'Filter by status: ' + statusLabelMap[status]"
                 aria-describedby="status-filter"
               />
               <span class="filter-option-label">{{ statusLabelMap[status] }}</span>
@@ -240,7 +240,7 @@
                 type="checkbox"
                 [checked]="isTypeSelected(type)"
                 (change)="toggleType(type)"
-                aria-label="'Filter by type: ' + type"
+                [attr.aria-label]="'Filter by type: ' + type"
                 aria-describedby="type-filter"
               />
               <span class="filter-option-label">{{ type }}</span>
@@ -284,7 +284,7 @@
                 type="checkbox"
                 [checked]="isPrioritySelected(p)"
                 (change)="togglePriority(p)"
-                aria-label="'Filter by priority: ' + p"
+                [attr.aria-label]="'Filter by priority: ' + p"
                 aria-describedby="priority-filter"
               />
               <span class="filter-option-label">{{ p }}</span>
