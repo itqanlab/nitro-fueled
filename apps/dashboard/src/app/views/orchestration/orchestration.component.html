@@ -1,0 +1,195 @@
+<div class="orchestration-container">
+  <div class="orchestration-header">
+    <h1>Orchestration Flows</h1>
+    <p>Visualize all built-in orchestration flows as interactive pipeline diagrams</p>
+  </div>
+
+  <div class="orchestration-content">
+    <div class="flow-sidebar">
+      <div class="sidebar-header">
+        <h2>Flow Types</h2>
+        <span class="flow-count">{{ filteredFlows().length }}</span>
+      </div>
+      <div class="flow-filter">
+        <select
+          class="filter-select"
+          (change)="handleFilterChange($event)"
+        >
+          @for (type of allTaskTypes(); track type) {
+            <option [value]="type" [selected]="taskTypeFilter() === type">
+              {{ type }}
+            </option>
+          }
+        </select>
+      </div>
+      <div class="flow-list">
+        @for (flow of filteredFlows(); track flow.id) {
+          <div
+            class="flow-item"
+            [class.selected]="selectedFlow()?.id === flow.id"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="flow.name + ' flow'"
+            (click)="selectFlow(flow.id)"
+            (keydown.enter)="selectFlow(flow.id)"
+            (keydown.space)="selectFlow(flow.id)"
+          >
+            <div class="flow-name">{{ flow.name }}</div>
+            <div class="flow-types">
+              @for (tt of flow.taskTypes; track tt) {
+                <span class="type-badge">{{ tt }}</span>
+              }
+            </div>
+            <div class="flow-meta">
+              <span class="phase-count">{{ flow.phases.length }} phases</span>
+              @if (flow.hasParallelReview) {
+                <span class="parallel-badge">Parallel Review</span>
+              }
+            </div>
+            <button
+              class="clone-btn"
+              (click)="startClone(flow.id); $event.stopPropagation()"
+            >
+              Clone to Custom
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="flow-main">
+      <div class="flow-diagram-area">
+        @if (selectedFlow(); as flow) {
+          <div class="diagram-header">
+            <h3>{{ flow.name }}</h3>
+            <code class="strategy-code">{{ flow.strategy }}</code>
+          </div>
+          <div class="diagram-scroll">
+            <svg
+              [attr.viewBox]="'0 0 ' + svgWidth() + ' 160'"
+              [attr.width]="svgWidth()"
+              height="160"
+              class="pipeline-svg"
+            >
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#555" />
+                </marker>
+              </defs>
+              @for (phase of flow.phases; track phase.id; let i = $index) {
+                @if (i < flow.phases.length - 1) {
+                  <line
+                    [attr.x1]="getPhaseX(i) + 100"
+                    y1="80"
+                    [attr.x2]="getPhaseX(i + 1)"
+                    y2="80"
+                    stroke="#555"
+                    stroke-width="2"
+                    marker-end="url(#arrowhead)"
+                  />
+                }
+                <g
+                  class="phase-node"
+                  [class.optional]="phase.isOptional"
+                  [class.selected]="selectedPhaseId() === phase.id"
+                  [attr.transform]="'translate(' + getPhaseX(i) + ', 40)'"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="phase.name + (phase.isOptional ? ' (optional)' : '') + ': ' + phase.description"
+                  (click)="selectPhase(phase.id)"
+                  (keydown.enter)="selectPhase(phase.id)"
+                >
+                  <rect
+                    x="0" y="0" width="100" height="80" rx="8"
+                    [attr.fill]="getPhaseColor(phase)"
+                    fill-opacity="0.15"
+                    [attr.stroke]="getPhaseColor(phase)"
+                    stroke-width="2"
+                  />
+                  @if (phase.isOptional) {
+                    <text x="92" y="14" font-size="9" fill="#888" text-anchor="end">opt</text>
+                  }
+                  <text
+                    x="50" y="38" font-size="12" font-weight="600"
+                    fill="#ddd" text-anchor="middle" dominant-baseline="middle"
+                  >{{ phase.name }}</text>
+                  <text x="50" y="60" font-size="8" fill="#999" text-anchor="middle">{{ phase.outputs[0] || '' }}</text>
+                </g>
+              }
+            </svg>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <h3>Select a flow to view diagram</h3>
+            <p>Choose a flow type from the sidebar to see its pipeline</p>
+          </div>
+        }
+      </div>
+
+      <div class="flow-details-panel">
+        @if (selectedPhase(); as phase) {
+          <div class="phase-details">
+            <div class="phase-details-header">
+              <h4>{{ phase.name }}</h4>
+              @if (phase.isOptional) {
+                <span class="optional-tag">Optional</span>
+              }
+            </div>
+            <p class="phase-description">{{ phase.description }}</p>
+            <div class="phase-outputs">
+              <span class="outputs-label">Outputs:</span>
+              @for (output of phase.outputs; track output) {
+                <span class="output-tag">{{ output }}</span>
+              }
+            </div>
+          </div>
+        } @else if (selectedFlow()) {
+          <div class="flow-info">
+            <h4>{{ selectedFlow()!.name }} Details</h4>
+            <p>Click a phase node in the diagram to see details.</p>
+            <div class="flow-info-meta">
+              <span>Task Types: {{ selectedFlow()!.taskTypes.join(', ') }}</span>
+              <span>Phases: {{ selectedFlow()!.phases.length }}</span>
+              <span>Parallel Review: {{ selectedFlow()!.hasParallelReview ? 'Yes' : 'No' }}</span>
+            </div>
+          </div>
+        } @else {
+          <div class="no-selection">
+            <p>Flow information will appear here</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (cloneFlowId(); as _flowId) {
+  <div class="clone-overlay" (click)="cancelClone()">
+    <div class="clone-dialog" (click)="$event.stopPropagation()">
+      <h3>Clone Flow</h3>
+      <p>Create a custom copy of this flow for editing (Part 2).</p>
+      <input
+        type="text"
+        class="clone-input"
+        [value]="cloneFlowName()"
+        (input)="handleCloneNameChange($event)"
+        placeholder="Enter custom flow name"
+      />
+      <div class="clone-actions">
+        <button class="btn-cancel" (click)="cancelClone()">Cancel</button>
+        <button
+          class="btn-clone"
+          [disabled]="cloneStatus() === 'loading' || !cloneFlowName().trim()"
+          (click)="executeClone()"
+        >
+          @switch (cloneStatus()) {
+            @case ('loading') { Cloning... }
+            @case ('success') { Cloned! }
+            @case ('error') { Error - Retry }
+            @default { Clone Flow }
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

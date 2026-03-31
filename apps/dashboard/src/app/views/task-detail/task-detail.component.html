@@ -123,8 +123,9 @@
                 {{ dep }}
               </div>
             }
-          </div>
-          <div class="relations-col">
+          }
+        </div>
+        <div class="relations-col">
           <h4>Depended By</h4>
           @if (m.dependentTasks.length === 0) {
             <span class="empty-label">No dependents found</span>
@@ -134,7 +135,7 @@
                 {{ dep }}
               </div>
             }
-          </div>
+          }
         </div>
       </div>
     </div>
@@ -155,6 +156,7 @@
                 <th scope="col">Built By</th>
                 <th scope="col">Reviewed By</th>
               </tr>
+            </thead>
             <tbody>
               @for (r of m.reviews; track r.id) {
                 <tr>
@@ -182,8 +184,8 @@
                   <span class="score-label">{{ score.review }}</span>
                   <span class="score-value">{{ score.score }}/10</span>
                 </div>
-              </div>
-            }
+              }
+            </div>
           }
         }
       }
@@ -203,6 +205,7 @@
               <th scope="col">Output Tokens</th>
               <th scope="col">Cost</th>
               </tr>
+            </thead>
             <tbody>
               @for (w of workerRows(); track w.id) {
                 <tr>
@@ -216,7 +219,6 @@
             </tbody>
           </nz-table>
         }
-      }
     </div>
 
     <div class="section">
@@ -253,7 +255,7 @@
           }
         </div>
       }
-div>
+    </div>
 
     <div class="section">
       <div class="section-title">Phase Timing</div>
@@ -270,17 +272,18 @@ div>
               <th scope="col">Output Tokens</th>
               <th scope="col">Outcome</th>
               </tr>
+            </thead>
             <tbody>
               @for (p of m.phases; track p.phase) {
                 <tr>
-                <td>{{ p.phase }}</td>
-                <td class="model-cell">{{ p.model }}</td>
-                <td>{{ p.durationMinutes !== null ? (p.durationMinutes | number:'1.1-1') + ' min' : '&mdash;' }}</td>
-                <td>{{ p.outcome ?? '&mdash;' }}</td>
-                <td>{{ p.inputTokens | number }}</td>
-                <td>{{ p.outputTokens | number }}</td>
-                <td>{{ p.outcome ?? '&mdash;' }}</td>
-              </tr>
+                  <td>{{ p.phase }}</td>
+                  <td class="model-cell">{{ p.model }}</td>
+                  <td>{{ p.durationMinutes !== null ? (p.durationMinutes | number:'1.1-1') + ' min' : '&mdash;' }}</td>
+                  <td>{{ p.inputTokens | number }}</td>
+                  <td>{{ p.outputTokens | number }}</td>
+                  <td>{{ p.outcome ?? '&mdash;' }}</td>
+                </tr>
+              }
             </tbody>
           </nz-table>
         }
@@ -299,16 +302,16 @@ div>
                     ></div>
                   </div>
                   <span class="phase-bar-value">{{ bar.durationMinutes | number:'1.1-1' }}m</span>
-              </div>
+                </div>
+              }
             </div>
-          }
+          </div>
         }
-      }
     </div>
 
     <div class="section">
       <div class="section-title">Score &amp; Quality</div>
-      @if (m.reviews.length === 0 && (!m.completionReport || m.completionReport.reviewScores.length === 0) {
+      @if (m.reviews.length === 0 && (!m.completionReport || m.completionReport.reviewScores.length === 0)) {
         <nz-empty nzNotFoundContent="No quality scores available"></nz-empty>
       } @else {
         <div class="quality-summary">
@@ -321,7 +324,7 @@ div>
               <div class="quality-findings">{{ r.findingsCount }} findings, {{ r.criticalCount }} critical</div>
             </div>
           }
-        }
+        </div>
       }
     </div>
 
@@ -341,6 +344,7 @@ div>
               <th scope="col">Retry</th>
               <th scope="col">Outcome</th>
               </tr>
+            </thead>
             <tbody>
               @for (w of workerRows(); track w.id) {
                 <tr>
@@ -358,7 +362,6 @@ div>
             </tbody>
           </nz-table>
         }
-      }
     </div>
 
     <div class="section">
@@ -379,7 +382,7 @@ div>
 
     <div class="section">
       <div class="section-title">File Scope</div>
-      @if (m.fileScope.length === 0 && (!m.completionReport || (m.completionReport.filesCreated.length === 0 && m.completionReport.filesModified.length === 0)) {
+      @if (m.fileScope.length === 0 && (!m.completionReport || (m.completionReport.filesCreated.length === 0 && m.completionReport.filesModified.length === 0))) {
         <nz-empty nzNotFoundContent="No file scope data available"></nz-empty>
       } @else {
         @if (m.completionReport; as cr) {
@@ -389,28 +392,27 @@ div>
                 <h4>Created</h4>
                 @for (f of cr.filesCreated; track f) {
                   <div class="file-entry file-created">{{ f }}</div>
+                }
               </div>
             }
-          @if (cr.filesModified.length > 0) {
+            @if (cr.filesModified.length > 0) {
               <div class="file-group">
                 <h4>Modified</h4>
                 @for (f of cr.filesModified; track f) {
                   <div class="file-entry file-modified">{{ f }}</div>
+                }
               </div>
             }
           </div>
-          }
-        </div>
-      }
-    }
-    @if (m.fileScope.length > 0) {
-      <div class="file-sections">
-          <div class="file-group">
-                <h4>Planned Scope</h4>
-                @for (f of m.fileScope; track f) {
-                  <div class="file-entry">{{ f }}</div>
-              </div>
-            }
+        }
+        @if (m.fileScope.length > 0) {
+          <div class="file-sections">
+            <div class="file-group">
+              <h4>Planned Scope</h4>
+              @for (f of m.fileScope; track f) {
+                <div class="file-entry">{{ f }}</div>
+              }
+            </div>
           </div>
         }
       }
@@ -426,12 +428,14 @@ div>
             <div class="meta-item">
               <span class="meta-label">Root Cause</span>
               <span class="meta-value">{{ m.completionReport.rootCause }}</span>
-          </div>
+            </div>
+          }
           @if (m.completionReport.fix) {
             <div class="meta-item">
               <span class="meta-label">Fix</span>
               <span class="meta-value">{{ m.completionReport.fix }}</span>
-          </div>
+            </div>
+          }
           @if (m.completionReport.findingsFixed.length > 0) {
             <div class="findings-fixed">
               <h4>Findings Fixed</h4>

@@ -149,7 +149,7 @@
           </div>
         } @else if (activeFilterCount() > 0) {
           <div class="results-text">
-            Showing {{ filteredTasks().length }} of {{ allTasks().length }} tasks
+            Showing {{ filteredTasks().length }} of {{ allTasks.length }} tasks
           </div>
         } @else {
           <div class="results-text">
@@ -320,7 +320,7 @@
 @if (activeFilterChips().length > 0) {
   <div class="active-filters" role="group" aria-label="Active filters">
     @for (chip of activeFilterChips(); track chip.type + chip.label) {
-      <span class="active-chip" role="group" aria-label="{{ chip.type }} filter: {{ chip.label }}">
+      <span class="active-chip" role="group" [attr.aria-label]="chip.type + ' filter: ' + chip.label">
         <span class="active-chip-label">{{ chip.type }}: {{ chip.label }}</span>
         <button
           class="active-chip-remove"
@@ -432,7 +432,7 @@
   <div class="kanban-board" role="region" aria-label="Kanban board">
     @for (col of kanbanColumns(); track col.status) {
       <div class="kanban-col">
-        <div class="kanban-col-header" role="group" aria-label="{{ statusLabelMap[col.status] }} column">
+        <div class="kanban-col-header" role="group" [attr.aria-label]="statusLabelMap[col.status] + ' column'">
           <span class="kanban-col-title">{{ statusLabelMap[col.status] }}</span>
           <span class="kanban-col-count">{{ col.tasks.length }} tasks</span>
         </div>
