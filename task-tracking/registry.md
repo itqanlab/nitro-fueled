@@ -164,7 +164,7 @@
 | TASK_2026_159 | COMPLETE    | FEATURE | New Task Page — Single Textarea Task Creator | 2026-03-30 | default |
 | TASK_2026_160 | COMPLETE    | REFACTORING | Shared UI Lib — Badge, Status Indicator, Empty State Components | 2026-03-30 | default |
 | TASK_2026_161 | COMPLETE    | REFACTORING | Shared UI Lib — Progress Bar, Tab Nav, Loading Spinner Components | 2026-03-30 | default |
-| TASK_2026_162 | CREATED     | REFACTORING | Shared UI Lib — Form Field, Expandable Panel, Button Group Components | 2026-03-30 | default |
+| TASK_2026_162 | COMPLETE    | REFACTORING | Shared UI Lib — Form Field, Expandable Panel, Button Group Components | 2026-03-30 | default |
 | TASK_2026_163 | COMPLETE    | FEATURE | Cortex MCP — Full Task Creation Tools (create_task, bulk_create_tasks, get_next_task_id) | 2026-03-30 | default |
 | TASK_2026_164 | COMPLETE    | BUGFIX  | Fix OpenCode Worker Telemetry Integration | 2026-03-30 | default |
 | TASK_2026_165 | COMPLETE    | BUGFIX  | Fix Auto-Pilot Multi-Session Support — DB Session Registration and Per-Session Concurrency | 2026-03-30 | default |
@@ -177,12 +177,12 @@
 | TASK_2026_172 | COMPLETE    | BUGFIX  | Add CANCELLED Status to All Type Unions and Switch Statements | 2026-03-30 | default |
 | TASK_2026_173 | COMPLETE    | BUGFIX  | Add Authentication Guard to All NestJS HTTP Endpoints | 2026-03-30 | default |
 | TASK_2026_174 | COMPLETE    | RESEARCH | GLM-5 Reliability Investigation — Health Check Tuning | 2026-03-30 | default |
-| TASK_2026_175 | CREATED     | FEATURE | Add Angular Route Guards | 2026-03-30 | default |
+| TASK_2026_175 | COMPLETE    | FEATURE | Add Angular Route Guards | 2026-03-30 | default |
 | TASK_2026_176 | COMPLETE    | REFACTORING | Replace Deprecated *ngIf/*ngFor with @if/@for Control Flow | 2026-03-30 | default |
-| TASK_2026_177 | CREATED     | DEVOPS  | Scaffold-SKILL.md Sync Automation | 2026-03-30 | default |
+| TASK_2026_177 | COMPLETE    | DEVOPS  | Scaffold-SKILL.md Sync Automation | 2026-03-30 | default |
 | TASK_2026_178 | CREATED     | REFACTORING | Add OnPush Change Detection to All Angular Components | 2026-03-30 | default |
 | TASK_2026_179 | CREATED     | REFACTORING | Replace console.log/console.error with Structured Logger | 2026-03-30 | default |
-| TASK_2026_180 | CREATED     | REFACTORING | Migrate @Input/@Output Decorators to Signal-Based input()/output() | 2026-03-30 | default |
+| TASK_2026_180 | IN_PROGRESS | REFACTORING | Migrate @Input/@Output Decorators to Signal-Based input()/output() | 2026-03-30 | default |
 | TASK_2026_181 | COMPLETE    | BUGFIX  | Replace Stale session-orchestrator References in Scaffold with nitro-cortex | 2026-03-30 | default |
 | TASK_2026_182 | CREATED     | REFACTORING | Remove Deprecated Code — getConfigPath, rxjs/operators Import, prebuild-install | 2026-03-30 | default |
 | TASK_2026_183 | COMPLETE    | FEATURE | Real-Time Progress Center — Live Status, Health & ETA | 2026-03-30 | default |
@@ -192,7 +192,7 @@
 | TASK_2026_187 | COMPLETE    | FEATURE | Session History & Results Dashboard | 2026-03-30 | default |
 | TASK_2026_188 | COMPLETE    | BUGFIX  | Cortex MCP — Orphaned Claim Recovery & Multi-Session Health | 2026-03-30 | default |
 | TASK_2026_189 | COMPLETE    | BUGFIX  | Audit All JSON.parse Calls in mcp-cortex for try/catch Guards | 2026-03-30 | default |
-| TASK_2026_190 | CREATED     | RESEARCH | GLM-4.7 Review Worker Investigation — 0% Success Rate | 2026-03-30 | default |
+| TASK_2026_190 | IN_PROGRESS | RESEARCH | GLM-4.7 Review Worker Investigation — 0% Success Rate | 2026-03-30 | default |
 | TASK_2026_191 | COMPLETE    | BUGFIX  | Scaffold Sync Audit — Verify All Scaffold Files Match Source | 2026-03-30 | default |
 | TASK_2026_192 | IN_PROGRESS | BUGFIX  | Add Missing Unit Tests for Tasks 148, 155, 159 Utility Functions | 2026-03-30 | default |
 | TASK_2026_193 | COMPLETE    | BUGFIX  | Auto-Release Orphaned Task Claims on Session Startup | 2026-03-30 | default |
@@ -219,19 +219,19 @@
 | TASK_2026_214 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_215 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_216 | COMPLETE    | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
-| TASK_2026_217 | IN_PROGRESS | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
-| TASK_2026_218 | CREATED     | FEATURE | Session Creation Advanced Options Panel | 2026-03-30 | default |
+| TASK_2026_217 | IMPLEMENTED | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
+| TASK_2026_218 | COMPLETE    | FEATURE | Session Creation Advanced Options Panel | 2026-03-30 | default |
 | TASK_2026_219 | CREATED     | FEATURE | Session View — Empty Queue State & Completion Banner | 2026-03-30 | default |
 | TASK_2026_220 | CANCELLED   | RESEARCH | Launcher Interface Definition | 2026-03-31 | default |
 | TASK_2026_221 | CANCELLED   | REFACTORING | Claude Code Launcher Adapter | 2026-03-31 | default |
-| TASK_2026_222 | CREATED     | FEATURE | Extend Cortex DB Schema — Agents, Workflows, Launchers, Compatibility | 2026-03-31 | default |
+| TASK_2026_222 | COMPLETE    | FEATURE | Extend Cortex DB Schema — Agents, Workflows, Launchers, Compatibility | 2026-03-31 | default |
 | TASK_2026_223 | CANCELLED   | REFACTORING | Remove Task .md File Generation — DB-Only Task State | 2026-03-31 | default |
 | TASK_2026_224 | CANCELLED   | FEATURE | Server Supervisor Service | 2026-03-31 | default |
 | TASK_2026_225 | CANCELLED   | FEATURE | Supervisor REST API + WebSocket Events | 2026-03-31 | default |
 | TASK_2026_226 | CANCELLED   | REFACTORING | Refactor Session-Mode Supervisor — MCP Only | 2026-03-31 | default |
 | TASK_2026_227 | CANCELLED   | FEATURE | Worker Output Collection — Structured Parsing | 2026-03-31 | default |
 | TASK_2026_228 | CANCELLED   | FEATURE | Direct Mode — Single-Task Execution Without Supervisor | 2026-03-31 | default |
-| TASK_2026_229 | CREATED     | FEATURE | Extend Cortex Schema for Worker Telemetry | 2026-03-31 | default |
+| TASK_2026_229 | COMPLETE    | FEATURE | Extend Cortex Schema for Worker Telemetry | 2026-03-31 | default |
 | TASK_2026_230 | CREATED     | FEATURE | Instrument Worker Lifecycle — Emit Telemetry Events | 2026-03-31 | default |
 | TASK_2026_231 | CREATED     | FEATURE | Reporting API Endpoints | 2026-03-31 | default |
 | TASK_2026_232 | CREATED     | FEATURE | Dashboard Reports Page | 2026-03-31 | default |
@@ -244,8 +244,8 @@
 | TASK_2026_239 | CANCELLED   | FEATURE | Workspace Management — Register, Switch, List Projects | 2026-03-31 | default |
 | TASK_2026_240 | CANCELLED   | FEATURE | Dashboard Multi-Workspace Support | 2026-03-31 | default |
 | TASK_2026_241 | COMPLETE    | BUGFIX  | Supervisor: Reconcile Task State on Worker Exit (Don't Trust Worker Self-Reporting) | 2026-03-31 | default |
-| TASK_2026_242 | CREATED     | BUGFIX  | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | 2026-03-31 | default |
-| TASK_2026_243 | CREATED     | FEATURE | Per-Task Model/Provider Editor in Dashboard | 2026-03-31 | default |
+| TASK_2026_242 | COMPLETE    | BUGFIX  | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | 2026-03-31 | default |
+| TASK_2026_243 | COMPLETE    | FEATURE | Per-Task Model/Provider Editor in Dashboard | 2026-03-31 | default |
 | TASK_2026_244 | COMPLETE    | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
 | TASK_2026_245 | CREATED     | FEATURE | Tick-Mode Auto-Pilot Skill Prompt | 2026-03-31 | default |
 | TASK_2026_246 | CREATED     | FEATURE | Dashboard UI: Session Cost Breakdown Card | 2026-03-31 | default |
@@ -253,7 +253,7 @@
 | TASK_2026_248 | CREATED     | FEATURE | Session Comparison View -- Side-by-Side Model Cost/Performance | 2026-03-31 | default |
 | TASK_2026_249 | CREATED     | FEATURE | Cortex Schema: Session Cost Breakdown Columns and Summary | 2026-03-31 | default |
 | TASK_2026_250 | CREATED     | FEATURE | Dashboard API: Session Cost Breakdown Response | 2026-03-31 | default |
-| TASK_2026_251 | CREATED     | FEATURE | MCP Cortex: bulk_update_tasks Tool | 2026-03-31 | default |
+| TASK_2026_251 | COMPLETE    | FEATURE | MCP Cortex: bulk_update_tasks Tool | 2026-03-31 | default |
 | TASK_2026_252 | CREATED     | BUGFIX  | MCP Cortex: update_task Syncs Title/Status to Disk Files | 2026-03-31 | default |
 | TASK_2026_253 | CREATED     | BUGFIX  | MCP Cortex: Reject Tasks with Empty/Default Titles on Create | 2026-03-31 | default |
 | TASK_2026_254 | CREATED     | BUGFIX  | MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup | 2026-03-31 | default |
