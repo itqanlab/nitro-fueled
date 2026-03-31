@@ -11,6 +11,7 @@ import { DashboardGateway } from './dashboard.gateway';
 import { CortexService } from './cortex.service';
 import { WsAuthGuard } from './auth/ws-auth.guard';
 import { OrchestrationFlowsService } from './orchestration-flows.service';
+import { OrchestrationModule } from './orchestration/orchestration.module';
 import { LogsController } from './logs.controller';
 import { LogsService } from './logs.service';
 import { ReportsService } from './reports.service';
@@ -19,6 +20,7 @@ import { CommandConsoleController } from './command-console.controller';
 import { CommandConsoleService } from './command-console.service';
 
 @Module({
+  imports: [OrchestrationModule],
   controllers: [DashboardController, LogsController, CommandConsoleController],
   providers: [
     DiffService,
