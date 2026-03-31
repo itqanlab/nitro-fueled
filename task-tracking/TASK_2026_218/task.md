@@ -3,6 +3,7 @@
 ## Metadata
 | Field | Value |
 |-------|-------|
+| Title | Session Creation Advanced Options Panel |
 | Type | FEATURE |
 | Priority | P1-High |
 | Complexity | Simple |

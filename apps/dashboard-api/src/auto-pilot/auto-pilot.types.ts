@@ -186,6 +186,7 @@ export interface SessionStatusResponse {
 
 export interface SupervisorEvent {
   type: 'supervisor:started' | 'supervisor:stopped' | 'supervisor:heartbeat'
+    | 'supervisor:paused' | 'supervisor:resumed'
     | 'worker:spawned' | 'worker:completed' | 'worker:failed' | 'worker:killed'
     | 'task:claimed' | 'task:completed' | 'task:failed' | 'task:blocked';
   sessionId: string;

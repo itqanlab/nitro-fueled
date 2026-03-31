@@ -3,6 +3,7 @@
 ## Metadata
 | Field | Value |
 |-------|-------|
+| Title | GPT-5.4 Prep Worker Kill Rate — Root Cause Investigation |
 | Type | RESEARCH |
 | Priority | P2-Medium |
 | Complexity | Simple |

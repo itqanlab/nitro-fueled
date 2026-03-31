@@ -3,6 +3,7 @@
 ## Metadata
 | Field | Value |
 |-------|-------|
+| Title | Analytics Frontend — Model × Launcher Performance Page |
 | Type | FEATURE |
 | Priority | P1-High |
 | Complexity | Medium |

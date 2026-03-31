@@ -193,35 +193,35 @@
 | TASK_2026_188 | COMPLETE    | BUGFIX  | Cortex MCP — Orphaned Claim Recovery & Multi-Session Health | 2026-03-30 | default |
 | TASK_2026_189 | COMPLETE    | BUGFIX  | Audit All JSON.parse Calls in mcp-cortex for try/catch Guards | 2026-03-30 | default |
 | TASK_2026_190 | CREATED     | RESEARCH | GLM-4.7 Review Worker Investigation — 0% Success Rate | 2026-03-30 | default |
-| TASK_2026_191 | IMPLEMENTED | BUGFIX  | Scaffold Sync Audit — Verify All Scaffold Files Match Source | 2026-03-30 | default |
+| TASK_2026_191 | COMPLETE    | BUGFIX  | Scaffold Sync Audit — Verify All Scaffold Files Match Source | 2026-03-30 | default |
 | TASK_2026_192 | IN_PROGRESS | BUGFIX  | Add Missing Unit Tests for Tasks 148, 155, 159 Utility Functions | 2026-03-30 | default |
-| TASK_2026_193 | IMPLEMENTED | BUGFIX  | Auto-Release Orphaned Task Claims on Session Startup | 2026-03-30 | default |
+| TASK_2026_193 | COMPLETE    | BUGFIX  | Auto-Release Orphaned Task Claims on Session Startup | 2026-03-30 | default |
 | TASK_2026_194 | COMPLETE    | BUGFIX  | Normalize Session ID Format — Consistent T-Separator Everywhere | 2026-03-30 | default |
 | TASK_2026_195 | COMPLETE    | BUGFIX  | Auto-Close Dead Sessions — TTL-Based Expiry | 2026-03-30 | default |
-| TASK_2026_196 | IMPLEMENTED | BUGFIX  | Supervisor Task Prioritization — Build CREATED Before Review IMPLEMENTED | 2026-03-30 | default |
+| TASK_2026_196 | COMPLETE    | BUGFIX  | Supervisor Task Prioritization — Build CREATED Before Review IMPLEMENTED | 2026-03-30 | default |
 | TASK_2026_197 | COMPLETE    | BUGFIX  | Prevent get_tasks(status: "COMPLETE") Overflow in Supervisor | 2026-03-30 | default |
 | TASK_2026_198 | IN_PROGRESS | BUGFIX  | Validate Provider Availability Before Session Config Assignment | 2026-03-30 | default |
 | TASK_2026_199 | CANCELLED   | FEATURE | Model × Launcher Performance Report | 2026-03-30 | default |
 | TASK_2026_200 | CANCELLED   | FEATURE | Session Run Configuration Panel + Queue Empty State | 2026-03-30 | default |
 | TASK_2026_201 | COMPLETE    | FEATURE | Provider Quota Panel | 2026-03-30 | default |
-| TASK_2026_202 | IMPLEMENTED | FEATURE | Graceful Session Termination | 2026-03-30 | default |
+| TASK_2026_202 | COMPLETE    | FEATURE | Graceful Session Termination | 2026-03-30 | default |
 | TASK_2026_203 | COMPLETE    | BUGFIX  | Wire Heartbeat Lifecycle | 2026-03-30 | default |
 | TASK_2026_204 | COMPLETE    | REFACTORING | Refactor Supervisor to Multi-Session Architecture | 2026-03-30 | default |
-| TASK_2026_205 | COMPLETE | FEATURE | Write Prep Worker prompt and exit gate | 2026-03-30 | default |
-| TASK_2026_206 | IMPLEMENTED | FEATURE | Update Supervisor spawn logic for split worker mode routing | 2026-03-30 | default |
-| TASK_2026_207 | IMPLEMENTED | FEATURE | Add prep/implement worker types and prep handoff schema to cortex MCP | 2026-03-30 | default |
-| TASK_2026_208 | IMPLEMENTED | DOCUMENTATION | Add Worker Mode field and PREPPED/IMPLEMENTING statuses to template and docs | 2026-03-30 | default |
-| TASK_2026_209 | IMPLEMENTED | FEATURE | Write Implement Worker prompt and exit gate | 2026-03-30 | default |
-| TASK_2026_210 | CREATED     | FEATURE | Migrate Dashboard Frontend to Session-Centric API | 2026-03-30 | default |
+| TASK_2026_205 | COMPLETE    | FEATURE | Write Prep Worker prompt and exit gate | 2026-03-30 | default |
+| TASK_2026_206 | COMPLETE    | FEATURE | Update Supervisor spawn logic for split worker mode routing | 2026-03-30 | default |
+| TASK_2026_207 | COMPLETE    | FEATURE | Add prep/implement worker types and prep handoff schema to cortex MCP | 2026-03-30 | default |
+| TASK_2026_208 | COMPLETE    | DOCUMENTATION | Add Worker Mode field and PREPPED/IMPLEMENTING statuses to template and docs | 2026-03-30 | default |
+| TASK_2026_209 | COMPLETE    | FEATURE | Write Implement Worker prompt and exit gate | 2026-03-30 | default |
+| TASK_2026_210 | COMPLETE    | FEATURE | Migrate Dashboard Frontend to Session-Centric API | 2026-03-30 | default |
 | TASK_2026_211 | COMPLETE    | BUGFIX  | Untitled | 2026-03-30 | default |
-| TASK_2026_212 | CREATED     | RESEARCH | Untitled | 2026-03-30 | default |
-| TASK_2026_213 | CREATED     | REFACTORING | Untitled | 2026-03-30 | default |
+| TASK_2026_212 | CREATED     | RESEARCH | GPT-5.4 Prep Worker Kill Rate — Root Cause Investigation | 2026-03-30 | default |
+| TASK_2026_213 | CREATED     | REFACTORING | Refactor Command Console Controller — NestJS DTO Validation | 2026-03-30 | default |
 | TASK_2026_214 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_215 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
-| TASK_2026_216 | CREATED     | FEATURE | Untitled | 2026-03-30 | default |
-| TASK_2026_217 | CREATED     | FEATURE | Untitled | 2026-03-30 | default |
-| TASK_2026_218 | CREATED     | FEATURE | Untitled | 2026-03-30 | default |
-| TASK_2026_219 | CREATED     | FEATURE | Untitled | 2026-03-30 | default |
+| TASK_2026_216 | CREATED     | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
+| TASK_2026_217 | CREATED     | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
+| TASK_2026_218 | CREATED     | FEATURE | Session Creation Advanced Options Panel | 2026-03-30 | default |
+| TASK_2026_219 | CREATED     | FEATURE | Session View — Empty Queue State & Completion Banner | 2026-03-30 | default |
 | TASK_2026_220 | CANCELLED   | RESEARCH | Launcher Interface Definition | 2026-03-31 | default |
 | TASK_2026_221 | CANCELLED   | REFACTORING | Claude Code Launcher Adapter | 2026-03-31 | default |
 | TASK_2026_222 | CREATED     | FEATURE | Extend Cortex DB Schema — Agents, Workflows, Launchers, Compatibility | 2026-03-31 | default |
@@ -246,7 +246,7 @@
 | TASK_2026_241 | COMPLETE    | BUGFIX  | Supervisor: Reconcile Task State on Worker Exit (Don't Trust Worker Self-Reporting) | 2026-03-31 | default |
 | TASK_2026_242 | CREATED     | BUGFIX  | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | 2026-03-31 | default |
 | TASK_2026_243 | CREATED     | FEATURE | Per-Task Model/Provider Editor in Dashboard | 2026-03-31 | default |
-| TASK_2026_244 | CREATED     | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
+| TASK_2026_244 | IMPLEMENTED | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
 | TASK_2026_245 | CREATED     | FEATURE | Tick-Mode Auto-Pilot Skill Prompt | 2026-03-31 | default |
 | TASK_2026_246 | CREATED     | FEATURE | Dashboard UI: Session Cost Breakdown Card | 2026-03-31 | default |
 | TASK_2026_247 | CREATED     | FEATURE | Sessions List: Checkbox Selection and Compare Button | 2026-03-31 | default |
@@ -274,3 +274,17 @@
 | TASK_2026_269 | CREATED     | FEATURE | Dashboard API: Subtask Data in Task Response | 2026-03-31 | default |
 | TASK_2026_270 | CREATED     | FEATURE | MCP Cortex: Launcher-Aware spawn_worker and get_available_providers | 2026-03-31 | default |
 | TASK_2026_271 | CREATED     | FEATURE | Autopilot: Prompt Adapter Layer + Supervisor Codex Launcher Routing | 2026-03-31 | default |
+| TASK_2026_272 | CREATED     | RESEARCH | Research — Multi-Launcher Data Model, Compatibility Matrix, and MCP API Spec | 2026-03-31 | default |
+| TASK_2026_273 | CREATED     | RESEARCH | Research — Per-Harness Prompt Templates and Supervisor Routing Spec | 2026-03-31 | default |
+| TASK_2026_274 | CREATED     | FEATURE | Enforce preferred_tier at Task Creation and Hard-Route in Supervisor | 2026-03-31 | default |
+| TASK_2026_275 | CREATED     | FEATURE | Add work_type Field to Task Template for Tier Routing | 2026-03-31 | default |
+| TASK_2026_276 | CREATED     | FEATURE | Phase-Level Model Routing in Orchestration Skill | 2026-03-31 | default |
+| TASK_2026_277 | CREATED     | FEATURE | CLAUDE.md Split — Introduce .nitro/CLAUDE.nitro.md as Nitro's System Prompt | 2026-03-31 | default |
+| TASK_2026_278 | CREATED     | REFACTORING | Scaffold Source Restructure — Replace scaffold/.claude/ with scaffold/nitro/ and scaffold/nitro-root/ | 2026-03-31 | default |
+| TASK_2026_279 | CREATED     | REFACTORING | Rename Unprefixed .claude/ Dirs and Files to nitro-* (Structural Rename) | 2026-03-31 | default |
+| TASK_2026_280 | CREATED     | REFACTORING | Update All Internal References After nitro-* Rename | 2026-03-31 | default |
+| TASK_2026_281 | CREATED     | FEATURE | Smart Codebase Sampling for Init — Hybrid Signal Collection | 2026-03-31 | default |
+| TASK_2026_282 | CREATED     | FEATURE | AI-Generated Project Artifacts from Init Analysis — Single-Pass Generation | 2026-03-31 | default |
+| TASK_2026_283 | CREATED     | FEATURE | Multi-Tool Context File Generation — .cursorrules, copilot-instructions, .clinerules | 2026-03-31 | default |
+| TASK_2026_284 | CREATED     | FEATURE | AI-Assisted Three-Way Merge on Update (--ai-merge) | 2026-03-31 | default |
+| TASK_2026_285 | CREATED     | FEATURE | Update Change Summary — AI-Powered Diff Explanation | 2026-03-31 | default |

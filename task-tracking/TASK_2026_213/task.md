@@ -3,6 +3,7 @@
 ## Metadata
 | Field | Value |
 |-------|-------|
+| Title | Refactor Command Console Controller — NestJS DTO Validation |
 | Type | REFACTORING |
 | Priority | P3-Low |
 | Complexity | Simple |

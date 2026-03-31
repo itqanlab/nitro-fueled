@@ -74,7 +74,7 @@ export class SessionRunner {
     this.loopStatus = 'paused';
     this.supervisorDb.updateSessionStatus(this.sessionId, 'paused', 'Paused by user');
     this.clearTimer();
-    this.emitEvent('supervisor:stopped', { reason: 'paused' });
+    this.emitEvent('supervisor:paused', {});
     this.logger.log('Session paused — workers continue running');
   }
 
@@ -85,7 +85,7 @@ export class SessionRunner {
     this.loopStatus = 'running';
     this.supervisorDb.updateSessionStatus(this.sessionId, 'running');
     this.loopTimer = setInterval(() => this.tick(), this.config.poll_interval_ms);
-    this.emitEvent('supervisor:started', { reason: 'resumed' });
+    this.emitEvent('supervisor:resumed', {});
     this.logger.log('Session resumed');
     this.tick();
   }
@@ -225,6 +225,7 @@ export class SessionRunner {
           { workerId: worker.workerId, provider: worker.provider },
         );
         this.emitEvent('worker:completed', { taskId: worker.taskId, workerType: 'review' });
+        this.emitEvent('task:completed', { taskId: worker.taskId });
       } else {
         this.handleWorkerFailure(worker, `Task status is ${taskStatus} (expected COMPLETE)`);
       }
@@ -421,6 +422,7 @@ export class SessionRunner {
       this.logger.warn(`Failed to claim ${candidate.id} — already claimed by another session`);
       return;
     }
+    this.emitEvent('task:claimed', { taskId: candidate.id, workerType });
 
     const label = retryNumber > 0
       ? `${workerType}-${candidate.id}-retry${retryNumber}`
@@ -550,7 +552,8 @@ export class SessionRunner {
     };
     try {
       this.logger.debug(`Event: ${event.type} — ${JSON.stringify(payload)}`);
+      // onEvent is inside try/catch so gateway errors do not propagate to callers
+      this.onEvent?.(event);
     } catch { /* best effort */ }
-    this.onEvent?.(event);
   }
 }

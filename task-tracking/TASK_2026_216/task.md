@@ -3,6 +3,7 @@
 ## Metadata
 | Field | Value |
 |-------|-------|
+| Title | Analytics Backend — Model & Launcher Performance Endpoints |
 | Type | FEATURE |
 | Priority | P1-High |
 | Complexity | Medium |

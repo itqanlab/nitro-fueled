@@ -3,6 +3,7 @@
 ## Metadata
 | Field | Value |
 |-------|-------|
+| Title | Session View — Empty Queue State & Completion Banner |
 | Type | FEATURE |
 | Priority | P2-Medium |
 | Complexity | Simple |
