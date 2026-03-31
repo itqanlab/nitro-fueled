@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DashboardController } from './dashboard.controller';
 import { PipelineService } from './pipeline.service';
 import { SessionsService } from './sessions.service';
+import { SessionsHistoryService } from './sessions-history.service';
 import { AnalyticsService } from './analytics.service';
 import { WatcherService } from './watcher.service';
 import { DiffService } from './diff.service';
@@ -31,6 +32,7 @@ import { CommandConsoleService } from './command-console.service';
     WatcherService,
     DashboardGateway,
     CortexService,
+    SessionsHistoryService,
     {
       provide: ReportsService,
       useFactory: (cortexService: CortexService) => new ReportsService(cortexService, process.cwd()),
@@ -42,6 +44,6 @@ import { CommandConsoleService } from './command-console.service';
     ProgressCenterService,
     CommandConsoleService,
   ],
-  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService],
+  exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, SessionsHistoryService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService],
 })
 export class DashboardModule {}

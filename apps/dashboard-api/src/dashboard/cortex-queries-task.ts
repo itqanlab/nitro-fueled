@@ -21,7 +21,7 @@ import { mapWorker } from './cortex-queries-worker';
 export const TASK_COLS =
   'id, title, type, priority, status, complexity, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at';
 export const SESSION_COLS =
-  'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat';
+  'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat, drain_requested';
 export const WORKER_COLS =
   'id, session_id, task_id, worker_type, label, status, model, provider, launcher, spawn_time, tokens_json, cost_json, outcome, retry_number';
 
@@ -80,6 +80,7 @@ export function mapSession(row: RawSession): CortexSession {
     total_input_tokens: row.total_input_tokens,
     total_output_tokens: row.total_output_tokens,
     last_heartbeat: row.last_heartbeat,
+    drain_requested: row.drain_requested === 1,
   };
 }
 

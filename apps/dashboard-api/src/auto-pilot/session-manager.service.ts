@@ -102,6 +102,13 @@ export class SessionManagerService implements OnModuleDestroy {
     return true;
   }
 
+  public drainSession(sessionId: string): boolean {
+    const runner = this.runners.get(sessionId);
+    if (!runner) return false;
+    this.supervisorDb.setDrainRequested(sessionId);
+    return true;
+  }
+
   // ============================================================
   // Query methods
   // ============================================================

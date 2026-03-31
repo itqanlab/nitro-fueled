@@ -1,0 +1,60 @@
+<div class="sessions-page">
+  <div class="page-header">
+    <h1 class="page-title">Session History</h1>
+    <p class="page-subtitle">Browse all past auto-pilot and orchestration sessions</p>
+  </div>
+
+  @if (unavailable) {
+    <div class="unavailable-banner" role="alert">
+      Cortex DB unavailable — session history cannot be loaded at this time.
+    </div>
+  }
+
+  @if (loading && !unavailable) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 6 }"></nz-skeleton>
+  }
+
+  @if (!loading || unavailable) {
+    @if (enriched().length === 0 && !unavailable) {
+      <nz-empty nzNotFoundContent="No session history available"></nz-empty>
+    } @else if (enriched().length > 0) {
+      <nz-table
+        [nzData]="enriched()"
+        [nzShowPagination]="enriched().length > 20"
+        [nzPageSize]="20"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Source</th>
+            <th scope="col">Status</th>
+            <th scope="col">Started</th>
+            <th scope="col">Duration</th>
+            <th scope="col">Cost</th>
+            <th scope="col">Tasks</th>
+            <th scope="col">Supervisor</th>
+            <th scope="col">Mode</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (session of enriched(); track session.id) {
+            <tr class="clickable-row" [routerLink]="['/sessions', session.id]">
+              <td class="source-cell">{{ session.source }}</td>
+              <td><nz-tag [nzColor]="session.statusColor">{{ session.statusLabel }}</nz-tag></td>
+              <td>{{ session.startedAt | date:'short' }}</td>
+              <td>{{ session.formattedDuration }}</td>
+              <td>{{ session.formattedCost }}</td>
+              <td>
+                <span class="task-counts">
+                  <span class="count-ok">{{ session.tasksCompleted }}</span>/<span class="count-total">{{ session.totalTasks }}</span>
+                </span>
+              </td>
+              <td class="model-cell">{{ session.supervisorModel }}</td>
+              <td>{{ session.mode }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+  }
+</div>

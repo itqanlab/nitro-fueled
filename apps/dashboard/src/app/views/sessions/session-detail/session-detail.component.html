@@ -1,0 +1,188 @@
+<div class="session-detail-page">
+  <div class="page-header">
+    <a class="back-link" routerLink="/sessions">&larr; Session History</a>
+    <h1 class="page-title">Session Detail</h1>
+  </div>
+
+  @if (unavailable) {
+    <div class="unavailable-banner" role="alert">
+      Session data unavailable — Cortex DB cannot be reached.
+    </div>
+  }
+
+  @if (loading && !unavailable) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }"></nz-skeleton>
+  }
+
+  @if (detail(); as d) {
+    @if (!loading) {
+      @if (isDraining()) {
+        <div class="drain-banner" role="status">
+          <nz-tag nzColor="gold">Session ending by user request…</nz-tag>
+          <span>Waiting for {{ d.activeWorkerCount }} active worker(s) to finish.</span>
+        </div>
+      }
+
+      @if (showConfirmDialog()) {
+        <div class="confirm-overlay" role="dialog" aria-modal="true">
+          <div class="confirm-card">
+            <h3>End Session?</h3>
+            <p>This will signal the supervisor to stop after current workers finish. This cannot be undone.</p>
+            <div class="confirm-actions">
+              <button class="btn btn-secondary" (click)="cancelDrain()">Cancel</button>
+              <button class="btn btn-danger" (click)="confirmDrain()">End Session</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (drainError(); as err) {
+        <div class="drain-error" role="alert">{{ err }}</div>
+      }
+
+      <div class="meta-card">
+        <div class="meta-row">
+          <nz-tag [nzColor]="d.statusColor">{{ d.statusLabel }}</nz-tag>
+          @if (d.statusLabel === 'running' && !isDraining()) {
+            <button class="btn btn-danger btn-sm end-session-btn" (click)="requestDrain()">End Session</button>
+          }
+          <span class="meta-item"><span class="meta-label">Source:</span> {{ d.source }}</span>
+          <span class="meta-item"><span class="meta-label">Mode:</span> {{ d.mode }}</span>
+          <span class="meta-item"><span class="meta-label">Supervisor:</span> {{ d.supervisorModel }}</span>
+          <span class="meta-item"><span class="meta-label">Duration:</span> {{ d.formattedDuration }}</span>
+          <span class="meta-item"><span class="meta-label">Cost:</span> {{ d.formattedCost }}</span>
+          <span class="meta-item"><span class="meta-label">Workers:</span> {{ d.workerCount }}</span>
+        </div>
+        <div class="meta-row meta-times">
+          <span class="meta-item"><span class="meta-label">Started:</span> {{ d.startedAt | date:'medium' }}</span>
+          @if (d.endedAt !== '—') {
+            <span class="meta-item"><span class="meta-label">Ended:</span> {{ d.endedAt | date:'medium' }}</span>
+          }
+        </div>
+      </div>
+
+      <section class="section">
+        <h2 class="section-title">Task Results</h2>
+        @if (d.taskResults.length === 0) {
+          <nz-empty nzNotFoundContent="No task results"></nz-empty>
+        } @else {
+          <nz-table
+            [nzData]="d.taskResults"
+            nzSize="small"
+            [nzShowPagination]="d.taskResults.length > 10"
+            [nzPageSize]="10"
+          >
+            <thead>
+              <tr>
+                <th>Task ID</th>
+                <th>Outcome</th>
+                <th>Cost</th>
+                <th>Duration</th>
+                <th>Model</th>
+                <th>Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (task of d.taskResults; track task.taskId) {
+                <tr>
+                  <td class="mono">{{ task.taskId }}</td>
+                  <td>{{ task.outcome }}</td>
+                  <td>{{ task.formattedCost }}</td>
+                  <td>{{ task.formattedDuration }}</td>
+                  <td class="mono">{{ task.model }}</td>
+                  <td><nz-tag [nzColor]="task.scoreColor">{{ task.formattedScore }}</nz-tag></td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Timeline</h2>
+        @if (d.timeline.length === 0) {
+          <nz-empty nzNotFoundContent="No timeline events"></nz-empty>
+        } @else {
+          <nz-table
+            [nzData]="d.timeline"
+            nzSize="small"
+            [nzShowPagination]="d.timeline.length > 15"
+            [nzPageSize]="15"
+          >
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Source</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (event of d.timeline; track event.formattedTime + event.type) {
+                <tr>
+                  <td>{{ event.formattedTime | date:'short' }}</td>
+                  <td><span [class]="event.typeClass">{{ event.type }}</span></td>
+                  <td>{{ event.source }}</td>
+                  <td class="description-cell">{{ event.description }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Workers</h2>
+        @if (d.workers.length === 0) {
+          <nz-empty nzNotFoundContent="No worker data"></nz-empty>
+        } @else {
+          <nz-table
+            [nzData]="d.workers"
+            nzSize="small"
+            [nzShowPagination]="d.workers.length > 10"
+            [nzPageSize]="10"
+          >
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Model</th>
+                <th>Provider</th>
+                <th>Cost</th>
+                <th>Tokens (in / out)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (worker of d.workers; track worker.id) {
+                <tr>
+                  <td class="mono">{{ worker.taskId }}</td>
+                  <td>{{ worker.workerType }}</td>
+                  <td><nz-tag [nzColor]="worker.statusColor">{{ worker.status }}</nz-tag></td>
+                  <td class="mono">{{ worker.model }}</td>
+                  <td>{{ worker.provider }}</td>
+                  <td>{{ worker.formattedCost }}</td>
+                  <td>{{ worker.formattedTokens }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+      </section>
+
+      <section class="section">
+        <h2 class="section-title clickable" (click)="toggleLog()">
+          Session Log
+          <span class="expand-icon">{{ logExpanded() ? '▾' : '▸' }}</span>
+        </h2>
+        @if (logExpanded()) {
+          @if (d.hasLog) {
+            <pre class="log-content">{{ d.logContent }}</pre>
+          } @else {
+            <nz-empty nzNotFoundContent="No log content available"></nz-empty>
+          }
+        }
+      </section>
+    }
+  }
+</div>

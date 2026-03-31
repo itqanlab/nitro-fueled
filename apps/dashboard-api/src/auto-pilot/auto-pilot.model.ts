@@ -18,8 +18,12 @@ import type {
 export interface CreateSessionRequest {
   readonly concurrency?: number;
   readonly limit?: number;
-  readonly buildProvider?: ProviderType;
-  readonly buildModel?: string;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
   readonly reviewProvider?: ProviderType;
   readonly reviewModel?: string;
   readonly priority?: PriorityStrategy;
@@ -38,8 +42,12 @@ export interface CreateSessionResponse {
 export interface UpdateSessionConfigRequest {
   readonly concurrency?: number;
   readonly limit?: number;
-  readonly buildProvider?: ProviderType;
-  readonly buildModel?: string;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
   readonly reviewProvider?: ProviderType;
   readonly reviewModel?: string;
   readonly priority?: PriorityStrategy;
@@ -58,7 +66,7 @@ export interface UpdateSessionConfigResponse {
 
 export interface SessionActionResponse {
   readonly sessionId: string;
-  readonly action: 'stopped' | 'paused' | 'resumed';
+  readonly action: 'stopped' | 'paused' | 'resumed' | 'draining';
 }
 
 // ============================================================

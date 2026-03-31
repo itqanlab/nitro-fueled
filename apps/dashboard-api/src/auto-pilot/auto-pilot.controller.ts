@@ -172,6 +172,22 @@ export class AutoPilotController {
     return response;
   }
 
+  @Patch(':id/stop')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request graceful drain — active workers finish, no new spawns' })
+  @ApiParam({ name: 'id', description: 'Session ID (SESSION_YYYY-MM-DDTHH-MM-SS)' })
+  @ApiResponse({ status: 200, description: 'Drain requested' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  public drainSession(@Param('id') id: string): SessionActionResponse {
+    this.validateSessionId(id);
+    const response = this.autoPilotService.drainSession(id);
+    if (!response) {
+      throw new NotFoundException(`Session ${id} not found`);
+    }
+    return response;
+  }
+
   // ============================================================
   // Validation helpers
   // ============================================================
@@ -224,7 +240,7 @@ export class AutoPilotController {
       result['limit'] = l;
     }
 
-    for (const key of ['buildProvider', 'reviewProvider'] as const) {
+    for (const key of ['prepProvider', 'implementProvider', 'implementFallbackProvider', 'reviewProvider'] as const) {
       if (body[key] !== undefined) {
         if (
           typeof body[key] !== 'string' ||
@@ -238,7 +254,7 @@ export class AutoPilotController {
       }
     }
 
-    for (const key of ['buildModel', 'reviewModel'] as const) {
+    for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel'] as const) {
       if (body[key] !== undefined) {
         if (typeof body[key] !== 'string') {
           throw new BadRequestException(`${key} must be a string`);
@@ -293,7 +309,7 @@ export class AutoPilotController {
       result['limit'] = l;
     }
 
-    for (const key of ['buildProvider', 'reviewProvider'] as const) {
+    for (const key of ['prepProvider', 'implementProvider', 'implementFallbackProvider', 'reviewProvider'] as const) {
       if (body[key] !== undefined) {
         if (
           typeof body[key] !== 'string' ||
@@ -307,7 +323,7 @@ export class AutoPilotController {
       }
     }
 
-    for (const key of ['buildModel', 'reviewModel'] as const) {
+    for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel'] as const) {
       if (body[key] !== undefined) {
         if (typeof body[key] !== 'string') {
           throw new BadRequestException(`${key} must be a string`);

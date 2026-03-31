@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { PipelineService } from './pipeline.service';
 import { SessionsService } from './sessions.service';
+import { SessionsHistoryService } from './sessions-history.service';
 import { AnalyticsService } from './analytics.service';
 import { CortexService } from './cortex.service';
 import { OrchestrationFlowsService } from './orchestration-flows.service';
@@ -44,6 +45,7 @@ export class DashboardController {
   public constructor(
     private readonly pipelineService: PipelineService,
     private readonly sessionsService: SessionsService,
+    private readonly sessionsHistoryService: SessionsHistoryService,
     private readonly analyticsService: AnalyticsService,
     private readonly cortexService: CortexService,
     private readonly orchestrationFlowsService: OrchestrationFlowsService,
@@ -218,25 +220,34 @@ export class DashboardController {
   }
 
   @ApiTags('sessions')
-  @ApiOperation({ summary: 'Get session by ID', description: 'Returns full session data including orchestrator state and log' })
-  @ApiParam({ name: 'id', description: 'Session ID (format: SESSION_YYYY-MM-DD_HH-MM-SS)', example: 'SESSION_2026-03-15_10-30-00' })
-  @ApiResponse({ status: 200, description: 'Session data' })
+  @ApiOperation({ summary: 'Get session detail', description: 'Returns full session detail from cortex with tasks, timeline, workers, and log content' })
+  @ApiParam({ name: 'id', description: 'Session ID', example: 'SESSION_2026-03-15_10-30-00' })
+  @ApiResponse({ status: 200, description: 'Session detail' })
   @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('sessions/:id')
-  public getSession(@Param('id') id: string): ReturnType<SessionsService['getSession']> {
-    const data = this.sessionsService.getSession(id);
-    if (!data) {
+  public async getSession(@Param('id') id: string) {
+    const result = await this.sessionsHistoryService.getSessionDetail(id);
+    if (result === null) {
+      if (!this.cortexService.isAvailable()) {
+        throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+      }
       throw new NotFoundException({ error: 'Session not found' });
     }
-    return data;
+    return result;
   }
 
   @ApiTags('sessions')
-  @ApiOperation({ summary: 'Get all sessions', description: 'Returns all sessions (active and archived)' })
-  @ApiResponse({ status: 200, description: 'Session list' })
+  @ApiOperation({ summary: 'Get session history', description: 'Returns all sessions from cortex with summary stats (completed, failed, blocked counts)' })
+  @ApiResponse({ status: 200, description: 'Session history list' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('sessions')
-  public getSessions(): ReturnType<SessionsService['getSessions']> {
-    return this.sessionsService.getSessions();
+  public getSessions() {
+    const result = this.sessionsHistoryService.getSessionsList();
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    return result;
   }
 
   @ApiTags('sessions')

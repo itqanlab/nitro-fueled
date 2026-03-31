@@ -39,6 +39,7 @@ export interface CortexSession {
   total_input_tokens: number;
   total_output_tokens: number;
   last_heartbeat: string | null;
+  drain_requested: boolean;
 }
 
 export interface CortexSessionWorker {
@@ -185,6 +186,7 @@ export interface RawSession {
   total_input_tokens: number;
   total_output_tokens: number;
   last_heartbeat: string | null;
+  drain_requested: number;
 }
 
 export interface RawWorker {

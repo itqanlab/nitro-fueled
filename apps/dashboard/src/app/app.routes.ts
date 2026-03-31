@@ -109,10 +109,17 @@ export const APP_ROUTES: Routes = [
           ),
       },
       {
-        path: 'session/:sessionId',
+        path: 'sessions',
         loadComponent: () =>
-          import('./views/session-viewer/session-viewer.component').then(
-            (m) => m.SessionViewerComponent,
+          import('./views/sessions/sessions-list/sessions-list.component').then(
+            (m) => m.SessionsListComponent,
+          ),
+      },
+      {
+        path: 'sessions/:id',
+        loadComponent: () =>
+          import('./views/sessions/session-detail/session-detail.component').then(
+            (m) => m.SessionDetailComponent,
           ),
       },
       {

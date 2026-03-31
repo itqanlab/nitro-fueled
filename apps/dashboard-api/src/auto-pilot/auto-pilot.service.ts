@@ -35,8 +35,12 @@ export class AutoPilotService {
 
     if (request.concurrency !== undefined) config.concurrency = request.concurrency;
     if (request.limit !== undefined) config.limit = request.limit;
-    if (request.buildProvider !== undefined) config.build_provider = request.buildProvider;
-    if (request.buildModel !== undefined) config.build_model = request.buildModel;
+    if (request.prepProvider !== undefined) config.prep_provider = request.prepProvider;
+    if (request.prepModel !== undefined) config.prep_model = request.prepModel;
+    if (request.implementProvider !== undefined) config.implement_provider = request.implementProvider;
+    if (request.implementModel !== undefined) config.implement_model = request.implementModel;
+    if (request.implementFallbackProvider !== undefined) config.implement_fallback_provider = request.implementFallbackProvider;
+    if (request.implementFallbackModel !== undefined) config.implement_fallback_model = request.implementFallbackModel;
     if (request.reviewProvider !== undefined) config.review_provider = request.reviewProvider;
     if (request.reviewModel !== undefined) config.review_model = request.reviewModel;
     if (request.priority !== undefined) config.priority = request.priority;
@@ -68,6 +72,13 @@ export class AutoPilotService {
     return { sessionId, action: 'resumed' };
   }
 
+  public drainSession(sessionId: string): SessionActionResponse | null {
+    const drained = this.sessionManager.drainSession(sessionId);
+    if (!drained) return null;
+
+    return { sessionId, action: 'draining' };
+  }
+
   // ============================================================
   // Config update
   // ============================================================
@@ -80,8 +91,12 @@ export class AutoPilotService {
 
     if (request.concurrency !== undefined) patch.concurrency = request.concurrency;
     if (request.limit !== undefined) patch.limit = request.limit;
-    if (request.buildProvider !== undefined) patch.build_provider = request.buildProvider;
-    if (request.buildModel !== undefined) patch.build_model = request.buildModel;
+    if (request.prepProvider !== undefined) patch.prep_provider = request.prepProvider;
+    if (request.prepModel !== undefined) patch.prep_model = request.prepModel;
+    if (request.implementProvider !== undefined) patch.implement_provider = request.implementProvider;
+    if (request.implementModel !== undefined) patch.implement_model = request.implementModel;
+    if (request.implementFallbackProvider !== undefined) patch.implement_fallback_provider = request.implementFallbackProvider;
+    if (request.implementFallbackModel !== undefined) patch.implement_fallback_model = request.implementFallbackModel;
     if (request.reviewProvider !== undefined) patch.review_provider = request.reviewProvider;
     if (request.reviewModel !== undefined) patch.review_model = request.reviewModel;
     if (request.priority !== undefined) patch.priority = request.priority;
