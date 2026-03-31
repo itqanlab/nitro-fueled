@@ -207,6 +207,53 @@ CREATE TABLE IF NOT EXISTS fix_cycles (
   created_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
+const AGENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS agents (
+  id                     TEXT PRIMARY KEY,
+  name                   TEXT NOT NULL UNIQUE,
+  description            TEXT,
+  capabilities           TEXT NOT NULL DEFAULT '[]',
+  prompt_template        TEXT,
+  launcher_compatibility TEXT NOT NULL DEFAULT '[]',
+  created_at             TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at             TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const WORKFLOWS_TABLE = `
+CREATE TABLE IF NOT EXISTS workflows (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  phases      TEXT NOT NULL DEFAULT '[]',
+  is_default  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const LAUNCHERS_TABLE = `
+CREATE TABLE IF NOT EXISTS launchers (
+  id         TEXT PRIMARY KEY,
+  type       TEXT NOT NULL CHECK(type IN ('claude-code','codex','cursor','opencode','other')),
+  config     TEXT NOT NULL DEFAULT '{}',
+  status     TEXT NOT NULL CHECK(status IN ('active','inactive')) DEFAULT 'active',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const COMPATIBILITY_TABLE = `
+CREATE TABLE IF NOT EXISTS compatibility (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  launcher_type TEXT NOT NULL,
+  model         TEXT NOT NULL,
+  task_type     TEXT NOT NULL,
+  workflow_id   TEXT REFERENCES workflows(id),
+  outcome       TEXT NOT NULL CHECK(outcome IN ('success','failed','killed')),
+  duration_ms   INTEGER,
+  cost_estimate REAL,
+  review_pass   INTEGER,
+  created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_claimed ON tasks(session_claimed)',
@@ -229,6 +276,14 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_reviews_task ON reviews(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_reviews_model_built ON reviews(model_that_built)',
   'CREATE INDEX IF NOT EXISTS idx_fix_cycles_task ON fix_cycles(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name)',
+  'CREATE INDEX IF NOT EXISTS idx_workflows_default ON workflows(is_default)',
+  'CREATE INDEX IF NOT EXISTS idx_launchers_type ON launchers(type)',
+  'CREATE INDEX IF NOT EXISTS idx_launchers_status ON launchers(status)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_launcher ON compatibility(launcher_type)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_model ON compatibility(model)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_task_type ON compatibility(task_type)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_outcome ON compatibility(outcome)',
 ];
 
 // Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
@@ -258,8 +313,15 @@ const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
 ];
 
 const WORKER_MIGRATIONS: Array<{ column: string; ddl: string }> = [
-  { column: 'outcome',       ddl: 'ALTER TABLE workers ADD COLUMN outcome TEXT' },
-  { column: 'retry_number',  ddl: 'ALTER TABLE workers ADD COLUMN retry_number INTEGER NOT NULL DEFAULT 0' },
+  { column: 'outcome',                  ddl: 'ALTER TABLE workers ADD COLUMN outcome TEXT' },
+  { column: 'retry_number',             ddl: 'ALTER TABLE workers ADD COLUMN retry_number INTEGER NOT NULL DEFAULT 0' },
+  { column: 'spawn_to_first_output_ms', ddl: 'ALTER TABLE workers ADD COLUMN spawn_to_first_output_ms INTEGER' },
+  { column: 'total_duration_ms',        ddl: 'ALTER TABLE workers ADD COLUMN total_duration_ms INTEGER' },
+  { column: 'files_changed_count',      ddl: 'ALTER TABLE workers ADD COLUMN files_changed_count INTEGER' },
+  { column: 'files_changed',            ddl: 'ALTER TABLE workers ADD COLUMN files_changed TEXT' },
+  { column: 'review_result',            ddl: "ALTER TABLE workers ADD COLUMN review_result TEXT" },
+  { column: 'review_findings_count',    ddl: 'ALTER TABLE workers ADD COLUMN review_findings_count INTEGER' },
+  { column: 'workflow_phase',           ddl: 'ALTER TABLE workers ADD COLUMN workflow_phase TEXT' },
 ];
 
 function applyMigrations(db: Database.Database, table: string, migrations: Array<{ column: string; ddl: string }>): void {
@@ -419,6 +481,32 @@ function migrateSessionClaimedFormat(db: Database.Database): void {
   }
 }
 
+/**
+ * Seed the default PM->Architect->Dev->QA workflow if not already present.
+ * Wrapped in a transaction so partial inserts cannot persist.
+ */
+function seedDefaultWorkflow(db: Database.Database): void {
+  const existing = db.prepare("SELECT id FROM workflows WHERE id = 'default-pm-arch-dev-qa'").get();
+  if (existing) return;
+
+  db.transaction(() => {
+    db.prepare(`
+      INSERT INTO workflows (id, name, description, phases, is_default)
+      VALUES (?, ?, ?, ?, 1)
+    `).run(
+      'default-pm-arch-dev-qa',
+      'PM → Architect → Dev → QA',
+      'Standard nitro-fueled pipeline: project management, architecture, development, and quality assurance',
+      JSON.stringify([
+        { name: 'PM', required_capability: 'project-management', next_phase: 'Architect' },
+        { name: 'Architect', required_capability: 'architecture', next_phase: 'Dev' },
+        { name: 'Dev', required_capability: 'development', next_phase: 'QA' },
+        { name: 'QA', required_capability: 'quality-assurance', next_phase: null },
+      ]),
+    );
+  })();
+}
+
 export function initDatabase(dbPath: string): Database.Database {
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
 
@@ -440,6 +528,10 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(PHASES_TABLE);
   db.exec(REVIEWS_TABLE);
   db.exec(FIX_CYCLES_TABLE);
+  db.exec(AGENTS_TABLE);
+  db.exec(WORKFLOWS_TABLE);
+  db.exec(LAUNCHERS_TABLE);
+  db.exec(COMPATIBILITY_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }
@@ -450,6 +542,8 @@ export function initDatabase(dbPath: string): Database.Database {
 
   // Repair legacy session_claimed values written before the T-separator normalization fix.
   migrateSessionClaimedFormat(db);
+
+  seedDefaultWorkflow(db);
 
   return db;
 }

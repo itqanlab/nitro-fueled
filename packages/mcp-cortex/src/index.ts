@@ -15,7 +15,7 @@ import { JsonlWatcher } from './process/jsonl-watcher.js';
 import { handleWriteHandoff, handleReadHandoff } from './tools/handoffs.js';
 import { handleLogEvent, handleQueryEvents } from './tools/events.js';
 import { handleGetTaskContext, handleGetReviewLessons, handleGetRecentChanges, handleGetCodebasePatterns, handleStageAndCommit, handleReportProgress } from './tools/context.js';
-import { handleLogPhase, handleLogReview, handleLogFixCycle, handleGetModelPerformance, handleGetTaskTrace, handleGetSessionSummary } from './tools/telemetry.js';
+import { handleLogPhase, handleLogReview, handleLogFixCycle, handleGetModelPerformance, handleGetTaskTrace, handleGetSessionSummary, handleGetWorkerTelemetry, handleGetSessionTelemetry } from './tools/telemetry.js';
 import { handleGetAvailableProviders, handleGetProviderStats } from './tools/providers.js';
 import { handleGetNextTaskId, handleValidateTaskSizing, handleCreateTask, handleBulkCreateTasks } from './tools/task-creation.js';
 
@@ -493,6 +493,20 @@ server.registerTool('get_session_summary', {
     session_id: z.string().max(200).describe('Session ID to summarize'),
   },
 }, (args) => handleGetSessionSummary(db, args));
+
+server.registerTool('get_worker_telemetry', {
+  description: 'Full telemetry for one worker: timing (spawn_to_first_output_ms, total_duration_ms), tokens, cost, review result, files changed, workflow phase, and health stats.',
+  inputSchema: {
+    worker_id: z.string().max(36).describe('Worker ID to retrieve telemetry for'),
+  },
+}, (args) => handleGetWorkerTelemetry(db, args));
+
+server.registerTool('get_session_telemetry', {
+  description: 'Aggregated telemetry for a session: total cost, tokens, files changed, review findings, avg latencies, breakdown by phase and model across all workers.',
+  inputSchema: {
+    session_id: z.string().max(200).describe('Session ID to aggregate telemetry for'),
+  },
+}, (args) => handleGetSessionTelemetry(db, args));
 
 // --- Provider tools ---
 
