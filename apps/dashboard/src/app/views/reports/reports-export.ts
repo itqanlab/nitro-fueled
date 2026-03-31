@@ -1,9 +1,10 @@
 function escapeCsv(value: string | number): string {
   const stringValue = String(value);
-  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-    return `"${stringValue.replace(/"/g, '""')}"`;
+  const sanitized = /^[=+\-@]/.test(stringValue) ? `'${stringValue}` : stringValue;
+  if (sanitized.includes(',') || sanitized.includes('"') || sanitized.includes('\n')) {
+    return `"${sanitized.replace(/"/g, '""')}"`;
   }
-  return stringValue;
+  return sanitized;
 }
 
 export function downloadCsv(
@@ -20,5 +21,5 @@ export function downloadCsv(
   link.href = url;
   link.download = fileName;
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 }

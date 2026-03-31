@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { parseAvgReviewScore, parseCostFromContent, parseSessionIdDate } from './analytics.helpers';
 import { CortexService } from './cortex.service';
 import type { CortexTask, CortexWorker } from './cortex.types';
@@ -83,7 +83,7 @@ export class ReportsService {
       },
       successRateReport: {
         summary: {
-          overallSuccessRate: successRows.length > 0 ? successRows[0].dimension === 'taskType' ? Number(((successRows.filter((row) => row.dimension === 'taskType').reduce((sum, row) => sum + row.completeCount, 0) / Math.max(successRows.filter((row) => row.dimension === 'taskType').reduce((sum, row) => sum + row.total, 0), 1)) * 100).toFixed(1)) : 0 : 0,
+          overallSuccessRate: (() => { const taskTypeRows = successRows.filter((row) => row.dimension === 'taskType'); const total = taskTypeRows.reduce((sum, row) => sum + row.total, 0); return total > 0 ? Number((taskTypeRows.reduce((sum, row) => sum + row.completeCount, 0) / total * 100).toFixed(1)) : 0; })(),
           totalTasks: successRows.filter((row) => row.dimension === 'taskType').reduce((sum, row) => sum + row.total, 0),
           bestTaskType: this.topLabel(successRows, 'taskType'),
           worstComplexity: this.bottomLabel(successRows, 'complexity'),
@@ -131,10 +131,11 @@ export class ReportsService {
   }
 
   private async readSessions(from: string | null, to: string | null): Promise<ReadonlyArray<ParsedSessionMetrics>> {
-    const sessionsPath = join(this.projectRoot, 'task-tracking', 'sessions');
+    const sessionsPath = resolve(join(this.projectRoot, 'task-tracking', 'sessions'));
     const entries = await this.safeReadDir(sessionsPath);
     const sessions = await Promise.all(entries.filter((entry) => entry.startsWith('SESSION_')).map(async (entry) => {
-      const dir = join(sessionsPath, entry);
+      const dir = resolve(join(sessionsPath, entry));
+      if (!dir.startsWith(sessionsPath + '/') && dir !== sessionsPath) return null;
       const stateContent = await this.safeReadFile(join(dir, 'state.md'));
       const analyticsContent = await this.safeReadFile(join(dir, 'analytics.md'));
       const combined = `${stateContent}\n${analyticsContent}`.trim();
@@ -160,13 +161,19 @@ export class ReportsService {
   }
 
   private async readReviews(from: string | null, to: string | null): Promise<ReadonlyArray<ParsedReviewMetric>> {
-    const tasksPath = join(this.projectRoot, 'task-tracking');
+    const tasksPath = resolve(join(this.projectRoot, 'task-tracking'));
     const taskDirs = (await this.safeReadDir(tasksPath)).filter((entry) => entry.startsWith('TASK_'));
     const reviews = await Promise.all(taskDirs.flatMap((taskDir) => ['review-code-style.md', 'review-code-logic.md', 'review-security.md', 'review-style.md', 'review-logic.md'].map(async (fileName) => {
-      const filePath = join(tasksPath, taskDir, fileName);
+      const filePath = resolve(join(tasksPath, taskDir, fileName));
+      if (!filePath.startsWith(tasksPath + '/')) return null;
       const content = await this.safeReadFile(filePath);
       if (!content) return null;
-      const fileStat = await stat(filePath);
+      let fileStat: Awaited<ReturnType<typeof stat>>;
+      try {
+        fileStat = await stat(filePath);
+      } catch {
+        return null;
+      }
       const observedAt = toIsoDate(fileStat.mtime.toISOString());
       if (!withinRange(observedAt, from, to)) return null;
       const reviewType = fileName.replace('review-', '').replace('.md', '');

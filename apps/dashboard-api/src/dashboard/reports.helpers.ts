@@ -293,7 +293,7 @@ export function buildQualityCategories(reviews: ReadonlyArray<ParsedReviewMetric
   for (const review of reviews) {
     const severity = review.criticalIssues > 0 ? 'critical' : review.seriousIssues > 0 ? 'serious' : 'moderate';
     const entry = counts.get(review.category) ?? { count: 0, severity };
-    entry.count += review.criticalIssues + review.seriousIssues + Math.max(review.moderateIssues, 1);
+    entry.count += review.criticalIssues + review.seriousIssues + review.moderateIssues;
     counts.set(review.category, entry);
   }
   return Array.from(counts.entries())

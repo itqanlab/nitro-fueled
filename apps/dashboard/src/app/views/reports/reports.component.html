@@ -7,11 +7,11 @@
     <div class="filter-card">
       <label class="filter-field">
         <span>From</span>
-        <input type="date" [(ngModel)]="from" [min]="overview.dateRange.availableFrom ?? ''" [max]="overview.dateRange.availableTo ?? ''" />
+        <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" [min]="overview().dateRange.availableFrom ?? ''" [max]="overview().dateRange.availableTo ?? ''" />
       </label>
       <label class="filter-field">
         <span>To</span>
-        <input type="date" [(ngModel)]="to" [min]="overview.dateRange.availableFrom ?? ''" [max]="overview.dateRange.availableTo ?? ''" />
+        <input type="date" [ngModel]="to()" (ngModelChange)="to.set($event)" [min]="overview().dateRange.availableFrom ?? ''" [max]="overview().dateRange.availableTo ?? ''" />
       </label>
       <div class="filter-actions">
         <button type="button" class="btn btn-primary" (click)="applyRange()">Apply Range</button>
@@ -20,11 +20,11 @@
     </div>
   </div>
 
-  @if (unavailable) {
+  @if (unavailable()) {
     <div class="unavailable-banner" role="alert">Reports are unavailable right now. Check the dashboard API and cortex data sources.</div>
   }
 
-  @if (loading) {
+  @if (loading()) {
     <div class="loading-card">Loading reports...</div>
   } @else {
     <section class="report-section">
@@ -36,78 +36,78 @@
         <button type="button" class="btn btn-secondary" (click)="exportSessionReport()">Export CSV</button>
       </div>
       <div class="summary-grid">
-        <article class="summary-card"><span>Total Sessions</span><strong>{{ overview.sessionReport.summary.totalSessions }}</strong></article>
-        <article class="summary-card"><span>Completed</span><strong>{{ overview.sessionReport.summary.completedSessions }}</strong></article>
-        <article class="summary-card"><span>Avg Duration</span><strong>{{ overview.sessionReport.summary.averageDurationMinutes | number:'1.1-1' }}m</strong></article>
-        <article class="summary-card"><span>Total Cost</span><strong>${{ overview.sessionReport.summary.totalCost | number:'1.2-2' }}</strong></article>
+        <article class="summary-card"><span>Total Sessions</span><strong>{{ overview().sessionReport.summary.totalSessions }}</strong></article>
+        <article class="summary-card"><span>Completed</span><strong>{{ overview().sessionReport.summary.completedSessions }}</strong></article>
+        <article class="summary-card"><span>Avg Duration</span><strong>{{ overview().sessionReport.summary.averageDurationMinutes | number:'1.1-1' }}m</strong></article>
+        <article class="summary-card"><span>Total Cost</span><strong>${{ overview().sessionReport.summary.totalCost | number:'1.2-2' }}</strong></article>
       </div>
       <div class="chart-list">
-        @for (point of overview.sessionReport.trend; track point.label) {
+        @for (point of overview().sessionReport.trend; track point.label) {
           <div class="chart-row">
             <span class="chart-label">{{ point.label }}</span>
-            <div class="chart-track"><div class="chart-fill" [style.width.%]="point.totalCost / sessionCostMax * 100"></div></div>
+            <div class="chart-track"><div class="chart-fill" [style.width.%]="point.totalCost / sessionCostMax() * 100"></div></div>
             <span class="chart-value">${{ point.totalCost | number:'1.2-2' }}</span>
           </div>
         }
       </div>
-      <div class="insight-list">@for (insight of overview.sessionReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
-      <div class="table-wrap"><table><thead><tr><th>Session</th><th>Completed</th><th>Failed</th><th>Minutes</th><th>Cost</th><th>Model</th><th>Retries</th></tr></thead><tbody>@for (row of overview.sessionReport.rows; track row.sessionId) {<tr><td>{{ row.sessionId }}</td><td>{{ row.tasksCompleted }}</td><td>{{ row.tasksFailed }}</td><td>{{ row.durationMinutes }}</td><td>${{ row.totalCost | number:'1.2-2' }}</td><td>{{ row.primaryModel }}</td><td>{{ row.retryCount }}</td></tr>}</tbody></table></div>
+      <div class="insight-list">@for (insight of overview().sessionReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
+      <div class="table-wrap"><table><thead><tr><th>Session</th><th>Completed</th><th>Failed</th><th>Minutes</th><th>Cost</th><th>Model</th><th>Retries</th></tr></thead><tbody>@for (row of overview().sessionReport.rows; track row.sessionId) {<tr><td>{{ row.sessionId }}</td><td>{{ row.tasksCompleted }}</td><td>{{ row.tasksFailed }}</td><td>{{ row.durationMinutes }}</td><td>${{ row.totalCost | number:'1.2-2' }}</td><td>{{ row.primaryModel }}</td><td>{{ row.retryCount }}</td></tr>}</tbody></table></div>
     </section>
 
     <section class="report-section">
       <div class="section-header"><div><h2>Task Success Rate Report</h2><p>Success and failure rates by task type, complexity, model, and period.</p></div><button type="button" class="btn btn-secondary" (click)="exportSuccessReport()">Export CSV</button></div>
       <div class="summary-grid">
-        <article class="summary-card"><span>Overall Success</span><strong>{{ overview.successRateReport.summary.overallSuccessRate | number:'1.1-1' }}%</strong></article>
-        <article class="summary-card"><span>Best Task Type</span><strong>{{ overview.successRateReport.summary.bestTaskType }}</strong></article>
-        <article class="summary-card"><span>Worst Complexity</span><strong>{{ overview.successRateReport.summary.worstComplexity }}</strong></article>
-        <article class="summary-card"><span>Best Model</span><strong>{{ overview.successRateReport.summary.bestModel }}</strong></article>
+        <article class="summary-card"><span>Overall Success</span><strong>{{ overview().successRateReport.summary.overallSuccessRate | number:'1.1-1' }}%</strong></article>
+        <article class="summary-card"><span>Best Task Type</span><strong>{{ overview().successRateReport.summary.bestTaskType }}</strong></article>
+        <article class="summary-card"><span>Worst Complexity</span><strong>{{ overview().successRateReport.summary.worstComplexity }}</strong></article>
+        <article class="summary-card"><span>Best Model</span><strong>{{ overview().successRateReport.summary.bestModel }}</strong></article>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Dimension</th><th>Label</th><th>Total</th><th>Complete</th><th>Failed</th><th>Blocked</th><th>Success</th></tr></thead><tbody>@for (row of overview.successRateReport.rows; track row.dimension + row.label) {<tr><td>{{ row.dimension }}</td><td>{{ row.label }}</td><td>{{ row.total }}</td><td>{{ row.completeCount }}</td><td>{{ row.failureCount }}</td><td>{{ row.blockedCount }}</td><td>{{ row.successRate | number:'1.1-1' }}%</td></tr>}</tbody></table></div>
-      <div class="insight-list">@for (insight of overview.successRateReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
+      <div class="table-wrap"><table><thead><tr><th>Dimension</th><th>Label</th><th>Total</th><th>Complete</th><th>Failed</th><th>Blocked</th><th>Success</th></tr></thead><tbody>@for (row of overview().successRateReport.rows; track row.dimension + row.label) {<tr><td>{{ row.dimension }}</td><td>{{ row.label }}</td><td>{{ row.total }}</td><td>{{ row.completeCount }}</td><td>{{ row.failureCount }}</td><td>{{ row.blockedCount }}</td><td>{{ row.successRate | number:'1.1-1' }}%</td></tr>}</tbody></table></div>
+      <div class="insight-list">@for (insight of overview().successRateReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
     </section>
 
     <section class="report-section">
       <div class="section-header"><div><h2>Cost Analysis Report</h2><p>Cost trends, model spend, and per-task-type budget pressure.</p></div><button type="button" class="btn btn-secondary" (click)="exportCostReport()">Export CSV</button></div>
       <div class="summary-grid">
-        <article class="summary-card"><span>Total Cost</span><strong>${{ overview.costAnalysisReport.summary.totalCost | number:'1.2-2' }}</strong></article>
-        <article class="summary-card"><span>Avg Cost/Task</span><strong>${{ overview.costAnalysisReport.summary.averageCostPerTask | number:'1.2-2' }}</strong></article>
-        <article class="summary-card"><span>Top Model</span><strong>{{ overview.costAnalysisReport.summary.topModel }}</strong></article>
-        <article class="summary-card"><span>Top Task Type</span><strong>{{ overview.costAnalysisReport.summary.topTaskType }}</strong></article>
+        <article class="summary-card"><span>Total Cost</span><strong>${{ overview().costAnalysisReport.summary.totalCost | number:'1.2-2' }}</strong></article>
+        <article class="summary-card"><span>Avg Cost/Task</span><strong>${{ overview().costAnalysisReport.summary.averageCostPerTask | number:'1.2-2' }}</strong></article>
+        <article class="summary-card"><span>Top Model</span><strong>{{ overview().costAnalysisReport.summary.topModel }}</strong></article>
+        <article class="summary-card"><span>Top Task Type</span><strong>{{ overview().costAnalysisReport.summary.topTaskType }}</strong></article>
       </div>
-      <div class="chart-list">@for (point of overview.costAnalysisReport.trend; track point.label) {<div class="chart-row"><span class="chart-label">{{ point.label }}</span><div class="chart-track"><div class="chart-fill chart-fill--accent" [style.width.%]="point.cost / costTrendMax * 100"></div></div><span class="chart-value">${{ point.cost | number:'1.2-2' }}</span></div>}</div>
+      <div class="chart-list">@for (point of overview().costAnalysisReport.trend; track point.label) {<div class="chart-row"><span class="chart-label">{{ point.label }}</span><div class="chart-track"><div class="chart-fill chart-fill--accent" [style.width.%]="point.cost / costTrendMax() * 100"></div></div><span class="chart-value">${{ point.cost | number:'1.2-2' }}</span></div>}</div>
       <div class="table-grid">
-        <div class="table-wrap"><table><thead><tr><th>Model</th><th>Cost</th><th>Share</th><th>Tasks</th></tr></thead><tbody>@for (row of overview.costAnalysisReport.modelBreakdown; track row.model) {<tr><td>{{ row.model }}</td><td>${{ row.totalCost | number:'1.2-2' }}</td><td>{{ row.sharePercent | number:'1.1-1' }}%</td><td>{{ row.taskCount }}</td></tr>}</tbody></table></div>
-        <div class="table-wrap"><table><thead><tr><th>Task Type</th><th>Cost</th><th>Tasks</th><th>Avg/Task</th></tr></thead><tbody>@for (row of overview.costAnalysisReport.taskTypeBreakdown; track row.taskType) {<tr><td>{{ row.taskType }}</td><td>${{ row.totalCost | number:'1.2-2' }}</td><td>{{ row.taskCount }}</td><td>${{ row.avgCostPerTask | number:'1.2-2' }}</td></tr>}</tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Model</th><th>Cost</th><th>Share</th><th>Tasks</th></tr></thead><tbody>@for (row of overview().costAnalysisReport.modelBreakdown; track row.model) {<tr><td>{{ row.model }}</td><td>${{ row.totalCost | number:'1.2-2' }}</td><td>{{ row.sharePercent | number:'1.1-1' }}%</td><td>{{ row.taskCount }}</td></tr>}</tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Task Type</th><th>Cost</th><th>Tasks</th><th>Avg/Task</th></tr></thead><tbody>@for (row of overview().costAnalysisReport.taskTypeBreakdown; track row.taskType) {<tr><td>{{ row.taskType }}</td><td>${{ row.totalCost | number:'1.2-2' }}</td><td>{{ row.taskCount }}</td><td>${{ row.avgCostPerTask | number:'1.2-2' }}</td></tr>}</tbody></table></div>
       </div>
-      <div class="insight-list">@for (insight of overview.costAnalysisReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
+      <div class="insight-list">@for (insight of overview().costAnalysisReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
     </section>
 
     <section class="report-section">
       <div class="section-header"><div><h2>Model Performance Report</h2><p>Quality, reliability, and cost efficiency per model.</p></div><button type="button" class="btn btn-secondary" (click)="exportModelReport()">Export CSV</button></div>
       <div class="summary-grid">
-        <article class="summary-card"><span>Best Quality</span><strong>{{ overview.modelPerformanceReport.summary.bestQualityModel }}</strong></article>
-        <article class="summary-card"><span>Cheapest</span><strong>{{ overview.modelPerformanceReport.summary.cheapestModel }}</strong></article>
-        <article class="summary-card"><span>Fastest Phase</span><strong>{{ overview.modelPerformanceReport.summary.fastestPhase }}</strong></article>
-        <article class="summary-card"><span>Most Reliable</span><strong>{{ overview.modelPerformanceReport.summary.mostReliableModel }}</strong></article>
+        <article class="summary-card"><span>Best Quality</span><strong>{{ overview().modelPerformanceReport.summary.bestQualityModel }}</strong></article>
+        <article class="summary-card"><span>Cheapest</span><strong>{{ overview().modelPerformanceReport.summary.cheapestModel }}</strong></article>
+        <article class="summary-card"><span>Fastest Phase</span><strong>{{ overview().modelPerformanceReport.summary.fastestPhase }}</strong></article>
+        <article class="summary-card"><span>Most Reliable</span><strong>{{ overview().modelPerformanceReport.summary.mostReliableModel }}</strong></article>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Model</th><th>Task Type</th><th>Score</th><th>Failure</th><th>Duration</th><th>Avg Cost</th><th>Quality/$</th></tr></thead><tbody>@for (row of overview.modelPerformanceReport.rows; track row.model + row.taskType + row.complexity) {<tr><td>{{ row.model }}</td><td>{{ row.taskType }}</td><td>{{ row.avgReviewScore | number:'1.1-1' }}</td><td>{{ row.failureRate | number:'1.1-1' }}%</td><td>{{ row.avgDurationMinutes | number:'1.1-1' }}m</td><td>${{ row.avgCostUsd | number:'1.2-2' }}</td><td>{{ row.qualityPerDollar | number:'1.1-1' }}</td></tr>}</tbody></table></div>
-      <div class="insight-list">@for (insight of overview.modelPerformanceReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
+      <div class="table-wrap"><table><thead><tr><th>Model</th><th>Task Type</th><th>Score</th><th>Failure</th><th>Duration</th><th>Avg Cost</th><th>Quality/$</th></tr></thead><tbody>@for (row of overview().modelPerformanceReport.rows; track row.model + row.taskType + row.complexity) {<tr><td>{{ row.model }}</td><td>{{ row.taskType }}</td><td>{{ row.avgReviewScore | number:'1.1-1' }}</td><td>{{ row.failureRate | number:'1.1-1' }}%</td><td>{{ row.avgDurationMinutes | number:'1.1-1' }}m</td><td>${{ row.avgCostUsd | number:'1.2-2' }}</td><td>{{ row.qualityPerDollar | number:'1.1-1' }}</td></tr>}</tbody></table></div>
+      <div class="insight-list">@for (insight of overview().modelPerformanceReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
     </section>
 
     <section class="report-section">
       <div class="section-header"><div><h2>Quality Trends Report</h2><p>Review score trends, recurring categories, and risk areas.</p></div><button type="button" class="btn btn-secondary" (click)="exportQualityReport()">Export CSV</button></div>
       <div class="summary-grid">
-        <article class="summary-card"><span>Average Score</span><strong>{{ overview.qualityTrendsReport.summary.averageScore | number:'1.1-1' }}/10</strong></article>
-        <article class="summary-card"><span>Total Reviews</span><strong>{{ overview.qualityTrendsReport.summary.totalReviews }}</strong></article>
-        <article class="summary-card"><span>Critical Findings</span><strong>{{ overview.qualityTrendsReport.summary.criticalFindings }}</strong></article>
-        <article class="summary-card"><span>Top Category</span><strong>{{ overview.qualityTrendsReport.summary.topCategory }}</strong></article>
+        <article class="summary-card"><span>Average Score</span><strong>{{ overview().qualityTrendsReport.summary.averageScore | number:'1.1-1' }}/10</strong></article>
+        <article class="summary-card"><span>Total Reviews</span><strong>{{ overview().qualityTrendsReport.summary.totalReviews }}</strong></article>
+        <article class="summary-card"><span>Critical Findings</span><strong>{{ overview().qualityTrendsReport.summary.criticalFindings }}</strong></article>
+        <article class="summary-card"><span>Top Category</span><strong>{{ overview().qualityTrendsReport.summary.topCategory }}</strong></article>
       </div>
-      <div class="chart-list">@for (point of overview.qualityTrendsReport.trend; track point.label) {<div class="chart-row"><span class="chart-label">{{ point.label }}</span><div class="chart-track"><div class="chart-fill chart-fill--warning" [style.width.%]="point.reviewCount / qualityReviewMax * 100"></div></div><span class="chart-value">{{ point.avgScore | number:'1.1-1' }}/10</span></div>}</div>
+      <div class="chart-list">@for (point of overview().qualityTrendsReport.trend; track point.label) {<div class="chart-row"><span class="chart-label">{{ point.label }}</span><div class="chart-track"><div class="chart-fill chart-fill--warning" [style.width.%]="point.reviewCount / qualityReviewMax() * 100"></div></div><span class="chart-value">{{ point.avgScore | number:'1.1-1' }}/10</span></div>}</div>
       <div class="table-grid">
-        <div class="table-wrap"><table><thead><tr><th>Category</th><th>Count</th><th>Severity</th></tr></thead><tbody>@for (row of overview.qualityTrendsReport.categories; track row.category) {<tr><td>{{ row.category }}</td><td>{{ row.count }}</td><td><span class="severity-pill" [ngClass]="'severity-pill--' + row.severity">{{ row.severity }}</span></td></tr>}</tbody></table></div>
-        <div class="table-wrap"><table><thead><tr><th>Risk Area</th><th>Count</th><th>Note</th></tr></thead><tbody>@for (row of overview.qualityTrendsReport.riskAreas; track row.label) {<tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.note }}</td></tr>}</tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Category</th><th>Count</th><th>Severity</th></tr></thead><tbody>@for (row of overview().qualityTrendsReport.categories; track row.category) {<tr><td>{{ row.category }}</td><td>{{ row.count }}</td><td><span class="severity-pill" [ngClass]="'severity-pill--' + row.severity">{{ row.severity }}</span></td></tr>}</tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Risk Area</th><th>Count</th><th>Note</th></tr></thead><tbody>@for (row of overview().qualityTrendsReport.riskAreas; track row.label) {<tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.note }}</td></tr>}</tbody></table></div>
       </div>
-      <div class="insight-list">@for (insight of overview.qualityTrendsReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
+      <div class="insight-list">@for (insight of overview().qualityTrendsReport.insights; track insight) { <span class="insight-pill">{{ insight }}</span> }</div>
     </section>
   }
 </div>
