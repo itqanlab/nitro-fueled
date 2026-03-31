@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [NzIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="shell-header">
       <div class="shell-header-left">

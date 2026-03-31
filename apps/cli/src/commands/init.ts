@@ -9,7 +9,7 @@ import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffol
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
 import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
 import { generateAntiPatterns, buildStackLabel } from '../utils/anti-patterns.js';
-import { generateClaudeMd } from '../utils/claude-md.js';
+import { ensureClaudeMdImport } from '../utils/claude-md.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
 import { ensureGitignore } from '../utils/gitignore.js';
 import { isInsideGitRepo, commitFiles } from '../utils/git.js';
@@ -74,20 +74,20 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   const createdFiles: string[] = [];
 
   // Core agents
-  const agentResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/agents', overwrite);
-  const agentNames = listFiles(resolve(scaffoldRoot, '.claude', 'agents'));
+  const agentResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro/agents', overwrite, '.claude/agents');
+  const agentNames = listFiles(resolve(scaffoldRoot, 'nitro', 'agents'));
   console.log(`  Agents: ${agentResult.copied} copied, ${agentResult.skipped} existing (${agentNames.length} core agents)`);
   createdFiles.push(...agentResult.files);
 
   // Skills (each skill is a subdirectory, discovered dynamically)
-  const skillsSrc = resolve(scaffoldRoot, '.claude', 'skills');
+  const skillsSrc = resolve(scaffoldRoot, 'nitro', 'skills');
   const skillDirs = existsSync(skillsSrc)
     ? readdirSync(skillsSrc, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
     : [];
   let skillsCopied = 0;
   let skillsSkipped = 0;
   for (const skill of skillDirs) {
-    const r = scaffoldSubdir(scaffoldRoot, cwd, `.claude/skills/${skill}`, overwrite);
+    const r = scaffoldSubdir(scaffoldRoot, cwd, `nitro/skills/${skill}`, overwrite, `.claude/skills/${skill}`);
     skillsCopied += r.copied;
     skillsSkipped += r.skipped;
     createdFiles.push(...r.files);
@@ -95,12 +95,12 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   console.log(`  Skills: ${skillsCopied} copied, ${skillsSkipped} existing (${skillDirs.length} skills)`);
 
   // Commands
-  const cmdResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/commands', overwrite);
+  const cmdResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro/commands', overwrite, '.claude/commands');
   console.log(`  Commands: ${cmdResult.copied} copied, ${cmdResult.skipped} existing`);
   createdFiles.push(...cmdResult.files);
 
   // Anti-patterns master (tag catalog — always copy so planner can regenerate)
-  const apMasterSrc = resolve(scaffoldRoot, '.claude', 'anti-patterns-master.md');
+  const apMasterSrc = resolve(scaffoldRoot, 'nitro', 'anti-patterns-master.md');
   const apMasterDest = resolve(cwd, '.claude', 'anti-patterns-master.md');
   if (existsSync(apMasterSrc) && (overwrite || !existsSync(apMasterDest))) {
     mkdirSync(resolve(cwd, '.claude'), { recursive: true });
@@ -110,7 +110,7 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   // anti-patterns.md is generated after stack detection (see handleAntiPatterns)
 
   // Review lessons (empty templates)
-  const reviewResult = scaffoldSubdir(scaffoldRoot, cwd, '.claude/review-lessons', overwrite);
+  const reviewResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro/review-lessons', overwrite, '.claude/review-lessons');
   console.log(`  Review lessons: ${reviewResult.copied} template files`);
   createdFiles.push(...reviewResult.files);
 
@@ -118,6 +118,13 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   const taskResult = scaffoldSubdir(scaffoldRoot, cwd, 'task-tracking', overwrite);
   console.log(`  Task tracking: ${taskResult.copied} files`);
   createdFiles.push(...taskResult.files);
+
+  // Nitro managed files (.nitro/CLAUDE.nitro.md)
+  const nitroResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro-root', overwrite, '.nitro');
+  if (nitroResult.copied > 0 || nitroResult.skipped > 0) {
+    console.log(`  Nitro files: ${nitroResult.copied} copied, ${nitroResult.skipped} existing`);
+  }
+  createdFiles.push(...nitroResult.files);
 
   return createdFiles;
 }
@@ -353,7 +360,8 @@ function printSummary(skipCortex: boolean): void {
   console.log('  .claude/commands/      Slash commands (/orchestrate, /plan, etc.)');
   console.log('  .claude/review-lessons/ Empty review templates (grow over time)');
   console.log('  task-tracking/         Task registry and template');
-  console.log('  CLAUDE.md              Project conventions');
+  console.log('  .nitro/CLAUDE.nitro.md Nitro-fueled conventions (nitro-managed)');
+  console.log('  CLAUDE.md              Your project conventions (user-owned, import added)');
   console.log('');
   console.log('Next steps:');
   let step = 1;
@@ -433,12 +441,12 @@ export default class Init extends BaseCommand {
     }
     const allCreatedFiles: string[] = [...scaffoldedFiles];
 
-    // Step 5: Generate CLAUDE.md
+    // Step 5: Ensure CLAUDE.md has nitro import line
     console.log('');
     const claudeMdPath = resolve(cwd, 'CLAUDE.md');
     const claudeMdExisted = existsSync(claudeMdPath);
-    generateClaudeMd(cwd, opts.overwrite);
-    if ((!claudeMdExisted || opts.overwrite) && existsSync(claudeMdPath)) {
+    ensureClaudeMdImport(cwd);
+    if (!claudeMdExisted && existsSync(claudeMdPath)) {
       allCreatedFiles.push(claudeMdPath);
     }
 
@@ -472,11 +480,6 @@ export default class Init extends BaseCommand {
     console.log('');
     const stackLabel = buildStackLabel(detectedStacks);
     const generatedFileInfos: GeneratedFileInfo[] = [];
-
-    // CLAUDE.md is a template-generated file
-    if (existsSync(claudeMdPath)) {
-      generatedFileInfos.push({ path: claudeMdPath, stack: stackLabel, generator: 'template' });
-    }
 
     // Anti-patterns is a template-generated file
     if (existsSync(apPath)) {

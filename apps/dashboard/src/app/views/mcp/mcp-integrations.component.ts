@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import {
@@ -21,6 +21,7 @@ interface ServerFormModel {
   imports: [NgClass, TabNavComponent, CompatibilityMatrixComponent, IntegrationsTabComponent, FormsModule],
   templateUrl: './mcp-integrations.component.html',
   styleUrl: './mcp-integrations.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class McpIntegrationsComponent {
   public readonly servers = MOCK_MCP_SERVERS;

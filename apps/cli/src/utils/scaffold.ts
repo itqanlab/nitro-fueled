@@ -12,14 +12,14 @@ const CURRENT_FILE = fileURLToPath(import.meta.url);
 export function resolveScaffoldRoot(): string {
   // Published: apps/cli/dist/utils/scaffold.js -> apps/cli/scaffold/
   const packageScaffold = resolve(CURRENT_FILE, '..', '..', '..', 'scaffold');
-  if (existsSync(resolve(packageScaffold, '.claude', 'agents'))) {
+  if (existsSync(resolve(packageScaffold, 'nitro', 'agents'))) {
     return packageScaffold;
   }
 
   // Development: apps/cli/src/utils/ -> repo root
   const repoRoot = resolve(CURRENT_FILE, '..', '..', '..', '..', '..');
   const repoScaffold = resolve(repoRoot, 'apps', 'cli', 'scaffold');
-  if (existsSync(resolve(repoScaffold, '.claude', 'agents'))) {
+  if (existsSync(resolve(repoScaffold, 'nitro', 'agents'))) {
     return repoScaffold;
   }
 
@@ -27,6 +27,18 @@ export function resolveScaffoldRoot(): string {
     'Could not find scaffold source directory. ' +
     'Run scripts/prepare-scaffold.sh to populate apps/cli/scaffold/.'
   );
+}
+
+/**
+ * Maps a scaffold-relative path to the target-project-relative path.
+ * scaffold/nitro/X  → .claude/X  (lands in .claude/ in target project)
+ * scaffold/nitro-root/X → .nitro/X  (lands in .nitro/ in target project)
+ * All other paths are returned unchanged.
+ */
+export function mapScaffoldRelPath(relPath: string): string {
+  if (relPath.startsWith('nitro/')) return '.claude/' + relPath.slice('nitro/'.length);
+  if (relPath.startsWith('nitro-root/')) return '.nitro/' + relPath.slice('nitro-root/'.length);
+  return relPath;
 }
 
 export interface CopyResult {
@@ -99,8 +111,11 @@ export function listFiles(dir: string): string[] {
 }
 
 /**
- * Recursively walks a scaffold directory and returns a map of relPath -> absPath.
- * relPath is relative to scaffoldRoot, using forward slashes.
+ * Recursively walks a scaffold directory and returns a map of targetRelPath -> absPath.
+ * targetRelPath is the destination-relative path in the target project (forward slashes):
+ *   nitro/X  → .claude/X
+ *   nitro-root/X → .nitro/X
+ *   other/X → other/X (unchanged)
  * Symlinks are skipped.
  */
 export function walkScaffoldFiles(scaffoldRoot: string): Map<string, string> {
@@ -116,8 +131,9 @@ export function walkScaffoldFiles(scaffoldRoot: string): Map<string, string> {
       } else if (entry.isDirectory()) {
         walk(absPath);
       } else if (entry.isFile()) {
-        const relPath = relative(scaffoldRoot, absPath).replace(/\\/g, '/');
-        result.set(relPath, absPath);
+        const scaffoldRel = relative(scaffoldRoot, absPath).replace(/\\/g, '/');
+        const targetRel = mapScaffoldRelPath(scaffoldRel);
+        result.set(targetRel, absPath);
       }
     }
   }
@@ -128,15 +144,17 @@ export function walkScaffoldFiles(scaffoldRoot: string): Map<string, string> {
 
 /**
  * Scaffolds a specific subdirectory from scaffold source to target.
- * Returns the copy result.
+ * srcSubdir is relative to scaffoldRoot; destSubdir is relative to targetRoot.
+ * If destSubdir is omitted, srcSubdir is used for both (legacy behaviour).
  */
 export function scaffoldSubdir(
   scaffoldRoot: string,
   targetRoot: string,
-  subdir: string,
-  overwrite: boolean
+  srcSubdir: string,
+  overwrite: boolean,
+  destSubdir?: string
 ): CopyResult {
-  const src = resolve(scaffoldRoot, subdir);
-  const dest = resolve(targetRoot, subdir);
+  const src = resolve(scaffoldRoot, srcSubdir);
+  const dest = resolve(targetRoot, destSubdir ?? srcSubdir);
   return copyDirRecursive(src, dest, overwrite);
 }

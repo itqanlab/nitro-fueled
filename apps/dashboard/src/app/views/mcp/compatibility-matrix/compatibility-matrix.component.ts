@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { McpServer, McpToolAccessRow } from '../../../models/mcp.model';
 
 @Component({
@@ -6,6 +6,7 @@ import { McpServer, McpToolAccessRow } from '../../../models/mcp.model';
   standalone: true,
   templateUrl: './compatibility-matrix.component.html',
   styleUrl: './compatibility-matrix.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CompatibilityMatrixComponent {
   readonly servers    = input.required<readonly McpServer[]>();

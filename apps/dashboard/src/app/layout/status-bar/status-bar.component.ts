@@ -1,4 +1,4 @@
-import { Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, inject } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -12,9 +12,11 @@ import type { DashboardStats } from '../../models/api.types';
   imports: [NgClass],
   templateUrl: './status-bar.component.html',
   styleUrl: './status-bar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatusBarComponent {
   private readonly api = inject(ApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   private readonly statsSignal = toSignal(
     this.api.getStats().pipe(catchError(() => of(null as DashboardStats | null))),
@@ -33,6 +35,7 @@ export class StatusBarComponent {
       this.mcpCount = stats.activeWorkers;
       this.budget = { used: parseFloat(stats.totalCost.toFixed(2)), total: 100 };
       this.indicators = this.buildIndicators(stats);
+      this.cdr.markForCheck();
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
@@ -9,6 +9,7 @@ import { CommandConsoleComponent } from '../components/command-console/command-c
   selector: 'app-layout',
   standalone: true,
   imports: [RouterOutlet, HeaderComponent, SidebarComponent, StatusBarComponent, CommandConsoleComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="shell">
       <app-header />

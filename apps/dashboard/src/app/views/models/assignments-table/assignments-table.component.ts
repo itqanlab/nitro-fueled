@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { AgentAssignment, SubAgentAssignment } from '../../../models/model-assignment.model';
 
@@ -8,6 +8,7 @@ import { AgentAssignment, SubAgentAssignment } from '../../../models/model-assig
   imports: [DecimalPipe, NgClass],
   templateUrl: './assignments-table.component.html',
   styleUrl: './assignments-table.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AssignmentsTableComponent {
   public readonly assignments = input.required<readonly AgentAssignment[]>();

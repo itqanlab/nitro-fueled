@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { QuickPreset } from '../../../models/model-assignment.model';
 
@@ -8,6 +8,7 @@ import { QuickPreset } from '../../../models/model-assignment.model';
   imports: [NgClass],
   templateUrl: './preset-cards.component.html',
   styleUrl: './preset-cards.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PresetCardsComponent {
   public readonly presets = input.required<readonly QuickPreset[]>();
