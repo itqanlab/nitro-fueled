@@ -46,7 +46,7 @@ A standalone, reusable MCP server that enables a Claude Code session (orchestrat
 ## Project Structure
 
 ```
-session-orchestrator/
+nitro-cortex/
 ├── package.json
 ├── tsconfig.json
 ├── src/
@@ -319,9 +319,9 @@ Add to any project's `~/.claude/mcp_config.json` or per-project `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "session-orchestrator": {
+    "nitro-cortex": {
       "command": "node",
-      "args": ["/path/to/session-orchestrator/dist/index.js"],
+      "args": ["/path/to/nitro-cortex/dist/index.js"],
       "env": {
         "CLAUDE_HOME": "~/.claude",
         "DEFAULT_MODEL": "claude-sonnet-4-6"
