@@ -31,6 +31,15 @@ interface ProviderResult {
   models: Record<string, string>;
 }
 
+/**
+ * Map internal config launcher names to the canonical client-facing launcher identifier.
+ * Both 'claude' and 'glm' use the Claude Code CLI binary, so they both map to 'claude-code'.
+ */
+function toClientLauncherName(configLauncher: string): string {
+  if (configLauncher === 'claude' || configLauncher === 'glm') return 'claude-code';
+  return configLauncher;
+}
+
 function probeLauncher(launcher: string): { available: boolean; reason?: string } {
   switch (launcher) {
     case 'claude':
@@ -198,7 +207,7 @@ export async function handleGetAvailableProviders(
 
   for (const [name, providerConfig] of Object.entries(config.providers ?? {})) {
     if (providerConfig.enabled === false) {
-      results.push({ name, launcher: providerConfig.launcher ?? name, available: false, reason: 'disabled in config', models: {} });
+      results.push({ name, launcher: toClientLauncherName(providerConfig.launcher ?? name), available: false, reason: 'disabled in config', models: {} });
       continue;
     }
 
@@ -227,7 +236,7 @@ export async function handleGetAvailableProviders(
       }
     }
 
-    results.push({ name, launcher, available: probe.available, reason: probe.reason, models });
+    results.push({ name, launcher: toClientLauncherName(launcher), available: probe.available, reason: probe.reason, models });
   }
 
   const lines = results.map((p) => {

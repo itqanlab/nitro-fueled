@@ -80,6 +80,7 @@ export function handleSpawnWorker(
     label: string;
     model?: string;
     provider?: string;
+    launcher?: string;
     auto_close?: boolean;
   },
 ): ToolResult {
@@ -92,7 +93,11 @@ export function handleSpawnWorker(
   }
 
   const model = args.model ?? DEFAULT_MODEL;
-  const provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode' | 'codex';
+  // Explicit launcher param overrides provider for routing. 'codex' and 'opencode' launchers
+  // map directly to their provider; 'claude-code' (default) keeps provider-based selection.
+  let provider = (args.provider ?? 'claude') as 'claude' | 'glm' | 'opencode' | 'codex';
+  if (args.launcher === 'codex') provider = 'codex';
+  else if (args.launcher === 'opencode') provider = 'opencode';
   const sessionId = normalizeSessionId(args.session_id);
   if (sessionId === null) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };

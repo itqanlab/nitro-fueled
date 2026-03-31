@@ -280,7 +280,7 @@ server.registerTool('close_stale_sessions', {
 // --- Worker lifecycle tools ---
 
 server.registerTool('spawn_worker', {
-  description: 'Launch a Claude Code worker process and track it in the DB. Returns worker_id.',
+  description: 'Launch a worker process and track it in the DB. Returns worker_id. Use launcher="codex" to invoke the Codex CLI instead of Claude Code.',
   inputSchema: {
     session_id: z.string().describe('Session ID this worker belongs to'),
     task_id: z.string().optional().describe('Task ID this worker is executing'),
@@ -290,6 +290,7 @@ server.registerTool('spawn_worker', {
     label: z.string().describe('Label for the worker'),
     model: z.string().optional().describe('Model to use (default: claude-sonnet-4-6)'),
     provider: z.enum(['claude', 'glm', 'opencode', 'codex']).optional().describe('Provider to use'),
+    launcher: z.enum(['claude-code', 'codex', 'opencode']).optional().describe('Launcher CLI to use. "claude-code" (default) uses the Claude Code CLI. "codex" uses the Codex CLI. Overrides provider-derived launcher when specified.'),
     auto_close: z.boolean().optional().describe('Auto-kill when worker finishes'),
   },
 }, (args) => handleSpawnWorker(db, jsonlWatcher, args));
