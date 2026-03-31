@@ -372,4 +372,3 @@ describe('orphaned claim recovery', () => {
     });
   });
 });
-});

@@ -13,7 +13,10 @@ const VALID_STATUSES = new Set([
   'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
 ]);
 
+const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
+
 export function writeStatusFile(projectRoot: string, taskId: string, status: string): void {
+  if (!TASK_ID_RE.test(taskId)) return;
   const taskDir = join(projectRoot, 'task-tracking', taskId);
   try {
     if (!existsSync(taskDir)) {
