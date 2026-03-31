@@ -1,97 +1,104 @@
 <div class="sessions-panel">
   <div class="sessions-panel-header">
     <h2 class="sessions-panel-title">Active Sessions</h2>
-    @if (sessions().length > 0) {
-      <span class="sessions-badge">{{ sessions().length }} running</span>
+    @if (sessions.length > 0) {
+      <span class="sessions-badge">{{ sessions.length }} active</span>
     }
   </div>
 
-  @if (sessions().length === 0 && recentSessions().length === 0) {
+  @if (sessions.length === 0) {
     <div class="sessions-empty">No active sessions</div>
   } @else {
-    <!-- Active Sessions -->
-    @if (sessions().length > 0) {
-      <div class="sessions-list">
-        @for (session of sessions(); track session.sessionId) {
-          <div
-            class="session-card"
-            [attr.role]="'button'"
-            [attr.tabindex]="0"
-            [attr.aria-label]="'View session: ' + session.taskTitle"
-            (click)="onSessionClick(session)"
-            (keydown.enter)="onSessionClick(session)"
-            (keydown.space)="onSessionClick(session)"
-          >
-            <div class="session-card-header">
-              <div class="session-task">
-                <span class="session-task-id">{{ session.taskId }}</span>
-                <div class="session-status" [ngClass]="statusClassMap[session.status]">{{ session.status }}</div>
-              </div>
-              <span class="session-duration">{{ session.duration }}</span>
+    <div class="sessions-list">
+      @for (session of sessions; track session.sessionId) {
+        <div
+          class="session-card"
+          [attr.role]="'button'"
+          [attr.tabindex]="0"
+          [attr.aria-label]="'View session: ' + session.sessionId"
+          (click)="onSessionClick(session)"
+          (keydown.enter)="onSessionClick(session)"
+          (keydown.space)="onSessionClick(session)"
+        >
+          <div class="session-card-header">
+            <div class="session-task">
+              <span class="session-id-display">{{ session.sessionId.slice(-16) }}</span>
+              <div
+                class="session-status"
+                [ngClass]="{
+                  'status-running': session.loopStatus === 'running',
+                  'status-paused': session.loopStatus === 'paused',
+                  'status-stopped': session.loopStatus === 'stopped'
+                }"
+              >{{ session.loopStatus }}</div>
             </div>
-
-            <div class="session-card-body">
-              <div class="session-title">{{ session.taskTitle }}</div>
-              <div class="session-meta">
-                <div class="session-phase" [ngClass]="phaseClassMap[session.currentPhase]">{{ session.currentPhase }}</div>
-                <span class="session-started">{{ startedAtLabels().get(session.sessionId) }}</span>
-              </div>
-              <div class="session-activity">
-                <span class="activity-label">Last activity:</span>
-                <span class="activity-text">{{ truncatedActivities().get(session.sessionId) ?? session.lastActivity }}</span>
-              </div>
-              @if (heartbeatStatusMap().get(session.sessionId); as hbStatus) {
-                <div class="session-heartbeat" [ngClass]="hbStatus.cssClass">
-                  <span class="heartbeat-icon">&#x2665;</span>
-                  <span class="heartbeat-label">{{ hbStatus.label }}</span>
-                </div>
-              }
-            </div>
-
-            <div class="session-card-footer">
-              <div class="session-footer-left">
-                <span class="session-id-display">{{ session.sessionId.slice(-16) }}</span>
-              </div>
-              <div class="session-footer-right" aria-hidden="true">&#x2192;</div>
-            </div>
+            <span class="session-uptime">{{ session.uptimeMinutes }}m</span>
           </div>
-        }
-      </div>
-    }
 
-    <!-- Recent Sessions -->
-    @if (recentSessions().length > 0) {
-      <div class="sessions-section-recent">
-        <h3 class="sessions-section-title">Recent</h3>
-        <div class="sessions-list sessions-list--compact">
-          @for (session of recentSessions(); track session.sessionId) {
-            <div
-              class="session-card session-card--compact"
-              [attr.role]="'button'"
-              [attr.tabindex]="0"
-              [attr.aria-label]="'View session: ' + session.taskTitle"
-              (click)="onSessionClick(session)"
-              (keydown.enter)="onSessionClick(session)"
-              (keydown.space)="onSessionClick(session)"
-            >
-              <div class="session-card-header session-card-header--compact">
-                <div class="session-task">
-                  <span class="session-task-id">{{ session.taskId }}</span>
-                  <div class="session-status" [ngClass]="statusClassMap[session.status]">{{ session.status }}</div>
-                </div>
-                <span class="session-duration">{{ session.duration }}</span>
-              </div>
-
-              <div class="session-card-body session-card-body--compact">
-                <div class="session-title">{{ session.taskTitle }}</div>
-                <div class="session-activity">
-                  <span class="activity-text">{{ truncatedActivities().get(session.sessionId) ?? session.lastActivity }}</span>
-                </div>
-              </div>
+          <div class="session-card-body">
+            <div class="session-stats">
+              <span class="stat-label">Workers:</span>
+              <span class="stat-value">{{ session.workers.active }} active</span>
+              <span class="stat-sep">/</span>
+              <span class="stat-value">{{ session.workers.completed }} done</span>
             </div>
-          }
+            <div class="session-stats">
+              <span class="stat-label">Tasks:</span>
+              <span class="stat-value">{{ session.tasks.inProgress }} in progress</span>
+              <span class="stat-sep">/</span>
+              <span class="stat-value">{{ session.tasks.remaining }} remaining</span>
+            </div>
+            <div class="session-meta">
+              <span class="session-started">{{ startedAtLabels().get(session.sessionId) }}</span>
+            </div>
+            @if (heartbeatStatusMap().get(session.sessionId); as hbStatus) {
+              <div class="session-heartbeat" [ngClass]="hbStatus.cssClass">
+                <span class="heartbeat-icon">&#x2665;</span>
+                <span class="heartbeat-label">{{ hbStatus.label }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="session-card-controls" (click)="$event.stopPropagation()">
+            @if (session.loopStatus === 'running') {
+              <button
+                type="button"
+                class="session-btn session-btn--pause"
+                [attr.aria-label]="'Pause session ' + session.sessionId"
+                (click)="pauseSession.emit(session.sessionId)"
+              >Pause</button>
+            }
+            @if (session.loopStatus === 'paused') {
+              <button
+                type="button"
+                class="session-btn session-btn--resume"
+                [attr.aria-label]="'Resume session ' + session.sessionId"
+                (click)="resumeSession.emit(session.sessionId)"
+              >Resume</button>
+            }
+            @if (!session.drainRequested && session.loopStatus !== 'stopped') {
+              <button
+                type="button"
+                class="session-btn session-btn--drain"
+                [attr.aria-label]="'Drain session ' + session.sessionId"
+                (click)="drainSession.emit(session.sessionId)"
+              >Drain</button>
+            }
+            @if (session.loopStatus !== 'stopped') {
+              <button
+                type="button"
+                class="session-btn session-btn--stop"
+                [attr.aria-label]="'Stop session ' + session.sessionId"
+                (click)="stopSession.emit(session.sessionId)"
+              >Stop</button>
+            }
+          </div>
+
+          <div class="session-card-footer">
+            <div class="session-footer-right" aria-hidden="true">&#x2192;</div>
+          </div>
         </div>
-      </div>
-    }
+      }
+    </div>
   }
 </div>

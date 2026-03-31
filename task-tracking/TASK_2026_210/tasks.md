@@ -28,15 +28,15 @@
 
 ---
 
-## Batch 1: Type Foundation - IN PROGRESS
+## Batch 1: Type Foundation - IMPLEMENTED
 
 **Developer**: nitro-frontend-developer
 **Tasks**: 1 | **Dependencies**: None
 
-### Task 1.1: Add new session types and remove obsolete auto-pilot types in api.types.ts - IN PROGRESS
+### Task 1.1: Add new session types and remove obsolete auto-pilot types in api.types.ts - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/models/api.types.ts`
-**Status**: IN PROGRESS
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 1 (lines 74–131), Batch 1 (lines 407–413)
 
 **Pattern to Follow**: Existing `readonly` interface convention throughout `api.types.ts`. All interfaces use explicit `readonly` fields and explicit `export` keywords.
@@ -95,12 +95,12 @@ SessionEndStatus
 
 ---
 
-## Batch 2: Service Layer - PENDING
+## Batch 2: Service Layer - IMPLEMENTED
 
 **Developer**: nitro-frontend-developer
 **Tasks**: 1 | **Dependencies**: Batch 1 must be COMPLETE
 
-### Task 2.1: Update api.service.ts — add new session methods, rename and remove old methods - PENDING
+### Task 2.1: Update api.service.ts — add new session methods, rename and remove old methods - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/services/api.service.ts`
 **Status**: PENDING
@@ -182,12 +182,12 @@ getAutoPilotStatus() (line ~340)
 
 ---
 
-## Batch 3a: Sessions List View - PENDING
+## Batch 3a: Sessions List View - IMPLEMENTED
 
 **Developer**: nitro-frontend-developer
 **Tasks**: 2 | **Dependencies**: Batch 2 must be COMPLETE | **Parallel With**: Batch 3b, Batch 4
 
-### Task 3a.1: Update sessions-list.component.ts to use SessionStatusResponse - PENDING
+### Task 3a.1: Update sessions-list.component.ts to use SessionStatusResponse - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/sessions/sessions-list/sessions-list.component.ts`
 **Status**: PENDING
@@ -218,7 +218,7 @@ Import changes:
 - Add: `SessionStatusResponse`, `LoopStatus`
 - Call `api.getAutoSessions()` instead of `api.getSessionHistory()`
 
-### Task 3a.2: Update sessions-list.component.html column bindings - PENDING
+### Task 3a.2: Update sessions-list.component.html column bindings - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/sessions/sessions-list/sessions-list.component.html`
 **Status**: PENDING
@@ -246,10 +246,10 @@ Import changes:
 **Developer**: nitro-frontend-developer
 **Tasks**: 2 | **Dependencies**: Batch 2 must be COMPLETE | **Parallel With**: Batch 3a, Batch 4
 
-### Task 3b.1: Update session-detail.component.ts to use SessionStatusResponse - PENDING
+### Task 3b.1: Update session-detail.component.ts to use SessionStatusResponse - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/sessions/session-detail/session-detail.component.ts`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 6 (lines 319–343), Batch 3b (lines 437–438)
 
 **Pattern to Follow**: Component uses `toSignal()` with `switchMap()` over `route.paramMap` (line 90). `confirmDrain()` at line 144 calls `api.drainSession(sessionId)` using `raw.id` — update to `raw.sessionId`.
@@ -282,10 +282,10 @@ Import changes:
 - Remove: `SessionHistoryDetail`
 - Add: `SessionStatusResponse`
 
-### Task 3b.2: Update session-detail.component.html — remove timeline/log, update bindings - PENDING
+### Task 3b.2: Update session-detail.component.html — remove timeline/log, update bindings - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/sessions/session-detail/session-detail.component.html`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 6 (lines 343), Batch 3b (line 438)
 
 **Quality Requirements**:
@@ -304,15 +304,15 @@ Import changes:
 
 ---
 
-## Batch 4: Sessions Panel Rewrite - PENDING
+## Batch 4: Sessions Panel Rewrite - IMPLEMENTED
 
 **Developer**: nitro-frontend-developer
 **Tasks**: 3 | **Dependencies**: Batch 2 must be COMPLETE | **Parallel With**: Batch 3a, Batch 3b
 
-### Task 4.1: Rewrite sessions-panel.component.ts as presentational component - PENDING
+### Task 4.1: Rewrite sessions-panel.component.ts as presentational component - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.ts`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 4 (lines 238–287), Batch 4 (lines 444–447)
 
 **Pattern to Follow**: Parent-owns-state Angular pattern. Child receives data via `@Input`, emits actions via `@Output`. Existing `heartbeatStatusMap`, `startedAtLabels`, `now`, and `onSessionClick()` patterns are preserved.
@@ -355,10 +355,10 @@ now — signal with interval update
 onSessionClick() — navigation unchanged
 ```
 
-### Task 4.2: Rewrite sessions-panel.component.html with per-session action controls - PENDING
+### Task 4.2: Rewrite sessions-panel.component.html with per-session action controls - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/project/sessions-panel/sessions-panel.component.html`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 4 (lines 270–285)
 
 **Quality Requirements**:
@@ -370,10 +370,10 @@ onSessionClick() — navigation unchanged
 - Status badge shows `session.loopStatus` (LoopStatus type)
 - Worker/task counts: `session.workers.active`, `session.tasks.inProgress`, `session.tasks.remaining`
 
-### Task 4.3: Update or clear sessions-panel.model.ts - PENDING
+### Task 4.3: Update or clear sessions-panel.model.ts - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/models/sessions-panel.model.ts`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 4 (lines 285–286)
 
 **Quality Requirements**:
@@ -396,15 +396,15 @@ onSessionClick() — navigation unchanged
 
 ---
 
-## Batch 5: Project Component - PENDING
+## Batch 5: Project Component - IMPLEMENTED
 
 **Developer**: nitro-frontend-developer
 **Tasks**: 2 | **Dependencies**: Batch 2 AND Batch 4 must be COMPLETE
 
-### Task 5.1: Update project.component.ts — replace auto-pilot flow with session management - PENDING
+### Task 5.1: Update project.component.ts — replace auto-pilot flow with session management - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/project/project.component.ts`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 3 (lines 171–235), Batch 5 (lines 453–461)
 
 **Pattern to Follow**: All state as Angular `signal<T>()`. Computed values via `computed(() => ...)`. Subscriptions cleaned up via `destroyRef.onDestroy()` or `takeUntilDestroyed`. Form values read via event targets. WebSocket subscription pattern from `sessions-panel.component.ts:190`.
@@ -465,10 +465,10 @@ Default form values (from `DEFAULT_SUPERVISOR_CONFIG` in `auto-pilot.types.ts:43
 concurrency=2, limit=10, priority='build-first'
 ```
 
-### Task 5.2: Update project.component.html — new session form and sessions-panel wiring - PENDING
+### Task 5.2: Update project.component.html — new session form and sessions-panel wiring - IMPLEMENTED
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/dashboard/src/app/views/project/project.component.html`
-**Status**: PENDING
+**Status**: IMPLEMENTED
 **Spec Reference**: plan.md — Component 3 (lines 218–230), Batch 5 (lines 457–461)
 
 **Quality Requirements**:
@@ -494,9 +494,9 @@ concurrency=2, limit=10, priority='build-first'
 
 ## Final Completion Checklist
 
-- [ ] Batch 1: Type Foundation — COMPLETE
-- [ ] Batch 2: Service Layer — COMPLETE
-- [ ] Batch 3a: Sessions List View — COMPLETE
+- [x] Batch 1: Type Foundation — IMPLEMENTED
+- [x] Batch 2: Service Layer — IMPLEMENTED
+- [x] Batch 3a: Sessions List View — IMPLEMENTED
 - [ ] Batch 3b: Session Detail View — COMPLETE
 - [ ] Batch 4: Sessions Panel Rewrite — COMPLETE
 - [ ] Batch 5: Project Component — COMPLETE

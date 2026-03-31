@@ -10,10 +10,17 @@ import {
 import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subscription, Subject, switchMap, timer, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, interval, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
+import { WebSocketService } from '../../services/websocket.service';
 import { MOCK_QUEUE_TASKS } from '../../services/project.constants';
 import { SessionsPanelComponent } from './sessions-panel/sessions-panel.component';
+import {
+  CreateSessionRequest,
+  SessionStatusResponse,
+} from '../../models/api.types';
 import {
   QueueTask,
   QueueTaskPriority,
@@ -49,11 +56,10 @@ const STATUS_ORDER: Record<QueueTaskStatus, number> = {
 })
 export class ProjectComponent implements OnInit {
   private readonly apiService = inject(ApiService);
+  private readonly wsService = inject(WebSocketService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private pollSubscription: Subscription | null = null;
-  private startSubscription: Subscription | null = null;
   private readonly searchInput$ = new Subject<string>();
   private readonly destroy$ = new Subject<void>();
 
@@ -68,9 +74,12 @@ export class ProjectComponent implements OnInit {
   public readonly endDate = signal<string | null>(null);
   public readonly sortField = signal<SortField>(SortField.ID);
   public readonly sortDirection = signal<SortDirection>('asc');
-  public readonly autoPilotState = signal<'idle' | 'starting' | 'running'>('idle');
-  public readonly autoPilotSessionId = signal<string | null>(null);
-  public readonly autoPilotError = signal<string | null>(null);
+  public readonly createSessionPending = signal(false);
+  public readonly createSessionError = signal<string | null>(null);
+  public readonly sessionFormOpen = signal(false);
+  public readonly sessionConfig = signal<CreateSessionRequest>(this.loadSavedConfig());
+  public readonly activeSessions = signal<SessionStatusResponse[]>([]);
+  public readonly sessionsLoading = signal(false);
   
   // Dropdown open/close signals
   public readonly statusDropdownOpen = signal(false);
@@ -272,7 +281,6 @@ export class ProjectComponent implements OnInit {
   public readonly kanbanColumns = computed(() =>
     KANBAN_COLUMNS.map(status => ({ status, tasks: this.filteredTasks().filter(task => task.status === status) }))
   );
-  public readonly isAutoPilotBusy = computed(() => this.autoPilotState() !== 'idle');
 
   public readonly statusClassMap: Record<QueueTaskStatus, string> = {
     CREATED: 'status-created', IN_PROGRESS: 'status-in-progress', IMPLEMENTED: 'status-implemented', IN_REVIEW: 'status-in-review',
@@ -296,8 +304,6 @@ export class ProjectComponent implements OnInit {
 
   public constructor() {
     this.destroyRef.onDestroy(() => {
-      this.startSubscription?.unsubscribe();
-      this.stopPolling();
       this.destroy$.next();
       this.destroy$.complete();
     });
@@ -310,10 +316,20 @@ export class ProjectComponent implements OnInit {
       this.searchQuery.set(query);
       this.updateURL();
     });
+
+    // Subscribe to WebSocket session events for reactive refresh
+    this.wsService.events$.pipe(
+      filter(event => event.type === 'sessions:changed' || event.type === 'session:update'),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.loadSessions());
+
+    // 15s interval fallback for session refresh
+    interval(15_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadSessions());
   }
 
   public ngOnInit(): void {
     this.initializeFromURL();
+    this.loadSessions();
   }
 
   // Dropdown toggle methods
@@ -840,24 +856,102 @@ export class ProjectComponent implements OnInit {
     return true;
   }
 
-  public onStartAutoPilot(): void {
-    if (this.isAutoPilotBusy()) {
-      return;
-    }
-    this.autoPilotError.set(null);
-    this.autoPilotState.set('starting');
-    this.startSubscription?.unsubscribe();
-    this.startSubscription = this.apiService.startAutoPilot().subscribe({
-      next: ({ sessionId }) => {
-        this.autoPilotSessionId.set(sessionId);
-        this.startPolling(sessionId);
+  public openSessionForm(): void {
+    this.sessionFormOpen.set(true);
+  }
+
+  public closeSessionForm(): void {
+    this.sessionFormOpen.set(false);
+  }
+
+  public onConcurrencyChange(event: Event): void {
+    const val = +(event.target as HTMLInputElement).value;
+    this.sessionConfig.set({ ...this.sessionConfig(), concurrency: val });
+  }
+
+  public onLimitChange(event: Event): void {
+    const val = +(event.target as HTMLInputElement).value;
+    this.sessionConfig.set({ ...this.sessionConfig(), limit: val });
+  }
+
+  public onPriorityChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as 'build-first' | 'review-first' | 'balanced';
+    this.sessionConfig.set({ ...this.sessionConfig(), priority: val });
+  }
+
+  public onImplementProviderChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as 'claude' | 'glm' | 'opencode' | 'codex';
+    this.sessionConfig.set({ ...this.sessionConfig(), implementProvider: val });
+  }
+
+  public onReviewProviderChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as 'claude' | 'glm' | 'opencode' | 'codex';
+    this.sessionConfig.set({ ...this.sessionConfig(), reviewProvider: val });
+  }
+
+  public onCreateSession(): void {
+    this.createSessionPending.set(true);
+    this.createSessionError.set(null);
+    this.apiService.createAutoSession(this.sessionConfig()).subscribe({
+      next: () => {
+        this.saveConfig(this.sessionConfig());
+        this.closeSessionForm();
+        this.createSessionPending.set(false);
+        this.loadSessions();
       },
       error: () => {
-        this.autoPilotState.set('idle');
-        this.autoPilotSessionId.set(null);
-        this.autoPilotError.set('Unable to start Auto-Pilot right now.');
+        this.createSessionPending.set(false);
+        this.createSessionError.set('Failed to create session. Please try again.');
       },
     });
+  }
+
+  public onPauseSession(id: string): void {
+    this.apiService.pauseAutoSession(id).subscribe({ next: () => this.loadSessions() });
+  }
+
+  public onResumeSession(id: string): void {
+    this.apiService.resumeAutoSession(id).subscribe({ next: () => this.loadSessions() });
+  }
+
+  public onStopSession(id: string): void {
+    this.apiService.stopAutoSession(id).subscribe({ next: () => this.loadSessions() });
+  }
+
+  public onDrainSession(id: string): void {
+    this.apiService.drainSession(id).subscribe({ next: () => this.loadSessions() });
+  }
+
+  private loadSessions(): void {
+    this.sessionsLoading.set(true);
+    this.apiService.getAutoSessions().subscribe({
+      next: (sessions) => {
+        this.activeSessions.set(sessions);
+        this.sessionsLoading.set(false);
+      },
+      error: () => {
+        this.sessionsLoading.set(false);
+      },
+    });
+  }
+
+  private saveConfig(config: CreateSessionRequest): void {
+    try {
+      localStorage.setItem('nitro-session-config', JSON.stringify(config));
+    } catch {
+      // SecurityError in private browsing — ignore
+    }
+  }
+
+  private loadSavedConfig(): CreateSessionRequest {
+    try {
+      const raw = localStorage.getItem('nitro-session-config');
+      if (!raw) return {};
+      const parsed: unknown = JSON.parse(raw);
+      return (typeof parsed === 'object' && parsed !== null) ? parsed as CreateSessionRequest : {};
+    } catch {
+      return {};
+    }
   }
 
   private updateURL(): void {
@@ -923,26 +1017,4 @@ export class ProjectComponent implements OnInit {
     }
   }
 
-  private startPolling(sessionId: string): void {
-    this.stopPolling();
-    this.pollSubscription = timer(0, 1500).pipe(switchMap(() => this.apiService.getAutoPilotStatus(sessionId))).subscribe({
-      next: ({ status }) => {
-        this.autoPilotState.set(status === 'running' ? 'running' : 'starting');
-        if (status === 'running') {
-          this.stopPolling();
-        }
-      },
-      error: () => {
-        this.autoPilotState.set('idle');
-        this.autoPilotSessionId.set(null);
-        this.autoPilotError.set('Auto-Pilot status polling failed.');
-        this.stopPolling();
-      },
-    });
-  }
-
-  private stopPolling(): void {
-    this.pollSubscription?.unsubscribe();
-    this.pollSubscription = null;
-  }
 }

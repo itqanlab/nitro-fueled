@@ -1,12 +1,12 @@
 <div class="session-detail-page">
   <div class="page-header">
-    <a class="back-link" routerLink="/sessions">&larr; Session History</a>
+    <a class="back-link" routerLink="/sessions">&larr; Sessions</a>
     <h1 class="page-title">Session Detail</h1>
   </div>
 
   @if (unavailable()) {
     <div class="unavailable-banner" role="alert">
-      Session data unavailable — Cortex DB cannot be reached.
+      Session data unavailable — could not reach the API.
     </div>
   }
 
@@ -43,145 +43,62 @@
       <div class="meta-card">
         <div class="meta-row">
           <nz-tag [nzColor]="d.statusColor">{{ d.statusLabel }}</nz-tag>
-          @if (d.statusLabel === 'running' && !isDraining()) {
+          @if (d.statusLabel === 'running' && !d.drainRequested && !isDraining()) {
             <button class="btn btn-danger btn-sm end-session-btn" (click)="requestDrain()">End Session</button>
           }
+          @if (d.drainRequested && !isDraining()) {
+            <nz-tag nzColor="orange">Drain Requested</nz-tag>
+          }
+          <span class="meta-item"><span class="meta-label">Session ID:</span> {{ d.sessionId }}</span>
           <span class="meta-item"><span class="meta-label">Source:</span> {{ d.source }}</span>
-          <span class="meta-item"><span class="meta-label">Mode:</span> {{ d.mode }}</span>
-          <span class="meta-item"><span class="meta-label">Supervisor:</span> {{ d.supervisorModel }}</span>
-          <span class="meta-item"><span class="meta-label">Duration:</span> {{ d.formattedDuration }}</span>
-          <span class="meta-item"><span class="meta-label">Cost:</span> {{ d.formattedCost }}</span>
+          <span class="meta-item"><span class="meta-label">Uptime:</span> {{ d.formattedDuration }}</span>
+          <span class="meta-item"><span class="meta-label">Cost:</span> —</span>
           <span class="meta-item"><span class="meta-label">Workers:</span> {{ d.workerCount }}</span>
+          <span class="meta-item"><span class="meta-label">Concurrency:</span> {{ d.concurrency }}</span>
         </div>
         <div class="meta-row meta-times">
-          <span class="meta-item"><span class="meta-label">Started:</span> {{ d.startedAt | date:'medium' }}</span>
-          @if (d.endedAt !== '—') {
-            <span class="meta-item"><span class="meta-label">Ended:</span> {{ d.endedAt | date:'medium' }}</span>
-          }
+          <span class="meta-item"><span class="meta-label">Started:</span> {{ d.startedAt }}</span>
         </div>
       </div>
 
       <section class="section">
-        <h2 class="section-title">Task Results</h2>
-        @if (d.taskResults.length === 0) {
-          <nz-empty nzNotFoundContent="No task results"></nz-empty>
-        } @else {
-          <nz-table
-            [nzData]="d.taskResults"
-            nzSize="small"
-            [nzShowPagination]="d.taskResults.length > 10"
-            [nzPageSize]="10"
-          >
-            <thead>
-              <tr>
-                <th>Task ID</th>
-                <th>Outcome</th>
-                <th>Cost</th>
-                <th>Duration</th>
-                <th>Model</th>
-                <th>Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (task of d.taskResults; track task.taskId) {
-                <tr>
-                  <td class="mono">{{ task.taskId }}</td>
-                  <td>{{ task.outcome }}</td>
-                  <td>{{ task.formattedCost }}</td>
-                  <td>{{ task.formattedDuration }}</td>
-                  <td class="mono">{{ task.model }}</td>
-                  <td><nz-tag [nzColor]="task.scoreColor">{{ task.formattedScore }}</nz-tag></td>
-                </tr>
-              }
-            </tbody>
-          </nz-table>
-        }
-      </section>
-
-      <section class="section">
-        <h2 class="section-title">Timeline</h2>
-        @if (d.timeline.length === 0) {
-          <nz-empty nzNotFoundContent="No timeline events"></nz-empty>
-        } @else {
-          <nz-table
-            [nzData]="d.timeline"
-            nzSize="small"
-            [nzShowPagination]="d.timeline.length > 15"
-            [nzPageSize]="15"
-          >
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>Source</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (event of d.timeline; track event.formattedTime + event.type) {
-                <tr>
-                  <td>{{ event.formattedTime | date:'short' }}</td>
-                  <td><span [class]="event.typeClass">{{ event.type }}</span></td>
-                  <td>{{ event.source }}</td>
-                  <td class="description-cell">{{ event.description }}</td>
-                </tr>
-              }
-            </tbody>
-          </nz-table>
-        }
+        <h2 class="section-title">Tasks</h2>
+        <div class="count-grid">
+          <div class="count-item">
+            <span class="count-label">In Progress</span>
+            <nz-tag nzColor="blue">{{ d.tasksInProgress }}</nz-tag>
+          </div>
+          <div class="count-item">
+            <span class="count-label">Remaining</span>
+            <nz-tag nzColor="default">{{ d.tasksRemaining }}</nz-tag>
+          </div>
+          <div class="count-item">
+            <span class="count-label">Completed</span>
+            <nz-tag nzColor="green">{{ d.tasksCompleted }}</nz-tag>
+          </div>
+          <div class="count-item">
+            <span class="count-label">Failed</span>
+            <nz-tag nzColor="red">{{ d.tasksFailed }}</nz-tag>
+          </div>
+        </div>
       </section>
 
       <section class="section">
         <h2 class="section-title">Workers</h2>
-        @if (d.workers.length === 0) {
-          <nz-empty nzNotFoundContent="No worker data"></nz-empty>
-        } @else {
-          <nz-table
-            [nzData]="d.workers"
-            nzSize="small"
-            [nzShowPagination]="d.workers.length > 10"
-            [nzPageSize]="10"
-          >
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Model</th>
-                <th>Provider</th>
-                <th>Cost</th>
-                <th>Tokens (in / out)</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (worker of d.workers; track worker.id) {
-                <tr>
-                  <td class="mono">{{ worker.taskId }}</td>
-                  <td>{{ worker.workerType }}</td>
-                  <td><nz-tag [nzColor]="worker.statusColor">{{ worker.status }}</nz-tag></td>
-                  <td class="mono">{{ worker.model }}</td>
-                  <td>{{ worker.provider }}</td>
-                  <td>{{ worker.formattedCost }}</td>
-                  <td>{{ worker.formattedTokens }}</td>
-                </tr>
-              }
-            </tbody>
-          </nz-table>
-        }
-      </section>
-
-      <section class="section">
-        <h2 class="section-title clickable" (click)="toggleLog()">
-          Session Log
-          <span class="expand-icon">{{ logExpanded() ? '▾' : '▸' }}</span>
-        </h2>
-        @if (logExpanded()) {
-          @if (d.hasLog) {
-            <pre class="log-content">{{ d.logContent }}</pre>
-          } @else {
-            <nz-empty nzNotFoundContent="No log content available"></nz-empty>
-          }
-        }
+        <div class="count-grid">
+          <div class="count-item">
+            <span class="count-label">Active</span>
+            <nz-tag nzColor="blue">{{ d.activeWorkerCount }}</nz-tag>
+          </div>
+          <div class="count-item">
+            <span class="count-label">Completed</span>
+            <nz-tag nzColor="green">{{ d.workersCompleted }}</nz-tag>
+          </div>
+          <div class="count-item">
+            <span class="count-label">Failed</span>
+            <nz-tag nzColor="red">{{ d.workersFailed }}</nz-tag>
+          </div>
+        </div>
       </section>
     }
   }

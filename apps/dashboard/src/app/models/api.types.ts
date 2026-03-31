@@ -239,33 +239,98 @@ export interface SessionData {
   readonly log: ReadonlyArray<LogEntry>;
 }
 
-export type AutoPilotSessionStatus = 'starting' | 'running' | 'stopped';
+// ── Auto-pilot / Session types ────────────────────────────────────────────────
 
-export interface StartAutoPilotRequest {
-  readonly taskIds?: ReadonlyArray<string>;
-  readonly options?: {
-    readonly dryRun?: boolean;
-  };
+export type ProviderType = 'claude' | 'glm' | 'opencode' | 'codex';
+export type PriorityStrategy = 'build-first' | 'review-first' | 'balanced';
+export type LoopStatus = 'running' | 'paused' | 'stopped';
+
+export interface SupervisorConfig {
+  readonly concurrency: number;
+  readonly limit: number;
+  readonly prep_provider: ProviderType;
+  readonly prep_model: string;
+  readonly implement_provider: ProviderType;
+  readonly implement_model: string;
+  readonly implement_fallback_provider: ProviderType;
+  readonly implement_fallback_model: string;
+  readonly review_provider: ProviderType;
+  readonly review_model: string;
+  readonly priority: PriorityStrategy;
+  readonly retries: number;
+  readonly poll_interval_ms: number;
+  readonly working_directory: string;
 }
 
-export interface StartAutoPilotResponse {
+export interface CreateSessionRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
+}
+
+export interface CreateSessionResponse {
   readonly sessionId: string;
   readonly status: 'starting';
 }
 
-export interface StopAutoPilotRequest {
-  readonly sessionId: string;
+export interface UpdateSessionConfigRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
+  readonly pollIntervalMs?: number;
 }
 
-export interface StopAutoPilotResponse {
+export interface UpdateSessionConfigResponse {
   readonly sessionId: string;
-  readonly stopped: true;
+  readonly config: SupervisorConfig;
 }
 
-export interface AutoPilotStatusResponse {
+export interface SessionStatusResponse {
   readonly sessionId: string;
-  readonly status: AutoPilotSessionStatus;
-  readonly updatedAt: string;
+  readonly loopStatus: LoopStatus;
+  readonly config: SupervisorConfig;
+  readonly workers: {
+    readonly active: number;
+    readonly completed: number;
+    readonly failed: number;
+  };
+  readonly tasks: {
+    readonly completed: number;
+    readonly failed: number;
+    readonly inProgress: number;
+    readonly remaining: number;
+  };
+  readonly startedAt: string;
+  readonly uptimeMinutes: number;
+  readonly lastHeartbeat: string;
+  readonly drainRequested: boolean;
+}
+
+export interface SessionActionResponse {
+  readonly sessionId: string;
+  readonly action: 'stopped' | 'paused' | 'resumed' | 'draining';
+}
+
+export interface ListSessionsResponse {
+  readonly sessions: ReadonlyArray<SessionStatusResponse>;
 }
 
 // ── Graph types ──────────────────────────────────────────────────────────────

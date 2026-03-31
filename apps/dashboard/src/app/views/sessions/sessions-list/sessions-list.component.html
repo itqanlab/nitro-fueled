@@ -26,20 +26,19 @@
       >
         <thead>
           <tr>
-            <th scope="col">Source</th>
+            <th scope="col">Session ID</th>
             <th scope="col">Status</th>
             <th scope="col">Started</th>
-            <th scope="col">Duration</th>
+            <th scope="col">Uptime</th>
             <th scope="col">Cost</th>
             <th scope="col">Tasks</th>
             <th scope="col">Supervisor</th>
-            <th scope="col">Mode</th>
           </tr>
         </thead>
         <tbody>
           @for (session of enriched(); track session.id) {
             <tr class="clickable-row" [routerLink]="['/sessions', session.id]">
-              <td class="source-cell">{{ session.source }}</td>
+              <td class="source-cell">{{ session.id }}</td>
               <td><nz-tag [nzColor]="session.statusColor">{{ session.statusLabel }}</nz-tag></td>
               <td>{{ session.startedAt | date:'short' }}</td>
               <td>{{ session.formattedDuration }}</td>
@@ -50,7 +49,6 @@
                 </span>
               </td>
               <td class="model-cell">{{ session.supervisorModel }}</td>
-              <td>{{ session.mode }}</td>
             </tr>
           }
         </tbody>

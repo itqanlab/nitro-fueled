@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 interface HealthResponse {
@@ -9,7 +10,6 @@ interface HealthResponse {
   timestamp: string;
 }
 
-import type { ActiveSessionSummary } from '../models/sessions-panel.model';
 import type { ProgressCenterSnapshot } from '../models/progress-center.model';
 
 import type {
@@ -42,11 +42,6 @@ import type {
   OrchestrationFlow,
   CreateTaskRequest,
   CreateTaskResponse,
-  StartAutoPilotRequest,
-  StartAutoPilotResponse,
-  StopAutoPilotRequest,
-  StopAutoPilotResponse,
-  AutoPilotStatusResponse,
   LogsEventFilters,
   WorkerLogEntry,
   SessionLogSummary,
@@ -55,13 +50,18 @@ import type {
   CommandSuggestion,
   CommandExecuteRequest,
   CommandExecuteResult,
-  SessionHistoryListItem,
-  SessionHistoryDetail,
   ProviderQuotaItem,
   CustomFlow,
   CreateCustomFlowRequest,
   UpdateCustomFlowRequest,
   CustomFlowPhase,
+  CreateSessionRequest,
+  CreateSessionResponse,
+  ListSessionsResponse,
+  SessionStatusResponse,
+  SessionActionResponse,
+  UpdateSessionConfigRequest,
+  UpdateSessionConfigResponse,
 } from '../models/api.types';
 import type { ReportsOverview } from '../models/reports.model';
 
@@ -177,10 +177,6 @@ export class ApiService {
     return this.http.get<SessionData>(
       `${this.base}/sessions/${encodeURIComponent(id)}`,
     );
-  }
-
-  public getActiveSessionsEnhanced(): Observable<ActiveSessionSummary[]> {
-    return this.http.get<ActiveSessionSummary[]>(`${this.base}/sessions/active/enhanced`);
   }
 
   public closeStaleSession(ttlMinutes?: number): Observable<{ closed_sessions: number }> {
@@ -329,18 +325,6 @@ export class ApiService {
     return this.http.post<CreateTaskResponse>(`${this.base}/tasks/create`, req);
   }
 
-  public startAutoPilot(req: StartAutoPilotRequest = {}): Observable<StartAutoPilotResponse> {
-    return this.http.post<StartAutoPilotResponse>(`${this.base}/auto-pilot/start`, req);
-  }
-
-  public stopAutoPilot(req: StopAutoPilotRequest): Observable<StopAutoPilotResponse> {
-    return this.http.post<StopAutoPilotResponse>(`${this.base}/auto-pilot/stop`, req);
-  }
-
-  public getAutoPilotStatus(sessionId: string): Observable<AutoPilotStatusResponse> {
-    return this.http.get<AutoPilotStatusResponse>(`${this.base}/auto-pilot/status/${encodeURIComponent(sessionId)}`);
-  }
-
   // ── Logs ────────────────────────────────────────────────────────────────────
 
   public getLogEvents(filters?: LogsEventFilters): Observable<CortexEvent[]> {
@@ -396,20 +380,56 @@ export class ApiService {
     return this.http.get<ProviderQuotaItem[]>(`${this.base}/providers/quota`);
   }
 
-  // ── Sessions History ──────────────────────────────────────────────────────
+  // ── Auto-Pilot Session Management ─────────────────────────────────────────
 
-  public getSessionHistory(): Observable<SessionHistoryListItem[]> {
-    return this.http.get<SessionHistoryListItem[]>(`${this.base}/sessions`);
+  public createAutoSession(req: CreateSessionRequest = {}): Observable<CreateSessionResponse> {
+    return this.http.post<CreateSessionResponse>(`${this.base}/sessions`, req);
   }
 
-  public getSessionHistoryDetail(sessionId: string): Observable<SessionHistoryDetail> {
-    return this.http.get<SessionHistoryDetail>(
-      `${this.base}/sessions/${encodeURIComponent(sessionId)}`,
+  public listAutoSessions(): Observable<ListSessionsResponse> {
+    return this.http.get<ListSessionsResponse>(`${this.base}/sessions`);
+  }
+
+  public getAutoSession(id: string): Observable<SessionStatusResponse> {
+    return this.http.get<SessionStatusResponse>(
+      `${this.base}/sessions/${encodeURIComponent(id)}`,
     );
   }
 
-  public drainSession(sessionId: string): Observable<{ readonly sessionId: string; readonly action: string }> {
-    return this.http.patch<{ readonly sessionId: string; readonly action: string }>(
+  public pauseAutoSession(id: string): Observable<SessionActionResponse> {
+    return this.http.post<SessionActionResponse>(
+      `${this.base}/sessions/${encodeURIComponent(id)}/pause`,
+      null,
+    );
+  }
+
+  public resumeAutoSession(id: string): Observable<SessionActionResponse> {
+    return this.http.post<SessionActionResponse>(
+      `${this.base}/sessions/${encodeURIComponent(id)}/resume`,
+      null,
+    );
+  }
+
+  public stopAutoSession(id: string): Observable<SessionActionResponse> {
+    return this.http.post<SessionActionResponse>(
+      `${this.base}/sessions/${encodeURIComponent(id)}/stop`,
+      null,
+    );
+  }
+
+  public updateAutoSessionConfig(id: string, req: UpdateSessionConfigRequest): Observable<UpdateSessionConfigResponse> {
+    return this.http.patch<UpdateSessionConfigResponse>(
+      `${this.base}/sessions/${encodeURIComponent(id)}/config`,
+      req,
+    );
+  }
+
+  public getAutoSessions(): Observable<SessionStatusResponse[]> {
+    return this.listAutoSessions().pipe(map(r => [...r.sessions]));
+  }
+
+  public drainSession(sessionId: string): Observable<SessionActionResponse> {
+    return this.http.patch<SessionActionResponse>(
       `${this.base}/sessions/${encodeURIComponent(sessionId)}/stop`,
       {},
     );

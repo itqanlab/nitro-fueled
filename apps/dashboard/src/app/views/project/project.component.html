@@ -15,32 +15,114 @@
     <button
       class="btn btn-primary"
       type="button"
-      [class.btn-running]="autoPilotState() === 'running'"
-      [disabled]="isAutoPilotBusy()"
-      [attr.aria-label]="autoPilotState() === 'running' ? 'Auto-Pilot is running' : autoPilotState() === 'starting' ? 'Auto-Pilot is starting' : 'Start Auto-Pilot'"
-      [attr.aria-pressed]="autoPilotState() === 'running'"
-      (click)="onStartAutoPilot()"
-      (keydown.enter)="onStartAutoPilot()"
-      (keydown.space)="onStartAutoPilot()"
+      [disabled]="createSessionPending()"
+      aria-label="New Session"
+      (click)="openSessionForm()"
+      (keydown.enter)="openSessionForm()"
+      (keydown.space)="openSessionForm()"
     >
-      @if (autoPilotState() === 'running') {
-        <span class="btn-dot running-dot--small"></span>
-        Auto-Pilot Running
-      } @else if (autoPilotState() === 'starting') {
-        <span class="btn-dot running-dot--small"></span>
-        Starting Auto-Pilot...
-      } @else {
-        &#x25B6; Start Auto-Pilot
-      }
+      New Session
     </button>
   </div>
 </div>
 
-@if (autoPilotError()) {
-  <div class="auto-pilot-note auto-pilot-note--error" role="status">{{ autoPilotError() }}</div>
-} @else if (autoPilotSessionId()) {
-  <div class="auto-pilot-note" role="status">
-    Session {{ autoPilotSessionId() }} is {{ autoPilotState() === 'running' ? 'running' : 'starting' }}.
+@if (sessionFormOpen()) {
+  <div class="session-form-panel" role="dialog" aria-label="New Session Form">
+    <h3 class="session-form-title">New Session</h3>
+    <div class="form-row">
+      <label class="form-label" for="session-concurrency">Concurrency</label>
+      <input
+        id="session-concurrency"
+        type="number"
+        class="form-input"
+        min="1"
+        max="10"
+        [value]="sessionConfig().concurrency ?? 2"
+        aria-label="Concurrency"
+        (change)="onConcurrencyChange($event)"
+      />
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-limit">Limit</label>
+      <input
+        id="session-limit"
+        type="number"
+        class="form-input"
+        min="1"
+        max="100"
+        [value]="sessionConfig().limit ?? 10"
+        aria-label="Limit"
+        (change)="onLimitChange($event)"
+      />
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-priority">Priority</label>
+      <select
+        id="session-priority"
+        class="form-select"
+        [value]="sessionConfig().priority ?? 'build-first'"
+        aria-label="Priority strategy"
+        (change)="onPriorityChange($event)"
+      >
+        <option value="build-first">Build First</option>
+        <option value="review-first">Review First</option>
+        <option value="balanced">Balanced</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-implement-provider">Implement Provider</label>
+      <select
+        id="session-implement-provider"
+        class="form-select"
+        [value]="sessionConfig().implementProvider ?? 'glm'"
+        aria-label="Implement provider"
+        (change)="onImplementProviderChange($event)"
+      >
+        <option value="claude">Claude</option>
+        <option value="glm">GLM</option>
+        <option value="opencode">OpenCode</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-review-provider">Review Provider</label>
+      <select
+        id="session-review-provider"
+        class="form-select"
+        [value]="sessionConfig().reviewProvider ?? 'claude'"
+        aria-label="Review provider"
+        (change)="onReviewProviderChange($event)"
+      >
+        <option value="claude">Claude</option>
+        <option value="glm">GLM</option>
+        <option value="opencode">OpenCode</option>
+      </select>
+    </div>
+    @if (createSessionError()) {
+      <div class="error-msg" role="alert">{{ createSessionError() }}</div>
+    }
+    <div class="form-actions">
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="createSessionPending()"
+        aria-label="Create session"
+        (click)="onCreateSession()"
+        (keydown.enter)="onCreateSession()"
+        (keydown.space)="onCreateSession()"
+      >
+        @if (createSessionPending()) { Creating... } @else { Create Session }
+      </button>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        aria-label="Cancel"
+        (click)="closeSessionForm()"
+        (keydown.enter)="closeSessionForm()"
+        (keydown.space)="closeSessionForm()"
+      >
+        Cancel
+      </button>
+    </div>
   </div>
 }
 
@@ -48,7 +130,13 @@
 <div class="project-grid">
   <!-- Sessions Panel (Left Sidebar) -->
   <aside class="sessions-sidebar">
-    <app-sessions-panel></app-sessions-panel>
+    <app-sessions-panel
+      [sessions]="activeSessions()"
+      (pauseSession)="onPauseSession($event)"
+      (resumeSession)="onResumeSession($event)"
+      (stopSession)="onStopSession($event)"
+      (drainSession)="onDrainSession($event)"
+    ></app-sessions-panel>
   </aside>
 
   <!-- Task Queue (Main Content) -->

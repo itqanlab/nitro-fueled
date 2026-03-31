@@ -6,78 +6,37 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { ApiService } from '../../../services/api.service';
-import type {
-  SessionEndStatus,
-  SessionHistoryDetail,
-  SessionHistoryTaskResult,
-  SessionHistoryTimelineEvent,
-  SessionHistoryWorker,
-} from '../../../models/api.types';
-
-interface EnrichedTask {
-  readonly taskId: string;
-  readonly outcome: string;
-  readonly formattedCost: string;
-  readonly formattedDuration: string;
-  readonly model: string;
-  readonly formattedScore: string;
-  readonly scoreColor: string;
-}
-
-interface EnrichedEvent {
-  readonly formattedTime: string;
-  readonly type: string;
-  readonly source: string;
-  readonly description: string;
-  readonly typeClass: string;
-}
-
-interface EnrichedWorker {
-  readonly id: string;
-  readonly taskId: string;
-  readonly workerType: string;
-  readonly status: string;
-  readonly statusColor: string;
-  readonly model: string;
-  readonly provider: string;
-  readonly formattedCost: string;
-  readonly formattedTokens: string;
-}
+import type { LoopStatus, SessionStatusResponse } from '../../../models/api.types';
 
 interface EnrichedDetail {
+  readonly sessionId: string;
   readonly source: string;
   readonly startedAt: string;
-  readonly endedAt: string;
   readonly statusColor: string;
-  readonly statusLabel: string;
+  readonly statusLabel: LoopStatus;
   readonly formattedDuration: string;
-  readonly formattedCost: string;
-  readonly mode: string;
-  readonly supervisorModel: string;
+  readonly concurrency: number;
   readonly workerCount: number;
-  readonly taskResults: readonly EnrichedTask[];
-  readonly timeline: readonly EnrichedEvent[];
-  readonly workers: readonly EnrichedWorker[];
-  readonly hasLog: boolean;
-  readonly logContent: string;
   readonly activeWorkerCount: number;
+  readonly workersCompleted: number;
+  readonly workersFailed: number;
+  readonly tasksCompleted: number;
+  readonly tasksFailed: number;
+  readonly tasksInProgress: number;
+  readonly tasksRemaining: number;
   readonly drainRequested: boolean;
-  readonly id: string;
 }
 
 @Component({
   selector: 'app-session-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink, NzTableModule, NzTagModule, NzEmptyModule, NzSkeletonModule],
+  imports: [RouterLink, NzTagModule, NzSkeletonModule],
   templateUrl: './session-detail.component.html',
   styleUrl: './session-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -92,40 +51,38 @@ export class SessionDetailComponent {
       switchMap(params => {
         const id = params.get('id') ?? '';
         return id
-          ? this.api.getSessionHistoryDetail(id).pipe(
-              catchError(() => of(null as SessionHistoryDetail | null)),
+          ? this.api.getAutoSession(id).pipe(
+              catchError(() => of(null as SessionStatusResponse | null)),
             )
-          : of(null as SessionHistoryDetail | null);
+          : of(null as SessionStatusResponse | null);
       }),
     ),
   );
 
   public readonly loading = computed(() => this.detailRaw() === undefined);
   public readonly unavailable = computed(() => this.detailRaw() === null);
-  public readonly logExpanded = signal(false);
 
   public readonly detail = computed<EnrichedDetail | null>(() => {
     const raw = this.detailRaw();
-    if (!raw) return null; // covers both undefined (loading) and null (error)
+    if (!raw) return null;
+    const workerCount = raw.workers.active + raw.workers.completed + raw.workers.failed;
     return {
-      source: raw.source,
+      sessionId: raw.sessionId,
+      source: raw.config.working_directory,
       startedAt: raw.startedAt,
-      endedAt: raw.endedAt ?? '—',
-      statusColor: this.statusColor(raw.endStatus),
-      statusLabel: raw.endStatus,
-      formattedDuration: raw.durationMinutes !== null ? `${raw.durationMinutes}m` : '—',
-      formattedCost: `$${raw.totalCost.toFixed(2)}`,
-      mode: raw.mode,
-      supervisorModel: raw.supervisorModel,
-      workerCount: raw.workerCount,
-      taskResults: raw.taskResults.map(t => this.enrichTask(t)),
-      timeline: raw.timeline.map(e => this.enrichEvent(e)),
-      workers: raw.workers.map(w => this.enrichWorker(w)),
-      hasLog: raw.logContent !== null && raw.logContent.length > 0,
-      logContent: raw.logContent ?? '',
-      activeWorkerCount: raw.workers.filter(w => w.status === 'active' || w.status === 'running').length,
+      statusColor: this.statusColor(raw.loopStatus),
+      statusLabel: raw.loopStatus,
+      formattedDuration: `${raw.uptimeMinutes}m`,
+      concurrency: raw.config.concurrency,
+      workerCount,
+      activeWorkerCount: raw.workers.active,
+      workersCompleted: raw.workers.completed,
+      workersFailed: raw.workers.failed,
+      tasksCompleted: raw.tasks.completed,
+      tasksFailed: raw.tasks.failed,
+      tasksInProgress: raw.tasks.inProgress,
+      tasksRemaining: raw.tasks.remaining,
       drainRequested: raw.drainRequested,
-      id: raw.id,
     };
   });
 
@@ -144,7 +101,7 @@ export class SessionDetailComponent {
   public confirmDrain(): void {
     const raw = this.detailRaw();
     if (!raw) return;
-    const sessionId = raw.id;
+    const sessionId = raw.sessionId;
     this.showConfirmDialog.set(false);
     this.isDraining.set(true);
     this.drainError.set(null);
@@ -158,71 +115,12 @@ export class SessionDetailComponent {
     ).subscribe();
   }
 
-  public toggleLog(): void {
-    this.logExpanded.update(v => !v);
-  }
-
-  private statusColor(status: SessionEndStatus): string {
-    switch (status) {
-      case 'completed': return 'green';
-      case 'running': return 'blue';
-      case 'stopped': return 'gold';
-      case 'killed': return 'orange';
-      case 'crashed': return 'red';
-      default: return 'default';
-    }
-  }
-
-  private workerStatusColor(status: string): string {
+  private statusColor(status: LoopStatus): string {
     switch (status) {
       case 'running': return 'blue';
-      case 'completed': return 'green';
-      case 'failed': return 'red';
+      case 'paused': return 'gold';
+      case 'stopped': return 'default';
       default: return 'default';
     }
-  }
-
-  private enrichTask(t: SessionHistoryTaskResult): EnrichedTask {
-    return {
-      taskId: t.taskId,
-      outcome: t.outcome,
-      formattedCost: `$${t.cost.toFixed(2)}`,
-      formattedDuration: t.durationMinutes !== null ? `${t.durationMinutes}m` : '—',
-      model: t.model,
-      formattedScore: t.reviewScore !== null ? t.reviewScore.toFixed(1) : '—',
-      scoreColor: t.reviewScore !== null
-        ? t.reviewScore >= 8 ? 'green' : t.reviewScore >= 5 ? 'orange' : 'red'
-        : 'default',
-    };
-  }
-
-  private enrichEvent(e: SessionHistoryTimelineEvent): EnrichedEvent {
-    const lower = e.type.toLowerCase();
-    let typeClass = 'event-type--default';
-    if (lower.includes('fail') || lower.includes('error')) typeClass = 'event-type--error';
-    else if (lower.includes('warn')) typeClass = 'event-type--warning';
-    else if (lower.includes('complete') || lower.includes('success')) typeClass = 'event-type--success';
-    else if (lower.includes('spawn') || lower.includes('start')) typeClass = 'event-type--info';
-    return {
-      formattedTime: e.timestamp,
-      type: e.type,
-      source: e.source,
-      description: e.description,
-      typeClass,
-    };
-  }
-
-  private enrichWorker(w: SessionHistoryWorker): EnrichedWorker {
-    return {
-      id: w.id,
-      taskId: w.taskId,
-      workerType: w.workerType,
-      status: w.status,
-      statusColor: this.workerStatusColor(w.status),
-      model: w.model,
-      provider: w.provider,
-      formattedCost: `$${w.cost.toFixed(2)}`,
-      formattedTokens: `${w.inputTokens.toLocaleString()} / ${w.outputTokens.toLocaleString()}`,
-    };
   }
 }

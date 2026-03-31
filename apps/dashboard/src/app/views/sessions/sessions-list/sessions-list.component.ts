@@ -13,11 +13,10 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { ApiService } from '../../../services/api.service';
-import type { SessionEndStatus, SessionHistoryListItem } from '../../../models/api.types';
+import type { LoopStatus, SessionStatusResponse } from '../../../models/api.types';
 
 interface EnrichedSession {
   readonly id: string;
-  readonly source: string;
   readonly startedAt: string;
   readonly statusColor: string;
   readonly statusLabel: string;
@@ -25,10 +24,10 @@ interface EnrichedSession {
   readonly formattedCost: string;
   readonly tasksCompleted: number;
   readonly tasksFailed: number;
-  readonly tasksBlocked: number;
+  readonly tasksInProgress: number;
+  readonly tasksRemaining: number;
   readonly totalTasks: number;
   readonly supervisorModel: string;
-  readonly mode: string;
 }
 
 @Component({
@@ -43,8 +42,8 @@ export class SessionsListComponent {
   private readonly api = inject(ApiService);
 
   private readonly sessionsRaw = toSignal(
-    this.api.getSessionHistory().pipe(
-      catchError(() => of(null as SessionHistoryListItem[] | null)),
+    this.api.getAutoSessions().pipe(
+      catchError(() => of(null as SessionStatusResponse[] | null)),
     ),
   );
 
@@ -55,29 +54,26 @@ export class SessionsListComponent {
     const raw = this.sessionsRaw();
     if (!raw) return [];
     return raw.map(s => ({
-      id: s.id,
-      source: s.source,
+      id: s.sessionId,
       startedAt: s.startedAt,
-      statusColor: this.statusColor(s.endStatus),
-      statusLabel: s.endStatus,
-      formattedDuration: s.durationMinutes !== null ? `${s.durationMinutes}m` : '—',
-      formattedCost: `$${s.totalCost.toFixed(2)}`,
-      tasksCompleted: s.tasksCompleted,
-      tasksFailed: s.tasksFailed,
-      tasksBlocked: s.tasksBlocked,
-      totalTasks: s.totalTasks,
-      supervisorModel: s.supervisorModel,
-      mode: s.mode,
+      statusColor: this.statusColor(s.loopStatus),
+      statusLabel: s.loopStatus,
+      formattedDuration: s.uptimeMinutes !== null ? `${s.uptimeMinutes}m` : '—',
+      formattedCost: '—',
+      tasksCompleted: s.tasks.completed,
+      tasksFailed: s.tasks.failed,
+      tasksInProgress: s.tasks.inProgress,
+      tasksRemaining: s.tasks.remaining,
+      totalTasks: s.tasks.completed + s.tasks.failed + s.tasks.inProgress + s.tasks.remaining,
+      supervisorModel: s.config.prep_model || '—',
     }));
   });
 
-  private statusColor(status: SessionEndStatus): string {
+  private statusColor(status: LoopStatus): string {
     switch (status) {
-      case 'completed': return 'green';
-      case 'running': return 'blue';
-      case 'stopped': return 'gold';
-      case 'killed': return 'orange';
-      case 'crashed': return 'red';
+      case 'running': return 'green';
+      case 'paused': return 'gold';
+      case 'stopped': return 'default';
       default: return 'default';
     }
   }
