@@ -18,6 +18,10 @@ import { handleGetTaskContext, handleGetReviewLessons, handleGetRecentChanges, h
 import { handleLogPhase, handleLogReview, handleLogFixCycle, handleGetModelPerformance, handleGetTaskTrace, handleGetSessionSummary, handleGetWorkerTelemetry, handleGetSessionTelemetry } from './tools/telemetry.js';
 import { handleGetAvailableProviders, handleGetProviderStats } from './tools/providers.js';
 import { handleGetNextTaskId, handleValidateTaskSizing, handleCreateTask, handleBulkCreateTasks } from './tools/task-creation.js';
+import { handleListAgents, handleGetAgent, handleCreateAgent, handleUpdateAgent, handleDeleteAgent } from './tools/agent-tools.js';
+import { handleListWorkflows, handleGetWorkflow, handleCreateWorkflow, handleUpdateWorkflow, handleDeleteWorkflow } from './tools/workflow-tools.js';
+import { handleListLaunchers, handleGetLauncher, handleRegisterLauncher, handleUpdateLauncher, handleDeregisterLauncher } from './tools/launcher-tools.js';
+import { handleLogCompatibility, handleQueryCompatibility } from './tools/compatibility-tools.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -575,6 +579,181 @@ server.registerTool('bulk_create_tasks', {
     })).min(1).max(20).describe('Array of task definitions to create'),
   },
 }, (args) => handleBulkCreateTasks(db, projectRoot, args));
+
+// --- Agent tools ---
+
+server.registerTool('list_agents', {
+  description: 'List agent definitions. Optionally filter by capability substring or launcher compatibility substring.',
+  inputSchema: {
+    capability: z.string().max(100).optional().describe('Filter by capability (substring match)'),
+    launcher: z.string().max(100).optional().describe('Filter by launcher compatibility (substring match)'),
+    limit: z.number().int().min(1).max(500).optional().describe('Max agents to return (default 100)'),
+  },
+}, (args) => handleListAgents(db, args));
+
+server.registerTool('get_agent', {
+  description: 'Get a single agent definition by ID.',
+  inputSchema: {
+    id: z.string().max(200).describe('Agent ID'),
+  },
+}, (args) => handleGetAgent(db, args));
+
+server.registerTool('create_agent', {
+  description: 'Create a new agent definition. Returns {ok: true, id} on success.',
+  inputSchema: {
+    id: z.string().max(200).describe('Agent ID (unique)'),
+    name: z.string().max(200).describe('Agent name'),
+    description: z.string().max(2000).optional().describe('Agent description'),
+    capabilities: z.array(z.string().max(100)).max(50).optional().describe('List of capabilities (e.g. ["project-management","architecture"])'),
+    prompt_template: z.string().max(50000).optional().describe('Agent prompt template text'),
+    launcher_compatibility: z.array(z.string().max(100)).max(20).optional().describe('Compatible launcher types (e.g. ["claude-code","codex"])'),
+  },
+}, (args) => handleCreateAgent(db, args));
+
+server.registerTool('update_agent', {
+  description: 'Update fields on an existing agent. Updatable fields: name, description, capabilities, prompt_template, launcher_compatibility.',
+  inputSchema: {
+    id: z.string().max(200).describe('Agent ID'),
+    fields: z.string().describe('JSON string of fields to update'),
+  },
+}, (args) => {
+  let parsed: Record<string, unknown>;
+  try { parsed = JSON.parse(args.fields) as Record<string, unknown>; }
+  catch { return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] }; }
+  return handleUpdateAgent(db, { id: args.id, fields: parsed });
+});
+
+server.registerTool('delete_agent', {
+  description: 'Delete an agent by ID.',
+  inputSchema: {
+    id: z.string().max(200).describe('Agent ID'),
+  },
+}, (args) => handleDeleteAgent(db, args));
+
+// --- Workflow tools ---
+
+server.registerTool('list_workflows', {
+  description: 'List workflow definitions. Optionally filter to only default workflows.',
+  inputSchema: {
+    is_default: z.boolean().optional().describe('When true, return only default workflows'),
+  },
+}, (args) => handleListWorkflows(db, args));
+
+server.registerTool('get_workflow', {
+  description: 'Get a single workflow definition by ID.',
+  inputSchema: {
+    id: z.string().max(200).describe('Workflow ID'),
+  },
+}, (args) => handleGetWorkflow(db, args));
+
+server.registerTool('create_workflow', {
+  description: 'Create a new workflow definition. If is_default=true, clears default flag on all others first.',
+  inputSchema: {
+    id: z.string().max(200).describe('Workflow ID (unique)'),
+    name: z.string().max(200).describe('Workflow name'),
+    description: z.string().max(2000).optional().describe('Workflow description'),
+    phases: z.array(z.object({
+      name: z.string().max(100),
+      required_capability: z.string().max(100),
+      next_phase: z.string().max(100).nullable(),
+    })).max(20).optional().describe('Ordered phase definitions'),
+    is_default: z.boolean().optional().describe('Set as the default workflow'),
+  },
+}, (args) => handleCreateWorkflow(db, args));
+
+server.registerTool('update_workflow', {
+  description: 'Update a workflow definition. Updatable fields: name, description, phases, is_default.',
+  inputSchema: {
+    id: z.string().max(200).describe('Workflow ID'),
+    fields: z.string().describe('JSON string of fields to update'),
+  },
+}, (args) => {
+  let parsed: Record<string, unknown>;
+  try { parsed = JSON.parse(args.fields) as Record<string, unknown>; }
+  catch { return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] }; }
+  return handleUpdateWorkflow(db, { id: args.id, fields: parsed });
+});
+
+server.registerTool('delete_workflow', {
+  description: 'Delete a workflow by ID. Refuses to delete the default workflow.',
+  inputSchema: {
+    id: z.string().max(200).describe('Workflow ID'),
+  },
+}, (args) => handleDeleteWorkflow(db, args));
+
+// --- Launcher tools ---
+
+server.registerTool('list_launchers', {
+  description: 'List registered launcher adapters. Optionally filter by type or status.',
+  inputSchema: {
+    type: z.string().max(100).optional().describe('Filter by launcher type (claude-code, codex, cursor, opencode, other)'),
+    status: z.string().max(50).optional().describe('Filter by status (active, inactive)'),
+  },
+}, (args) => handleListLaunchers(db, args));
+
+server.registerTool('get_launcher', {
+  description: 'Get a single launcher registration by ID.',
+  inputSchema: {
+    id: z.string().max(200).describe('Launcher ID'),
+  },
+}, (args) => handleGetLauncher(db, args));
+
+server.registerTool('register_launcher', {
+  description: 'Register or update a launcher adapter. Upserts by ID.',
+  inputSchema: {
+    id: z.string().max(200).describe('Launcher ID'),
+    type: z.enum(['claude-code', 'codex', 'cursor', 'opencode', 'other']).describe('Launcher type'),
+    config: z.record(z.string().max(64), z.unknown()).optional().describe('Launcher configuration JSON'),
+    status: z.enum(['active', 'inactive']).optional().describe('Launcher status (default: active)'),
+  },
+}, (args) => handleRegisterLauncher(db, args));
+
+server.registerTool('update_launcher', {
+  description: 'Update a launcher registration. Updatable fields: type, config, status.',
+  inputSchema: {
+    id: z.string().max(200).describe('Launcher ID'),
+    fields: z.string().describe('JSON string of fields to update'),
+  },
+}, (args) => {
+  let parsed: Record<string, unknown>;
+  try { parsed = JSON.parse(args.fields) as Record<string, unknown>; }
+  catch { return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] }; }
+  return handleUpdateLauncher(db, { id: args.id, fields: parsed });
+});
+
+server.registerTool('deregister_launcher', {
+  description: 'Mark a launcher as inactive (soft deregister).',
+  inputSchema: {
+    id: z.string().max(200).describe('Launcher ID'),
+  },
+}, (args) => handleDeregisterLauncher(db, args));
+
+// --- Compatibility tools ---
+
+server.registerTool('log_compatibility', {
+  description: 'Record an execution outcome for the intelligence layer. Tracks launcher × model × task_type success/failure/cost data.',
+  inputSchema: {
+    launcher_type: z.string().max(100).describe('Launcher type that ran the task'),
+    model: z.string().max(100).describe('Model used'),
+    task_type: z.string().max(50).describe('Task type (FEATURE, BUGFIX, etc.)'),
+    workflow_id: z.string().max(200).optional().describe('Workflow ID used (optional)'),
+    outcome: z.enum(['success', 'failed', 'killed']).describe('Execution outcome'),
+    duration_ms: z.number().int().min(0).optional().describe('Execution duration in milliseconds'),
+    cost_estimate: z.number().min(0).optional().describe('Estimated cost in USD'),
+    review_pass: z.boolean().optional().describe('Whether the review passed (true/false)'),
+  },
+}, (args) => handleLogCompatibility(db, args));
+
+server.registerTool('query_compatibility', {
+  description: 'Query compatibility records with optional filters. Returns records + aggregate summary (success_rate, avg_duration, avg_cost).',
+  inputSchema: {
+    launcher_type: z.string().max(100).optional().describe('Filter by launcher type'),
+    model: z.string().max(100).optional().describe('Filter by model'),
+    task_type: z.string().max(50).optional().describe('Filter by task type'),
+    outcome: z.enum(['success', 'failed', 'killed']).optional().describe('Filter by outcome'),
+    limit: z.number().int().min(1).max(1000).optional().describe('Max records to return (default 100)'),
+  },
+}, (args) => handleQueryCompatibility(db, args));
 
 // --- Start ---
 
