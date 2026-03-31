@@ -558,6 +558,56 @@
 }
     </div>
 
+<!-- Bulk Edit Panel -->
+@if (selectedCount() > 0) {
+  <div class="bulk-edit-panel" role="region" aria-label="Bulk edit panel">
+    <div class="bulk-edit-header">
+      <span class="bulk-edit-count">{{ selectedCount() }} task{{ selectedCount() === 1 ? '' : 's' }} selected</span>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="clearSelection()">Clear</button>
+    </div>
+    <div class="bulk-edit-fields">
+      <div class="bulk-field">
+        <label class="bulk-field-label" for="bulk-model">Model</label>
+        <select id="bulk-model" class="form-select form-select--sm" (change)="bulkEditModel.set($any($event.target).value)">
+          <option value="">— keep current —</option>
+          @for (opt of BULK_MODELS; track opt) {
+            <option [value]="opt" [selected]="bulkEditModel() === opt">{{ opt }}</option>
+          }
+        </select>
+      </div>
+      <div class="bulk-field">
+        <label class="bulk-field-label" for="bulk-provider">Provider</label>
+        <select id="bulk-provider" class="form-select form-select--sm" (change)="bulkEditProvider.set($any($event.target).value)">
+          <option value="">— keep current —</option>
+          @for (opt of BULK_PROVIDERS; track opt) {
+            <option [value]="opt" [selected]="bulkEditProvider() === opt">{{ opt }}</option>
+          }
+        </select>
+      </div>
+      <div class="bulk-field">
+        <label class="bulk-field-label" for="bulk-worker-mode">Worker Mode</label>
+        <select id="bulk-worker-mode" class="form-select form-select--sm" (change)="bulkEditWorkerMode.set($any($event.target).value)">
+          <option value="">— keep current —</option>
+          @for (opt of BULK_WORKER_MODES; track opt) {
+            <option [value]="opt" [selected]="bulkEditWorkerMode() === opt">{{ opt }}</option>
+          }
+        </select>
+      </div>
+      <button
+        class="btn btn-primary btn-sm"
+        type="button"
+        [disabled]="bulkSaving()"
+        (click)="applyBulkEdit()"
+      >
+        {{ bulkSaving() ? 'Saving…' : 'Apply to Selected' }}
+      </button>
+    </div>
+    @if (bulkSaveError()) {
+      <div class="bulk-edit-error" role="alert">{{ bulkSaveError() }}</div>
+    }
+  </div>
+}
+
 <!-- List View -->
 @if (viewMode() === 'list') {
   <section class="task-list" role="region" aria-label="Task list">
@@ -584,6 +634,17 @@
           (keydown.enter)="onTaskClick(task)"
           (keydown.space)="onTaskClick(task)"
         >
+          <!-- Selection checkbox -->
+          <div class="task-row-checkbox" (click)="toggleTaskSelection(task.id, $event)" (keydown.space)="toggleTaskSelection(task.id, $event)">
+            <input
+              type="checkbox"
+              [checked]="isTaskSelected(task.id)"
+              [attr.aria-label]="'Select ' + task.id"
+              tabindex="-1"
+              (change)="toggleTaskSelection(task.id, $event)"
+            />
+          </div>
+
           <!-- Status indicator -->
           <div class="task-row-indicator" aria-hidden="true">
             @if (task.status === 'IN_PROGRESS') {

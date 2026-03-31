@@ -238,6 +238,16 @@ export class ApiService {
     );
   }
 
+  public updateCortexTask(
+    taskId: string,
+    fields: { model?: string | null; preferred_provider?: string | null; worker_mode?: string | null },
+  ): Observable<{ taskId: string; updated: boolean }> {
+    return this.http.patch<{ taskId: string; updated: boolean }>(
+      `${this.cortexBase}/cortex/tasks/${encodeURIComponent(taskId)}`,
+      fields,
+    );
+  }
+
   public getCortexTaskTrace(taskId: string): Observable<CortexTaskTrace> {
     return this.http.get<CortexTaskTrace>(
       `${this.cortexBase}/cortex/tasks/${encodeURIComponent(taskId)}/trace`,

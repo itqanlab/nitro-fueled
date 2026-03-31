@@ -143,6 +143,56 @@ export class TaskDetailComponent {
       }));
   });
 
+  // ── Model / provider / worker_mode editing ────────────────────────────────
+  public readonly editModel = signal<string>('');
+  public readonly editProvider = signal<string>('');
+  public readonly editWorkerMode = signal<string>('');
+  public readonly fieldSaving = signal<string | null>(null);
+  public readonly fieldSaveError = signal<string | null>(null);
+
+  public readonly PROVIDER_OPTIONS = ['claude', 'glm', 'opencode', 'codex'] as const;
+  public readonly WORKER_MODE_OPTIONS = ['single', 'split'] as const;
+  public readonly MODEL_OPTIONS = [
+    'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-6',
+    'claude-opus-4-6',
+    'glm-4.7',
+  ] as const;
+
+  public saveTaskField(field: 'model' | 'preferred_provider' | 'worker_mode', value: string | null): void {
+    const taskId = this.taskId();
+    if (!taskId) return;
+    this.fieldSaving.set(field);
+    this.fieldSaveError.set(null);
+    this.api.updateCortexTask(taskId, { [field]: value || null })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.fieldSaving.set(null),
+        error: () => {
+          this.fieldSaving.set(null);
+          this.fieldSaveError.set(`Failed to save ${field}`);
+        },
+      });
+  }
+
+  public onModelChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.editModel.set(value);
+    this.saveTaskField('model', value);
+  }
+
+  public onProviderChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.editProvider.set(value);
+    this.saveTaskField('preferred_provider', value);
+  }
+
+  public onWorkerModeChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.editWorkerMode.set(value);
+    this.saveTaskField('worker_mode', value);
+  }
+
   // ── Flow override ─────────────────────────────────────────────────────────
   public readonly customFlows = signal<CustomFlow[]>([]);
   public readonly selectedFlowOverrideId = signal<string | null>(null);
@@ -206,11 +256,14 @@ export class TaskDetailComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(flows => this.customFlows.set(flows));
 
-    // Initialize the selected override from context data
+    // Initialize editing fields and flow override from context data
     effect(() => {
       const context = this.dataSignal()?.contextData;
       if (context) {
         this.selectedFlowOverrideId.set(context.custom_flow_id ?? null);
+        this.editModel.set(context.model ?? '');
+        this.editProvider.set(context.preferred_provider ?? '');
+        this.editWorkerMode.set(context.worker_mode ?? '');
       }
     });
   }

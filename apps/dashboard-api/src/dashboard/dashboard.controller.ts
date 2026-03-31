@@ -495,6 +495,55 @@ export class DashboardController {
   }
 
   @ApiTags('cortex')
+  @ApiOperation({ summary: 'Update cortex task fields', description: 'Updates model, preferred_provider, or worker_mode for a task' })
+  @ApiParam({ name: 'id', description: 'Task ID', example: 'TASK_2026_001' })
+  @ApiBody({ schema: { properties: { model: { type: 'string', nullable: true }, preferred_provider: { type: 'string', nullable: true }, worker_mode: { type: 'string', nullable: true } } } })
+  @ApiResponse({ status: 200, description: 'Task updated' })
+  @ApiResponse({ status: 400, description: 'Invalid task ID format or no valid fields' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
+  @Patch('cortex/tasks/:id')
+  @HttpCode(HttpStatus.OK)
+  public patchCortexTask(
+    @Param('id') id: string,
+    @Body() body: { model?: string | null; preferred_provider?: string | null; worker_mode?: string | null },
+  ): { taskId: string; updated: boolean } {
+    if (!TASK_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid task ID format' });
+    }
+    if (!this.cortexService.isAvailable()) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    const fields: Parameters<CortexService['updateTask']>[1] = {};
+    const ALLOWED_WORKER_MODES = new Set(['single', 'split']);
+    const ALLOWED_PROVIDERS = new Set(['claude', 'glm', 'opencode', 'codex']);
+    if ('model' in body) fields.model = body.model ?? null;
+    if ('preferred_provider' in body) {
+      if (body.preferred_provider !== null && !ALLOWED_PROVIDERS.has(body.preferred_provider ?? '')) {
+        throw new BadRequestException({ error: 'Invalid preferred_provider value' });
+      }
+      fields.preferred_provider = body.preferred_provider ?? null;
+    }
+    if ('worker_mode' in body) {
+      if (body.worker_mode !== null && !ALLOWED_WORKER_MODES.has(body.worker_mode ?? '')) {
+        throw new BadRequestException({ error: 'Invalid worker_mode value' });
+      }
+      fields.worker_mode = body.worker_mode ?? null;
+    }
+    if (Object.keys(fields).length === 0) {
+      throw new BadRequestException({ error: 'No valid fields to update' });
+    }
+    const result = this.cortexService.updateTask(id, fields);
+    if (result === null) {
+      throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
+    }
+    if (!result) {
+      throw new NotFoundException({ error: 'Task not found' });
+    }
+    return { taskId: id, updated: true };
+  }
+
+  @ApiTags('cortex')
   @ApiOperation({ summary: 'Get cortex task trace', description: 'Returns full task trace: workers, phases, reviews, fix_cycles, events' })
   @ApiParam({ name: 'id', description: 'Task ID', example: 'TASK_2026_001' })
   @ApiResponse({ status: 200, description: 'Cortex task trace' })

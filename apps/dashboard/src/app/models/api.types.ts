@@ -527,6 +527,9 @@ export interface CortexTaskContext extends CortexTask {
   readonly description: string;
   readonly acceptance_criteria: string;
   readonly file_scope: string[];
+  readonly model: string | null;
+  readonly preferred_provider: string | null;
+  readonly worker_mode: string | null;
   readonly custom_flow_id?: string | null;
 }
 

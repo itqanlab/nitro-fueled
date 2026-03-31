@@ -23,6 +23,10 @@ export interface CortexTaskContext extends CortexTask {
   description: string;
   acceptance_criteria: string;
   file_scope: string[];
+  model: string | null;
+  preferred_provider: string | null;
+  worker_mode: string | null;
+  custom_flow_id?: string | null;
 }
 
 export interface CortexSession {
@@ -177,6 +181,10 @@ export interface RawTask {
   file_scope: string | null;
   created_at: string;
   updated_at: string;
+  model: string | null;
+  preferred_provider: string | null;
+  worker_mode: string | null;
+  custom_flow_id: string | null;
 }
 
 export interface RawSession {

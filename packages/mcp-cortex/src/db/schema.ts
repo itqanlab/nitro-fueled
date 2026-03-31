@@ -298,7 +298,9 @@ const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'session_claimed',      ddl: 'ALTER TABLE tasks ADD COLUMN session_claimed TEXT' },
   { column: 'claimed_at',           ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
   { column: 'claim_timeout_ms',     ddl: 'ALTER TABLE tasks ADD COLUMN claim_timeout_ms INTEGER' },
-  { column: 'custom_flow_id',       ddl: 'ALTER TABLE tasks ADD COLUMN custom_flow_id TEXT' },
+  { column: 'custom_flow_id',         ddl: 'ALTER TABLE tasks ADD COLUMN custom_flow_id TEXT' },
+  { column: 'preferred_provider',     ddl: 'ALTER TABLE tasks ADD COLUMN preferred_provider TEXT' },
+  { column: 'worker_mode',            ddl: "ALTER TABLE tasks ADD COLUMN worker_mode TEXT" },
 ];
 
 const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [

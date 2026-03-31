@@ -639,7 +639,7 @@
 
 .task-row {
   display: grid;
-  grid-template-columns: 28px 1fr 120px 80px 110px 100px 100px 24px;
+  grid-template-columns: 24px 28px 1fr 120px 80px 110px 100px 100px 24px;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -809,12 +809,12 @@
 
 /* ---- Responsive ---- */
 @media (max-width: 1200px) {
-  .task-row { grid-template-columns: 28px 1fr 110px 70px 90px 90px 1fr; }
+  .task-row { grid-template-columns: 24px 28px 1fr 110px 70px 90px 90px 1fr; }
   .task-row-nav { display: none; }
 }
 
 @media (max-width: 900px) {
-  .task-row { grid-template-columns: 28px 1fr 110px 70px; }
+  .task-row { grid-template-columns: 24px 28px 1fr 110px 70px; }
   .task-row-type, .task-row-model, .task-row-activity { display: none; }
   .toolbar-filters { flex-direction: column; align-items: flex-start; }
   .filter-dropdowns { flex-direction: column; align-items: flex-start; width: 100%; }
@@ -829,7 +829,7 @@
   .filter-dropdowns { flex-direction: column; align-items: flex-start; width: 100%; }
   .filter-dropdown { width: 100%; }
   .filter-dropdown-btn { width: 100%; justify-content: space-between; }
-  .task-row { grid-template-columns: 28px 1fr 110px; }
+  .task-row { grid-template-columns: 24px 28px 1fr 110px; }
   .task-row-priority { display: none; }
   .toolbar-top { flex-direction: column; align-items: flex-start; }
   .toolbar-right { width: 100%; justify-content: space-between; }
@@ -1038,4 +1038,86 @@
   padding: 12px 12px 4px;
   border-top: 1px solid var(--border);
   background: var(--bg-secondary);
+}
+
+/* ---- Bulk Edit Panel ---- */
+.bulk-edit-panel {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-bg, rgba(99, 102, 241, 0.05));
+}
+
+.bulk-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.bulk-edit-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.bulk-edit-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bulk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bulk-field-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.form-select--sm {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.btn-sm {
+  font-size: 12px;
+  padding: 5px 12px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  &:hover { background: var(--bg-tertiary); }
+}
+
+.bulk-edit-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-error, #ff4d4f);
+}
+
+/* ---- Task Row Checkbox ---- */
+.task-row-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
+  }
 }

@@ -82,6 +82,59 @@
             <span class="meta-value">{{ m.updatedAt | date:'medium' }}</span>
           </div>
         }
+        <div class="meta-item">
+          <span class="meta-label">Model</span>
+          <select
+            class="meta-select"
+            [disabled]="fieldSaving() === 'model'"
+            (change)="onModelChange($event)"
+          >
+            <option value="">Default</option>
+            @for (opt of MODEL_OPTIONS; track opt) {
+              <option [value]="opt" [selected]="editModel() === opt">{{ opt }}</option>
+            }
+          </select>
+          @if (fieldSaving() === 'model') {
+            <span class="field-saving">Saving&hellip;</span>
+          }
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Provider</span>
+          <select
+            class="meta-select"
+            [disabled]="fieldSaving() === 'preferred_provider'"
+            (change)="onProviderChange($event)"
+          >
+            <option value="">Default</option>
+            @for (opt of PROVIDER_OPTIONS; track opt) {
+              <option [value]="opt" [selected]="editProvider() === opt">{{ opt }}</option>
+            }
+          </select>
+          @if (fieldSaving() === 'preferred_provider') {
+            <span class="field-saving">Saving&hellip;</span>
+          }
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Worker Mode</span>
+          <select
+            class="meta-select"
+            [disabled]="fieldSaving() === 'worker_mode'"
+            (change)="onWorkerModeChange($event)"
+          >
+            <option value="">Default</option>
+            @for (opt of WORKER_MODE_OPTIONS; track opt) {
+              <option [value]="opt" [selected]="editWorkerMode() === opt">{{ opt }}</option>
+            }
+          </select>
+          @if (fieldSaving() === 'worker_mode') {
+            <span class="field-saving">Saving&hellip;</span>
+          }
+        </div>
+        @if (fieldSaveError()) {
+          <div class="meta-item meta-item--error">
+            <span class="meta-error">{{ fieldSaveError() }}</span>
+          </div>
+        }
       </div>
     </div>
 

@@ -79,6 +79,28 @@ export class ProjectComponent implements OnInit {
   public readonly sessionFormOpen = signal(false);
   public readonly advancedOpen = signal(false);
   public readonly sessionConfig = signal<CreateSessionRequest>(this.loadSavedConfig());
+
+  // ── Bulk task selection & editing ─────────────────────────────────────────
+  public readonly selectedTaskIds = signal<ReadonlySet<string>>(new Set());
+  public readonly bulkEditModel = signal<string>('');
+  public readonly bulkEditProvider = signal<string>('');
+  public readonly bulkEditWorkerMode = signal<string>('');
+  public readonly bulkSaving = signal(false);
+  public readonly bulkSaveError = signal<string | null>(null);
+  public readonly BULK_PROVIDERS = ['claude', 'glm', 'opencode', 'codex'] as const;
+  public readonly BULK_WORKER_MODES = ['single', 'split'] as const;
+  public readonly BULK_MODELS = [
+    'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-6',
+    'claude-opus-4-6',
+    'glm-4.7',
+  ] as const;
+  public readonly selectedCount = computed(() => this.selectedTaskIds().size);
+  public readonly allVisibleSelected = computed(() => {
+    const ids = this.selectedTaskIds();
+    const visible = this.filteredTasks();
+    return visible.length > 0 && visible.every(t => ids.has(t.id));
+  });
   public readonly activeSessions = signal<SessionStatusResponse[]>([]);
   public readonly sessionsLoading = signal(false);
   
@@ -558,6 +580,82 @@ export class ProjectComponent implements OnInit {
 
   public onTaskClick(task: QueueTask): void {
     void this.router.navigate(['/project/task', task.id]);
+  }
+
+  public toggleTaskSelection(taskId: string, event: Event): void {
+    event.stopPropagation();
+    const current = new Set(this.selectedTaskIds());
+    if (current.has(taskId)) {
+      current.delete(taskId);
+    } else {
+      current.add(taskId);
+    }
+    this.selectedTaskIds.set(current);
+  }
+
+  public toggleAllSelection(): void {
+    const visible = this.filteredTasks();
+    if (this.allVisibleSelected()) {
+      this.selectedTaskIds.set(new Set());
+    } else {
+      this.selectedTaskIds.set(new Set(visible.map(t => t.id)));
+    }
+  }
+
+  public isTaskSelected(taskId: string): boolean {
+    return this.selectedTaskIds().has(taskId);
+  }
+
+  public clearSelection(): void {
+    this.selectedTaskIds.set(new Set());
+    this.bulkSaveError.set(null);
+  }
+
+  public applyBulkEdit(): void {
+    const ids = Array.from(this.selectedTaskIds());
+    if (ids.length === 0) return;
+
+    const model = this.bulkEditModel();
+    const provider = this.bulkEditProvider();
+    const workerMode = this.bulkEditWorkerMode();
+
+    if (!model && !provider && !workerMode) {
+      this.bulkSaveError.set('Select at least one field to update');
+      return;
+    }
+
+    const fields: { model?: string | null; preferred_provider?: string | null; worker_mode?: string | null } = {};
+    if (model) fields.model = model;
+    if (provider) fields.preferred_provider = provider;
+    if (workerMode) fields.worker_mode = workerMode;
+
+    this.bulkSaving.set(true);
+    this.bulkSaveError.set(null);
+
+    let remaining = ids.length;
+    let hasError = false;
+
+    for (const taskId of ids) {
+      this.apiService.updateCortexTask(taskId, fields)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            remaining--;
+            if (remaining === 0 && !hasError) {
+              this.bulkSaving.set(false);
+              this.clearSelection();
+            }
+          },
+          error: () => {
+            remaining--;
+            hasError = true;
+            if (remaining === 0) {
+              this.bulkSaving.set(false);
+              this.bulkSaveError.set('Some updates failed. Please try again.');
+            }
+          },
+        });
+    }
   }
 
   public openSessionForm(): void {

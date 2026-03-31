@@ -19,7 +19,7 @@ import { mapWorker } from './cortex-queries-worker';
 // ============================================================
 
 export const TASK_COLS =
-  'id, title, type, priority, status, complexity, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at';
+  'id, title, type, priority, status, complexity, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at, model, preferred_provider, worker_mode, custom_flow_id';
 export const SESSION_COLS =
   'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat, drain_requested';
 export const WORKER_COLS =
@@ -62,6 +62,10 @@ export function mapTaskContext(row: RawTask): CortexTaskContext {
     description: row.description,
     acceptance_criteria: row.acceptance_criteria,
     file_scope: parseJson<string[]>(row.file_scope, []),
+    model: row.model ?? null,
+    preferred_provider: row.preferred_provider ?? null,
+    worker_mode: row.worker_mode ?? null,
+    custom_flow_id: row.custom_flow_id ?? null,
   };
 }
 

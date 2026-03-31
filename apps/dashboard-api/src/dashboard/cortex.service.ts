@@ -100,6 +100,34 @@ export class CortexService {
     }
   }
 
+  /**
+   * Update allowed task fields (model, preferred_provider, worker_mode).
+   * Opens the DB in write mode. Returns true on success, false if task not found, null if DB unavailable.
+   */
+  public updateTask(taskId: string, fields: Partial<Pick<CortexTaskContext, 'model' | 'preferred_provider' | 'worker_mode'>>): boolean | null {
+    if (!existsSync(this.dbPath)) return null;
+    let db: Database.Database | null = null;
+    try {
+      db = new Database(this.dbPath, { fileMustExist: true });
+      const ALLOWED = new Set(['model', 'preferred_provider', 'worker_mode']);
+      const entries = Object.entries(fields).filter(([k]) => ALLOWED.has(k));
+      if (entries.length === 0) return true;
+
+      const setClauses = entries.map(([k]) => `${k} = ?`).join(', ');
+      const values = entries.map(([, v]) => v ?? null);
+      const now = new Date().toISOString();
+      const result = db.prepare(
+        `UPDATE tasks SET ${setClauses}, updated_at = ? WHERE id = ?`,
+      ).run(...values, now, taskId);
+      return result.changes > 0;
+    } catch (err) {
+      this.logger.error(`updateTask failed for ${taskId}: ${String(err)}`);
+      return null;
+    } finally {
+      db?.close();
+    }
+  }
+
   // ============================================================
   // Sessions
   // ============================================================
