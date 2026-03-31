@@ -12,7 +12,7 @@
 - apps/dashboard/src/app/views/mcp/integrations-tab/integrations-tab.component.html (modified, ~2 lines)
 
 ## Commits
-(pending — committed after handoff)
+- 23afed0: refactor(dashboard): migrate @Input/@Output decorators to signal-based input()/output() for TASK_2026_180
 
 ## Decisions
 - Used `input.required<T>()` for all previously `@Input({ required: true })` fields
