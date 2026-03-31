@@ -1,0 +1,126 @@
+<div class="flow-editor">
+  <div class="editor-header">
+    <h3 class="editor-title">{{ flow() ? 'Edit Flow' : 'New Custom Flow' }}</h3>
+  </div>
+
+  <div class="editor-body">
+    <div class="field-group">
+      <label class="field-label" for="flow-name">Name <span class="required">*</span></label>
+      <input
+        id="flow-name"
+        type="text"
+        class="field-input"
+        [value]="editedName()"
+        (input)="editedName.set($any($event.target).value)"
+        placeholder="Flow name"
+        [disabled]="isSaving()"
+      />
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="flow-desc">Description</label>
+      <textarea
+        id="flow-desc"
+        class="field-textarea"
+        [value]="editedDescription()"
+        (input)="editedDescription.set($any($event.target).value)"
+        placeholder="Optional description"
+        rows="2"
+        [disabled]="isSaving()"
+      ></textarea>
+    </div>
+
+    <div class="phases-section">
+      <h4 class="phases-title">Phases ({{ editedPhases().length }})</h4>
+
+      @if (editedPhases().length === 0) {
+        <p class="phases-empty">No phases yet. Add one below.</p>
+      }
+
+      <div class="phases-list">
+        @for (phase of editedPhases(); track phase.order; let i = $index) {
+          <div class="phase-row">
+            <span class="phase-order">{{ i + 1 }}</span>
+            <input
+              type="text"
+              class="phase-agent-input"
+              [value]="phase.agentName"
+              (input)="updatePhaseAgentName(i, $any($event.target).value)"
+              placeholder="Agent name"
+              [disabled]="isSaving()"
+            />
+            <label class="phase-optional-label">
+              <input
+                type="checkbox"
+                [checked]="phase.optional"
+                (change)="togglePhaseOptional(i)"
+                [disabled]="isSaving()"
+              />
+              opt
+            </label>
+            <button
+              type="button"
+              class="phase-btn"
+              [disabled]="i === 0 || isSaving()"
+              (click)="movePhaseUp(i)"
+              title="Move up"
+            >▲</button>
+            <button
+              type="button"
+              class="phase-btn"
+              [disabled]="i === editedPhases().length - 1 || isSaving()"
+              (click)="movePhaseDown(i)"
+              title="Move down"
+            >▼</button>
+            <button
+              type="button"
+              class="phase-btn phase-btn--remove"
+              [disabled]="isSaving()"
+              (click)="removePhase(i)"
+              title="Remove phase"
+            >×</button>
+          </div>
+        }
+      </div>
+
+      <div class="add-phase-row">
+        <input
+          type="text"
+          class="field-input add-phase-input"
+          [value]="newPhaseAgentName()"
+          (input)="newPhaseAgentName.set($any($event.target).value)"
+          (keydown.enter)="addPhase()"
+          placeholder="Agent name (e.g. nitro-backend-developer)"
+          [disabled]="isSaving()"
+        />
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="!newPhaseAgentName().trim() || isSaving()"
+          (click)="addPhase()"
+        >Add</button>
+      </div>
+    </div>
+
+    @if (errorMessage(); as err) {
+      <p class="error-message">{{ err }}</p>
+    }
+  </div>
+
+  <div class="editor-footer">
+    <button
+      type="button"
+      class="btn btn--ghost"
+      [disabled]="isSaving()"
+      (click)="cancel()"
+    >Cancel</button>
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="!canSave()"
+      (click)="save()"
+    >
+      @if (isSaving()) { Saving... } @else { Save Flow }
+    </button>
+  </div>
+</div>

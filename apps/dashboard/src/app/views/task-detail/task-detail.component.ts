@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { NgClass, DecimalPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, catchError, switchMap } from 'rxjs';
@@ -25,6 +26,7 @@ import type {
   CortexTaskTrace,
   CortexTaskContext,
   PipelineData,
+  CustomFlow,
 } from '../../models/api.types';
 import { adaptTaskDetail } from './task-detail.adapters';
 import type { TaskDetailViewModel, PhaseBarEntry } from './task-detail.model';
@@ -49,6 +51,7 @@ function formatTokenCount(n: number): string {
     NgClass,
     DecimalPipe,
     DatePipe,
+    FormsModule,
     NzTagModule,
     NzEmptyModule,
     NzSkeletonModule,
@@ -145,6 +148,39 @@ export class TaskDetailComponent {
       }));
   });
 
+  // ── Flow override ─────────────────────────────────────────────────────────
+  public readonly customFlows = signal<CustomFlow[]>([]);
+  public readonly selectedFlowOverrideId = signal<string | null>(null);
+  public readonly overrideSaving = signal(false);
+
+  public handleFlowOverrideChange(event: Event): void {
+    const flowId = (event.target as HTMLSelectElement).value;
+    const taskId = this.taskId();
+    if (!taskId) return;
+
+    this.overrideSaving.set(true);
+    const request$ = flowId
+      ? this.api.setTaskFlowOverride(taskId, flowId)
+      : this.api.clearTaskFlowOverride(taskId);
+
+    request$.subscribe({
+      next: () => {
+        this.selectedFlowOverrideId.set(flowId || null);
+        this.overrideSaving.set(false);
+      },
+      error: (err: unknown) => {
+        console.warn('[TaskDetail] flow override update failed:', err);
+        this.overrideSaving.set(false);
+      },
+    });
+  }
+
+  public readonly selectedFlowOverrideName = computed<string | null>(() => {
+    const id = this.selectedFlowOverrideId();
+    if (!id) return null;
+    return this.customFlows().find(f => f.id === id)?.name ?? null;
+  });
+
   public readonly workerRows = computed(() => {
     const model = this.vm();
     if (!model) return [];
@@ -172,6 +208,19 @@ export class TaskDetailComponent {
         this.loading.set(false);
       }
       this.vm.set(this.viewModelComputed());
+    });
+
+    // Load custom flows for the override dropdown
+    this.api.getCustomFlows().pipe(
+      catchError(() => of([] as CustomFlow[])),
+    ).subscribe(flows => this.customFlows.set(flows));
+
+    // Initialize the selected override from context data
+    effect(() => {
+      const context = this.dataSignal()?.contextData;
+      if (context && 'custom_flow_id' in context) {
+        this.selectedFlowOverrideId.set((context as { custom_flow_id?: string | null }).custom_flow_id ?? null);
+      }
     });
   }
 

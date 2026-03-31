@@ -405,6 +405,38 @@ export interface OrchestrationFlow {
   readonly strategy: string;
 }
 
+export interface CustomFlowPhase {
+  readonly order: number;
+  readonly agentName: string;
+  readonly agentTitle: string;
+  readonly optional: boolean;
+  readonly estimatedDuration: number;
+  readonly deliverables: readonly string[];
+}
+
+export interface CustomFlow {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly source_flow_id: string | null;
+  readonly phases: readonly CustomFlowPhase[];
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface CreateCustomFlowRequest {
+  name: string;
+  description?: string;
+  sourceFlowId?: string;
+  phases?: CustomFlowPhase[];
+}
+
+export interface UpdateCustomFlowRequest {
+  name?: string;
+  description?: string;
+  phases?: CustomFlowPhase[];
+}
+
 // ── Cortex types ─────────────────────────────────────────────────────────────
 
 export interface CortexTask {
@@ -665,7 +697,7 @@ export interface CommandExecuteResult {
   readonly data?: Record<string, unknown>;
 }
 
-export type SessionEndStatus = 'completed' | 'killed' | 'crashed' | 'running';
+export type SessionEndStatus = 'completed' | 'killed' | 'crashed' | 'running' | 'stopped';
 
 export interface SessionHistoryListItem {
   readonly id: string;
@@ -729,6 +761,7 @@ export interface SessionHistoryDetail {
   readonly timeline: readonly SessionHistoryTimelineEvent[];
   readonly workers: readonly SessionHistoryWorker[];
   readonly logContent: string | null;
+  readonly drainRequested: boolean;
 }
 
 

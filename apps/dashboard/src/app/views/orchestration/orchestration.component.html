@@ -163,6 +163,55 @@
   </div>
 </div>
 
+<div class="custom-flows-section">
+  <div class="custom-flows-header">
+    <h2>Custom Flows</h2>
+    <button
+      type="button"
+      class="btn-new-flow"
+      (click)="orchestrationService.startNewFlow()"
+    >+ New Custom Flow</button>
+  </div>
+
+  @if (orchestrationService.isEditing()) {
+    <app-flow-editor
+      [flow]="orchestrationService.selectedCustomFlow()"
+      (saved)="orchestrationService.onFlowSaved($event)"
+      (cancelled)="orchestrationService.cancelEdit()"
+    />
+  }
+
+  @if (orchestrationService.customFlows().length > 0) {
+    <div class="custom-flow-list">
+      @for (cf of orchestrationService.customFlows(); track cf.id) {
+        <div class="custom-flow-item">
+          <div class="custom-flow-info">
+            <span class="custom-flow-name">{{ cf.name }}</span>
+            @if (cf.description) {
+              <span class="custom-flow-desc">{{ cf.description }}</span>
+            }
+            <span class="custom-flow-phases">{{ cf.phases.length }} phases</span>
+          </div>
+          <div class="custom-flow-actions">
+            <button
+              type="button"
+              class="btn-edit"
+              (click)="orchestrationService.selectFlowForEdit(cf.id)"
+            >Edit</button>
+            <button
+              type="button"
+              class="btn-delete"
+              (click)="confirmDeleteCustomFlow(cf.id, cf.name)"
+            >Delete</button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (!orchestrationService.customFlowsLoading()) {
+    <p class="custom-flows-empty">No custom flows yet. Click "+ New Custom Flow" to create one.</p>
+  }
+</div>
+
 @if (cloneFlowId(); as _flowId) {
   <div class="clone-overlay" (click)="cancelClone()">
     <div class="clone-dialog" (click)="$event.stopPropagation()">

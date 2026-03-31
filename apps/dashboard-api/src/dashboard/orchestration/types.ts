@@ -163,3 +163,42 @@ export interface FlowValidationResult {
   /** Warnings (non-blocking issues) */
   warnings: string[];
 }
+
+// ── Custom Flow types ────────────────────────────────────────────────────────
+
+export interface CustomFlowPhaseRecord {
+  order: number;
+  agentName: string;
+  agentTitle: string;
+  optional: boolean;
+  estimatedDuration: number;
+  deliverables: string[];
+}
+
+/** DB row shape for custom_flows table */
+export interface CustomFlowRecord {
+  id: string;
+  name: string;
+  description: string | null;
+  source_flow_id: string | null;
+  phases: CustomFlowPhaseRecord[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomFlowDto {
+  name: string;
+  description?: string;
+  sourceFlowId?: string;
+  phases?: CustomFlowPhaseRecord[];
+}
+
+export interface UpdateCustomFlowDto {
+  name?: string;
+  description?: string;
+  phases?: CustomFlowPhaseRecord[];
+}
+
+export interface TaskFlowOverrideRequest {
+  flowId: string;
+}

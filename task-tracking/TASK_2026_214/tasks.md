@@ -3,14 +3,12 @@
 
 ---
 
-## Batch 1: DB Schema + Backend Service — PENDING
-
-**Developer**: nitro-backend-developer
+## Batch 1: DB Schema + Backend Service — COMPLETE**Developer**: nitro-backend-developer
 
 ### Task 1.1: Add custom_flows table and custom_flow_id migration to schema
 
 **File**: `packages/mcp-cortex/src/db/schema.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add `CUSTOM_FLOWS_TABLE` DDL constant:
 
@@ -41,7 +39,7 @@ Call `db.exec(CUSTOM_FLOWS_TABLE)` and the index in `initDatabase()`.
 ### Task 1.2: Create CustomFlowsService
 
 **File**: `apps/dashboard-api/src/dashboard/orchestration/custom-flows.service.ts` (new)
-**Status**: PENDING
+**Status**: COMPLETE
 
 Injectable NestJS service. Inject the DB via constructor (use the same injection token
 as other dashboard-api DB-accessing services — check `cortex.service.ts` for the pattern).
@@ -56,7 +54,7 @@ matching `CustomFlowRecord` shape.
 ### Task 1.3: Add new types to types.ts
 
 **File**: `apps/dashboard-api/src/dashboard/orchestration/types.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add interfaces:
 - `CustomFlowRecord` — DB row shape
@@ -67,20 +65,20 @@ Add interfaces:
 ### Task 1.4: Register CustomFlowsService in OrchestrationModule
 
 **File**: `apps/dashboard-api/src/dashboard/orchestration/orchestration.module.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add `CustomFlowsService` to both `providers` and `exports`.
 
 ---
 
-## Batch 2: API Controller Extensions — PENDING
+## Batch 2: API Controller Extensions — COMPLETE
 
 **Developer**: nitro-backend-developer
 
 ### Task 2.1: Add CRUD endpoints to OrchestrationController
 
 **File**: `apps/dashboard-api/src/dashboard/orchestration/orchestration.controller.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Inject `CustomFlowsService`. Add the following methods:
 
@@ -101,7 +99,7 @@ existing pattern in the controller).
 ### Task 2.2: Update clone endpoint to persist via CustomFlowsService
 
 **File**: `apps/dashboard-api/src/dashboard/orchestration/orchestration.controller.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 In the existing `cloneFlow` handler, replace the TODO comment and in-memory response
 with a call to `this.customFlowsService.create({ name, description, sourceFlowId, phases })`.
@@ -109,14 +107,14 @@ Return the DB-persisted record cast to `CreateFlowResponse`.
 
 ---
 
-## Batch 3: Frontend Types + API Service — PENDING
+## Batch 3: Frontend Types + API Service — COMPLETE
 
 **Developer**: nitro-frontend-developer
 
 ### Task 3.1: Add CustomFlow types to api.types.ts
 
 **File**: `apps/dashboard/src/app/models/api.types.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add under `// ── Orchestration flow types` section:
 
@@ -157,7 +155,7 @@ export interface UpdateCustomFlowRequest {
 ### Task 3.2: Add CRUD methods to ApiService
 
 **File**: `apps/dashboard/src/app/services/api.service.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add to `ApiService`:
 
@@ -176,7 +174,7 @@ Use the existing `http.post/put/delete` pattern from the service. Base path:
 
 ---
 
-## Batch 4: Flow Editor Component — PENDING
+## Batch 4: Flow Editor Component — COMPLETE
 
 **Developer**: nitro-frontend-developer
 
@@ -185,7 +183,7 @@ Use the existing `http.post/put/delete` pattern from the service. Base path:
 **Files**:
 - `apps/dashboard/src/app/views/orchestration/flow-editor/flow-editor.component.ts` (new)
 - `apps/dashboard/src/app/views/orchestration/flow-editor/flow-editor.component.html` (new)
-**Status**: PENDING
+**Status**: COMPLETE
 
 Standalone Angular component. Inputs/outputs:
 - `@Input() flow: CustomFlow | null` — null = new flow mode
@@ -207,7 +205,7 @@ No external drag-and-drop dependency. Reorder via index swap.
 ### Task 4.2: Update orchestration.store.ts with CRUD state
 
 **File**: `apps/dashboard/src/app/views/orchestration/services/orchestration.store.ts`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Add signals: `customFlows`, `selectedCustomFlowId`, `isEditing`.
 
@@ -221,7 +219,7 @@ Each method calls the relevant `ApiService` method and updates the signal state.
 
 **File**: `apps/dashboard/src/app/views/orchestration/orchestration.component.ts`
 **File**: `apps/dashboard/src/app/views/orchestration/orchestration.component.html`
-**Status**: PENDING
+**Status**: COMPLETE
 
 - Add "New Custom Flow" button (visible when custom flows tab/filter is active)
 - When `store.isEditing()` is true, render `<app-flow-editor>` in the right panel
@@ -232,7 +230,7 @@ Each method calls the relevant `ApiService` method and updates the signal state.
 
 ---
 
-## Batch 5: Per-Task Flow Override UI — PENDING
+## Batch 5: Per-Task Flow Override UI — COMPLETE
 
 **Developer**: nitro-frontend-developer
 
@@ -241,7 +239,7 @@ Each method calls the relevant `ApiService` method and updates the signal state.
 **Files**:
 - `apps/dashboard/src/app/views/task-detail/task-detail.component.ts`
 - `apps/dashboard/src/app/views/task-detail/task-detail.component.html`
-**Status**: PENDING
+**Status**: COMPLETE
 
 Note: If `task-detail.component.ts` does not exist yet, create a minimal component
 file with just the override section and register the route.

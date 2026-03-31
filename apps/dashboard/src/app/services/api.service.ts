@@ -58,6 +58,10 @@ import type {
   SessionHistoryListItem,
   SessionHistoryDetail,
   ProviderQuotaItem,
+  CustomFlow,
+  CreateCustomFlowRequest,
+  UpdateCustomFlowRequest,
+  CustomFlowPhase,
 } from '../models/api.types';
 import type { ReportsOverview } from '../models/reports.model';
 
@@ -401,6 +405,58 @@ export class ApiService {
   public getSessionHistoryDetail(sessionId: string): Observable<SessionHistoryDetail> {
     return this.http.get<SessionHistoryDetail>(
       `${this.base}/sessions/${encodeURIComponent(sessionId)}`,
+    );
+  }
+
+  public drainSession(sessionId: string): Observable<{ readonly sessionId: string; readonly action: string }> {
+    return this.http.patch<{ readonly sessionId: string; readonly action: string }>(
+      `${this.base}/sessions/${encodeURIComponent(sessionId)}/stop`,
+      {},
+    );
+  }
+
+  // ── Custom Flows ──────────────────────────────────────────────────────────
+
+  private readonly orchestrationBase = `${this.base}/orchestration`;
+
+  public getCustomFlows(): Observable<CustomFlow[]> {
+    return this.http.get<CustomFlow[]>(`${this.orchestrationBase}/custom-flows`);
+  }
+
+  public createCustomFlow(dto: CreateCustomFlowRequest): Observable<CustomFlow> {
+    return this.http.post<CustomFlow>(`${this.orchestrationBase}/custom-flows`, dto);
+  }
+
+  public updateCustomFlow(id: string, dto: UpdateCustomFlowRequest): Observable<CustomFlow> {
+    return this.http.put<CustomFlow>(
+      `${this.orchestrationBase}/custom-flows/${encodeURIComponent(id)}`,
+      dto,
+    );
+  }
+
+  public deleteCustomFlow(id: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.orchestrationBase}/custom-flows/${encodeURIComponent(id)}`,
+    );
+  }
+
+  public updateCustomFlowPhases(id: string, phases: CustomFlowPhase[]): Observable<CustomFlow> {
+    return this.http.put<CustomFlow>(
+      `${this.orchestrationBase}/custom-flows/${encodeURIComponent(id)}/phases`,
+      { phases },
+    );
+  }
+
+  public setTaskFlowOverride(taskId: string, flowId: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.orchestrationBase}/tasks/${encodeURIComponent(taskId)}/flow-override`,
+      { flowId },
+    );
+  }
+
+  public clearTaskFlowOverride(taskId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.orchestrationBase}/tasks/${encodeURIComponent(taskId)}/flow-override`,
     );
   }
 }

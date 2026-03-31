@@ -1,7 +1,9 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { ApiService } from '../../../services/api.service';
+import type { CustomFlow, CreateCustomFlowRequest, UpdateCustomFlowRequest } from '../../../models/api.types';
 
 export interface FlowDefinition {
   id: string;
@@ -31,13 +33,26 @@ export interface FlowListQuery {
   providedIn: 'root'
 })
 export class OrchestrationService {
+  private readonly apiService = inject(ApiService);
   private readonly apiUrl = '/api/dashboard/orchestration';
-  
-  // Signals for reactive state
+
+  // Built-in flow signals
   private flowsSignal = signal<FlowDefinition[]>([]);
   private loadingSignal = signal<boolean>(false);
   private errorSignal = signal<string | null>(null);
   private selectedFlowSignal = signal<FlowDefinition | null>(null);
+
+  // Custom flow CRUD signals
+  public readonly customFlows = signal<CustomFlow[]>([]);
+  public readonly customFlowsLoading = signal<boolean>(false);
+  public readonly selectedCustomFlowId = signal<string | null>(null);
+  public readonly isEditing = signal<boolean>(false);
+
+  public readonly selectedCustomFlow = computed<CustomFlow | null>(() => {
+    const id = this.selectedCustomFlowId();
+    if (!id) return null;
+    return this.customFlows().find(f => f.id === id) ?? null;
+  });
 
   // Computed signals
   public flows = this.flowsSignal.asReadonly();
@@ -63,6 +78,53 @@ export class OrchestrationService {
 
   constructor(private http: HttpClient) {
     this.loadFlows();
+    this.loadCustomFlows();
+  }
+
+  // ── Custom flow CRUD state methods ────────────────────────────────────────
+
+  public loadCustomFlows(): void {
+    this.customFlowsLoading.set(true);
+    this.apiService.getCustomFlows().pipe(catchError(() => of([] as CustomFlow[]))).subscribe(flows => {
+      this.customFlows.set(flows);
+      this.customFlowsLoading.set(false);
+    });
+  }
+
+  public selectFlowForEdit(id: string): void {
+    this.selectedCustomFlowId.set(id);
+    this.isEditing.set(true);
+  }
+
+  public startNewFlow(): void {
+    this.selectedCustomFlowId.set(null);
+    this.isEditing.set(true);
+  }
+
+  public cancelEdit(): void {
+    this.selectedCustomFlowId.set(null);
+    this.isEditing.set(false);
+  }
+
+  public onFlowSaved(flow: CustomFlow): void {
+    const existing = this.customFlows().find(f => f.id === flow.id);
+    if (existing) {
+      this.customFlows.set(this.customFlows().map(f => f.id === flow.id ? flow : f));
+    } else {
+      this.customFlows.set([...this.customFlows(), flow]);
+    }
+    this.cancelEdit();
+  }
+
+  public deleteCustomFlow(id: string): void {
+    this.apiService.deleteCustomFlow(id).subscribe({
+      next: () => {
+        this.customFlows.set(this.customFlows().filter(f => f.id !== id));
+      },
+      error: (err: unknown) => {
+        console.error('[OrchestrationService] deleteCustomFlow failed:', err);
+      },
+    });
   }
 
   /**

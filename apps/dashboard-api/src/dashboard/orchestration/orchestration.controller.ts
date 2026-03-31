@@ -1,32 +1,40 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Query, 
-  Param, 
-  UsePipes, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+  UsePipes,
   ValidationPipe,
   HttpException,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import { FlowParsingService } from './flow-parsing.service';
 import { FlowMetadataService } from './flow-metadata.service';
-import { 
+import { CustomFlowsService } from './custom-flows.service';
+import {
   FlowDefinition,
   FlowWithMetadata,
   FlowListQuery,
   FlowListResponse,
   CreateFlowRequest,
   CreateFlowResponse,
-  FlowMetrics
+  FlowMetrics,
+  CreateCustomFlowDto,
+  UpdateCustomFlowDto,
+  CustomFlowPhaseRecord,
+  TaskFlowOverrideRequest,
 } from './types';
 
 @Controller('api/dashboard/orchestration')
 export class OrchestrationController {
   constructor(
     private readonly flowParsingService: FlowParsingService,
-    private readonly flowMetadataService: FlowMetadataService
+    private readonly flowMetadataService: FlowMetadataService,
+    private readonly customFlowsService: CustomFlowsService,
   ) {}
 
   /**
@@ -209,56 +217,170 @@ export class OrchestrationController {
   }
 
   /**
-   * Clone a flow to create a custom variant
+   * Clone a flow to create a custom variant (persists to DB)
    */
   @Post('flows/clone')
   @UsePipes(new ValidationPipe({ transform: true }))
   async cloneFlow(@Body() request: CreateFlowRequest): Promise<CreateFlowResponse> {
     try {
-      // Validate source flow exists
       const flows = await this.flowParsingService.parseFlows();
       const sourceFlow = flows.find(flow => flow.id === request.sourceFlowId);
-      
+
       if (!sourceFlow) {
         throw new HttpException('Source flow not found', HttpStatus.NOT_FOUND);
       }
-      
-      // Validate request
+
       if (!request.customName || request.customName.trim() === '') {
         throw new HttpException('Custom flow name is required', HttpStatus.BAD_REQUEST);
       }
-      
-      // Generate custom flow ID
-      const customFlowId = `custom-${request.customName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-      
-      // Create custom flow (clone with modifications)
-      const customFlow: FlowDefinition = {
-        ...sourceFlow,
-        id: customFlowId,
-        name: request.customName,
-        description: request.customDescription || sourceFlow.description,
-        phases: this.applyPhaseModifications(sourceFlow.phases, request.phaseModifications)
-      };
-      
-      // TODO: Save custom flow to database when custom flow storage is implemented
-      // For now, just return success response
-      
-      const response: CreateFlowResponse = {
-        flowId: customFlowId,
-        flowName: customFlow.name,
-        createdAt: new Date(),
-        status: 'created'
-      };
-      
-      return response;
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
+
+      const modifiedPhases = this.applyPhaseModifications(sourceFlow.phases, request.phaseModifications);
+      const phases: CustomFlowPhaseRecord[] = modifiedPhases.map((p, i) => ({
+        order: p.order ?? i + 1,
+        agentName: p.agent?.name ?? '',
+        agentTitle: p.agent?.title ?? '',
+        optional: p.agent?.optional ?? false,
+        estimatedDuration: p.estimatedDuration ?? 0,
+        deliverables: p.deliverables ?? [],
+      }));
+
+      const created = this.customFlowsService.create({
+        name: request.customName.trim(),
+        description: request.customDescription,
+        sourceFlowId: request.sourceFlowId,
+        phases,
+      });
+
+      if (!created) {
+        throw new HttpException('Failed to persist custom flow', HttpStatus.INTERNAL_SERVER_ERROR);
       }
-      throw new HttpException(
-        `Failed to clone flow: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+
+      return {
+        flowId: created.id,
+        flowName: created.name,
+        createdAt: new Date(created.created_at),
+        status: 'created',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to clone flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ── Custom Flow CRUD ──────────────────────────────────────────────────────
+
+  @Post('custom-flows')
+  createCustomFlow(@Body() dto: CreateCustomFlowDto) {
+    try {
+      if (!dto.name?.trim()) {
+        throw new HttpException('name is required', HttpStatus.BAD_REQUEST);
+      }
+      const result = this.customFlowsService.create(dto);
+      if (!result) {
+        throw new HttpException('Failed to create custom flow', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to create custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('custom-flows')
+  listCustomFlows() {
+    try {
+      return this.customFlowsService.findAll();
+    } catch (error) {
+      throw new HttpException(`Failed to list custom flows: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('custom-flows/:id')
+  getCustomFlowById(@Param('id') id: string) {
+    try {
+      const flow = this.customFlowsService.findOne(id);
+      if (!flow) {
+        throw new HttpException('Custom flow not found', HttpStatus.NOT_FOUND);
+      }
+      return flow;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to get custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Put('custom-flows/:id')
+  updateCustomFlow(@Param('id') id: string, @Body() dto: UpdateCustomFlowDto) {
+    try {
+      const result = this.customFlowsService.update(id, dto);
+      if (!result) {
+        throw new HttpException('Custom flow not found', HttpStatus.NOT_FOUND);
+      }
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to update custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Delete('custom-flows/:id')
+  deleteCustomFlow(@Param('id') id: string) {
+    try {
+      const deleted = this.customFlowsService.delete(id);
+      if (!deleted) {
+        throw new HttpException('Custom flow not found', HttpStatus.NOT_FOUND);
+      }
+      return null;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to delete custom flow: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Put('custom-flows/:id/phases')
+  updateCustomFlowPhases(@Param('id') id: string, @Body() body: { phases: CustomFlowPhaseRecord[] }) {
+    try {
+      const result = this.customFlowsService.updatePhases(id, body.phases ?? []);
+      if (!result) {
+        throw new HttpException('Custom flow not found', HttpStatus.NOT_FOUND);
+      }
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to update phases: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ── Task flow override endpoints ──────────────────────────────────────────
+
+  @Post('tasks/:taskId/flow-override')
+  setFlowOverride(@Param('taskId') taskId: string, @Body() req: TaskFlowOverrideRequest) {
+    try {
+      if (!req.flowId) {
+        throw new HttpException('flowId is required', HttpStatus.BAD_REQUEST);
+      }
+      const ok = this.customFlowsService.setTaskFlowOverride(taskId, req.flowId);
+      if (!ok) {
+        throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+      }
+      return { taskId, flowId: req.flowId };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to set flow override: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Delete('tasks/:taskId/flow-override')
+  clearFlowOverride(@Param('taskId') taskId: string) {
+    try {
+      const ok = this.customFlowsService.setTaskFlowOverride(taskId, null);
+      if (!ok) {
+        throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+      }
+      return { taskId, flowId: null };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Failed to clear flow override: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

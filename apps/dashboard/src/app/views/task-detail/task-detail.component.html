@@ -472,5 +472,35 @@
       </div>
     }
 
+    <div class="section flow-override-section">
+      <div class="section-title">Orchestration Flow Override</div>
+      <div class="flow-override-body">
+        <label class="flow-override-label" [for]="'flow-override-' + m.taskId">
+          Select a custom flow to override the default orchestration for this task:
+        </label>
+        <div class="flow-override-controls">
+          <select
+            class="flow-override-select"
+            [id]="'flow-override-' + m.taskId"
+            [disabled]="overrideSaving()"
+            (change)="handleFlowOverrideChange($event)"
+          >
+            <option value="">Default (built-in flow)</option>
+            @for (cf of customFlows(); track cf.id) {
+              <option [value]="cf.id" [selected]="selectedFlowOverrideId() === cf.id">
+                {{ cf.name }}
+              </option>
+            }
+          </select>
+          @if (overrideSaving()) {
+            <span class="flow-override-saving">Saving...</span>
+          }
+        </div>
+        @if (selectedFlowOverrideName(); as name) {
+          <span class="flow-override-badge">Active override: {{ name }}</span>
+        }
+      </div>
+    </div>
+
   }
 </div>

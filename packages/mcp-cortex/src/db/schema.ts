@@ -219,6 +219,7 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)',
   'CREATE INDEX IF NOT EXISTS idx_custom_flows_name ON custom_flows(name)',
+  'CREATE INDEX IF NOT EXISTS idx_custom_flows_source ON custom_flows(source_flow_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)',
   'CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)',

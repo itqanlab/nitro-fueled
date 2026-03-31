@@ -4,18 +4,21 @@ import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api.service';
-import type { OrchestrationFlow, OrchestrationFlowPhase } from '../../models/api.types';
+import type { OrchestrationFlow, OrchestrationFlowPhase, CustomFlow } from '../../models/api.types';
+import { FlowEditorComponent } from './flow-editor/flow-editor.component';
+import { OrchestrationService } from './services/orchestration.service';
 
 @Component({
   selector: 'app-orchestration',
   standalone: true,
-  imports: [NgClass, FormsModule],
+  imports: [NgClass, FormsModule, FlowEditorComponent],
   templateUrl: './orchestration.component.html',
   styleUrl: './orchestration.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrchestrationComponent {
   private readonly api = inject(ApiService);
+  public readonly orchestrationService = inject(OrchestrationService);
   public readonly flows = toSignal(
     this.api.getOrchestrationFlows().pipe(catchError(() => of([] as OrchestrationFlow[]))),
     { initialValue: [] as OrchestrationFlow[] },
@@ -140,5 +143,14 @@ export class OrchestrationComponent {
 
   public trackByFlowId(_index: number, flow: OrchestrationFlow): string {
     return flow.id;
+  }
+
+  public trackByCustomFlowId(_index: number, flow: CustomFlow): string {
+    return flow.id;
+  }
+
+  public confirmDeleteCustomFlow(id: string, name: string): void {
+    if (!confirm(`Delete custom flow "${name}"? This cannot be undone.`)) return;
+    this.orchestrationService.deleteCustomFlow(id);
   }
 }
