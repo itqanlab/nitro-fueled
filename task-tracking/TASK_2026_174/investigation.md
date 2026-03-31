@@ -17,23 +17,26 @@ The strongest operational conclusion is that `Simple complexity only` is not the
 - `SESSION_2026-03-30_03-40-31/log.md` repeats the provider stat and flags GLM-5 as `HIGH KILL RATE`.
 - `SESSION_2026-03-28_11-13-12/log.md` captures the clearest stuck, planning-stop, and edit-loop events.
 - `SESSION_2026-03-28_13-58-21/analytics.md` summarizes a cluster of GLM failures as `2 stuck in Glob loop, 1 zero-token exit`.
-- `SESSION_2026-03-28_03-27-33/log.md` shows four early `SPAWN FALLBACK` events where GLM-5 failed before a retry was even counted.
+- `SESSION_2026-03-28_03-27-33/log.md` shows three build-worker `SPAWN FALLBACK` events (tasks 072, 074, 076) plus one ReviewLead `SPAWN FALLBACK` event (task 086).
+- `SESSION_2026-03-27_*/log.md` — All 2026-03-27 session logs were examined. No GLM-5 fallback or kill events were found; these sessions predated the GLM-5 routing configuration that produced the failures analyzed below.
 
 ## Failure Taxonomy
 
-### 1. Spawn-time or zero-activity failure: 4 confirmed GLM-5 fallbacks
+### 1. Spawn-time or zero-activity failure: 3 confirmed GLM-5 build-worker fallbacks
 
-Tasks: `072`, `074`, `076`, `086`
+Tasks: `072`, `074`, `076`
 
 Evidence:
 
-- `SESSION_2026-03-28_03-27-33/log.md` records `SPAWN FALLBACK — TASK_2026_072/074/076/086: glm failed, retrying with claude/sonnet`.
-- The same session's analytics show `Tasks Requiring Retries | 0`, which means these were not healthy workers that later regressed. They failed before the supervisor considered them a normal retry path.
-- There are no corresponding GLM-5 worker logs for these tasks, which strongly suggests the workers produced no usable activity before fallback.
+- `SESSION_2026-03-28_03-27-33/log.md` records `SPAWN FALLBACK — TASK_2026_072: glm failed, retrying with claude/sonnet` at 03:28:42, `SPAWN FALLBACK — TASK_2026_076: glm failed` and `SPAWN FALLBACK — TASK_2026_074: glm failed` at 04:57:31, all for build workers.
+- The same session's analytics (`analytics.md`) show `Tasks Requiring Retries | 0`, which means these were not healthy workers that later regressed. They failed before the supervisor considered them a normal retry path.
+- There are no corresponding GLM-5 worker logs for these tasks, which strongly suggests the workers produced no usable activity before fallback. The root cause is inferred as zero-activity at launch; no per-worker telemetry survived to confirm it.
+
+Note: `TASK_2026_086` is not in this bucket. Its GLM fallback occurred at 05:24:47, immediately after the build worker completed (8m, $0.03, 15 files changed → IMPLEMENTED). The fallback was for the ReviewLead spawn, not the build worker. See Mode 5b below.
 
 Interpretation:
 
-- This is the strongest evidence for a `launch/no-first-action` failure mode.
+- This is the strongest evidence for a `launch/no-first-action` failure mode in build workers.
 - A shorter health check alone will help only partially; the supervisor also needs a first-activity deadline.
 
 ### 2. Stuck health-check kills: 2 direct fallbacks plus 3 additional related kills
@@ -81,7 +84,20 @@ Interpretation:
 
 - This is the most expensive failure mode. The current stuck detector is too status-centric and does not stop high-tool-count workers that remain busy but make no real state progress.
 
-### 5. Outlier: review-worker zero-message exit caused by tooling mismatch, not core build reliability
+### 5a. ReviewLead GLM fallback — DEVOPS task: 1 confirmed fallback
+
+Task: `086`
+
+Evidence:
+
+- `SESSION_2026-03-28_03-27-33/log.md` records `SPAWN FALLBACK — TASK_2026_086: glm failed, retrying with claude/sonnet` at 05:24:47, immediately after the build worker logged `8m, $0.03, 15 files changed` and transitioned IMPLEMENTED. The spawned replacement is explicitly labelled `ReviewLead: DEVOPS`.
+
+Interpretation:
+
+- The GLM failure for 086 is a ReviewLead launch failure, not a build-worker spawn-time event.
+- It belongs in a review/test worker reliability sub-category alongside Mode 5b below, not in Mode 1.
+
+### 5b. Outlier: review-worker zero-message exit caused by tooling mismatch
 
 Task: `120`
 
@@ -99,14 +115,15 @@ Interpretation:
 
 | Mode | Count | Included Tasks |
 |------|-------|----------------|
-| Spawn-time / zero-activity fallback | 4 | 072, 074, 076, 086 |
-| Stuck x2 health-check kill | 2 direct fallbacks | 091, 113 |
+| Spawn-time / zero-activity build-worker fallback | 3 | 072, 074, 076 |
+| Stuck x2 health-check kill (direct fallback) | 2 | 091, 113 |
 | Additional same-family kill evidence | 3 | 088, 092, 117 |
 | Planning-phase stop | 1 | 109 |
 | Edit loop / no-transition runaway | 1 | 099 |
+| ReviewLead GLM fallback — DEVOPS task | 1 | 086 |
 | Tooling outlier: 0-msg review/test failure | 1 | 120 |
 
-This matches the retrospective framing: `9` total fallback events, `8` attributable to GLM-5 reliability patterns, `1` outlier caused by a slash-command/tooling mismatch.
+This matches the retrospective framing: `9` total SPAWN FALLBACK events across all worker types. The 8 attributable to GLM-5 reliability patterns include three build-worker zero-activity events, two stuck-worker kills, one planning-phase stop, one edit loop, and one ReviewLead GLM launch failure. The 1 outlier (120) is caused by a slash-command/tooling mismatch. `TASK_2026_086`'s ReviewLead fallback was previously miscounted as a build-worker spawn-time failure; the corrected grouping above does not change the total count.
 
 ## Correlation Analysis
 
@@ -116,13 +133,14 @@ Observed failure tasks span multiple types:
 
 - `FEATURE`: 088, 092, 099, 109, 120
 - `BUGFIX`: 113
-- `REFACTORING`: 091, 117
-- `DEVOPS`: 072, 076, 086
+- `REFACTORING`: 074, 091, 117
+- `DEVOPS`: 072, 076 (build-worker spawn-time failures), 086 (ReviewLead launch failure)
 
 Conclusion:
 
 - There is no evidence that one task type fully explains the failures.
-- `DEVOPS` is notable because three medium DEVOPS tasks hit immediate spawn-time fallback in one session, so it is a good candidate for temporary routing restriction.
+- `DEVOPS` is still notable: two medium DEVOPS build workers hit immediate spawn-time fallback in the same session, and a third DEVOPS task had a ReviewLead GLM failure. The cluster makes it a good candidate for temporary routing restriction.
+- Corrected: only 2 DEVOPS tasks (072, 076) represent build-worker spawn-time failures; 086 was a ReviewLead failure and was previously miscounted as a build-worker event.
 
 ### By complexity
 
@@ -141,11 +159,12 @@ Conclusion:
 
 ### 1. What are the specific failure modes?
 
-- Immediate no-activity or spawn-time failure before useful work begins.
+- Immediate no-activity or spawn-time failure before useful work begins (confirmed SPAWN FALLBACK events; root cause of zero-activity is inferred from absent worker logs).
 - Stuck workers that never move past search/build activity and die on health checks.
 - Planning-phase stalls.
 - Long edit/search loops with no state transition.
-- One review/test 0-message outlier caused by slash-command/tooling mismatch.
+- ReviewLead GLM launch failures (distinct from build-worker reliability; observed for tasks 086 and 120).
+- One 0-message outlier caused by slash-command/tooling mismatch (task 120).
 
 ### 2. Is there a correlation between task complexity/type and GLM-5 failures?
 

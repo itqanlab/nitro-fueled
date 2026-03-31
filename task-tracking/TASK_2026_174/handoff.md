@@ -18,5 +18,6 @@
 - Recommended routing restrictions by operational risk (`DEVOPS`, `P0`, review/test) instead of `Simple only` because the evidence shows failures across types and includes a simple-task failure.
 
 ## Known Risks
-- Four early `glm failed` fallbacks do not have corresponding worker logs, so their root cause is inferred as spawn-time zero activity rather than proven from per-worker telemetry.
+- Three early `glm failed` build-worker fallbacks (072, 074, 076) do not have corresponding worker logs, so their root cause is inferred as spawn-time zero activity rather than proven from per-worker telemetry.
+- TASK_2026_086 was corrected during review: its GLM fallback was for the ReviewLead spawn (not the build worker, which completed successfully). The investigation.md taxonomy has been updated accordingly.
 - The retrospective cites `6 killed/20`, but the repository only preserves a subset of detailed worker logs, so the taxonomy relies on the surviving session evidence rather than a complete raw-event export.
