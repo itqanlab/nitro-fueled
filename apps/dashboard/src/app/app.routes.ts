@@ -5,11 +5,18 @@ import { McpIntegrationsComponent } from './views/mcp/mcp-integrations.component
 import { AnalyticsComponent } from './views/analytics/analytics.component';
 import { AgentEditorViewComponent } from './views/agent-editor/agent-editor-view.component';
 import { ProviderHubComponent } from './views/providers/provider-hub.component';
+import { authGuard } from './guards/auth.guard';
 
 export const APP_ROUTES: Routes = [
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./views/login/login.component').then((m) => m.LoginComponent),
+  },
+  {
     path: '',
     component: LayoutComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
@@ -136,6 +143,7 @@ export const APP_ROUTES: Routes = [
             (m) => m.LogsComponent,
           ),
       },
+      { path: '**', redirectTo: 'dashboard' },
     ],
   },
 ];
