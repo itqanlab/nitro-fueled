@@ -205,6 +205,7 @@ export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
       { label: 'Teams', icon: '\u{1F465}', badge: 3, route: '/dashboard' },
       { label: 'Knowledge Base', icon: '\u{1F4DA}', route: '/dashboard' },
       { label: 'Analytics', icon: '\u{1F4CA}', route: '/analytics' },
+      { label: 'Model Performance', icon: '\u{1F916}', route: '/analytics/model-performance' },
       { label: 'Progress Center', icon: '\u{1F6F0}', route: '/progress' },
       { label: 'Sessions', icon: '\u{1F4C5}', route: '/sessions' },
       { label: 'Reports', icon: '\u{1F4C8}', route: '/reports' },

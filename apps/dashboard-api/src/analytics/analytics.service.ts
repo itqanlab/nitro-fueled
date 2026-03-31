@@ -50,6 +50,18 @@ export class AnalyticsService {
     return { data, total: data.length };
   }
 
+  public getAllLauncherMetrics(): LauncherMetricsResponseDto | null {
+    const workers = this.cortex.getWorkers();
+    if (!workers) return null;
+
+    const grouped = this.groupWorkersByLauncher(workers);
+    const data = Array.from(grouped.entries()).map(([launcher, ws]) =>
+      this.aggregateLauncherWorkers(launcher, ws),
+    );
+
+    return { data, total: data.length };
+  }
+
   // ============================================================
   // Routing Recommendations
   // ============================================================

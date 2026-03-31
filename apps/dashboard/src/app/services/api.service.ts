@@ -61,6 +61,9 @@ import type {
   SessionActionResponse,
   UpdateSessionConfigRequest,
   UpdateSessionConfigResponse,
+  AnalyticsModelPerfResponse,
+  AnalyticsLauncherMetricsResponse,
+  AnalyticsRoutingRecommendationsResponse,
 } from '../models/api.types';
 import type { ReportsOverview } from '../models/reports.model';
 
@@ -344,6 +347,37 @@ export class ApiService {
     if (extra?.limit !== undefined) params = params.set('limit', String(extra.limit));
     if (extra?.offset !== undefined) params = params.set('offset', String(extra.offset));
     return this.http.get<LogSearchResult>(`${this.base}/logs/search`, { params });
+  }
+
+  // ── Analytics Module (TASK_2026_216) ─────────────────────────────────────
+
+  public getAnalyticsModelPerformance(params?: { taskType?: string }): Observable<AnalyticsModelPerfResponse> {
+    let httpParams = new HttpParams();
+    if (params?.taskType !== undefined && isValidTaskType(params.taskType)) {
+      httpParams = httpParams.set('taskType', params.taskType);
+    }
+    return this.http.get<AnalyticsModelPerfResponse>(
+      `${this.base}/analytics/model-performance`,
+      { params: httpParams },
+    );
+  }
+
+  public getAnalyticsModelPerformanceById(modelId: string): Observable<AnalyticsModelPerfResponse> {
+    return this.http.get<AnalyticsModelPerfResponse>(
+      `${this.base}/analytics/model-performance/${encodeURIComponent(modelId)}`,
+    );
+  }
+
+  public getAnalyticsLaunchers(): Observable<AnalyticsLauncherMetricsResponse> {
+    return this.http.get<AnalyticsLauncherMetricsResponse>(
+      `${this.base}/analytics/launchers`,
+    );
+  }
+
+  public getAnalyticsRoutingRecommendations(): Observable<AnalyticsRoutingRecommendationsResponse> {
+    return this.http.get<AnalyticsRoutingRecommendationsResponse>(
+      `${this.base}/analytics/routing-recommendations`,
+    );
   }
 
   // ── Command Console ──────────────────────────────────────────────────────

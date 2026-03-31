@@ -42,6 +42,17 @@ export class AnalyticsController {
     return result;
   }
 
+  @Get('launchers')
+  @ApiOperation({ summary: 'All launchers with aggregated worker metrics' })
+  public getAllLauncherMetrics(): LauncherMetricsResponseDto {
+    const result = this.analyticsService.getAllLauncherMetrics();
+    if (!result) {
+      this.logger.warn('getAllLauncherMetrics: cortex DB unavailable');
+      throw new ServiceUnavailableException('Cortex DB is not available');
+    }
+    return result;
+  }
+
   @Get('launcher/:launcherId')
   @ApiOperation({ summary: 'Per-launcher worker metrics (cost, tokens, completion rate)' })
   @ApiParam({ name: 'launcherId', description: 'Launcher identifier (e.g. claude-code)', example: 'claude-code' })

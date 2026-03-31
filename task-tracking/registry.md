@@ -219,7 +219,7 @@
 | TASK_2026_214 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_215 | COMPLETE    | FEATURE | Untitled | 2026-03-30 | default |
 | TASK_2026_216 | COMPLETE    | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
-| TASK_2026_217 | CREATED     | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
+| TASK_2026_217 | IN_PROGRESS | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
 | TASK_2026_218 | CREATED     | FEATURE | Session Creation Advanced Options Panel | 2026-03-30 | default |
 | TASK_2026_219 | CREATED     | FEATURE | Session View — Empty Queue State & Completion Banner | 2026-03-30 | default |
 | TASK_2026_220 | CANCELLED   | RESEARCH | Launcher Interface Definition | 2026-03-31 | default |

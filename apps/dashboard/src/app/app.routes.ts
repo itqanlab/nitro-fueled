@@ -60,6 +60,13 @@ export const APP_ROUTES: Routes = [
       },
       { path: 'providers', component: ProviderHubComponent },
       {
+        path: 'analytics/model-performance',
+        loadComponent: () =>
+          import('./views/analytics/model-performance/model-perf-analytics.component').then(
+            (m) => m.ModelPerfAnalyticsComponent,
+          ),
+      },
+      {
         path: 'telemetry/model-performance',
         loadComponent: () =>
           import('./views/model-performance/model-performance.component').then(

@@ -652,6 +652,58 @@ export interface CortexPhaseTiming {
   max_duration_minutes: number | null;
 }
 
+// ── Analytics Module types (TASK_2026_216 endpoints) ─────────────────────────
+
+/** One row from GET /api/analytics/model-performance. */
+export interface AnalyticsModelPerfRow {
+  readonly model: string;
+  readonly taskType: string | null;
+  readonly phaseCount: number;
+  readonly reviewCount: number;
+  readonly avgDurationMinutes: number | null;
+  readonly totalInputTokens: number;
+  readonly totalOutputTokens: number;
+  /** Average score given by this model when acting as a reviewer (0–10). */
+  readonly avgReviewScore: number | null;
+}
+
+export interface AnalyticsModelPerfResponse {
+  readonly data: readonly AnalyticsModelPerfRow[];
+  readonly total: number;
+}
+
+/** Aggregated metrics for one launcher. */
+export interface AnalyticsLauncherMetrics {
+  readonly launcher: string;
+  readonly totalWorkers: number;
+  readonly completedCount: number;
+  readonly failedCount: number;
+  readonly completionRate: number;
+  readonly totalCost: number;
+  readonly totalInputTokens: number;
+  readonly totalOutputTokens: number;
+}
+
+export interface AnalyticsLauncherMetricsResponse {
+  readonly data: readonly AnalyticsLauncherMetrics[];
+  readonly total: number;
+}
+
+/** One routing recommendation from GET /api/analytics/routing-recommendations. */
+export interface AnalyticsRoutingRecommendation {
+  readonly taskType: string;
+  readonly recommendedModel: string;
+  readonly reason: string;
+  readonly avgBuilderScore: number | null;
+  readonly avgDurationMinutes: number | null;
+  readonly evidenceCount: number;
+}
+
+export interface AnalyticsRoutingRecommendationsResponse {
+  readonly recommendations: readonly AnalyticsRoutingRecommendation[];
+  readonly total: number;
+}
+
 // ── Provider Quota types ──────────────────────────────────────────────────────
 
 export type ProviderId = 'glm' | 'anthropic' | 'openai';
