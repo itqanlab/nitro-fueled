@@ -121,7 +121,7 @@ Session registration and worker-slot accounting are multi-session safe only when
 
 | Need | Use THIS | NEVER use |
 |------|----------|-----------|
-| Task list/status | `get_tasks(compact: true)` MCP | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling |
+| Task list/status | `get_tasks(compact: true)` MCP — filter to active statuses only, **NEVER `status: "COMPLETE"`** | `npx nitro-fueled status`, `Read registry.md`, `Grep registry.md`, status-file polling, `get_tasks(status: "COMPLETE")` |
 | Task list/status during pre-flight | `get_tasks(compact: true)` MCP columns ONLY | `npx nitro-fueled status`, `cat task.md`, `Read task.md`, `Bash` on any task file — pre-flight reads registry columns ONLY, no task.md under any circumstance |
 | Task metadata before spawn | `get_task_context(task_id)` MCP | `cat task.md`, `Read task.md`, `Bash` on task files |
 | Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
@@ -347,6 +347,6 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 8. **A completed task triggers immediate re-evaluation** of the dependency graph
 9. **Graceful degradation** -- one failure never crashes the loop
 10. **Zero project assumptions** -- works in any Nitro-Fueled project
-11. **Spawn the right worker type** -- Determine Worker Mode (single/split) from task metadata or Complexity auto-selection. In single mode: Build Worker for CREATED, Review Worker for IMPLEMENTED. In split mode: Prep Worker for CREATED, Implement Worker for PREPPED, Review Worker for IMPLEMENTED. Prep Workers always use `nitro-software-architect` and default to sonnet model.
+11. **Spawn the right worker type** -- Determine Worker Mode (single/split) from task metadata or Complexity auto-selection. In single mode: Build Worker for CREATED, Review Worker for IMPLEMENTED. In split mode: Prep Worker for CREATED, Implement Worker for PREPPED, Review Worker for IMPLEMENTED. Default routing (data-driven from 143-worker analysis): Prep → claude/claude-sonnet-4-6, Implement → glm/glm-5.1 (retry with claude on fail), Review → claude/claude-sonnet-4-6. Prep Workers always use `nitro-software-architect`.
 12. **Build-first by default** -- CREATED (build/prep) tasks fill slots before PREPPED (implement) and IMPLEMENTED (review) tasks. Override with `--priority review-first` or `--priority balanced`. At least 1 slot goes to builds when CREATED tasks exist.
 13. **One line per event** — all structured output (tables, queues, wave summaries) goes to the DB event stream or optional session artifacts; conversation receives exactly one line per event (see Per-Phase Output Budget in HARD RULES)

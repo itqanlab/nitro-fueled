@@ -170,10 +170,12 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
      - `READY_FOR_IMPLEMENT` (split mode) → First-Run Implement Worker Prompt
      - `READY_FOR_REVIEW` → First-Run Review+Fix Worker Prompt
    - For retries, use the corresponding Retry prompt template.
-5. **Resolve provider/model**:
-   - Prep Workers default to `claude-sonnet-4-6` (planning doesn't need opus). Override if the task's Model field is explicitly set.
-   - Implement Workers use the task's Model field (or system default).
-   - Build Workers and Review Workers: unchanged routing.
+5. **Resolve provider/model** (data-driven defaults from 143-worker analysis):
+   - **Prep Workers**: default to `claude` provider, `claude-sonnet-4-6` model (100% success, $0.13/worker). Override if the task's Model field is explicitly set.
+   - **Implement Workers**: default to `glm` provider, `zai-coding-plan/glm-5.1` model ($0/worker). On first failure, retry with `claude` provider, `claude-sonnet-4-6`. GLM is free — even at 50-60% success rate, the expected cost ($0.80/task) beats claude-only ($1.60/task).
+   - **Build Workers** (single mode): default to `claude` provider, `claude-sonnet-4-6` model (97% success, $0.85/worker).
+   - **Review+Fix Workers**: default to `claude` provider, `claude-sonnet-4-6` model (100% success across 17 reviews, $0.78/worker). Do NOT use gpt-5.4 for reviews ($1.99/worker, 90% success) or glm-4.7 (67% success).
+   - Override any default if the task's Model/Provider fields are explicitly set.
 6. Claim the task atomically if Step 4 did not already claim it.
 7. Call `spawn_worker(...)` with the resolved prompt, model, and provider.
 8. On success, persist active-worker state to the DB with `update_session()`.
@@ -220,7 +222,9 @@ When `cortex_available = false`, the legacy file-based fallback still applies. T
 2. For a Prep Worker completion, accept the event as the authoritative signal that the task reached `PREPPED`. The task is now `READY_FOR_IMPLEMENT` — it will be picked up in the next Step 4 cycle.
 3. For a Build Worker or Implement Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
 4. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
-4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks. Avoid `get_tasks(status: "COMPLETE")`; if `get_tasks()` is needed for broader reconciliation, always use `compact: true` and provide a bounded `limit`.
+4. If the loop is reconciling a worker without an event, call `get_task_context(task_id)` for single-task status checks.
+
+> **NEVER call `get_tasks(status: "COMPLETE")`** — fetching completed tasks in bulk is always wasteful and forbidden inside the loop. COMPLETE tasks are only needed for dependency resolution, which is already handled by `get_next_wave` or by the dependency fields in the current-tick `get_tasks(compact: true)` call (which uses non-terminal status filters). If `get_tasks()` is needed for broader reconciliation, filter to active statuses only: `status` in `[CREATED, IN_PROGRESS, PREPPED, IMPLEMENTING, IMPLEMENTED, IN_REVIEW]` and always use `compact: true` with a bounded `limit`.
 5. Release or update the task through MCP (`release_task()` / `update_task()`) as required by the implementation.
 6. Update the session DB record with completed/failed worker bookkeeping.
 7. Re-evaluate only the affected dependents using the latest `get_tasks()` data; do not do file-based downstream checks.
