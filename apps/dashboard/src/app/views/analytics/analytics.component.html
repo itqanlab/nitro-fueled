@@ -14,32 +14,12 @@
 
   <!-- Filter Bar -->
   <div class="filter-bar">
-    <div class="period-group" role="group" aria-label="Time period filter">
-      <button
-        type="button"
-        class="period-btn"
-        [class.active]="selectedPeriod === '7d'"
-        (click)="selectPeriod('7d')"
-      >7d</button>
-      <button
-        type="button"
-        class="period-btn"
-        [class.active]="selectedPeriod === '30d'"
-        (click)="selectPeriod('30d')"
-      >30d</button>
-      <button
-        type="button"
-        class="period-btn"
-        [class.active]="selectedPeriod === 'month'"
-        (click)="selectPeriod('month')"
-      >This Month</button>
-      <button
-        type="button"
-        class="period-btn"
-        [class.active]="selectedPeriod === 'custom'"
-        (click)="selectPeriod('custom')"
-      >Custom</button>
-    </div>
+    <app-button-group
+      [options]="periodOptions"
+      [selected]="selectedPeriod"
+      (selectionChange)="onPeriodChange($event)"
+      aria-label="Time period filter"
+    />
     <div class="filter-selects">
       <div class="select-wrapper">
         <select

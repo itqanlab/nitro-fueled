@@ -11,13 +11,14 @@ import type {
 import { buildAnalyticsData, FALLBACK_ANALYTICS_DATA } from './analytics.adapters';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { StatusIndicatorComponent } from '../../shared/status-indicator/status-indicator.component';
+import { ButtonGroupComponent } from '../../shared/button-group/button-group.component';
 
 const DAILY_BUDGET_MAX = 50;
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [NgClass, DecimalPipe, BadgeComponent, StatusIndicatorComponent],
+  imports: [NgClass, DecimalPipe, BadgeComponent, StatusIndicatorComponent, ButtonGroupComponent],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,6 +41,14 @@ export class AnalyticsComponent {
   );
 
   public selectedPeriod: FilterPeriod = '30d';
+
+  public readonly periodOptions: { id: string; label: string }[] = [
+    { id: '7d', label: '7d' },
+    { id: '30d', label: '30d' },
+    { id: 'month', label: 'This Month' },
+    { id: 'custom', label: 'Custom' },
+  ];
+
   public selectedClient = 'All Clients';
   public selectedTeam = 'All Teams';
   public selectedProject = 'All Projects';
@@ -134,6 +143,10 @@ export class AnalyticsComponent {
   public selectPeriod(period: FilterPeriod): void {
     this.selectedPeriod = period;
     this.recomputeDerived();
+  }
+
+  public onPeriodChange(id: string): void {
+    this.selectPeriod(id as FilterPeriod);
   }
 
   public onClientChange(event: Event): void {
