@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { NgClass } from '@angular/common';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, catchError, interval, switchMap } from 'rxjs';
+import { interval } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { WebSocketService } from '../../../services/websocket.service';
 import type {
@@ -57,12 +57,6 @@ export class SessionsPanelComponent {
     interval(30_000).pipe(
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => this.now.set(Date.now()));
-
-    // Background: close stale sessions every 5 minutes while this view is open
-    interval(5 * 60_000).pipe(
-      takeUntilDestroyed(this.destroyRef),
-      switchMap(() => this.apiService.closeStaleSession(30).pipe(catchError(() => EMPTY))),
-    ).subscribe();
   }
 
   public onSessionClick(session: ActiveSessionSummary): void {
@@ -76,9 +70,8 @@ export class SessionsPanelComponent {
     const cortexHbMap = new Map<string, string | null>(
       this.cortexSessions().map(s => [s.id, s.last_heartbeat]),
     );
-    const allSessions = [...this.sessions(), ...this.recentSessions()];
+    const allSessions = this.sessions();
     for (const session of allSessions) {
-      if (session.status !== 'running') continue;
       const hb = session.lastHeartbeat ?? cortexHbMap.get(session.sessionId) ?? null;
       if (!hb) {
         map.set(session.sessionId, { label: 'No heartbeat', cssClass: 'heartbeat-stale' });
@@ -104,6 +97,15 @@ export class SessionsPanelComponent {
     return map;
   });
 
+  public readonly startedAtLabels = computed(() => {
+    const all = [...this.sessions(), ...this.recentSessions()];
+    const map = new Map<string, string>();
+    for (const session of all) {
+      map.set(session.sessionId, session.startedAt.length >= 16 ? session.startedAt.slice(11, 16) : session.startedAt);
+    }
+    return map;
+  });
+
   public readonly truncatedActivities = computed(() => {
     const active = this.sessions();
     const recent = this.recentSessions();
@@ -124,17 +126,14 @@ export class SessionsPanelComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: (data) => {
-        if (data.length > 0) {
-          const running = data.filter(s => s.status === 'running');
-          const recent = data.filter(s => s.status !== 'running');
-          this.sessions.set(running);
-          this.recentSessions.set(recent);
-        } else {
-          this.loadMockData();
-        }
+        const running = data.filter(s => s.status === 'running');
+        const recent = data.filter(s => s.status !== 'running');
+        this.sessions.set(running);
+        this.recentSessions.set(recent);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
+        console.warn('[SessionsPanel] loadSessions failed, falling back to mock:', err);
         this.loadMockData();
         this.loading.set(false);
       },
@@ -144,7 +143,7 @@ export class SessionsPanelComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: (sessions) => this.cortexSessions.set(sessions),
-      error: () => { /* best-effort — silently ignore */ },
+      error: (err: unknown) => { console.warn('[SessionsPanel] getCortexSessions failed:', err); },
     });
   }
 

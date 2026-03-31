@@ -145,8 +145,6 @@ export class SessionsService {
     duration: string;
   }> {
     const activeSessions = this.getSessions().filter(s => s.isActive);
-    const phases: Array<'PM' | 'Architect' | 'Team-Leader' | 'Dev' | 'QA'> = ['PM', 'Architect', 'Team-Leader', 'Dev', 'QA'];
-    const statuses: Array<'running' | 'idle' | 'completed' | 'failed'> = ['running', 'idle', 'completed', 'failed'];
 
     return activeSessions.map(session => {
       const started = new Date(session.started);
@@ -154,17 +152,40 @@ export class SessionsService {
       const diffMs = now.getTime() - started.getTime();
       const duration = this.formatDuration(diffMs);
 
+      const projectName = session.source ? (session.source.split('/').pop() ?? session.source) : '—';
+
+      const currentPhase = this.derivePhase(session.loopStatus);
+      const status = this.deriveStatus(session.loopStatus);
+
       return {
         sessionId: session.sessionId,
-        taskId: `TASK_${session.sessionId.slice(8, 12)}_${session.sessionId.slice(13, 16)}`,
+        taskId: projectName,
         taskTitle: `Auto-pilot session for ${session.source}`,
         startedAt: session.started,
-        currentPhase: phases[Math.floor(Math.random() * phases.length)],
-        status: session.loopStatus === 'RUNNING' ? 'running' : statuses[Math.floor(Math.random() * statuses.length)],
-        lastActivity: `Processing task ${session.taskCount} items`,
+        currentPhase,
+        status,
+        lastActivity: `Processing ${session.taskCount} task item${session.taskCount !== 1 ? 's' : ''}`,
         duration,
       };
     });
+  }
+
+  private derivePhase(loopStatus: string): 'PM' | 'Architect' | 'Team-Leader' | 'Dev' | 'QA' {
+    switch (loopStatus) {
+      case 'RUNNING': return 'Dev';
+      case 'WAITING': return 'PM';
+      case 'REVIEWING': return 'QA';
+      default: return 'Dev';
+    }
+  }
+
+  private deriveStatus(loopStatus: string): 'running' | 'idle' | 'completed' | 'failed' {
+    switch (loopStatus) {
+      case 'RUNNING': return 'running';
+      case 'COMPLETED': return 'completed';
+      case 'FAILED': return 'failed';
+      default: return 'idle';
+    }
   }
 
   private formatDuration(ms: number): string {

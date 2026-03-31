@@ -31,6 +31,7 @@ import { ReportsService } from './reports.service';
 import { ProgressCenterService } from './progress-center.service';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
+const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/;
 
 /**
  * DashboardController — Internal dev-tool API.
@@ -226,7 +227,10 @@ export class DashboardController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('sessions/:id')
-  public async getSession(@Param('id') id: string) {
+  public async getSession(@Param('id') id: string): Promise<Awaited<ReturnType<SessionsHistoryService['getSessionDetail']>>> {
+    if (!SESSION_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid session ID format' });
+    }
     const result = await this.sessionsHistoryService.getSessionDetail(id);
     if (result === null) {
       if (!this.cortexService.isAvailable()) {
@@ -288,6 +292,9 @@ export class DashboardController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   @Get('sessions/:id/detail')
   public getSessionDetail(@Param('id') id: string): { sessionId: string; messages: Array<{ timestamp: string; type: string; content: string }> } | { error: string } {
+    if (!SESSION_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid session ID format' });
+    }
     const session = this.sessionsService.getSession(id);
     if (!session) {
       throw new NotFoundException({ error: 'Session not found' });
@@ -507,6 +514,9 @@ export class DashboardController {
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
   @Get('cortex/sessions/:id')
   public getCortexSession(@Param('id') id: string): ReturnType<CortexService['getSessionSummary']> {
+    if (!SESSION_ID_RE.test(id)) {
+      throw new BadRequestException({ error: 'Invalid session ID format' });
+    }
     if (!this.cortexService.isAvailable()) {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
     }

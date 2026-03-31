@@ -34,7 +34,7 @@
               <div class="session-title">{{ session.taskTitle }}</div>
               <div class="session-meta">
                 <div class="session-phase" [ngClass]="phaseClassMap[session.currentPhase]">{{ session.currentPhase }}</div>
-                <span class="session-started">{{ session.startedAt.slice(11, 16) }}</span>
+                <span class="session-started">{{ startedAtLabels().get(session.sessionId) }}</span>
               </div>
               <div class="session-activity">
                 <span class="activity-label">Last activity:</span>
