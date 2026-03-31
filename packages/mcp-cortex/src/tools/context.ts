@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, basename, resolve, sep } from 'node:path';
 import type { ToolResult } from './types.js';
+import { mcpLogger } from '../utils/logger.js';
 
 // Map from review-lesson file suffix to the file extensions they cover.
 // Files NOT in this map are treated as unknown and are NOT auto-included —
@@ -71,7 +72,7 @@ export function handleGetTaskContext(
     const parsed = JSON.parse((task['file_scope'] as string) ?? '[]');
     if (Array.isArray(parsed)) fileScope = parsed as string[];
   } catch {
-    console.error(`[nitro-cortex] get_task_context: failed to parse file_scope for ${args.task_id}, defaulting to empty`);
+    mcpLogger.error(`get_task_context: failed to parse file_scope for ${args.task_id}, defaulting to empty`);
   }
 
   // If no file_scope in DB, try reading from task.md
@@ -93,7 +94,7 @@ export function handleGetTaskContext(
     const parsed = JSON.parse((task['dependencies'] as string) ?? '[]');
     if (Array.isArray(parsed)) deps = parsed as string[];
   } catch {
-    console.error(`[nitro-cortex] get_task_context: failed to parse dependencies for ${args.task_id}, defaulting to empty`);
+    mcpLogger.error(`get_task_context: failed to parse dependencies for ${args.task_id}, defaulting to empty`);
   }
 
   const result = {

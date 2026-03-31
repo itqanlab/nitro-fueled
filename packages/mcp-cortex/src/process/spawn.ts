@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { mcpLogger } from '../utils/logger.js';
 
 export type Provider = 'claude' | 'glm' | 'opencode' | 'codex';
 
@@ -145,7 +146,7 @@ export function resolveGlmApiKey(workingDirectory: string): string | undefined {
     }
     return apiKey;
   } catch {
-    console.error(`[nitro-cortex] failed to parse ${configPath} for GLM key`);
+    mcpLogger.error(`failed to parse ${configPath} for GLM key`);
     return undefined;
   }
 }

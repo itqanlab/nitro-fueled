@@ -1,6 +1,7 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
+import { logger } from '../utils/logger.js';
 import {
   readConfig,
   readGlobalConfig,
@@ -18,24 +19,24 @@ import {
 } from '../utils/provider-flow.js';
 
 async function runCheckMode(cwd: string): Promise<void> {
-  console.log('\nLaunchers:');
+  logger.log('\nLaunchers:');
   const statuses = getProviderStatus(cwd);
   printProviderStatusTable(statuses);
 
   const config = readConfig(cwd) ?? readGlobalConfig();
   if (config === null) {
-    console.log('\nNo config found. Run `npx nitro-fueled config` to set up.');
+    logger.log('\nNo config found. Run `npx nitro-fueled config` to set up.');
     process.exitCode = 1;
     return;
   }
 
   const missing = statuses.filter((s) => s.status === 'failed' || s.status === 'not configured');
-  console.log(missing.length === statuses.length ? '\nNot ready — no launchers detected.' : '\nReady to run.');
+  logger.log(missing.length === statuses.length ? '\nNot ready — no launchers detected.' : '\nReady to run.');
   if (missing.length === statuses.length) process.exitCode = 1;
 }
 
 async function runTestMode(cwd: string): Promise<void> {
-  console.log('\nLaunchers:');
+  logger.log('\nLaunchers:');
   const statuses = getProviderStatus(cwd);
   printProviderStatusTable(statuses);
 
@@ -46,7 +47,7 @@ async function runTestMode(cwd: string): Promise<void> {
 function runUnloadMode(providerArg: string): void {
   const config = readGlobalConfig();
   if (config === null) {
-    console.log(`  No config found — nothing to unload.`);
+    logger.log(`  No config found — nothing to unload.`);
     return;
   }
 
@@ -67,7 +68,7 @@ function runUnloadMode(providerArg: string): void {
   }
 
   if (!changed) {
-    console.log(`  ${providerArg} is not configured — nothing to unload.`);
+    logger.log(`  ${providerArg} is not configured — nothing to unload.`);
     return;
   }
 
@@ -75,11 +76,11 @@ function runUnloadMode(providerArg: string): void {
     writeConfig(config);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`  ✗ Failed to save config: ${msg}`);
+    logger.error(`  ✗ Failed to save config: ${msg}`);
     process.exitCode = 1;
     return;
   }
-  console.log(`  ✓ ${providerArg} unloaded from config.`);
+  logger.log(`  ✓ ${providerArg} unloaded from config.`);
 }
 
 async function runDetectionWizard(cwd: string): Promise<void> {
@@ -106,7 +107,7 @@ async function runDetectionWizard(cwd: string): Promise<void> {
     writeConfig(config);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`\n  ✗ Failed to save config: ${msg}`);
+    logger.error(`\n  ✗ Failed to save config: ${msg}`);
     process.exitCode = 1;
     return;
   }
@@ -117,8 +118,8 @@ async function runDetectionWizard(cwd: string): Promise<void> {
     .map(([name]) => `${name} ✓`)
     .join('  ');
 
-  console.log(`\n  Launchers: ${connected || 'none'}`);
-  console.log(`\nConfig saved to ${getGlobalConfigPath()}`);
+  logger.log(`\n  Launchers: ${connected || 'none'}`);
+  logger.log(`\nConfig saved to ${getGlobalConfigPath()}`);
 }
 
 export default class Config extends BaseCommand {
@@ -134,17 +135,17 @@ export default class Config extends BaseCommand {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Config);
     const cwd = process.cwd();
-    console.log('');
-    console.log('nitro-fueled config');
-    console.log('===================');
+    logger.log('');
+    logger.log('nitro-fueled config');
+    logger.log('===================');
 
     if (flags.reset) {
       const configPath = getGlobalConfigPath();
       if (existsSync(configPath)) {
         unlinkSync(configPath);
-        console.log('\nConfig removed. Run `npx nitro-fueled config` to start fresh.');
+        logger.log('\nConfig removed. Run `npx nitro-fueled config` to start fresh.');
       } else {
-        console.log('\nNo config file found.');
+        logger.log('\nNo config file found.');
       }
       return;
     }

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
+import { mcpLogger } from '../utils/logger.js';
 import { normalizeSessionId } from './session-id.js';
 
 // Sentinel used for system-initiated events that have no associated user session.
@@ -109,7 +110,7 @@ export function handleGetTasks(
       try {
         deps = JSON.parse((row['dependencies'] as string) ?? '[]');
       } catch (err) {
-        console.error(`[nitro-cortex] get_tasks: failed to parse dependencies for task ${row['id'] as string}, treating as no deps`, err);
+        mcpLogger.error(`get_tasks: failed to parse dependencies for task ${row['id'] as string}, treating as no deps`, err);
         deps = [];
       }
       if (!Array.isArray(deps)) deps = [];

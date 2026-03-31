@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { logger } from './logger.js';
 
 export interface CoreFileEntry {
   checksum: string;
@@ -45,12 +46,12 @@ export function readManifest(cwd: string): Manifest | null {
     const raw = readFileSync(manifestPath, 'utf8');
     const parsed: unknown = JSON.parse(raw);
     if (!isManifest(parsed)) {
-      console.error(`Warning: manifest.json has unexpected shape, ignoring`);
+      logger.error(`Warning: manifest.json has unexpected shape, ignoring`);
       return null;
     }
     return parsed;
   } catch (err: unknown) {
-    console.error(`Warning: failed to read manifest.json: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(`Warning: failed to read manifest.json: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }

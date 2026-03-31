@@ -1,4 +1,5 @@
 import { readConfig, readGlobalConfig, type LauncherName } from './provider-config.js';
+import { logger } from './logger.js';
 
 export type ProviderStatus = 'connected' | 'failed' | 'not configured';
 
@@ -56,12 +57,12 @@ export function getProviderStatus(cwd: string): ProviderStatusResult[] {
 
 /** Print the provider status table to stdout. */
 export function printProviderStatusTable(statuses: ProviderStatusResult[]): void {
-  console.log('Launcher Status');
-  console.log('───────────────');
+  logger.log('Launcher Status');
+  logger.log('───────────────');
   for (const s of statuses) {
     const icon = s.status === 'connected' ? '✓' : s.status === 'failed' ? '✗' : '-';
     const detail = s.detail !== undefined ? ` (${s.detail})` : '';
     const label = s.status === 'not configured' ? 'not configured' : s.status;
-    console.log(`  ${icon} ${s.name.padEnd(12)} ${label}${detail}`);
+    logger.log(`  ${icon} ${s.name.padEnd(12)} ${label}${detail}`);
   }
 }

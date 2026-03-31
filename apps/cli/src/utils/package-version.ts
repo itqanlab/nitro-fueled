@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { logger } from './logger.js';
 
 const pkgRequire = createRequire(import.meta.url);
 
@@ -14,7 +15,7 @@ export function getPackageVersion(): string {
       if (typeof v === 'string') return v;
     }
   } catch (err: unknown) {
-    console.error(
+    logger.error(
       `Warning: could not read package.json version: ${err instanceof Error ? err.message : String(err)}`
     );
   }

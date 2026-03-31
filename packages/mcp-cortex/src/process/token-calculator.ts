@@ -1,4 +1,5 @@
 import type { WorkerCost } from '../db/schema.js';
+import { mcpLogger } from '../utils/logger.js';
 
 /**
  * Context window sizes (in tokens) per model.
@@ -95,7 +96,7 @@ export function calculateCost(
 ): WorkerCost {
   const p = PRICING[model];
   if (!p) {
-    console.warn(`[token-calculator] No pricing for model "${model}", reporting $0`);
+    mcpLogger.warn(`[token-calculator] No pricing for model "${model}", reporting $0`);
   }
   const pricing = p ?? ZERO_PRICING;
   const inputCost = (totalInput / 1_000_000) * pricing.input_per_mtok;

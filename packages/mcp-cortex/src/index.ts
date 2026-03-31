@@ -4,6 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { join } from 'node:path';
+import { mcpLogger } from './utils/logger.js';
 import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
 import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims, handleBulkUpdateTasks, handleGetBacklogSummary } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
@@ -26,11 +27,11 @@ import { handleLogCompatibility, handleQueryCompatibility } from './tools/compat
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
 
-console.error(`[nitro-cortex] project root: ${projectRoot}`);
-console.error(`[nitro-cortex] database: ${dbPath}`);
+mcpLogger.info(`project root: ${projectRoot}`);
+mcpLogger.info(`database: ${dbPath}`);
 
 const db = initDatabase(dbPath);
-console.error('[nitro-cortex] database initialized');
+mcpLogger.info('database initialized');
 
 const jsonlWatcher = new JsonlWatcher(db);
 const fileWatcher = new FileWatcher();
@@ -779,7 +780,7 @@ jsonlWatcher.start();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-console.error('[nitro-cortex] MCP server connected via stdio (v0.6.0 — sessions + workers + handoffs + events + agent-context + telemetry + providers)');
+mcpLogger.info('MCP server connected via stdio (v0.6.0 — sessions + workers + handoffs + events + agent-context + telemetry + providers)');
 
 process.on('SIGINT', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });
 process.on('SIGTERM', () => { jsonlWatcher.stop(); fileWatcher.closeAll(); db.close(); process.exit(0); });

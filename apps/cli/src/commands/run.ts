@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
+import { logger } from '../utils/logger.js';
 import type { RegistryRow } from '../utils/registry.js';
 import { parseRegistry } from '../utils/registry.js';
 import { basicPreflightChecks, preflightChecks } from '../utils/preflight.js';
@@ -43,74 +44,74 @@ function displaySummary(rows: RegistryRow[], options: RunFlags): void {
   const interval = options.interval ?? '10m';
   const mode = options['dry-run'] ? 'dry-run' : 'all';
 
-  console.log('');
-  console.log('SUPERVISOR STARTING');
-  console.log('-------------------');
-  console.log(`Total tasks in registry: ${rows.length}`);
-  console.log(`Ready for build (CREATED): ${created}`);
-  console.log(`Building (IN_PROGRESS): ${inProgress}`);
-  console.log(`Ready for review (IMPLEMENTED): ${implemented}`);
-  console.log(`Reviewing (IN_REVIEW): ${inReview}`);
-  console.log(`Complete: ${complete}`);
-  console.log(`Failed: ${failed}`);
-  console.log(`Blocked/Cancelled: ${blockedCancelled}`);
-  console.log(`Concurrency limit: ${concurrency}`);
-  console.log(`Monitoring interval: ${interval}`);
-  console.log(`Mode: ${mode}`);
-  console.log('');
+  logger.log('');
+  logger.log('SUPERVISOR STARTING');
+  logger.log('-------------------');
+  logger.log(`Total tasks in registry: ${rows.length}`);
+  logger.log(`Ready for build (CREATED): ${created}`);
+  logger.log(`Building (IN_PROGRESS): ${inProgress}`);
+  logger.log(`Ready for review (IMPLEMENTED): ${implemented}`);
+  logger.log(`Reviewing (IN_REVIEW): ${inReview}`);
+  logger.log(`Complete: ${complete}`);
+  logger.log(`Failed: ${failed}`);
+  logger.log(`Blocked/Cancelled: ${blockedCancelled}`);
+  logger.log(`Concurrency limit: ${concurrency}`);
+  logger.log(`Monitoring interval: ${interval}`);
+  logger.log(`Mode: ${mode}`);
+  logger.log('');
 }
 
 function displayDryRun(rows: RegistryRow[]): void {
-  console.log('DRY RUN -- Execution Plan');
-  console.log('========================');
-  console.log('');
+  logger.log('DRY RUN -- Execution Plan');
+  logger.log('========================');
+  logger.log('');
 
   const readyForBuild = rows.filter((r) => r.status === 'CREATED');
   const building = rows.filter((r) => r.status === 'IN_PROGRESS');
   const readyForReview = rows.filter((r) => r.status === 'IMPLEMENTED');
   const reviewing = rows.filter((r) => r.status === 'IN_REVIEW');
 
-  console.log('Task Classification:');
+  logger.log('Task Classification:');
   for (const t of readyForBuild) {
-    console.log(`  ${t.id} (${t.type}) -- READY_FOR_BUILD`);
+    logger.log(`  ${t.id} (${t.type}) -- READY_FOR_BUILD`);
   }
   for (const t of building) {
-    console.log(`  ${t.id} (${t.type}) -- BUILDING`);
+    logger.log(`  ${t.id} (${t.type}) -- BUILDING`);
   }
   for (const t of readyForReview) {
-    console.log(`  ${t.id} (${t.type}) -- READY_FOR_REVIEW`);
+    logger.log(`  ${t.id} (${t.type}) -- READY_FOR_REVIEW`);
   }
   for (const t of reviewing) {
-    console.log(`  ${t.id} (${t.type}) -- REVIEWING`);
+    logger.log(`  ${t.id} (${t.type}) -- REVIEWING`);
   }
 
-  console.log('');
-  console.log('Execution Order:');
+  logger.log('');
+  logger.log('Execution Order:');
 
   let wave = 1;
   if (readyForReview.length > 0 || reviewing.length > 0) {
-    console.log(`  Wave ${wave} (immediate):`);
+    logger.log(`  Wave ${wave} (immediate):`);
     for (const t of readyForReview) {
-      console.log(`    Review: ${t.id} (${t.type}, ${t.description}) -- Review Worker`);
+      logger.log(`    Review: ${t.id} (${t.type}, ${t.description}) -- Review Worker`);
     }
     for (const t of reviewing) {
-      console.log(`    Review: ${t.id} (${t.type}, ${t.description}) -- Review Worker (resume)`);
+      logger.log(`    Review: ${t.id} (${t.type}, ${t.description}) -- Review Worker (resume)`);
     }
     wave++;
   }
 
   if (readyForBuild.length > 0 || building.length > 0) {
-    console.log(`  Wave ${wave} (${wave === 1 ? 'immediate' : 'concurrent'}):`);
+    logger.log(`  Wave ${wave} (${wave === 1 ? 'immediate' : 'concurrent'}):`);
     for (const t of readyForBuild) {
-      console.log(`    Build:  ${t.id} (${t.type}, ${t.description}) -- Build Worker`);
+      logger.log(`    Build:  ${t.id} (${t.type}, ${t.description}) -- Build Worker`);
     }
     for (const t of building) {
-      console.log(`    Build:  ${t.id} (${t.type}, ${t.description}) -- Build Worker (resume)`);
+      logger.log(`    Build:  ${t.id} (${t.type}, ${t.description}) -- Build Worker (resume)`);
     }
   }
 
-  console.log('');
-  console.log('No workers spawned (dry run).');
+  logger.log('');
+  logger.log('No workers spawned (dry run).');
 }
 
 function validateBatchOptions(options: RunFlags): string | null {
@@ -147,7 +148,7 @@ function buildAutoPilotArgs(options: RunFlags): string[] {
 async function startDashboardService(cwd: string): Promise<ChildProcess | null> {
   const entryScript = findEntryScript();
   if (entryScript === null) {
-    console.log('Dashboard service not found (skipping). Install @nitro-fueled/dashboard-service to enable the dashboard.');
+    logger.log('Dashboard service not found (skipping). Install @nitro-fueled/dashboard-service to enable the dashboard.');
     return null;
   }
 
@@ -157,7 +158,7 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
   // Check if already running
   const existingPort = await checkExistingService(portFilePath);
   if (existingPort !== null) {
-    console.log(`Dashboard already running at http://localhost:${existingPort}`);
+    logger.log(`Dashboard already running at http://localhost:${existingPort}`);
     return null;
   }
 
@@ -181,9 +182,9 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
 
   const actualPort = await pollForPortFile(portFilePath, STARTUP_TIMEOUT_MS);
   if (actualPort !== null) {
-    console.log(`Dashboard available at http://localhost:${actualPort}`);
+    logger.log(`Dashboard available at http://localhost:${actualPort}`);
   } else {
-    console.warn('Warning: Dashboard service did not start within timeout.');
+    logger.warn('Warning: Dashboard service did not start within timeout.');
   }
 
   return child;
@@ -243,7 +244,7 @@ export default class Run extends BaseCommand {
 
     // Validate --task shorthand format before expanding
     if (opts.task !== undefined && !/^\d{1,3}$/.test(opts.task)) {
-      console.error(`Error: Invalid --task value "${opts.task}". Expected a 1-3 digit number (e.g., 43 or 043).`);
+      logger.error(`Error: Invalid --task value "${opts.task}". Expected a 1-3 digit number (e.g., 43 or 043).`);
       process.exitCode = 1;
       return;
     }
@@ -262,8 +263,8 @@ export default class Run extends BaseCommand {
       if (opts['skip-connectivity']) batchOnlyUsed.push('--skip-connectivity');
       if (batchOnlyUsed.length > 0) {
         const plural = batchOnlyUsed.length === 1 ? 'is a batch-only option' : 'are batch-only options';
-        console.error(`Error: ${batchOnlyUsed.join(', ')} ${plural} and cannot be used with a task ID.`);
-        console.error('Remove the option(s) to run a single task, or omit the task ID for batch mode.');
+        logger.error(`Error: ${batchOnlyUsed.join(', ')} ${plural} and cannot be used with a task ID.`);
+        logger.error('Remove the option(s) to run a single task, or omit the task ID for batch mode.');
         process.exitCode = 1;
         return;
       }
@@ -276,16 +277,16 @@ export default class Run extends BaseCommand {
 
       const registryPath = resolve(cwd, 'task-tracking/registry.md');
       if (!existsSync(registryPath)) {
-        console.error('Error: task-tracking/registry.md not found.');
-        console.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
+        logger.error('Error: task-tracking/registry.md not found.');
+        logger.error('Run `npx nitro-fueled init` to scaffold the workspace first.');
         process.exitCode = 1;
         return;
       }
 
       const taskIdPattern = /^TASK_\d{4}_\d{3}$/;
       if (!taskIdPattern.test(taskId)) {
-        console.error(`Error: Invalid task ID format "${taskId}".`);
-        console.error('Expected format: TASK_YYYY_NNN (e.g., TASK_2026_010)');
+        logger.error(`Error: Invalid task ID format "${taskId}".`);
+        logger.error('Expected format: TASK_YYYY_NNN (e.g., TASK_2026_010)');
         process.exitCode = 1;
         return;
       }
@@ -293,28 +294,28 @@ export default class Run extends BaseCommand {
       const rows = parseRegistry(cwd);
       const task = rows.find((r) => r.id === taskId);
       if (task === undefined) {
-        console.error(`Error: Task ${taskId} not found in registry.`);
+        logger.error(`Error: Task ${taskId} not found in registry.`);
         process.exitCode = 1;
         return;
       }
 
       if (task.status === 'BLOCKED' || task.status === 'CANCELLED' || task.status === 'FAILED') {
-        console.error(`Error: Task ${taskId} is ${task.status} and cannot be processed.`);
+        logger.error(`Error: Task ${taskId} is ${task.status} and cannot be processed.`);
         process.exitCode = 1;
         return;
       }
 
       if (task.status === 'COMPLETE') {
-        console.warn(`Warning: Task ${taskId} is already COMPLETE.`);
+        logger.warn(`Warning: Task ${taskId} is already COMPLETE.`);
         process.exitCode = 1;
         return;
       }
 
-      console.log('');
-      console.log('ORCHESTRATING SINGLE TASK');
-      console.log('-------------------------');
-      console.log(`Task: ${taskId}`);
-      console.log('');
+      logger.log('');
+      logger.log('ORCHESTRATING SINGLE TASK');
+      logger.log('-------------------------');
+      logger.log(`Task: ${taskId}`);
+      logger.log('');
 
       spawnOrchestrate(cwd, taskId);
       return;
@@ -329,7 +330,7 @@ export default class Run extends BaseCommand {
 
     const validationError = validateBatchOptions(opts);
     if (validationError !== null) {
-      console.error(`Error: ${validationError}`);
+      logger.error(`Error: ${validationError}`);
       process.exitCode = 1;
       return;
     }
@@ -347,24 +348,24 @@ export default class Run extends BaseCommand {
     const providerIssues = checkProviderConfig(cwd);
     if (providerIssues.length > 0) {
       for (const issue of providerIssues) {
-        console.error(`Error: Provider ${issue.provider} — ${issue.message}`);
+        logger.error(`Error: Provider ${issue.provider} — ${issue.message}`);
       }
       process.exitCode = 1;
       return;
     }
 
     if (!opts['skip-connectivity']) {
-      console.log('Verifying MCP nitro-cortex connectivity...');
+      logger.log('Verifying MCP nitro-cortex connectivity...');
       const connectivity = testMcpConnectivity(result.mcpConfig);
       if (connectivity.status !== 'ok') {
-        console.error(`Error: ${connectivity.message}`);
-        console.error('');
-        console.error('Use --skip-connectivity to bypass this check.');
+        logger.error(`Error: ${connectivity.message}`);
+        logger.error('');
+        logger.error('Use --skip-connectivity to bypass this check.');
         process.exitCode = 1;
         return;
       }
-      console.log(connectivity.message);
-      console.log('');
+      logger.log(connectivity.message);
+      logger.log('');
     }
 
     // Start dashboard service in the background so it's available during the run.
@@ -373,7 +374,7 @@ export default class Run extends BaseCommand {
     try {
       dashboardProcess = await startDashboardService(cwd);
     } catch (err: unknown) {
-      console.warn(`Warning: Dashboard service failed to start: ${String(err)}`);
+      logger.warn(`Warning: Dashboard service failed to start: ${String(err)}`);
     }
 
     if (dashboardProcess !== null) {

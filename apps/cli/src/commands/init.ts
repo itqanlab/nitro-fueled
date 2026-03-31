@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
+import { logger } from '../utils/logger.js';
 import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
@@ -39,11 +40,11 @@ function prompt(question: string): Promise<string> {
 function generateAgent(cwd: string, proposal: AgentProposal): boolean {
   const agentPath = resolve(cwd, '.claude', 'agents', `${proposal.agentName}.md`);
   if (existsSync(agentPath)) {
-    console.log(`  ${proposal.agentName}: already exists (skipped)`);
+    logger.log(`  ${proposal.agentName}: already exists (skipped)`);
     return true;
   }
 
-  console.log(`  Generating ${proposal.agentTitle} (${proposal.stack})...`);
+  logger.log(`  Generating ${proposal.agentTitle} (${proposal.stack})...`);
 
   const result = spawnSync('claude', [
     '-p',
@@ -57,16 +58,16 @@ function generateAgent(cwd: string, proposal: AgentProposal): boolean {
 
   if (result.status !== 0) {
     const stderr = result.stderr?.toString().trim() ?? '';
-    console.error(`  Warning: Failed to generate ${proposal.agentName}${stderr !== '' ? ': ' + stderr : ''}`);
+    logger.error(`  Warning: Failed to generate ${proposal.agentName}${stderr !== '' ? ': ' + stderr : ''}`);
     return false;
   }
 
   if (existsSync(agentPath)) {
-    console.log(`  ${proposal.agentTitle} generated`);
+    logger.log(`  ${proposal.agentTitle} generated`);
     return true;
   }
 
-  console.error(`  Warning: ${proposal.agentName} generation completed but file not found`);
+  logger.error(`  Warning: ${proposal.agentName} generation completed but file not found`);
   return false;
 }
 
@@ -76,7 +77,7 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   // Core agents
   const agentResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro/agents', overwrite, '.claude/agents');
   const agentNames = listFiles(resolve(scaffoldRoot, 'nitro', 'agents'));
-  console.log(`  Agents: ${agentResult.copied} copied, ${agentResult.skipped} existing (${agentNames.length} core agents)`);
+  logger.log(`  Agents: ${agentResult.copied} copied, ${agentResult.skipped} existing (${agentNames.length} core agents)`);
   createdFiles.push(...agentResult.files);
 
   // Skills (each skill is a subdirectory, discovered dynamically)
@@ -92,11 +93,11 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
     skillsSkipped += r.skipped;
     createdFiles.push(...r.files);
   }
-  console.log(`  Skills: ${skillsCopied} copied, ${skillsSkipped} existing (${skillDirs.length} skills)`);
+  logger.log(`  Skills: ${skillsCopied} copied, ${skillsSkipped} existing (${skillDirs.length} skills)`);
 
   // Commands
   const cmdResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro/commands', overwrite, '.claude/commands');
-  console.log(`  Commands: ${cmdResult.copied} copied, ${cmdResult.skipped} existing`);
+  logger.log(`  Commands: ${cmdResult.copied} copied, ${cmdResult.skipped} existing`);
   createdFiles.push(...cmdResult.files);
 
   // Anti-patterns master (tag catalog — always copy so planner can regenerate)
@@ -111,18 +112,18 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
 
   // Review lessons (empty templates)
   const reviewResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro/review-lessons', overwrite, '.claude/review-lessons');
-  console.log(`  Review lessons: ${reviewResult.copied} template files`);
+  logger.log(`  Review lessons: ${reviewResult.copied} template files`);
   createdFiles.push(...reviewResult.files);
 
   // Task tracking structure
   const taskResult = scaffoldSubdir(scaffoldRoot, cwd, 'task-tracking', overwrite);
-  console.log(`  Task tracking: ${taskResult.copied} files`);
+  logger.log(`  Task tracking: ${taskResult.copied} files`);
   createdFiles.push(...taskResult.files);
 
   // Nitro managed files (.nitro/CLAUDE.nitro.md)
   const nitroResult = scaffoldSubdir(scaffoldRoot, cwd, 'nitro-root', overwrite, '.nitro');
   if (nitroResult.copied > 0 || nitroResult.skipped > 0) {
-    console.log(`  Nitro files: ${nitroResult.copied} copied, ${nitroResult.skipped} existing`);
+    logger.log(`  Nitro files: ${nitroResult.copied} copied, ${nitroResult.skipped} existing`);
   }
   createdFiles.push(...nitroResult.files);
 
@@ -140,15 +141,15 @@ function handleAntiPatterns(cwd: string, scaffoldRoot: string, overwrite: boolea
   const apDest = resolve(cwd, '.claude', 'anti-patterns.md');
   if (!overwrite && existsSync(apDest)) {
     // Already exists — regenerate only when overwrite is set
-    console.log('  Anti-patterns: already exists (skipped — run with --overwrite to regenerate)');
+    logger.log('  Anti-patterns: already exists (skipped — run with --overwrite to regenerate)');
     return stacks;
   }
 
   const generated = generateAntiPatterns(cwd, stacks, scaffoldRoot);
   if (generated) {
-    console.log(`  Anti-patterns: generated for stack [${buildStackLabel(stacks)}]`);
+    logger.log(`  Anti-patterns: generated for stack [${buildStackLabel(stacks)}]`);
   } else {
-    console.log('  Anti-patterns: master file not found; skipped');
+    logger.log('  Anti-patterns: master file not found; skipped');
   }
 
   return stacks;
@@ -163,39 +164,39 @@ async function handleStackDetection(
   const claudeAvailable = isClaudeAvailable();
 
   if (!claudeAvailable) {
-    console.log('  Claude CLI not available — using basic stack detection.');
-    console.log('  Re-run init after installing Claude CLI for full workspace analysis.');
+    logger.log('  Claude CLI not available — using basic stack detection.');
+    logger.log('  Re-run init after installing Claude CLI for full workspace analysis.');
   }
 
   // Run full workspace analysis (AI-assisted if Claude available, heuristic fallback otherwise)
-  console.log('');
-  console.log('Analyzing workspace...');
+  logger.log('');
+  logger.log('Analyzing workspace...');
   const analysis = analyzeWorkspace(cwd, claudeAvailable);
 
   if (analysis.method === 'ai' && analysis.aiAnalysis !== null) {
-    console.log(`  Analysis method: AI-assisted`);
-    console.log(`  Summary: ${analysis.aiAnalysis.summary}`);
+    logger.log(`  Analysis method: AI-assisted`);
+    logger.log(`  Summary: ${analysis.aiAnalysis.summary}`);
     if (analysis.aiAnalysis.domains.length > 0) {
-      console.log(`  Domains: ${analysis.aiAnalysis.domains.join(', ')}`);
+      logger.log(`  Domains: ${analysis.aiAnalysis.domains.join(', ')}`);
     }
   } else {
-    console.log('  Analysis method: heuristic (basic stack detection)');
+    logger.log('  Analysis method: heuristic (basic stack detection)');
   }
 
   if (analysis.proposals.length === 0) {
-    console.log('  No agent proposals generated.');
-    console.log('  Use /create-agent to manually generate developer agents later.');
+    logger.log('  No agent proposals generated.');
+    logger.log('  Use /create-agent to manually generate developer agents later.');
     return [];
   }
 
   // Display proposals with reasoning when available
-  console.log('');
-  console.log('Proposed developer agents:');
+  logger.log('');
+  logger.log('Proposed developer agents:');
   for (const p of analysis.proposals) {
     const confidence = p.confidence !== undefined ? ` [${p.confidence}]` : '';
-    console.log(`  - ${p.agentTitle} (${p.agentName}) [${p.stack}]${confidence}`);
+    logger.log(`  - ${p.agentTitle} (${p.agentName}) [${p.stack}]${confidence}`);
     if (p.reason !== undefined) {
-      console.log(`    Reason: ${p.reason}`);
+      logger.log(`    Reason: ${p.reason}`);
     }
   }
 
@@ -206,18 +207,18 @@ async function handleStackDetection(
   }
 
   if (!shouldGenerate) {
-    console.log('Skipping agent generation. Use /create-agent to generate later.');
+    logger.log('Skipping agent generation. Use /create-agent to generate later.');
     return [];
   }
 
   if (!claudeAvailable) {
-    console.log('  Claude CLI not available; cannot generate agent files.');
-    console.log('  Use /create-agent to manually generate developer agents later.');
+    logger.log('  Claude CLI not available; cannot generate agent files.');
+    logger.log('  Use /create-agent to manually generate developer agents later.');
     return [];
   }
 
-  console.log('');
-  console.log('Generating developer agents (this may take a moment)...');
+  logger.log('');
+  logger.log('Generating developer agents (this may take a moment)...');
   const createdPaths: string[] = [];
   let generated = 0;
   for (const p of analysis.proposals) {
@@ -230,14 +231,14 @@ async function handleStackDetection(
       }
     }
   }
-  console.log(`  ${generated}/${analysis.proposals.length} developer agents generated`);
+  logger.log(`  ${generated}/${analysis.proposals.length} developer agents generated`);
   return createdPaths;
 }
 
 async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<void> {
-  console.log('');
+  logger.log('');
   if (opts['skip-cortex']) {
-    console.log('MCP nitro-cortex: skipped (--skip-cortex)');
+    logger.log('MCP nitro-cortex: skipped (--skip-cortex)');
     return;
   }
 
@@ -252,13 +253,13 @@ async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<vo
         if (maybeServers !== null && typeof maybeServers === 'object') {
           const servers = maybeServers as Record<string, unknown>;
           if ('nitro-cortex' in servers) {
-            console.log('MCP nitro-cortex: already configured');
+            logger.log('MCP nitro-cortex: already configured');
             return;
           }
         }
       }
     } catch {
-      console.warn('Warning: Could not parse existing .mcp.json — falling through to reconfigure.');
+      logger.warn('Warning: Could not parse existing .mcp.json — falling through to reconfigure.');
     }
   }
 
@@ -266,7 +267,7 @@ async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<vo
   if (serverPath === undefined) {
     serverPath = await prompt('Path to nitro-cortex directory (or press Enter to skip): ');
     if (serverPath === '') {
-      console.log('Skipping nitro-cortex configuration. Configure manually later.');
+      logger.log('Skipping nitro-cortex configuration. Configure manually later.');
       return;
     }
   }
@@ -278,25 +279,25 @@ async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<vo
 
   const success = await configureMcp(cwd, serverPath, location);
   if (!success) {
-    console.error('nitro-cortex configuration failed. You can configure it manually later.');
+    logger.error('nitro-cortex configuration failed. You can configure it manually later.');
   }
 }
 
 function commitScaffold(cwd: string, files: string[]): boolean {
   if (files.length === 0) {
-    console.log('Commit: no new files to commit (all files already existed)');
+    logger.log('Commit: no new files to commit (all files already existed)');
     return true;
   }
 
   if (!isInsideGitRepo(cwd)) {
-    console.error('Commit: not inside a git repository. Run `git init` first.');
+    logger.error('Commit: not inside a git repository. Run `git init` first.');
     return false;
   }
 
   const success = commitFiles(cwd, files, 'chore: initialize nitro-fueled orchestration');
   if (success) {
-    console.log('Committed: chore: initialize nitro-fueled orchestration');
-    console.log(`  ${files.length} files staged and committed`);
+    logger.log('Committed: chore: initialize nitro-fueled orchestration');
+    logger.log(`  ${files.length} files staged and committed`);
   }
   return success;
 }
@@ -346,32 +347,32 @@ function buildAndWriteManifest(
   }
 
   writeManifest(cwd, manifest);
-  console.log('  Manifest: written (.nitro-fueled/manifest.json)');
+  logger.log('  Manifest: written (.nitro-fueled/manifest.json)');
 }
 
 function printSummary(skipCortex: boolean): void {
-  console.log('');
-  console.log('=================');
-  console.log('Init complete!');
-  console.log('');
-  console.log('What was installed:');
-  console.log('  .claude/agents/        Core agent definitions');
-  console.log('  .claude/skills/        Orchestration and content skills');
-  console.log('  .claude/commands/      Slash commands (/orchestrate, /plan, etc.)');
-  console.log('  .claude/review-lessons/ Empty review templates (grow over time)');
-  console.log('  task-tracking/         Task registry and template');
-  console.log('  .nitro/CLAUDE.nitro.md Nitro-fueled conventions (nitro-managed)');
-  console.log('  CLAUDE.md              Your project conventions (user-owned, import added)');
-  console.log('');
-  console.log('Next steps:');
+  logger.log('');
+  logger.log('=================');
+  logger.log('Init complete!');
+  logger.log('');
+  logger.log('What was installed:');
+  logger.log('  .claude/agents/        Core agent definitions');
+  logger.log('  .claude/skills/        Orchestration and content skills');
+  logger.log('  .claude/commands/      Slash commands (/orchestrate, /plan, etc.)');
+  logger.log('  .claude/review-lessons/ Empty review templates (grow over time)');
+  logger.log('  task-tracking/         Task registry and template');
+  logger.log('  .nitro/CLAUDE.nitro.md Nitro-fueled conventions (nitro-managed)');
+  logger.log('  CLAUDE.md              Your project conventions (user-owned, import added)');
+  logger.log('');
+  logger.log('Next steps:');
   let step = 1;
-  console.log(`  ${step++}. npx nitro-fueled create     Create your first task`);
-  console.log(`  ${step++}. npx nitro-fueled run         Run the orchestration pipeline`);
-  console.log(`  ${step++}. npx nitro-fueled status      Check project status`);
+  logger.log(`  ${step++}. npx nitro-fueled create     Create your first task`);
+  logger.log(`  ${step++}. npx nitro-fueled run         Run the orchestration pipeline`);
+  logger.log(`  ${step++}. npx nitro-fueled status      Check project status`);
   if (skipCortex) {
-    console.log(`  ${step++}. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server`);
+    logger.log(`  ${step++}. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server`);
   }
-  console.log('');
+  logger.log('');
 }
 
 export default class Init extends BaseCommand {
@@ -391,16 +392,16 @@ export default class Init extends BaseCommand {
     const opts: InitFlags = flags;
     const cwd = process.cwd();
 
-    console.log('');
-    console.log('nitro-fueled init');
-    console.log('=================');
-    console.log('');
+    logger.log('');
+    logger.log('nitro-fueled init');
+    logger.log('=================');
+    logger.log('');
 
     // Step 1: Check prerequisites
     if (isClaudeAvailable()) {
-      console.log('Prerequisites: Claude CLI found');
+      logger.log('Prerequisites: Claude CLI found');
     } else {
-      console.log('Prerequisites: Claude CLI not found (agent generation will be skipped)');
+      logger.log('Prerequisites: Claude CLI not found (agent generation will be skipped)');
     }
 
     // Step 2: Handle existing .claude/ directory
@@ -409,11 +410,11 @@ export default class Init extends BaseCommand {
       if (!opts.yes) {
         const answer = await prompt('.claude/ directory already exists. Merge new files? (y/n) [y]: ');
         if (answer.toLowerCase() === 'n') {
-          console.log('Aborting. Use --overwrite to replace existing files.');
+          logger.log('Aborting. Use --overwrite to replace existing files.');
           return;
         }
       }
-      console.log('Merging into existing .claude/ (existing files preserved)');
+      logger.log('Merging into existing .claude/ (existing files preserved)');
     }
 
     // Step 3: Resolve scaffold source
@@ -422,27 +423,27 @@ export default class Init extends BaseCommand {
       scaffoldRoot = resolveScaffoldRoot();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Error: ${msg}`);
+      logger.error(`Error: ${msg}`);
       process.exitCode = 1;
       return;
     }
 
     // Step 4: Copy all scaffold files
-    console.log('');
-    console.log('Scaffolding project...');
+    logger.log('');
+    logger.log('Scaffolding project...');
     let scaffoldedFiles: string[];
     try {
       scaffoldedFiles = scaffoldFiles(cwd, scaffoldRoot, opts.overwrite);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Error: Failed to scaffold project files: ${msg}`);
+      logger.error(`Error: Failed to scaffold project files: ${msg}`);
       process.exitCode = 1;
       return;
     }
     const allCreatedFiles: string[] = [...scaffoldedFiles];
 
     // Step 5: Ensure CLAUDE.md has nitro import line
-    console.log('');
+    logger.log('');
     const claudeMdPath = resolve(cwd, 'CLAUDE.md');
     const claudeMdExisted = existsSync(claudeMdPath);
     ensureClaudeMdImport(cwd);
@@ -457,8 +458,8 @@ export default class Init extends BaseCommand {
     }
 
     // Step 7: Detect stack and generate stack-aware anti-patterns
-    console.log('');
-    console.log('Detecting project stack...');
+    logger.log('');
+    logger.log('Detecting project stack...');
     const apPath = resolve(cwd, '.claude', 'anti-patterns.md');
     const apExisted = existsSync(apPath);
     const detectedStacks = handleAntiPatterns(cwd, scaffoldRoot, opts.overwrite);
@@ -469,7 +470,7 @@ export default class Init extends BaseCommand {
       const detectedLabel = detectedStacks.map((s) =>
         s.frameworks.length > 0 ? `${s.language} (${s.frameworks.join(', ')})` : s.language
       ).join(', ');
-      console.log(`  Detected: ${detectedLabel}`);
+      logger.log(`  Detected: ${detectedLabel}`);
     }
 
     // Step 8: Generate developer agents for detected stack
@@ -477,7 +478,7 @@ export default class Init extends BaseCommand {
     allCreatedFiles.push(...agentPaths);
 
     // Step 9: Write manifest
-    console.log('');
+    logger.log('');
     const stackLabel = buildStackLabel(detectedStacks);
     const generatedFileInfos: GeneratedFileInfo[] = [];
 
@@ -495,7 +496,7 @@ export default class Init extends BaseCommand {
       buildAndWriteManifest(cwd, scaffoldedFiles, generatedFileInfos);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Error: Failed to write manifest: ${msg}`);
+      logger.error(`Error: Failed to write manifest: ${msg}`);
       process.exitCode = 1;
       return;
     }
@@ -505,7 +506,7 @@ export default class Init extends BaseCommand {
 
     // Step 11: Commit scaffolded files if --commit flag is set
     if (opts.commit) {
-      console.log('');
+      logger.log('');
       const committed = commitScaffold(cwd, allCreatedFiles);
       if (!committed) {
         process.exitCode = 1;

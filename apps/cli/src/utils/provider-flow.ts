@@ -6,6 +6,7 @@
  * slot assignments.
  */
 import { prompt } from './prompt.js';
+import { logger } from './logger.js';
 import {
   DEFAULT_PROVIDERS,
   DEFAULT_ROUTING,
@@ -48,7 +49,7 @@ export function printDerivedTiers(
   availableProviders: string[],
   routing: RoutingConfig,
 ): void {
-  console.log('\nAvailable model tiers (derived from detected launchers):');
+  logger.log('\nAvailable model tiers (derived from detected launchers):');
   const tiers: ModelTier[] = ['heavy', 'balanced', 'light'];
 
   for (const tier of tiers) {
@@ -56,7 +57,7 @@ export function printDerivedTiers(
     const provider = DEFAULT_PROVIDERS[providerName];
     if (provider !== undefined) {
       const model = provider.models[tier];
-      console.log(
+      logger.log(
         `  ${tier.padEnd(10)} → ${model.padEnd(30)} (${providerName} via ${provider.launcher})`,
       );
     }
@@ -86,13 +87,13 @@ export async function promptRoutingAssignment(
   existingRouting: RoutingConfig,
 ): Promise<RoutingConfig> {
   if (availableProviders.length === 0) {
-    console.log('\n  No authenticated providers available. Using defaults.');
+    logger.log('\n  No authenticated providers available. Using defaults.');
     return { ...DEFAULT_ROUTING };
   }
 
-  console.log('\nRouting assignments — press Enter to accept defaults:');
-  console.log(`  Available providers: ${availableProviders.join(', ')}`);
-  console.log('');
+  logger.log('\nRouting assignments — press Enter to accept defaults:');
+  logger.log(`  Available providers: ${availableProviders.join(', ')}`);
+  logger.log('');
 
   const routing: RoutingConfig = { ...existingRouting };
 
@@ -103,12 +104,12 @@ export async function promptRoutingAssignment(
       if (availableProviders.includes(answer)) {
         routing[slot] = answer;
       } else if (Object.keys(DEFAULT_PROVIDERS).includes(answer)) {
-        console.log(
+        logger.log(
           `    Warning: "${answer}" is not authenticated — routing may fail at runtime.`,
         );
         routing[slot] = answer;
       } else {
-        console.log(`    Unknown provider "${answer}" — keeping ${current}`);
+        logger.log(`    Unknown provider "${answer}" — keeping ${current}`);
         routing[slot] = current;
       }
     } else {

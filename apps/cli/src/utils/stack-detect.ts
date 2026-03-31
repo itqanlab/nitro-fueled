@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { logger } from './logger.js';
 import { AGENT_MAP } from './agent-map.js';
 import { collectWorkspaceSignals, formatSignalsForPrompt } from './workspace-signals.js';
 import type { WorkspaceSignals } from './workspace-signals.js';
@@ -458,7 +459,7 @@ export function runAIAnalysis(signals: WorkspaceSignals): AIAnalysisResult | nul
   if (result.status !== 0 || result.signal !== null) {
     const stderr = result.stderr?.toString().trim() ?? '';
     if (stderr !== '') {
-      console.error(`  AI analysis failed: ${stderr.slice(0, 200)}`);
+      logger.error(`  AI analysis failed: ${stderr.slice(0, 200)}`);
     }
     return null;
   }

@@ -97,7 +97,7 @@ export class FlowMetadataService {
       this.logger.log(`Updating stats for flow ${flowId}: ${execution.success ? 'SUCCESS' : 'FAILED'} (${execution.duration}h)`);
       
       // Mock implementation - in reality this would update database records
-      console.log(`[MOCK] Updated flow ${flowId} stats:`, execution);
+      this.logger.debug(`[MOCK] Updated flow ${flowId} stats: ${JSON.stringify(execution)}`);
     } catch (error) {
       this.logger.error(`Failed to update flow stats for ${flowId}`, error);
       throw new Error(`Failed to update flow stats: ${error.message}`);

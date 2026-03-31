@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { logger } from './logger.js';
 import { buildMcpConfigEntry } from './mcp-setup-guide.js';
 
 export function expandTilde(inputPath: string): string {
@@ -16,8 +17,8 @@ function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): boo
     try {
       existing = JSON.parse(readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
     } catch {
-      console.error(`Error: Could not parse ${filePath} as JSON.`);
-      console.error('Please fix or remove the file manually, then re-run init.');
+      logger.error(`Error: Could not parse ${filePath} as JSON.`);
+      logger.error('Please fix or remove the file manually, then re-run init.');
       return false;
     }
   }
@@ -35,7 +36,7 @@ function mergeJsonFile(filePath: string, mcpEntry: Record<string, unknown>): boo
     writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n', { encoding: 'utf-8', mode: 0o600 });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`Error: Could not write ${filePath}: ${msg}`);
+    logger.error(`Error: Could not write ${filePath}: ${msg}`);
     return false;
   }
   return true;
@@ -52,7 +53,7 @@ async function configureMcpServer(
   const resolvedServerPath = resolve(expandedPath);
 
   if (!existsSync(resolvedServerPath)) {
-    console.error(`Error: Directory not found: ${resolvedServerPath}`);
+    logger.error(`Error: Directory not found: ${resolvedServerPath}`);
     return false;
   }
 
@@ -60,21 +61,21 @@ async function configureMcpServer(
   try {
     realPath = realpathSync(resolvedServerPath);
   } catch {
-    console.error(`Error: Could not resolve path: ${resolvedServerPath}`);
+    logger.error(`Error: Could not resolve path: ${resolvedServerPath}`);
     return false;
   }
 
   const entryPoint = resolve(realPath, 'dist', 'index.js');
   if (!existsSync(entryPoint)) {
-    console.error(`Error: ${serverName} entry point not found at ${entryPoint}`);
-    console.error(`Make sure ${serverName} is built (npm run build).`);
+    logger.error(`Error: ${serverName} entry point not found at ${entryPoint}`);
+    logger.error(`Make sure ${serverName} is built (npm run build).`);
     return false;
   }
 
   const mcpEntry = entryBuilder(realPath);
 
   if (location === 'project') {
-    console.warn('Note: Project-level config uses an absolute path that may not be portable across machines.');
+    logger.warn('Note: Project-level config uses an absolute path that may not be portable across machines.');
   }
 
   const targetPath = location === 'project'
@@ -83,7 +84,7 @@ async function configureMcpServer(
 
   const success = mergeJsonFile(targetPath, mcpEntry);
   if (success) {
-    console.log(`  MCP ${serverName} configured in ${targetPath}`);
+    logger.log(`  MCP ${serverName} configured in ${targetPath}`);
   }
   return success;
 }

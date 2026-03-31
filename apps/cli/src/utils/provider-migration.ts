@@ -7,6 +7,7 @@
  * from this module, so this module cannot also import values from provider-config.ts.
  */
 import { renameSync } from 'node:fs';
+import { logger } from './logger.js';
 import type { NitroFueledConfig } from './provider-config.js';
 import { DEFAULT_PROVIDERS, DEFAULT_ROUTING } from './provider-defaults.js';
 
@@ -72,7 +73,7 @@ export function buildMigratedConfig(
   try {
     renameSync(projectPath, backupPath);
   } catch (err: unknown) {
-    console.warn(
+    logger.warn(
       `  Could not rename old config to backup: ${err instanceof Error ? err.message : String(err)}`,
     );
   }

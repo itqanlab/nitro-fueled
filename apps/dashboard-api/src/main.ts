@@ -1,12 +1,13 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { VersioningType, ValidationPipe } from '@nestjs/common';
+import { VersioningType, ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { ResponseEnvelopeInterceptor } from './app/interceptors/response-envelope.interceptor';
 import { ErrorEnvelopeFilter } from './app/filters/error-envelope.filter';
 
 async function bootstrap(): Promise<void> {
+  const logger = new Logger('bootstrap');
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
@@ -60,12 +61,13 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
 
   const url = await app.getUrl();
-  console.log(`[dashboard-api] Server running at ${url}`);
-  console.log(`[dashboard-api] Swagger UI: ${url}/api/docs`);
+  logger.log(`[dashboard-api] Server running at ${url}`);
+  logger.log(`[dashboard-api] Swagger UI: ${url}/api/docs`);
 }
 
 bootstrap().catch((err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
-  console.error(`[dashboard-api] Failed to start: ${message}`);
+  const logger = new Logger('bootstrap');
+  logger.error(`[dashboard-api] Failed to start: ${message}`);
   process.exit(1);
 });

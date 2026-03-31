@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { mcpLogger } from '../utils/logger.js';
 import { normalizeSessionId } from './session-id.js';
 
 interface TaskRow {
@@ -40,7 +41,7 @@ export function handleGetNextWave(
         const parsed = JSON.parse(task.dependencies);
         deps = Array.isArray(parsed) ? parsed as string[] : [];
       } catch {
-        console.error(`[nitro-cortex] get_next_wave: failed to parse dependencies for ${task.id}, treating as no deps`);
+        mcpLogger.error(`get_next_wave: failed to parse dependencies for ${task.id}, treating as no deps`);
         deps = [];
       }
       const allDepsComplete = deps.length === 0 || deps.every(d => completeTasks.has(d));

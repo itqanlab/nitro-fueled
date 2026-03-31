@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
+import { logger } from '../utils/logger.js';
 import {
   DEFAULT_PORT,
   STARTUP_TIMEOUT_MS,
@@ -44,15 +45,15 @@ export default class Dashboard extends BaseCommand {
     const taskTrackingDir = resolve(cwd, 'task-tracking');
 
     if (!existsSync(taskTrackingDir)) {
-      console.error('Error: No task-tracking/ directory found.');
-      console.error('Run `npx nitro-fueled init` first, or run from project root.');
+      logger.error('Error: No task-tracking/ directory found.');
+      logger.error('Run `npx nitro-fueled init` first, or run from project root.');
       process.exitCode = 1;
       return;
     }
 
     const requestedPort = parseInt(flags.port, 10);
     if (Number.isNaN(requestedPort) || requestedPort < 0 || requestedPort > 65535) {
-      console.error(`Error: Invalid port "${flags.port}". Must be 0-65535 (0 = auto-assign).`);
+      logger.error(`Error: Invalid port "${flags.port}". Must be 0-65535 (0 = auto-assign).`);
       process.exitCode = 1;
       return;
     }
@@ -63,7 +64,7 @@ export default class Dashboard extends BaseCommand {
     const existingPort = await checkExistingService(portFilePath);
     if (existingPort !== null) {
       const url = `http://localhost:${existingPort}`;
-      console.log(`Dashboard already running at ${url}`);
+      logger.log(`Dashboard already running at ${url}`);
       if (flags.open && !flags.service) {
         openBrowser(url);
       }
@@ -73,15 +74,15 @@ export default class Dashboard extends BaseCommand {
     // Acquire exclusive startup lock to prevent TOCTOU races
     if (!tryAcquireLock(lockPath)) {
       // Another process won the race — wait for it to finish starting
-      console.log('Another dashboard instance is starting, waiting...');
+      logger.log('Another dashboard instance is starting, waiting...');
       const port = await pollForPortFile(portFilePath, STARTUP_TIMEOUT_MS);
       if (port !== null) {
         const url = `http://localhost:${port}`;
-        console.log(`Dashboard available at ${url}`);
+        logger.log(`Dashboard available at ${url}`);
         if (flags.open && !flags.service) openBrowser(url);
       } else {
         releaseLock(lockPath); // stale lock recovery
-        console.error('Error: Dashboard startup timed out (stale startup lock cleared, retry command).');
+        logger.error('Error: Dashboard startup timed out (stale startup lock cleared, retry command).');
         process.exitCode = 1;
       }
       return;
@@ -91,7 +92,7 @@ export default class Dashboard extends BaseCommand {
       const entryScript = findEntryScript();
       if (entryScript === null) {
         releaseLock(lockPath);
-        console.error('Error: Dashboard service not found. Install @nitro-fueled/dashboard-service to enable the dashboard.');
+        logger.error('Error: Dashboard service not found. Install @nitro-fueled/dashboard-service to enable the dashboard.');
         process.exitCode = 1;
         return;
       }
@@ -116,15 +117,15 @@ export default class Dashboard extends BaseCommand {
 
       if (webDistPath) {
         args.push('--web-dist', webDistPath);
-        console.log('Starting dashboard with web UI...');
+        logger.log('Starting dashboard with web UI...');
       } else if (!flags.service) {
-        console.warn('Warning: Web UI dist not found. Starting data service only.');
-        console.warn('Web UI not found. Run `npx nx build dashboard` then `npm run copy-web-assets --workspace=apps/cli` to embed assets.');
+        logger.warn('Warning: Web UI dist not found. Starting data service only.');
+        logger.warn('Web UI not found. Run `npx nx build dashboard` then `npm run copy-web-assets --workspace=apps/cli` to embed assets.');
       } else {
-        console.log('Starting dashboard data service...');
+        logger.log('Starting dashboard data service...');
       }
 
-      console.log(`Watching: ${taskTrackingDir}`);
+      logger.log(`Watching: ${taskTrackingDir}`);
 
       const child = spawn(process.execPath, args, {
         stdio: 'inherit',
@@ -155,27 +156,27 @@ export default class Dashboard extends BaseCommand {
           releaseStartupLock();
           if (actualPort !== null) {
             const url = `http://localhost:${actualPort}`;
-            console.log(`Dashboard available at ${url}`);
+            logger.log(`Dashboard available at ${url}`);
             openBrowser(url);
           } else if (requestedPort > 0) {
             // Compatibility path for older dashboard-service builds that do not write .dashboard-port.
             checkLegacyHealthOnPort(requestedPort).then((isHealthy) => {
               if (isHealthy) {
                 const url = `http://localhost:${requestedPort}`;
-                console.log(`Dashboard available at ${url}`);
+                logger.log(`Dashboard available at ${url}`);
                 openBrowser(url);
               } else {
-                console.warn('Warning: Dashboard did not report its port within timeout.');
+                logger.warn('Warning: Dashboard did not report its port within timeout.');
               }
             }).catch(() => {
-              console.warn('Warning: Dashboard did not report its port within timeout.');
+              logger.warn('Warning: Dashboard did not report its port within timeout.');
             });
           } else {
-            console.warn('Warning: Dashboard did not report its port within timeout.');
+            logger.warn('Warning: Dashboard did not report its port within timeout.');
           }
         }).catch((err: unknown) => {
           releaseStartupLock();
-          console.warn(`Warning: Error waiting for dashboard: ${String(err)}`);
+          logger.warn(`Warning: Error waiting for dashboard: ${String(err)}`);
         });
       } else {
         // Release lock immediately when not waiting for port

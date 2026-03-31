@@ -4,6 +4,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { ToolResult } from './types.js';
+import { mcpLogger } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
 // get_available_providers — reads config, probes launcher binaries
@@ -171,7 +172,7 @@ function loadConfig(workingDirectory?: string): ConfigFile {
     try {
       merged = JSON.parse(readFileSync(userConfig, 'utf8')) as ConfigFile;
     } catch {
-      console.error(`[get_available_providers] failed to parse ${userConfig}`);
+      mcpLogger.error(`[get_available_providers] failed to parse ${userConfig}`);
     }
   }
 
@@ -182,7 +183,7 @@ function loadConfig(workingDirectory?: string): ConfigFile {
       if (project.providers) merged.providers = { ...merged.providers, ...project.providers };
       if (project.fallbackChain) merged.fallbackChain = project.fallbackChain;
     } catch {
-      console.error(`[get_available_providers] failed to parse ${projectConfig}`);
+      mcpLogger.error(`[get_available_providers] failed to parse ${projectConfig}`);
     }
   }
 

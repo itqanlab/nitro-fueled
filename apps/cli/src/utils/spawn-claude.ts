@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { logger } from './logger.js';
 
 export interface SpawnClaudeOptions {
   cwd: string;
@@ -7,8 +8,8 @@ export interface SpawnClaudeOptions {
 }
 
 export function spawnClaude({ cwd, args, label }: SpawnClaudeOptions): void {
-  console.log(`Starting ${label}: claude ${args.join(' ')}`);
-  console.log('');
+  logger.log(`Starting ${label}: claude ${args.join(' ')}`);
+  logger.log('');
 
   const child = spawn('claude', args, { cwd, stdio: 'inherit' });
 
@@ -24,7 +25,7 @@ export function spawnClaude({ cwd, args, label }: SpawnClaudeOptions): void {
     process.off('SIGTERM', forwardSignal);
 
     if (code !== 0) {
-      console.error(`${label} exited with code ${String(code ?? 'unknown')}`);
+      logger.error(`${label} exited with code ${String(code ?? 'unknown')}`);
       process.exitCode = 1;
     }
   });
@@ -33,7 +34,7 @@ export function spawnClaude({ cwd, args, label }: SpawnClaudeOptions): void {
     process.off('SIGINT', forwardSignal);
     process.off('SIGTERM', forwardSignal);
 
-    console.error(`Failed to start ${label}: ${err.message}`);
+    logger.error(`Failed to start ${label}: ${err.message}`);
     process.exitCode = 1;
   });
 }

@@ -2,6 +2,7 @@
 // Inlined from packages/mcp-cortex/src/tools/sync.ts — cross-package import blocked by tsconfig rootDir.
 
 import type Database from 'better-sqlite3';
+import { logger } from './logger.js';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { TASK_ID_RE } from './cortex-sync-tasks.js';
@@ -41,7 +42,7 @@ export function hydrateSessions(
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       const capped = message.length > 200 ? message.slice(0, 200) + '...' : message;
-      console.error(`cortex-sync: session insert failed for ${entry.name}: ${capped}`);
+      logger.error(`cortex-sync: session insert failed for ${entry.name}: ${capped}`);
       skipped++;
     }
   }
@@ -97,7 +98,7 @@ export function hydrateHandoffs(
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       const capped = message.length > 200 ? message.slice(0, 200) + '...' : message;
-      console.error(`cortex-sync: handoff insert failed for ${entry.name}: ${capped}`);
+      logger.error(`cortex-sync: handoff insert failed for ${entry.name}: ${capped}`);
       skipped++;
     }
   }
