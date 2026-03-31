@@ -159,6 +159,16 @@
   50% { box-shadow: 0 0 0 6px rgba(23, 125, 220, 0); }
 }
 
+.h-timeline-arrow {
+  position: absolute;
+  right: -10px;
+  top: 3px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .h-timeline-content {
   display: flex;
   flex-direction: column;
@@ -467,6 +477,60 @@
   line-height: 1.6;
   color: var(--text-primary);
   white-space: pre-wrap;
+}
+
+// Flow override
+.flow-override-section {
+  margin-top: 24px;
+}
+
+.flow-override-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.flow-override-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.flow-override-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flow-override-select {
+  flex: 1;
+  max-width: 400px;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 14px;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.flow-override-saving {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.flow-override-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--accent);
 }
 
 // Table styling

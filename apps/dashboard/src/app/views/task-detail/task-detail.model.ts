@@ -1,3 +1,17 @@
+import type {
+  FullTaskData,
+  CortexTaskTrace,
+  CortexTaskContext,
+  PipelineData,
+} from '../../models/api.types';
+
+export type TaskDataBundle = {
+  taskData: FullTaskData | null;
+  traceData: CortexTaskTrace | null;
+  contextData: CortexTaskContext | null;
+  pipelineData: PipelineData | null;
+} | null;
+
 export interface StatusTransition {
   from: string;
   to: string;

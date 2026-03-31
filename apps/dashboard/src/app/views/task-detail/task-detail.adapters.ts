@@ -23,7 +23,9 @@ export function adaptTaskDetail(
   traceData: CortexTaskTrace | null,
   contextData: CortexTaskContext | null,
   pipelineData: PipelineData | null,
-): TaskDetailViewModel {
+): TaskDetailViewModel | null {
+  if (!taskData && !traceData && !contextData) return null;
+
   const def = taskData?.definition;
   const registry = taskData?.registryRecord;
   const completion = taskData?.completionReport ?? null;

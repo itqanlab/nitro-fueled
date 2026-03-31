@@ -2,15 +2,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   signal,
 } from '@angular/core';
 import { NgClass, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, of, catchError, switchMap } from 'rxjs';
+import { forkJoin, map, of, catchError, switchMap } from 'rxjs';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
@@ -29,14 +30,7 @@ import type {
   CustomFlow,
 } from '../../models/api.types';
 import { adaptTaskDetail } from './task-detail.adapters';
-import type { TaskDetailViewModel, PhaseBarEntry } from './task-detail.model';
-
-type TaskDataBundle = {
-  taskData: FullTaskData | null;
-  traceData: CortexTaskTrace | null;
-  contextData: CortexTaskContext | null;
-  pipelineData: PipelineData | null;
-} | null;
+import type { TaskDetailViewModel, PhaseBarEntry, TaskDataBundle } from './task-detail.model';
 
 function formatTokenCount(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -70,18 +64,19 @@ export class TaskDetailComponent {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly taskId$ = this.route.paramMap.pipe(
-    switchMap(params => of(params.get('taskId'))),
-  );
+  private readonly paramMap = toSignal(this.route.paramMap, {
+    initialValue: this.route.snapshot.paramMap,
+  });
 
-  public readonly taskId = signal<string | null>(null);
+  public readonly taskId = computed(() => this.paramMap().get('taskId'));
 
   private readonly dataSignal = toSignal(
-    this.taskId$.pipe(
+    this.route.paramMap.pipe(
+      map(params => params.get('taskId')),
       switchMap(id => {
         if (!id) return of(null);
-        this.taskId.set(id);
         return forkJoin({
           taskData: this.api.getTask(id).pipe(catchError(() => of(null as FullTaskData | null))),
           traceData: this.api.getCortexTaskTrace(id).pipe(catchError(() => of(null as CortexTaskTrace | null))),
@@ -90,18 +85,18 @@ export class TaskDetailComponent {
         });
       }),
     ),
-    { initialValue: null as TaskDataBundle },
+    { initialValue: undefined as TaskDataBundle | undefined },
   );
 
-  private readonly viewModelComputed = computed<TaskDetailViewModel | null>(() => {
+  public readonly loading = computed(() => this.dataSignal() === undefined);
+
+  public readonly vm = computed<TaskDetailViewModel | null>(() => {
     const data = this.dataSignal();
     const id = this.taskId();
-    if (!data || !id) return null;
+    if (data === undefined || !id) return null;
+    if (!data) return null;
     return adaptTaskDetail(id, data.taskData, data.traceData, data.contextData, data.pipelineData);
   });
-
-  public readonly vm = signal<TaskDetailViewModel | null>(null);
-  public readonly loading = signal(true);
 
   public readonly statusColorMap: Readonly<Record<string, string>> = {
     CREATED: 'default',
@@ -163,7 +158,7 @@ export class TaskDetailComponent {
       ? this.api.setTaskFlowOverride(taskId, flowId)
       : this.api.clearTaskFlowOverride(taskId);
 
-    request$.subscribe({
+    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.selectedFlowOverrideId.set(flowId || null);
         this.overrideSaving.set(false);
@@ -194,25 +189,21 @@ export class TaskDetailComponent {
   public readonly transitionNodes = computed(() => {
     const model = this.vm();
     if (!model) return [];
-    return model.statusTransitions.map(t => ({
-      ...t,
-      statusClass: 'tl-status--' + t.to.toLowerCase().replace(/_/g, '-'),
-      formattedTime: t.timestamp ? new Date(t.timestamp).toLocaleString() : '',
-    }));
+    return model.statusTransitions.map(t => {
+      const safeStatus = Object.keys(this.statusColorMap).includes(t.to) ? t.to : 'unknown';
+      return {
+        ...t,
+        statusClass: 'tl-status--' + safeStatus.toLowerCase().replace(/_/g, '-'),
+        formattedTime: t.timestamp ?? '',
+      };
+    });
   });
 
   constructor() {
-    effect(() => {
-      const data = this.dataSignal();
-      if (data !== null) {
-        this.loading.set(false);
-      }
-      this.vm.set(this.viewModelComputed());
-    });
-
     // Load custom flows for the override dropdown
     this.api.getCustomFlows().pipe(
       catchError(() => of([] as CustomFlow[])),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(flows => this.customFlows.set(flows));
 
     // Initialize the selected override from context data
