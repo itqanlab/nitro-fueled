@@ -226,6 +226,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_111 | Two-Phase Provider Resolver Engine (Part 2/3) | COMPLETE | P1-High |
 | TASK_2026_112 | Auto-Pilot Routing Update — Config-Driven (Part 3/3) | COMPLETE | P1-High |
 | TASK_2026_177 | Scaffold-SKILL.md Sync Automation — pre-commit hook + CI check | COMPLETE | P2-Medium |
+| TASK_2026_279 | Rename Unprefixed .claude/ Dirs and Files to nitro-* (Structural Rename, Part 1) | COMPLETE | P2-Medium |
 
 ### Phase 13: Documentation Site
 **Status**: COMPLETE

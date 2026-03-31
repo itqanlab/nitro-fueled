@@ -17,7 +17,7 @@
 - apps/cli/scaffold/nitro/anti-patterns-master.md → nitro-anti-patterns-master.md (git rename)
 
 ## Commits
-(pending)
+- 6003f59: refactor(.claude): rename unprefixed dirs and files to nitro-* prefix (Part 1) for TASK_2026_279
 
 ## Decisions
 - Used `git mv` for all renames to preserve git history (rename detection vs delete+add)
