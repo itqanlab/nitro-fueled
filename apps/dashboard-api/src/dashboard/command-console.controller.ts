@@ -6,20 +6,17 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
   CommandConsoleService,
   CommandCatalogEntry,
   CommandSuggestion,
-  CommandExecuteRequest,
   CommandExecuteResult,
 } from './command-console.service';
-
-const MAX_COMMAND_LENGTH = 500;
-const COMMAND_RE = /^\/[a-z0-9-]+(?:\s+.+)?$/i;
+import { ExecuteCommandDto } from './dto/execute-command.dto';
+import { GetSuggestionsDto } from './dto/get-suggestions.dto';
 
 @ApiTags('command-console')
 @Controller('api/command-console')
@@ -39,17 +36,9 @@ export class CommandConsoleController {
   @Get('suggestions')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get route-aware command suggestions', description: 'Returns suggested commands based on the current dashboard route and context' })
-  @ApiQuery({ name: 'route', required: false, description: 'Current dashboard route path' })
-  @ApiQuery({ name: 'taskId', required: false, description: 'Current task ID context' })
   @ApiResponse({ status: 200, description: 'Command suggestions' })
-  public getSuggestions(
-    @Query('route') route?: string,
-    @Query('taskId') taskId?: string,
-  ): readonly CommandSuggestion[] {
-    if (taskId && !/^TASK_\d{4}_\d{3}$/.test(taskId)) {
-      throw new BadRequestException('Invalid taskId format');
-    }
-    return this.commandConsoleService.getSuggestions(route, taskId);
+  public getSuggestions(@Query() query: GetSuggestionsDto): readonly CommandSuggestion[] {
+    return this.commandConsoleService.getSuggestions(query.route, query.taskId);
   }
 
   @Post('execute')
@@ -57,31 +46,8 @@ export class CommandConsoleController {
   @ApiOperation({ summary: 'Execute a console command', description: 'Execute a supported Nitro command through the controlled adapter layer' })
   @ApiResponse({ status: 200, description: 'Command execution result' })
   @ApiResponse({ status: 400, description: 'Invalid request body' })
-  public async execute(@Body() body: unknown): Promise<CommandExecuteResult> {
-    if (typeof body !== 'object' || body === null) {
-      throw new BadRequestException('Request body must be a JSON object');
-    }
-    const raw = body as Record<string, unknown>;
-    if (typeof raw['command'] !== 'string' || raw['command'].trim().length === 0) {
-      throw new BadRequestException('command is required and must be a non-empty string');
-    }
-
-    const command = (raw['command'] as string).trim();
-    if (command.length > MAX_COMMAND_LENGTH) {
-      throw new BadRequestException(`command must not exceed ${MAX_COMMAND_LENGTH} characters`);
-    }
-    if (!COMMAND_RE.test(command)) {
-      throw new BadRequestException('command must start with a slash command name and be a single-line string');
-    }
-
-    const request: CommandExecuteRequest = {
-      command,
-      args: typeof raw['args'] === 'object' && raw['args'] !== null
-        ? raw['args'] as Record<string, unknown>
-        : undefined,
-    };
-
-    this.logger.log(`Console execute: ${request.command.split(/\s+/, 1)[0]}`);
-    return this.commandConsoleService.executeCommand(request);
+  public async execute(@Body() dto: ExecuteCommandDto): Promise<CommandExecuteResult> {
+    this.logger.log(`Console execute: ${dto.command.split(/\s+/, 1)[0]}`);
+    return this.commandConsoleService.executeCommand({ command: dto.command, args: dto.args });
   }
 }
