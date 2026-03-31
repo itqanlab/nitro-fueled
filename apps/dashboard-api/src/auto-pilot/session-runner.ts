@@ -14,10 +14,12 @@ import type {
   TaskCandidate,
   ActiveWorkerInfo,
   PriorityStrategy,
+  ProviderType,
   LoopStatus,
   SupervisorEvent,
   SessionStatusResponse,
   UpdateConfigRequest,
+  CustomFlow,
 } from './auto-pilot.types';
 
 export class SessionRunner {
@@ -119,6 +121,7 @@ export class SessionRunner {
       startedAt: this.startedAt,
       uptimeMinutes: Math.round((Date.now() - new Date(this.startedAt).getTime()) / 60_000),
       lastHeartbeat: new Date().toISOString(),
+      drainRequested: this.supervisorDb.getDrainRequested(this.sessionId),
     };
   }
 
@@ -144,6 +147,14 @@ export class SessionRunner {
 
       const activeWorkers = this.supervisorDb.getActiveWorkers(this.sessionId);
       this.processWorkerHealth(activeWorkers);
+
+      if (this.supervisorDb.getDrainRequested(this.sessionId)) {
+        const drainActive = this.supervisorDb.getActiveWorkers(this.sessionId);
+        if (drainActive.length === 0) {
+          this.stopLoop('Drained by user');
+        }
+        return;
+      }
 
       const candidates = this.supervisorDb.getTaskCandidates();
 
@@ -277,7 +288,7 @@ export class SessionRunner {
     const activeTasks = new Set(activeWorkers.map(w => w.taskId));
     const available = candidates.filter(c => !activeTasks.has(c.id));
 
-    const buildCandidates = available.filter(c => c.status === 'CREATED');
+    const buildCandidates = available.filter(c => c.status === 'CREATED' || c.status === 'PREPPED');
     const reviewCandidates = available.filter(c => c.status === 'IMPLEMENTED');
 
     return this.applyPriorityStrategy(buildCandidates, reviewCandidates, slots, this.config.priority);
@@ -346,11 +357,48 @@ export class SessionRunner {
   // ============================================================
 
   private spawnForCandidate(candidate: TaskCandidate): void {
-    const isBuild = candidate.status === 'CREATED';
+    const isBuild = candidate.status === 'CREATED' || candidate.status === 'PREPPED';
     const workerType = isBuild ? 'build' : 'review';
-    const provider = isBuild ? this.config.build_provider : this.config.review_provider;
-    const model = isBuild ? this.config.build_model : this.config.review_model;
     const retryNumber = this.retryCounters[candidate.id] ?? 0;
+
+    // 3-phase routing: CREATED → prep, PREPPED → implement, IMPLEMENTED → review
+    let provider: ProviderType;
+    let model: string;
+    if (candidate.status === 'CREATED') {
+      provider = this.config.prep_provider;
+      model = this.config.prep_model;
+    } else if (candidate.status === 'PREPPED') {
+      // Use fallback on retries (GLM failed, switch to claude)
+      if (retryNumber > 0) {
+        provider = this.config.implement_fallback_provider;
+        model = this.config.implement_fallback_model;
+      } else {
+        provider = this.config.implement_provider;
+        model = this.config.implement_model;
+      }
+    } else {
+      provider = this.config.review_provider;
+      model = this.config.review_model;
+    }
+
+    // Resolve custom flow for build workers (review workers follow fixed review logic)
+    let customFlow: CustomFlow | null = null;
+    if (isBuild && candidate.customFlowId) {
+      customFlow = this.supervisorDb.getCustomFlow(candidate.customFlowId);
+      if (customFlow) {
+        this.logger.log(`Custom flow '${customFlow.name}' (${customFlow.id}) assigned to ${candidate.id}`);
+        this.supervisorDb.logEvent(
+          this.sessionId, candidate.id, 'supervisor', 'CUSTOM_FLOW_APPLIED',
+          { flowId: customFlow.id, flowName: customFlow.name, stepCount: customFlow.steps.length },
+        );
+      } else {
+        this.logger.warn(`Custom flow ${candidate.customFlowId} not found for ${candidate.id} — using built-in flow`);
+        this.supervisorDb.logEvent(
+          this.sessionId, candidate.id, 'supervisor', 'CUSTOM_FLOW_FALLBACK',
+          { flowId: candidate.customFlowId, reason: 'flow not found in DB' },
+        );
+      }
+    }
 
     const claimed = this.supervisorDb.claimTask(candidate.id, this.sessionId);
     if (!claimed) {
@@ -373,6 +421,7 @@ export class SessionRunner {
           complexity: candidate.complexity,
           priority: candidate.priority,
           workingDirectory: this.config.working_directory,
+          customFlow,
         })
       : this.promptBuilder.reviewWorkerPrompt({
           taskId: candidate.id,

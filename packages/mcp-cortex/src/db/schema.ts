@@ -124,6 +124,16 @@ CREATE TABLE IF NOT EXISTS workers (
   progress_json      TEXT NOT NULL DEFAULT '{}'
 )`;
 
+const CUSTOM_FLOWS_TABLE = `
+CREATE TABLE IF NOT EXISTS custom_flows (
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  description  TEXT,
+  steps        TEXT NOT NULL DEFAULT '[]',
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const HANDOFFS_TABLE = `
 CREATE TABLE IF NOT EXISTS handoffs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -207,6 +217,7 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(loop_status)',
   'CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_custom_flows_name ON custom_flows(name)',
   'CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)',
   'CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)',
@@ -230,6 +241,7 @@ const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'session_claimed',      ddl: 'ALTER TABLE tasks ADD COLUMN session_claimed TEXT' },
   { column: 'claimed_at',           ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
   { column: 'claim_timeout_ms',     ddl: 'ALTER TABLE tasks ADD COLUMN claim_timeout_ms INTEGER' },
+  { column: 'custom_flow_id',       ddl: 'ALTER TABLE tasks ADD COLUMN custom_flow_id TEXT' },
 ];
 
 const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
@@ -240,6 +252,7 @@ const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'total_input_tokens',        ddl: 'ALTER TABLE sessions ADD COLUMN total_input_tokens INTEGER' },
   { column: 'total_output_tokens',       ddl: 'ALTER TABLE sessions ADD COLUMN total_output_tokens INTEGER' },
   { column: 'last_heartbeat',            ddl: 'ALTER TABLE sessions ADD COLUMN last_heartbeat TEXT' },
+  { column: 'drain_requested',            ddl: 'ALTER TABLE sessions ADD COLUMN drain_requested INTEGER NOT NULL DEFAULT 0' },
 ];
 
 const WORKER_MIGRATIONS: Array<{ column: string; ddl: string }> = [
@@ -418,6 +431,7 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(TASKS_TABLE);
   db.exec(SESSIONS_TABLE);
   db.exec(WORKERS_TABLE);
+  db.exec(CUSTOM_FLOWS_TABLE);
   db.exec(HANDOFFS_TABLE);
   db.exec(EVENTS_TABLE);
   db.exec(PHASES_TABLE);

@@ -6,7 +6,7 @@
  * spawned from a Claude Code conversation or from this persistent service.
  */
 import { Injectable } from '@nestjs/common';
-import type { ProviderType, WorkerType, SupervisorConfig } from './auto-pilot.types';
+import type { ProviderType, WorkerType, SupervisorConfig, CustomFlow } from './auto-pilot.types';
 
 export interface BuildPromptOpts {
   taskId: string;
@@ -19,6 +19,7 @@ export interface BuildPromptOpts {
   priority: string;
   workingDirectory: string;
   previousFailureReason?: string;
+  customFlow?: CustomFlow | null;
 }
 
 export interface ReviewPromptOpts {
@@ -53,10 +54,14 @@ export class PromptBuilderService {
 3. Run the orchestration flow: PM -> Architect -> Team-Leader -> Dev.
    Complete ALL batches until tasks.md shows all tasks COMPLETE.`;
 
+    const customFlowSection = opts.customFlow
+      ? `\nCUSTOM FLOW OVERRIDE (flow: "${opts.customFlow.name}", id: ${opts.customFlow.id}):\nThis task has a custom orchestration flow assigned. Use this agent sequence instead of the default type-based strategy:\n${opts.customFlow.steps.map((s, i) => `Step ${i + 1}: ${s.agent} (${s.label})`).join('\n')}\nRun the agents in this exact order. Do not use the default FEATURE/BUGFIX/etc. auto-detection strategy.\n`
+      : '';
+
     return `Run /orchestrate ${opts.taskId}
 
 ${modeHeader}
-
+${customFlowSection}
 AUTONOMOUS MODE — follow these rules strictly:
 
 1. FIRST: Write task-tracking/${opts.taskId}/status with the single word

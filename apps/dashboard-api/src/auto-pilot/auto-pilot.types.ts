@@ -17,8 +17,12 @@ export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting
 export interface SupervisorConfig {
   concurrency: number;
   limit: number;
-  build_provider: ProviderType;
-  build_model: string;
+  prep_provider: ProviderType;
+  prep_model: string;
+  implement_provider: ProviderType;
+  implement_model: string;
+  implement_fallback_provider: ProviderType;
+  implement_fallback_model: string;
   review_provider: ProviderType;
   review_model: string;
   priority: PriorityStrategy;
@@ -27,11 +31,24 @@ export interface SupervisorConfig {
   working_directory: string;
 }
 
+/**
+ * Data-driven defaults from 143-worker analysis (RETRO_2026-03-30_3):
+ * - Prep:      claude-sonnet-4-6  (100% success, $0.13/worker)
+ * - Implement: glm-5.1            ($0/worker, retry with claude on fail)
+ * - Review:    claude-sonnet-4-6  (100% success across 17 reviews, $0.78/worker)
+ *
+ * Expected cost: $0.91/task (best case) to $2.51/task (GLM retry)
+ * vs previous gpt-5.4 routing: $3.54/task
+ */
 export const DEFAULT_SUPERVISOR_CONFIG: SupervisorConfig = {
   concurrency: 2,
   limit: 10,
-  build_provider: 'claude',
-  build_model: 'claude-sonnet-4-6',
+  prep_provider: 'claude',
+  prep_model: 'claude-sonnet-4-6',
+  implement_provider: 'glm',
+  implement_model: 'zai-coding-plan/glm-5.1',
+  implement_fallback_provider: 'claude',
+  implement_fallback_model: 'claude-sonnet-4-6',
   review_provider: 'claude',
   review_model: 'claude-sonnet-4-6',
   priority: 'build-first',
@@ -39,6 +56,22 @@ export const DEFAULT_SUPERVISOR_CONFIG: SupervisorConfig = {
   poll_interval_ms: 30_000,
   working_directory: process.cwd(),
 };
+
+// ============================================================
+// Custom flows
+// ============================================================
+
+export interface CustomFlowStep {
+  agent: string;
+  label: string;
+}
+
+export interface CustomFlow {
+  id: string;
+  name: string;
+  description: string | null;
+  steps: CustomFlowStep[];
+}
 
 // ============================================================
 // Task candidates
@@ -53,6 +86,7 @@ export interface TaskCandidate {
   complexity: string;
   dependencies: string[];
   model: string | null;
+  customFlowId: string | null;
 }
 
 // ============================================================
@@ -94,8 +128,12 @@ export interface StartRequest {
   taskIds?: string[];
   concurrency?: number;
   limit?: number;
-  buildProvider?: ProviderType;
-  buildModel?: string;
+  prepProvider?: ProviderType;
+  prepModel?: string;
+  implementProvider?: ProviderType;
+  implementModel?: string;
+  implementFallbackProvider?: ProviderType;
+  implementFallbackModel?: string;
   reviewProvider?: ProviderType;
   reviewModel?: string;
   priority?: PriorityStrategy;
@@ -105,8 +143,12 @@ export interface StartRequest {
 export type UpdateConfigRequest = Partial<Pick<SupervisorConfig,
   | 'concurrency'
   | 'limit'
-  | 'build_provider'
-  | 'build_model'
+  | 'prep_provider'
+  | 'prep_model'
+  | 'implement_provider'
+  | 'implement_model'
+  | 'implement_fallback_provider'
+  | 'implement_fallback_model'
   | 'review_provider'
   | 'review_model'
   | 'priority'
@@ -132,6 +174,7 @@ export interface SessionStatusResponse {
   startedAt: string;
   uptimeMinutes: number;
   lastHeartbeat: string;
+  drainRequested: boolean;
 }
 
 // ============================================================

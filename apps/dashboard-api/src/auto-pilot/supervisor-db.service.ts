@@ -17,6 +17,8 @@ import type {
   HealthStatus,
   TaskCandidate,
   ActiveWorkerInfo,
+  CustomFlow,
+  CustomFlowStep,
 } from './auto-pilot.types';
 
 // ============================================================
@@ -50,6 +52,14 @@ interface TaskRow {
   dependencies: string | null;
   model: string | null;
   description: string;
+  custom_flow_id: string | null;
+}
+
+interface CustomFlowRow {
+  id: string;
+  name: string;
+  description: string | null;
+  steps: string;
 }
 
 // ============================================================
@@ -194,6 +204,22 @@ export class SupervisorDbService implements OnModuleDestroy {
     ).run(count, now, sessionId);
   }
 
+  public setDrainRequested(sessionId: string): void {
+    const db = this.getDb();
+    const now = new Date().toISOString();
+    db.prepare(
+      'UPDATE sessions SET drain_requested = 1, updated_at = ? WHERE id = ?',
+    ).run(now, sessionId);
+  }
+
+  public getDrainRequested(sessionId: string): boolean {
+    const db = this.getDb();
+    const row = db.prepare(
+      'SELECT drain_requested FROM sessions WHERE id = ?',
+    ).get(sessionId) as { drain_requested: number } | undefined;
+    return row?.drain_requested === 1;
+  }
+
   // ============================================================
   // Task operations
   // ============================================================
@@ -201,7 +227,7 @@ export class SupervisorDbService implements OnModuleDestroy {
   public getTaskCandidates(): TaskCandidate[] {
     const db = this.getDb();
     const rows = db.prepare(
-      `SELECT id, title, status, type, priority, complexity, dependencies, model
+      `SELECT id, title, status, type, priority, complexity, dependencies, model, custom_flow_id
        FROM tasks
        WHERE status IN ('CREATED', 'IMPLEMENTED')
        ORDER BY
@@ -223,6 +249,7 @@ export class SupervisorDbService implements OnModuleDestroy {
         complexity: row.complexity ?? 'Medium',
         dependencies: parseJson<string[]>(row.dependencies, []),
         model: row.model,
+        customFlowId: row.custom_flow_id ?? null,
       }))
       .filter(task => {
         // Only return tasks whose dependencies are all COMPLETE
@@ -252,6 +279,22 @@ export class SupervisorDbService implements OnModuleDestroy {
     const db = this.getDb();
     const row = db.prepare('SELECT description FROM tasks WHERE id = ?').get(taskId) as { description: string } | undefined;
     return row?.description ?? null;
+  }
+
+  public getCustomFlow(flowId: string): CustomFlow | null {
+    const db = this.getDb();
+    const row = db.prepare(
+      'SELECT id, name, description, steps FROM custom_flows WHERE id = ?',
+    ).get(flowId) as CustomFlowRow | undefined;
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description ?? null,
+      steps: parseJson<CustomFlowStep[]>(row.steps, []),
+    };
   }
 
   public getTaskCountsByStatus(): Record<string, number> {
