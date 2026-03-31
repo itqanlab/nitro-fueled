@@ -35,6 +35,7 @@ import type {
 import type { SessionStatusResponse } from './auto-pilot.types';
 
 const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/;
+const MODEL_NAME_RE = /^[a-zA-Z0-9._:/-]{1,128}$/;
 const VALID_PROVIDERS = new Set(['claude', 'glm', 'opencode', 'codex']);
 const VALID_PRIORITIES = new Set(['build-first', 'review-first', 'balanced']);
 
@@ -253,8 +254,8 @@ export class AutoPilotController {
 
     for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel', 'supervisorModel'] as const) {
       if (body[key] !== undefined) {
-        if (typeof body[key] !== 'string') {
-          throw new BadRequestException(`${key} must be a string`);
+        if (typeof body[key] !== 'string' || !MODEL_NAME_RE.test(body[key] as string)) {
+          throw new BadRequestException(`${key} must be a string matching pattern [a-zA-Z0-9._:/-]{1,128}`);
         }
         result[key] = body[key];
       }
@@ -323,8 +324,8 @@ export class AutoPilotController {
 
     for (const key of ['prepModel', 'implementModel', 'implementFallbackModel', 'reviewModel', 'supervisorModel'] as const) {
       if (body[key] !== undefined) {
-        if (typeof body[key] !== 'string') {
-          throw new BadRequestException(`${key} must be a string`);
+        if (typeof body[key] !== 'string' || !MODEL_NAME_RE.test(body[key] as string)) {
+          throw new BadRequestException(`${key} must be a string matching pattern [a-zA-Z0-9._:/-]{1,128}`);
         }
         result[key] = body[key];
       }

@@ -259,6 +259,7 @@ export class SessionRunner {
         this.sessionId, worker.taskId, 'supervisor', 'RETRY_EXHAUSTED',
         { retryCount, reason },
       );
+      this.emitEvent('task:failed', { taskId: worker.taskId, reason, retryCount });
       this.emitEvent('task:blocked', { taskId: worker.taskId, reason });
     }
   }
@@ -368,6 +369,9 @@ export class SessionRunner {
     const isBuild = candidate.status === 'CREATED' || candidate.status === 'PREPPED';
     const workerType = isBuild ? 'build' : 'review';
     const retryNumber = this.retryCounters[candidate.id] ?? 0;
+
+    // NOTE: config.supervisor_model is not yet used for spawning — it is reserved
+    // for a future mode where the supervisor itself runs as a Claude worker.
 
     // 3-phase routing: CREATED → prep, PREPPED → implement, IMPLEMENTED → review
     let provider: ProviderType;

@@ -18,6 +18,8 @@ import type { DashboardEvent, FileChangeEvent } from './dashboard.types';
 import type { SupervisorEvent } from '../auto-pilot/auto-pilot.types';
 import { WsAuthGuard } from './auth/ws-auth.guard';
 
+const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/;
+
 @WebSocketGateway({
   cors: {
     origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4200'],
@@ -88,8 +90,14 @@ export class DashboardGateway
       typeof (data as Record<string, unknown>)['sessionId'] === 'string'
     ) {
       const sessionId = (data as Record<string, unknown>)['sessionId'] as string;
+      if (!SESSION_ID_RE.test(sessionId)) {
+        this.logger.warn(`Client ${client.id} tried to join invalid session room: ${sessionId}`);
+        return;
+      }
       void client.join(sessionId);
       this.logger.debug(`Client ${client.id} joined session room: ${sessionId}`);
+    } else {
+      this.logger.debug(`Client ${client.id} sent malformed join-session payload`);
     }
   }
 
@@ -106,8 +114,14 @@ export class DashboardGateway
       typeof (data as Record<string, unknown>)['sessionId'] === 'string'
     ) {
       const sessionId = (data as Record<string, unknown>)['sessionId'] as string;
+      if (!SESSION_ID_RE.test(sessionId)) {
+        this.logger.warn(`Client ${client.id} tried to leave invalid session room: ${sessionId}`);
+        return;
+      }
       void client.leave(sessionId);
       this.logger.debug(`Client ${client.id} left session room: ${sessionId}`);
+    } else {
+      this.logger.debug(`Client ${client.id} sent malformed leave-session payload`);
     }
   }
 

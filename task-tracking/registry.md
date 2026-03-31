@@ -288,3 +288,4 @@
 | TASK_2026_283 | CREATED     | FEATURE | Multi-Tool Context File Generation — .cursorrules, copilot-instructions, .clinerules | 2026-03-31 | default |
 | TASK_2026_284 | CREATED     | FEATURE | AI-Assisted Three-Way Merge on Update (--ai-merge) | 2026-03-31 | default |
 | TASK_2026_285 | CREATED     | FEATURE | Update Change Summary — AI-Powered Diff Explanation | 2026-03-31 | default |
+| TASK_2026_286 | CREATED     | FEATURE | Generate .codex/ Configuration and Agent Files on Init | 2026-03-31 | default |
