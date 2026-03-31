@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { McpServer, McpToolAccessRow } from '../../../models/mcp.model';
 
 @Component({
@@ -8,6 +8,6 @@ import { McpServer, McpToolAccessRow } from '../../../models/mcp.model';
   styleUrl: './compatibility-matrix.component.scss',
 })
 export class CompatibilityMatrixComponent {
-  @Input({ required: true }) servers!: readonly McpServer[];
-  @Input({ required: true }) toolAccess!: readonly McpToolAccessRow[];
+  readonly servers    = input.required<readonly McpServer[]>();
+  readonly toolAccess = input.required<readonly McpToolAccessRow[]>();
 }

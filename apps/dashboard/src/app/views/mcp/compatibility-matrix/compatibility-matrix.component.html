@@ -6,16 +6,16 @@
       <thead>
         <tr>
           <th scope="col">Agent</th>
-          @for (server of servers; track server.name) {
+          @for (server of servers(); track server.name) {
             <th scope="col">{{ server.name }}</th>
           }
         </tr>
       </thead>
       <tbody>
-        @for (row of toolAccess; track row.agent) {
+        @for (row of toolAccess(); track row.agent) {
           <tr>
             <td>{{ row.agent }}</td>
-            @for (server of servers; track server.name) {
+            @for (server of servers(); track server.name) {
               <td>
                 @if (row.access[server.name]) {
                   <span class="matrix-check" aria-label="Has access">&#x2705;</span>

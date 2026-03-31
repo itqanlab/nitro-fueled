@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-empty-state',
@@ -7,11 +7,11 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
   imports: [],
   template: `
     <div class="empty-state">
-      <span class="empty-icon">{{ icon }}</span>
-      <p class="empty-message">{{ message }}</p>
-      @if (actionLabel) {
+      <span class="empty-icon">{{ icon() }}</span>
+      <p class="empty-message">{{ message() }}</p>
+      @if (actionLabel()) {
         <button type="button" class="empty-action" (click)="actionEvent.emit()">
-          {{ actionLabel }}
+          {{ actionLabel() }}
         </button>
       }
     </div>
@@ -55,8 +55,8 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
   `],
 })
 export class EmptyStateComponent {
-  @Input({ required: true }) icon!: string;
-  @Input({ required: true }) message!: string;
-  @Input() actionLabel = '';
-  @Output() actionEvent = new EventEmitter<void>();
+  readonly icon        = input.required<string>();
+  readonly message     = input.required<string>();
+  readonly actionLabel = input<string>('');
+  readonly actionEvent = output<void>();
 }

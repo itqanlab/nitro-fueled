@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { McpIntegration } from '../../../models/mcp.model';
 
@@ -10,5 +10,5 @@ import { McpIntegration } from '../../../models/mcp.model';
   styleUrl: './integrations-tab.component.scss',
 })
 export class IntegrationsTabComponent {
-  @Input({ required: true }) integrations!: readonly McpIntegration[];
+  readonly integrations = input.required<readonly McpIntegration[]>();
 }

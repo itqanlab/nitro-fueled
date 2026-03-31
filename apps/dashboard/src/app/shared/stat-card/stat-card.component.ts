@@ -1,19 +1,20 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-stat-card',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass],
   template: `
     <div class="stat-card">
-      <div class="stat-card-label">{{ label }}</div>
-      <div class="stat-card-value" [ngClass]="valueClass">
+      <div class="stat-card-label">{{ label() }}</div>
+      <div class="stat-card-value" [ngClass]="valueClass()">
         <ng-content></ng-content>
       </div>
       <ng-content select="[slot=extra]"></ng-content>
-      @if (sub) {
-        <div class="stat-card-sub">{{ sub }}</div>
+      @if (sub()) {
+        <div class="stat-card-sub">{{ sub() }}</div>
       }
     </div>
   `,
@@ -44,7 +45,7 @@ import { NgClass } from '@angular/common';
   `],
 })
 export class StatCardComponent {
-  @Input({ required: true }) label!: string;
-  @Input() valueClass = '';
-  @Input() sub = '';
+  public readonly label      = input.required<string>();
+  public readonly valueClass = input<string>('');
+  public readonly sub        = input<string>('');
 }

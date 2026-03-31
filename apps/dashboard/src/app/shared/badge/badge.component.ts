@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { NgClass } from '@angular/common';
 
 type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral';
@@ -10,8 +10,8 @@ type BadgeSize = 'sm' | 'md';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass],
   template: `
-    <span class="badge" [ngClass]="[variant, 'badge-' + size]">
-      {{ label }}
+    <span class="badge" [ngClass]="[variant(), 'badge-' + size()]">
+      {{ label() }}
     </span>
   `,
   styles: [`
@@ -58,7 +58,7 @@ type BadgeSize = 'sm' | 'md';
   `],
 })
 export class BadgeComponent {
-  @Input({ required: true }) label!: string;
-  @Input() variant: BadgeVariant = 'neutral';
-  @Input() size: BadgeSize = 'md';
+  public readonly label   = input.required<string>();
+  public readonly variant = input<BadgeVariant>('neutral');
+  public readonly size    = input<BadgeSize>('md');
 }
