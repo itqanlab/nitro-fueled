@@ -45,4 +45,5 @@ Currently the supervisor fetches IMPLEMENTED tasks first and claims them before 
 ## File Scope
 
 - .claude/skills/auto-pilot/SKILL.md (task selection priority)
+- .claude/skills/auto-pilot/references/parallel-mode.md (slot allocation logic)
 - .claude/commands/nitro-auto-pilot.md (flag documentation)

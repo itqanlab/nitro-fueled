@@ -60,6 +60,8 @@ description: >
 | **Completion (Build/Implement Worker)** | `COMPLETE task=<task_id> → IMPLEMENTED` (or `FAILED` / `BLOCKED`) |
 | **Completion (Review+Fix Worker)** | `COMPLETE task=<task_id> → COMPLETE` (or `FAILED` / `BLOCKED`) |
 | **Session end** | `SESSION COMPLETE — {N} complete, {N} failed, {N} blocked` |
+| **Reconciliation (OK)** | `RECONCILE_OK task=<task_id> worker=<worker_id> state=<state>` |
+| **Reconciliation (Discrepancy)** | `RECONCILE_DISCREPANCY task=<task_id> action=<FAILED\|IMPLEMENTED>` |
 | **All structured data** | Tables, queues, state snapshots, notes, analysis — DB/session artifacts only. **Never printed to conversation.** |
 | **Explanatory text** | Any sentence explaining what the supervisor is about to do, what it decided, or how monitoring works — **banned from conversation**. Decisions go to DB/session artifacts. |
 
