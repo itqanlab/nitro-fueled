@@ -404,7 +404,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 #### Task Map -- Wave 1 (schema foundation)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_263 | Cortex DB Schema: Subtask Support | CREATED | P1-High |
+| TASK_2026_263 | Cortex DB Schema: Subtask Support | COMPLETE | P1-High |
 
 #### Task Map -- Wave 2 (depends on Wave 1)
 | Task ID | Title | Status | Priority |
