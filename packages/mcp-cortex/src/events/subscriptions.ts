@@ -93,6 +93,28 @@ export function handleEmitEvent(
     source: 'emit_event',
   });
 
+  // Capture SKILL_INVOKED events directly into the skill_invocations table.
+  // data.skill_name is required; other fields are optional.
+  if (args.label === 'SKILL_INVOKED' && args.data?.skill_name) {
+    try {
+      const durationMs = args.data.duration_ms !== undefined ? parseInt(args.data.duration_ms, 10) : null;
+      db.prepare(
+        `INSERT INTO skill_invocations (skill_name, session_id, worker_id, task_id, duration_ms, outcome)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        args.data.skill_name,
+        row.session_id,
+        args.worker_id,
+        args.data.task_id ?? null,
+        isNaN(durationMs as number) ? null : durationMs,
+        args.data.outcome ?? null,
+      );
+    } catch (err) {
+      process.stderr.write(`[emit_event] SKILL_INVOKED write failed: ${err instanceof Error ? err.message : String(err)}\n`);
+      // Non-fatal — continue
+    }
+  }
+
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, worker_id: args.worker_id, label: args.label }) }] };
 }
 

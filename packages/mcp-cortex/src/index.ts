@@ -34,6 +34,7 @@ import {
   handleWriteSubtasks, handleReadSubtasks,
   handleGetTaskArtifacts,
 } from './tools/artifacts.js';
+import { handleLogSkillInvocation, handleGetSkillUsage } from './tools/analytics.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -961,6 +962,28 @@ server.registerTool('get_task_artifacts', {
     task_id: z.string().max(200).describe('Task ID to retrieve all artifacts for'),
   },
 }, (args) => handleGetTaskArtifacts(db, args));
+
+// --- Skill analytics tools ---
+
+server.registerTool('log_skill_invocation', {
+  description: 'Record a skill invocation in the skill_invocations table. Use this to track which skills are being used, when, and by whom. Also populated automatically when emit_event is called with label=SKILL_INVOKED and data.skill_name set.',
+  inputSchema: {
+    skill_name: z.string().min(1).max(200).describe('Name of the skill that was invoked'),
+    session_id: z.string().max(200).optional().describe('Session ID of the caller (optional)'),
+    worker_id: z.string().max(200).optional().describe('Worker ID of the caller (optional)'),
+    task_id: z.string().max(200).optional().describe('Task ID associated with this invocation (optional)'),
+    duration_ms: z.number().int().min(0).optional().describe('How long the skill ran in milliseconds (optional)'),
+    outcome: z.string().max(50).optional().describe('Outcome of the invocation, e.g. "success" or "failed" (optional)'),
+  },
+}, (args) => handleLogSkillInvocation(db, args));
+
+server.registerTool('get_skill_usage', {
+  description: 'Return aggregated skill invocation counts per skill for a given time period. Default period is 30d (last 30 days). Supports Nd (days) and Nh (hours) formats.',
+  inputSchema: {
+    period: z.string().max(20).optional().describe('Time period to aggregate over. Format: Nd for days, Nh for hours (e.g. "30d", "7d", "24h"). Default: 30d'),
+    skill_name: z.string().max(200).optional().describe('Filter to a specific skill name (optional)'),
+  },
+}, (args) => handleGetSkillUsage(db, args));
 
 // --- Start ---
 
