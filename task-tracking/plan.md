@@ -435,7 +435,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 #### Task Map — Wave 5 (depends on Wave 2)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_334 | Complexity-Aware Pipeline Skip — Simple Tasks Skip PM+Architect | CREATED | P2-Medium |
+| TASK_2026_334 | Complexity-Aware Pipeline Skip — Simple Tasks Skip PM+Architect | COMPLETE | P2-Medium |
 
 ### Phase 17: Subtask Support
 **Status**: NOT STARTED
