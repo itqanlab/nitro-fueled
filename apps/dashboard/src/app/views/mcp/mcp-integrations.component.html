@@ -84,11 +84,11 @@
             <button class="btn btn-sm disabled-btn" type="button" disabled aria-disabled="true">&#x21BB; Restart</button>
           } @else {
             <button class="btn btn-sm" type="button">&#x2699; Configure</button>
-            <button class="btn btn-sm" type="button">&#x21BB; Restart</button>
+            <button class="btn btn-sm" type="button" (click)="onRestartServer(server)">&#x21BB; Restart</button>
           }
           @if (server.badgeType === 'User') {
             <div class="action-spacer"></div>
-            <button class="btn btn-sm btn-danger" type="button" [attr.aria-label]="'Remove ' + server.name + ' server'">&#x2715; Remove</button>
+            <button class="btn btn-sm btn-danger" type="button" [attr.aria-label]="'Remove ' + server.name + ' server'" (click)="onRemoveServer(server)">&#x2715; Remove</button>
           }
         </div>
       </article>

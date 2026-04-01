@@ -64,6 +64,8 @@ import type {
   AnalyticsModelPerfResponse,
   AnalyticsLauncherMetricsResponse,
   AnalyticsRoutingRecommendationsResponse,
+  SessionHistoryListItem,
+  SessionHistoryDetail,
 } from '../models/api.types';
 import type { ReportsOverview } from '../models/reports.model';
 
@@ -461,6 +463,16 @@ export class ApiService {
     return this.listAutoSessions().pipe(map(r => [...r.sessions]));
   }
 
+  // ── Session History (cortex DB) ───────────────────────────────────────────
+
+  public getSessionHistory(): Observable<SessionHistoryListItem[]> {
+    return this.http.get<SessionHistoryListItem[]>(`${this.base}/session-history`);
+  }
+
+  public getSessionHistoryDetail(id: string): Observable<SessionHistoryDetail> {
+    return this.http.get<SessionHistoryDetail>(`${this.base}/session-history/${encodeURIComponent(id)}`);
+  }
+
   public drainSession(sessionId: string): Observable<SessionActionResponse> {
     return this.http.patch<SessionActionResponse>(
       `${this.base}/sessions/${encodeURIComponent(sessionId)}/stop`,
@@ -512,4 +524,53 @@ export class ApiService {
       `${this.orchestrationBase}/tasks/${encodeURIComponent(taskId)}/flow-override`,
     );
   }
+
+  // ── MCP ──────────────────────────────────────────────────────────────────
+
+  public getMcpServers(): Observable<McpServerEntry[]> {
+    return this.http.get<McpServerEntry[]>(`${environment.apiUrl}/api/mcp/servers`);
+  }
+
+  public addMcpServer(req: McpInstallRequest): Observable<McpServerEntry> {
+    return this.http.post<McpServerEntry>(`${environment.apiUrl}/api/mcp/servers`, req);
+  }
+
+  public removeMcpServer(id: string): Observable<{ id: string; removed: boolean }> {
+    return this.http.delete<{ id: string; removed: boolean }>(
+      `${environment.apiUrl}/api/mcp/servers/${encodeURIComponent(id)}`,
+    );
+  }
+
+  public restartMcpServer(id: string): Observable<{ id: string; action: string; note: string }> {
+    return this.http.post<{ id: string; action: string; note: string }>(
+      `${environment.apiUrl}/api/mcp/servers/${encodeURIComponent(id)}/restart`,
+      {},
+    );
+  }
+
+  public getMcpToolAccess(): Observable<McpToolAccessMatrix> {
+    return this.http.get<McpToolAccessMatrix>(`${environment.apiUrl}/api/mcp/tool-access`);
+  }
+}
+
+export interface McpServerEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly command: string;
+  readonly args: string[];
+  readonly env: Record<string, string>;
+  readonly status: 'active' | 'inactive';
+  readonly source: 'user' | 'project';
+}
+
+export interface McpInstallRequest {
+  readonly name: string;
+  readonly command: string;
+  readonly args?: string[];
+  readonly env?: Record<string, string>;
+}
+
+export interface McpToolAccessMatrix {
+  readonly servers: string[];
+  readonly agents: ReadonlyArray<{ agent: string; access: Record<string, boolean> }>;
 }
