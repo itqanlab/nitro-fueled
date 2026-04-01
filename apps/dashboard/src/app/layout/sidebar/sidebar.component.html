@@ -1,5 +1,5 @@
 <nav class="sidebar">
-  @for (section of sections; track trackByTitle($index, section); let last = $last) {
+  @for (section of sections(); track trackByTitle($index, section); let last = $last) {
     @if (section.type === 'settings') {
       <div class="sidebar-spacer"></div>
     }
