@@ -23,6 +23,7 @@ import { handleListAgents, handleGetAgent, handleCreateAgent, handleUpdateAgent,
 import { handleListWorkflows, handleGetWorkflow, handleCreateWorkflow, handleUpdateWorkflow, handleDeleteWorkflow } from './tools/workflow-tools.js';
 import { handleListLaunchers, handleGetLauncher, handleRegisterLauncher, handleUpdateLauncher, handleDeregisterLauncher } from './tools/launcher-tools.js';
 import { handleLogCompatibility, handleQueryCompatibility } from './tools/compatibility-tools.js';
+import { handleCreateSubtask, handleBulkCreateSubtasks, handleGetSubtasks, handleGetParentStatusRollup } from './tools/subtask-tools.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -773,6 +774,46 @@ server.registerTool('query_compatibility', {
     limit: z.number().int().min(1).max(1000).optional().describe('Max records to return (default 100)'),
   },
 }, (args) => handleQueryCompatibility(db, args));
+
+// --- Subtask tools ---
+
+server.registerTool('create_subtask', {
+  description: 'Create a single subtask under a parent task. Validates parent exists, parent is not itself a subtask (flat only), auto-assigns next M value. Subtask ID format: TASK_YYYY_NNN.M. Creates task.md + status file on disk and inserts into DB.',
+  inputSchema: {
+    parent_task_id: z.string().max(200).describe('Parent task ID (e.g. TASK_2026_261)'),
+    title: z.string().min(1).max(500).describe('Subtask title'),
+    description: z.string().max(10000).optional().describe('Subtask description'),
+    type: z.enum(CANONICAL_TASK_TYPES).optional().describe('Task type (default: FEATURE)'),
+    priority: z.enum(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']).optional().describe('Task priority (default: P2-Medium)'),
+  },
+}, (args) => handleCreateSubtask(db, projectRoot, args));
+
+server.registerTool('bulk_create_subtasks', {
+  description: 'Create multiple subtasks under a parent task in one call with sequential ordering. Same validations as create_subtask.',
+  inputSchema: {
+    parent_task_id: z.string().max(200).describe('Parent task ID (e.g. TASK_2026_261)'),
+    subtasks: z.array(z.object({
+      title: z.string().min(1).max(500),
+      description: z.string().max(10000).optional(),
+      type: z.enum(CANONICAL_TASK_TYPES).optional(),
+      priority: z.enum(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']).optional(),
+    })).min(1).max(50).describe('Array of subtask definitions to create'),
+  },
+}, (args) => handleBulkCreateSubtasks(db, projectRoot, args));
+
+server.registerTool('get_subtasks', {
+  description: 'Return ordered subtasks for a given parent_task_id, sorted by subtask_order ascending.',
+  inputSchema: {
+    parent_task_id: z.string().max(200).describe('Parent task ID to retrieve subtasks for'),
+  },
+}, (args) => handleGetSubtasks(db, args));
+
+server.registerTool('get_parent_status_rollup', {
+  description: 'Derive parent status from subtask completion state. Returns derivedStatus: IMPLEMENTED (all COMPLETE), BLOCKED (any FAILED), or IN_PROGRESS (otherwise). Query helper — does not mutate parent task.',
+  inputSchema: {
+    parent_task_id: z.string().max(200).describe('Parent task ID to compute rollup for'),
+  },
+}, (args) => handleGetParentStatusRollup(db, args));
 
 // --- Start ---
 

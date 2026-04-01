@@ -366,6 +366,8 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_task_descriptions_task ON task_descriptions(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_task_contexts_task ON task_contexts(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_task_subtasks_task ON task_subtasks(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_parent_order ON tasks(parent_task_id, subtask_order)',
 ];
 
 // Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
@@ -383,6 +385,8 @@ const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'custom_flow_id',         ddl: 'ALTER TABLE tasks ADD COLUMN custom_flow_id TEXT' },
   { column: 'preferred_provider',     ddl: 'ALTER TABLE tasks ADD COLUMN preferred_provider TEXT' },
   { column: 'worker_mode',            ddl: "ALTER TABLE tasks ADD COLUMN worker_mode TEXT" },
+  { column: 'parent_task_id',         ddl: 'ALTER TABLE tasks ADD COLUMN parent_task_id TEXT' },
+  { column: 'subtask_order',          ddl: 'ALTER TABLE tasks ADD COLUMN subtask_order INTEGER' },
 ];
 
 const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
