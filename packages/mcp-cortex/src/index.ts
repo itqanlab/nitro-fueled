@@ -116,7 +116,7 @@ server.registerTool('update_task', {
   } catch {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid JSON in fields' }) }] };
   }
-  return handleUpdateTask(db, { task_id: args.task_id, fields: parsed }, projectRoot);
+  return handleUpdateTask(db, { task_id: args.task_id, fields: parsed });
 });
 
 server.registerTool('get_next_wave', {
@@ -615,7 +615,7 @@ server.registerTool('bulk_update_tasks', {
       fields: z.string().describe('JSON string of fields to update (same format as update_task)'),
     })).min(1).max(50).describe('Array of {task_id, fields} update descriptors (max 50)'),
   },
-}, (args) => handleBulkUpdateTasks(db, args, projectRoot));
+}, (args) => handleBulkUpdateTasks(db, args));
 
 // --- Agent tools ---
 

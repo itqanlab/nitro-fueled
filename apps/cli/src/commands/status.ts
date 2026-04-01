@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
 import { logger } from '../utils/logger.js';
-import { parseRegistry, generateRegistry } from '../utils/registry.js';
 import type { RegistryRow, TaskStatus } from '../utils/registry.js';
 
 const TASK_STATUS_VALUES: ReadonlyArray<TaskStatus> = [
@@ -339,11 +338,10 @@ export default class Status extends BaseCommand {
     }
 
     if (!usedDb) {
-      rows = parseRegistry(cwd);
+      logger.error('Error: cortex DB unavailable. Run `npx nitro-fueled init` to configure nitro-cortex.');
+      process.exitCode = 1;
+      return;
     }
-
-    // Always regenerate registry.md from status files so it stays in sync
-    generateRegistry(cwd);
 
     const workers = parseActiveWorkers(cwd);
 
