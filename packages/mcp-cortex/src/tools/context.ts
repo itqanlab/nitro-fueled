@@ -440,7 +440,7 @@ export function handleReportProgress(
   const phaseSafe = args.phase.replace(/[^\w-]/g, '').toUpperCase().slice(0, 50);
   const statusSafe = args.status.replace(/[^\w-]/g, '').toUpperCase().slice(0, 50);
 
-  const validStatuses = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED'];
+  const validStatuses = ['CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED', 'ARCHIVE'];
 
   try {
     const now = new Date().toISOString();

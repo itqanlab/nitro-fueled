@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'PREPPED' | 'IMPLEMENTING' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED';
+export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'PREPPED' | 'IMPLEMENTING' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED' | 'ARCHIVE';
 export const CANONICAL_TASK_TYPES = [
   'FEATURE',
   'BUGFIX',
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title            TEXT NOT NULL,
   type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
   priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-  status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+  status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE')),
   complexity       TEXT,
   model            TEXT,
   dependencies     TEXT NOT NULL DEFAULT '[]',
@@ -346,7 +346,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
   const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").get() as { sql: string } | undefined;
   if (!tableInfo) return; // Table doesn't exist yet, CREATE TABLE will handle it
 
-  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'") || !tableInfo.sql.includes("'PREPPED'") || !tableInfo.sql.includes("'IMPLEMENTING'");
+  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'") || !tableInfo.sql.includes("'PREPPED'") || !tableInfo.sql.includes("'IMPLEMENTING'") || !tableInfo.sql.includes("'ARCHIVE'");
   const needsTypeMigration = !tableInfo.sql.includes("'OPS'") || !tableInfo.sql.includes("'DESIGN'");
   if (!needsStatusMigration && !needsTypeMigration) return; // Already up to date
 
@@ -363,7 +363,7 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
         title            TEXT NOT NULL,
         type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
         priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE')),
         complexity       TEXT,
         model            TEXT,
         dependencies     TEXT NOT NULL DEFAULT '[]',

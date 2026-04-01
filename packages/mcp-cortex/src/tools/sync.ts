@@ -154,7 +154,7 @@ export function handleSyncTasksFromFiles(
 
 const VALID_TASK_STATUSES = new Set([
   'CREATED', 'IN_PROGRESS', 'PREPPED', 'IMPLEMENTING', 'IMPLEMENTED', 'IN_REVIEW',
-  'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+  'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED', 'ARCHIVE',
 ]);
 
 export function handleReconcileStatusFiles(
