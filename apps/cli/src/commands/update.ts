@@ -1,4 +1,4 @@
-import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, sep } from 'node:path';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
@@ -6,12 +6,13 @@ import { logger } from '../utils/logger.js';
 import { resolveScaffoldRoot, walkScaffoldFiles } from '../utils/scaffold.js';
 import { readManifest, writeManifest, computeChecksum, buildCoreFileEntry } from '../utils/manifest.js';
 import type { Manifest } from '../utils/manifest.js';
+import { threeWayMerge, aiAssistMerge } from '../utils/merge.js';
 import { detectStack } from '../utils/stack-detect.js';
 import { generateAntiPatterns } from '../utils/anti-patterns.js';
 import { getPackageVersion } from '../utils/package-version.js';
 import { runCortexStep } from '../utils/cortex-hydrate.js';
 
-type FileOutcome = 'updated' | 'added' | 'skipped' | 'reinstalled';
+type FileOutcome = 'updated' | 'added' | 'skipped' | 'reinstalled' | 'auto-merged' | 'ai-merged' | 'conflict';
 
 interface FileResult {
   relPath: string;
@@ -31,6 +32,12 @@ function copyFile(srcPath: string, destPath: string, dryRun: boolean): void {
   copyFileSync(srcPath, destPath);
 }
 
+function writeTextFile(destPath: string, content: string, dryRun: boolean): void {
+  if (dryRun) return;
+  ensureParentDir(destPath);
+  writeFileSync(destPath, content, 'utf8');
+}
+
 function getCurrentChecksum(filePath: string): string | null {
   if (!existsSync(filePath)) return null;
   try {
@@ -44,7 +51,8 @@ function processScaffoldFiles(
   scaffoldFiles: Map<string, string>,
   manifest: Manifest,
   cwd: string,
-  dryRun: boolean
+  dryRun: boolean,
+  enableAiMerge: boolean,
 ): FileResult[] {
   const results: FileResult[] = [];
 
@@ -84,8 +92,41 @@ function processScaffoldFiles(
       copyFile(srcPath, destPath, dryRun);
       results.push({ relPath, outcome: 'updated' });
     } else {
-      // User has modified this file — skip it
-      results.push({ relPath, outcome: 'skipped' });
+      // User has modified this file — attempt three-way merge
+      const base = manifest.coreFiles[relPath].scaffoldContent;
+      if (base === undefined) {
+        // No merge base in manifest (installed before this feature) — skip
+        results.push({ relPath, outcome: 'skipped' });
+        continue;
+      }
+
+      let theirs: string;
+      try {
+        theirs = readFileSync(srcPath, 'utf8');
+      } catch {
+        results.push({ relPath, outcome: 'skipped' });
+        continue;
+      }
+
+      const ours = readFileSync(destPath, 'utf8');
+      const mergeResult = threeWayMerge(base, ours, theirs);
+
+      if (mergeResult.conflicts === 0) {
+        writeTextFile(destPath, mergeResult.merged, dryRun);
+        results.push({ relPath, outcome: 'auto-merged' });
+      } else if (enableAiMerge) {
+        logger.log(`  ${relPath}: conflicts detected — invoking AI merge...`);
+        const aiResult = aiAssistMerge(base, ours, theirs, relPath);
+        if (aiResult !== null) {
+          writeTextFile(destPath, aiResult, dryRun);
+          results.push({ relPath, outcome: 'ai-merged' });
+        } else {
+          logger.warn(`  ${relPath}: AI merge failed — leaving file unchanged`);
+          results.push({ relPath, outcome: 'conflict' });
+        }
+      } else {
+        results.push({ relPath, outcome: 'conflict' });
+      }
     }
   }
 
@@ -103,9 +144,9 @@ function updateManifestData(
   manifest.version = latestVersion;
   manifest.updatedAt = now;
 
-  // Update entries for all processed files (updated, added, reinstalled)
+  // Update entries for all processed files (updated, added, reinstalled, merged)
   for (const result of results) {
-    if (result.outcome === 'skipped') continue;
+    if (result.outcome === 'skipped' || result.outcome === 'conflict') continue;
     const destPath = resolve(cwd, result.relPath);
     if (!existsSync(destPath)) continue;
     try {
@@ -135,6 +176,9 @@ function printResults(
   const added = results.filter((r) => r.outcome === 'added');
   const reinstalled = results.filter((r) => r.outcome === 'reinstalled');
   const skipped = results.filter((r) => r.outcome === 'skipped');
+  const autoMerged = results.filter((r) => r.outcome === 'auto-merged');
+  const aiMerged = results.filter((r) => r.outcome === 'ai-merged');
+  const conflicts = results.filter((r) => r.outcome === 'conflict');
 
   const dryRunLabel = dryRun ? ' [dry-run]' : '';
 
@@ -147,13 +191,31 @@ function printResults(
   for (const r of added) {
     logger.log(`  + ${r.relPath.padEnd(55)} new in v${latestVersion} — added${dryRunLabel}`);
   }
+  for (const r of autoMerged) {
+    logger.log(`  ↕ ${r.relPath.padEnd(55)} auto-merged (your changes + scaffold update)${dryRunLabel}`);
+  }
+  for (const r of aiMerged) {
+    logger.log(`  ✦ ${r.relPath.padEnd(55)} AI-merged (review recommended)${dryRunLabel}`);
+  }
   for (const r of skipped) {
-    logger.log(`  ~ ${r.relPath.padEnd(55)} modified by you — skipped`);
+    logger.log(`  ~ ${r.relPath.padEnd(55)} modified by you — skipped (no merge base)`);
+  }
+  for (const r of conflicts) {
+    logger.log(`  ✗ ${r.relPath.padEnd(55)} conflict — update manually`);
   }
 
   logger.log('');
-  const totalChanged = updated.length + reinstalled.length + added.length;
+  const totalChanged = updated.length + reinstalled.length + added.length + autoMerged.length + aiMerged.length;
   logger.log(`Updated: ${totalChanged} file${totalChanged !== 1 ? 's' : ''}`);
+  if (autoMerged.length > 0) {
+    logger.log(`Auto-merged: ${autoMerged.length} file${autoMerged.length !== 1 ? 's' : ''}`);
+  }
+  if (aiMerged.length > 0) {
+    logger.log(`AI-merged: ${aiMerged.length} file${aiMerged.length !== 1 ? 's' : ''} (review recommended)`);
+  }
+  if (conflicts.length > 0) {
+    logger.log(`Conflicts (manual merge needed): ${conflicts.length} file${conflicts.length !== 1 ? 's' : ''}`);
+  }
   if (skipped.length > 0) {
     logger.log(`Skipped (modified): ${skipped.length} file${skipped.length !== 1 ? 's' : ''}`);
   }
@@ -213,6 +275,10 @@ export default class Update extends BaseCommand {
   public static override flags = {
     'dry-run': Flags.boolean({ description: 'Show what would change without writing any files', default: false }),
     regen: Flags.boolean({ description: 'Also regenerate AI agents and anti-patterns', default: false }),
+    'ai-merge': Flags.boolean({
+      description: 'Use AI to resolve merge conflicts in modified files (requires Claude CLI)',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
@@ -266,7 +332,7 @@ export default class Update extends BaseCommand {
       return;
     }
 
-    const results = processScaffoldFiles(scaffoldFiles, manifest, cwd, flags['dry-run']);
+    const results = processScaffoldFiles(scaffoldFiles, manifest, cwd, flags['dry-run'], flags['ai-merge']);
 
     // Step 5: Print summary
     printResults(results, manifest, latestVersion, flags['dry-run']);
