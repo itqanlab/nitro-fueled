@@ -1,4 +1,4 @@
-import { existsSync, copyFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
@@ -8,9 +8,10 @@ import { logger } from '../utils/logger.js';
 import { configureMcp } from '../utils/mcp-configure.js';
 import { resolveScaffoldRoot, scaffoldSubdir, listFiles } from '../utils/scaffold.js';
 import { detectStack, analyzeWorkspace } from '../utils/stack-detect.js';
-import type { AgentProposal, DetectedStack } from '../utils/stack-detect.js';
-import { generateAntiPatterns, buildStackLabel } from '../utils/anti-patterns.js';
-import { ensureClaudeMdImport } from '../utils/claude-md.js';
+import type { AgentProposal, DetectedStack, ProjectProfile } from '../utils/stack-detect.js';
+import { generateAntiPatterns, generateAntiPatternsFromProfile, buildStackLabel } from '../utils/anti-patterns.js';
+import { ensureClaudeMdImport, generateClaudeNitroMd } from '../utils/claude-md.js';
+import { generateArtifactsFromProfile, writeAgentFiles } from '../utils/artifact-generator.js';
 import { isClaudeAvailable } from '../utils/preflight.js';
 import { ensureGitignore } from '../utils/gitignore.js';
 import { isInsideGitRepo, commitFiles } from '../utils/git.js';
@@ -37,7 +38,7 @@ function prompt(question: string): Promise<string> {
   });
 }
 
-function generateAgent(cwd: string, proposal: AgentProposal): boolean {
+function generateAgentFallback(cwd: string, proposal: AgentProposal): boolean {
   const agentPath = resolve(cwd, '.claude', 'agents', `${proposal.agentName}.md`);
   if (existsSync(agentPath)) {
     logger.log(`  ${proposal.agentName}: already exists (skipped)`);
@@ -130,109 +131,200 @@ function scaffoldFiles(cwd: string, scaffoldRoot: string, overwrite: boolean): s
   return createdFiles;
 }
 
-/**
- * Detects the project stack and generates a stack-aware anti-patterns.md.
- * Always runs (even if --skip-agents is set) so the anti-patterns file is always accurate.
- * Returns the detected stacks for downstream use.
- */
-function handleAntiPatterns(cwd: string, scaffoldRoot: string, overwrite: boolean): DetectedStack[] {
-  const stacks = detectStack(cwd);
-
-  const apDest = resolve(cwd, '.claude', 'anti-patterns.md');
-  if (!overwrite && existsSync(apDest)) {
-    // Already exists — regenerate only when overwrite is set
-    logger.log('  Anti-patterns: already exists (skipped — run with --overwrite to regenerate)');
-    return stacks;
-  }
-
-  const generated = generateAntiPatterns(cwd, stacks, scaffoldRoot);
-  if (generated) {
-    logger.log(`  Anti-patterns: generated for stack [${buildStackLabel(stacks)}]`);
-  } else {
-    logger.log('  Anti-patterns: master file not found; skipped');
-  }
-
-  return stacks;
+/** Result from the combined workspace analysis and artifact generation phase */
+interface WorkspaceArtifactsResult {
+  detectedStacks: DetectedStack[];
+  antiPatternsWritten: boolean;
+  claudeNitroMdWritten: boolean;
+  agentPaths: string[];
 }
 
-async function handleStackDetection(
+/**
+ * Run workspace analysis and generate all project-specific artifacts in a single pass.
+ *
+ * When Claude CLI is available:
+ * - AI call 1 (runAIAnalysis in analyzeWorkspace): builds ProjectProfile
+ * - AI call 2 (generateArtifactsFromProfile): generates CLAUDE.nitro.md + anti-patterns + agents
+ *   Total: 2 AI calls regardless of the number of agents
+ *
+ * When Claude CLI is unavailable or AI calls fail:
+ * - Heuristic stack detection for anti-patterns (tag-filter fallback)
+ * - Static CLAUDE.nitro.md template (no profile customization)
+ * - No agent generation (user prompted to use /create-agent)
+ */
+async function handleWorkspaceArtifacts(
   cwd: string,
-  opts: InitFlags
-): Promise<string[]> {
-  if (opts['skip-agents']) return [];
+  scaffoldRoot: string,
+  opts: InitFlags,
+): Promise<WorkspaceArtifactsResult> {
+  const stacks = detectStack(cwd);
+  const result: WorkspaceArtifactsResult = {
+    detectedStacks: stacks,
+    antiPatternsWritten: false,
+    claudeNitroMdWritten: false,
+    agentPaths: [],
+  };
 
   const claudeAvailable = isClaudeAvailable();
-
   if (!claudeAvailable) {
-    logger.log('  Claude CLI not available — using basic stack detection.');
+    logger.log('  Claude CLI not available — using heuristic stack detection.');
     logger.log('  Re-run init after installing Claude CLI for full workspace analysis.');
   }
 
-  // Run full workspace analysis (AI-assisted if Claude available, heuristic fallback otherwise)
+  // Step A: Workspace analysis (AI call 1 if Claude available)
   logger.log('');
   logger.log('Analyzing workspace...');
   const analysis = analyzeWorkspace(cwd, claudeAvailable);
+  const profile: ProjectProfile | null = analysis.aiAnalysis;
 
-  if (analysis.method === 'ai' && analysis.aiAnalysis !== null) {
+  if (analysis.method === 'ai' && profile !== null) {
     logger.log(`  Analysis method: AI-assisted`);
-    logger.log(`  Summary: ${analysis.aiAnalysis.summary}`);
-    if (analysis.aiAnalysis.domains.length > 0) {
-      logger.log(`  Domains: ${analysis.aiAnalysis.domains.join(', ')}`);
+    logger.log(`  Summary: ${profile.summary}`);
+    if (profile.domains.length > 0) {
+      logger.log(`  Domains: ${profile.domains.join(', ')}`);
     }
   } else {
     logger.log('  Analysis method: heuristic (basic stack detection)');
   }
 
-  if (analysis.proposals.length === 0) {
-    logger.log('  No agent proposals generated.');
-    logger.log('  Use /create-agent to manually generate developer agents later.');
-    return [];
+  // Step B: Read CLAUDE.nitro.md base template for use in profile-based generation
+  const baseTemplatePath = resolve(scaffoldRoot, 'nitro-root', 'CLAUDE.nitro.md');
+  let baseTemplate = '';
+  try {
+    baseTemplate = readFileSync(baseTemplatePath, 'utf-8');
+  } catch {
+    // Template unavailable — profile-based generation will produce minimal output
   }
 
-  // Display proposals with reasoning when available
-  logger.log('');
-  logger.log('Proposed developer agents:');
-  for (const p of analysis.proposals) {
-    const confidence = p.confidence !== undefined ? ` [${p.confidence}]` : '';
-    logger.log(`  - ${p.agentTitle} (${p.agentName}) [${p.stack}]${confidence}`);
-    if (p.reason !== undefined) {
-      logger.log(`    Reason: ${p.reason}`);
+  // Step C: Single-pass artifact generation (AI call 2 if profile available)
+  if (profile !== null && claudeAvailable) {
+    logger.log('');
+    logger.log('Generating project artifacts (single-pass AI generation)...');
+
+    const artifactResult = generateArtifactsFromProfile(profile, baseTemplate);
+
+    if (artifactResult !== null) {
+      // CLAUDE.nitro.md — write AI-generated version
+      if (artifactResult.claudeNitroMd !== null) {
+        const dest = resolve(cwd, '.nitro', 'CLAUDE.nitro.md');
+        if (opts.overwrite || !existsSync(dest)) {
+          try {
+            mkdirSync(resolve(cwd, '.nitro'), { recursive: true });
+            writeFileSync(dest, artifactResult.claudeNitroMd, 'utf-8');
+            result.claudeNitroMdWritten = true;
+            logger.log('  CLAUDE.nitro.md: generated from profile (AI)');
+          } catch {
+            logger.log('  CLAUDE.nitro.md: write failed — falling back to static template');
+          }
+        } else {
+          logger.log('  CLAUDE.nitro.md: already exists (skipped)');
+        }
+      }
+
+      // anti-patterns.md — write AI-generated version
+      if (artifactResult.antiPatterns !== null) {
+        const dest = resolve(cwd, '.claude', 'anti-patterns.md');
+        if (opts.overwrite || !existsSync(dest)) {
+          try {
+            mkdirSync(resolve(cwd, '.claude'), { recursive: true });
+            writeFileSync(dest, artifactResult.antiPatterns, 'utf-8');
+            result.antiPatternsWritten = true;
+            logger.log(`  Anti-patterns: generated from profile (AI) [${buildStackLabel(stacks)}]`);
+          } catch {
+            logger.log('  Anti-patterns: write failed — falling back to tag-filter');
+          }
+        } else {
+          logger.log('  Anti-patterns: already exists (skipped)');
+          result.antiPatternsWritten = true; // exists = no fallback needed
+        }
+      }
+
+      // Developer agents — write batch-generated files
+      if (!opts['skip-agents'] && artifactResult.agents.length > 0) {
+        const agentPaths = writeAgentFiles(cwd, artifactResult.agents);
+        result.agentPaths = agentPaths;
+        logger.log(`  Developer agents: ${agentPaths.length}/${artifactResult.agents.length} generated (AI batch)`);
+        if (artifactResult.agents.length > agentPaths.length) {
+          logger.log(`  (${artifactResult.agents.length - agentPaths.length} already existed, skipped)`);
+        }
+      }
+    } else {
+      logger.log('  Single-pass generation failed — falling back to profile-based generators');
     }
   }
 
-  let shouldGenerate = opts.yes;
-  if (!shouldGenerate) {
-    const answer = await prompt('\nGenerate these developer agents? (y/n) [y]: ');
-    shouldGenerate = answer.toLowerCase() !== 'n';
+  // Step D: Profile-based fallbacks (no extra AI calls — derive from existing profile data)
+  if (!result.claudeNitroMdWritten && profile !== null) {
+    const written = generateClaudeNitroMd(cwd, profile, baseTemplate, opts.overwrite);
+    result.claudeNitroMdWritten = written;
+    if (written) logger.log('  CLAUDE.nitro.md: generated from profile (deterministic)');
   }
 
-  if (!shouldGenerate) {
-    logger.log('Skipping agent generation. Use /create-agent to generate later.');
-    return [];
+  if (!result.antiPatternsWritten && profile !== null) {
+    const written = generateAntiPatternsFromProfile(cwd, profile, opts.overwrite);
+    result.antiPatternsWritten = written;
+    if (written) logger.log(`  Anti-patterns: generated from profile [${buildStackLabel(stacks)}]`);
   }
 
-  if (!claudeAvailable) {
-    logger.log('  Claude CLI not available; cannot generate agent files.');
-    logger.log('  Use /create-agent to manually generate developer agents later.');
-    return [];
-  }
-
-  logger.log('');
-  logger.log('Generating developer agents (this may take a moment)...');
-  const createdPaths: string[] = [];
-  let generated = 0;
-  for (const p of analysis.proposals) {
-    const agentPath = resolve(cwd, '.claude', 'agents', `${p.agentName}.md`);
-    const preExisted = existsSync(agentPath);
-    if (generateAgent(cwd, p)) {
-      generated++;
-      if (!preExisted && existsSync(agentPath)) {
-        createdPaths.push(agentPath);
+  // Step E: Tag-filter fallback (used when no profile is available)
+  if (!result.antiPatternsWritten) {
+    const apDest = resolve(cwd, '.claude', 'anti-patterns.md');
+    if (!opts.overwrite && existsSync(apDest)) {
+      logger.log('  Anti-patterns: already exists (skipped — run with --overwrite to regenerate)');
+      result.antiPatternsWritten = true;
+    } else {
+      const generated = generateAntiPatterns(cwd, stacks, scaffoldRoot);
+      result.antiPatternsWritten = generated;
+      if (generated) {
+        logger.log(`  Anti-patterns: generated from master (tag-filter) [${buildStackLabel(stacks)}]`);
+      } else {
+        logger.log('  Anti-patterns: master file not found; skipped');
       }
     }
   }
-  logger.log(`  ${generated}/${analysis.proposals.length} developer agents generated`);
-  return createdPaths;
+
+  // Step F: Heuristic agent generation fallback (one-by-one, only if batch generation did not run)
+  if (!opts['skip-agents'] && result.agentPaths.length === 0 && claudeAvailable) {
+    if (analysis.proposals.length > 0) {
+      logger.log('');
+      logger.log('Proposed developer agents:');
+      for (const p of analysis.proposals) {
+        const confidence = p.confidence !== undefined ? ` [${p.confidence}]` : '';
+        logger.log(`  - ${p.agentTitle} (${p.agentName}) [${p.stack}]${confidence}`);
+        if (p.reason !== undefined) logger.log(`    Reason: ${p.reason}`);
+      }
+
+      let shouldGenerate = opts.yes;
+      if (!shouldGenerate) {
+        const answer = await prompt('\nGenerate these developer agents? (y/n) [y]: ');
+        shouldGenerate = answer.toLowerCase() !== 'n';
+      }
+
+      if (shouldGenerate) {
+        logger.log('');
+        logger.log('Generating developer agents (fallback: one-by-one)...');
+        let generated = 0;
+        for (const p of analysis.proposals) {
+          const agentPath = resolve(cwd, '.claude', 'agents', `${p.agentName}.md`);
+          const preExisted = existsSync(agentPath);
+          if (generateAgentFallback(cwd, p)) {
+            generated++;
+            if (!preExisted && existsSync(agentPath)) {
+              result.agentPaths.push(agentPath);
+            }
+          }
+        }
+        logger.log(`  ${generated}/${analysis.proposals.length} developer agents generated`);
+      } else {
+        logger.log('Skipping agent generation. Use /create-agent to generate later.');
+      }
+    } else {
+      logger.log('  No agent proposals generated.');
+      logger.log('  Use /create-agent to manually generate developer agents later.');
+    }
+  }
+
+  return result;
 }
 
 async function handleNitroCortexConfig(cwd: string, opts: InitFlags): Promise<void> {
@@ -457,15 +549,28 @@ export default class Init extends BaseCommand {
       allCreatedFiles.push(gitignorePath);
     }
 
-    // Step 7: Detect stack and generate stack-aware anti-patterns
+    // Steps 7–8: Single-pass workspace analysis + artifact generation
+    // Runs workspace analysis (AI call 1), then generates CLAUDE.nitro.md, anti-patterns.md,
+    // and all developer agent files in one AI call (AI call 2) — not N calls for N agents.
     logger.log('');
     logger.log('Detecting project stack...');
     const apPath = resolve(cwd, '.claude', 'anti-patterns.md');
+    const nitroMdPath = resolve(cwd, '.nitro', 'CLAUDE.nitro.md');
     const apExisted = existsSync(apPath);
-    const detectedStacks = handleAntiPatterns(cwd, scaffoldRoot, opts.overwrite);
+    const nitroMdExisted = existsSync(nitroMdPath);
+
+    const workspaceResult = await handleWorkspaceArtifacts(cwd, scaffoldRoot, opts);
+    const detectedStacks = workspaceResult.detectedStacks;
+    const agentPaths = workspaceResult.agentPaths;
+
     if ((!apExisted || opts.overwrite) && existsSync(apPath)) {
       allCreatedFiles.push(apPath);
     }
+    if ((!nitroMdExisted || opts.overwrite) && existsSync(nitroMdPath)) {
+      allCreatedFiles.push(nitroMdPath);
+    }
+    allCreatedFiles.push(...agentPaths);
+
     if (detectedStacks.length > 0) {
       const detectedLabel = detectedStacks.map((s) =>
         s.frameworks.length > 0 ? `${s.language} (${s.frameworks.join(', ')})` : s.language
@@ -473,21 +578,22 @@ export default class Init extends BaseCommand {
       logger.log(`  Detected: ${detectedLabel}`);
     }
 
-    // Step 8: Generate developer agents for detected stack
-    const agentPaths = await handleStackDetection(cwd, opts);
-    allCreatedFiles.push(...agentPaths);
-
     // Step 9: Write manifest
     logger.log('');
     const stackLabel = buildStackLabel(detectedStacks);
     const generatedFileInfos: GeneratedFileInfo[] = [];
 
-    // Anti-patterns is a template-generated file
+    // Anti-patterns is a generated file
     if (existsSync(apPath)) {
-      generatedFileInfos.push({ path: apPath, stack: stackLabel, generator: 'template' });
+      generatedFileInfos.push({ path: apPath, stack: stackLabel, generator: 'ai' });
     }
 
-    // AI-generated developer agents
+    // CLAUDE.nitro.md is a generated file
+    if (existsSync(nitroMdPath)) {
+      generatedFileInfos.push({ path: nitroMdPath, stack: stackLabel, generator: 'ai' });
+    }
+
+    // Developer agents
     for (const agentPath of agentPaths) {
       generatedFileInfos.push({ path: agentPath, stack: stackLabel, generator: 'ai' });
     }
