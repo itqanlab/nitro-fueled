@@ -326,6 +326,12 @@ function assertUpsertSucceeded(result: ToolResult): void {
   }
 }
 
+const INVALID_TITLES = new Set(['untitled']);
+
+function isInvalidTitle(title: string): boolean {
+  return title.trim() === '' || INVALID_TITLES.has(title.trim().toLowerCase());
+}
+
 function cleanupTaskDirectory(taskDir: string | undefined): void {
   if (taskDir && existsSync(taskDir)) {
     rmSync(taskDir, { recursive: true, force: true });
@@ -379,6 +385,10 @@ export function handleCreateTask(
 ): ToolResult {
   if (!args.title || !args.type || !args.priority) {
     return errIsError('title, type, and priority are required');
+  }
+
+  if (isInvalidTitle(args.title)) {
+    return errIsError('Task title cannot be empty or "Untitled" — provide a descriptive title.');
   }
 
   const violations = validateSizing(projectRoot, args.description, args.acceptanceCriteria, args.fileScope, args.complexity);
@@ -444,6 +454,11 @@ export function handleBulkCreateTasks(
   for (const taskDef of args.tasks) {
     if (!taskDef.title || !taskDef.type || !taskDef.priority) {
       results.push({ taskId: '', folder: '', status: 'rejected', error: 'title, type, and priority are required' });
+      continue;
+    }
+
+    if (isInvalidTitle(taskDef.title)) {
+      results.push({ taskId: '', folder: '', status: 'rejected', error: 'Task title cannot be empty or "Untitled" — provide a descriptive title.' });
       continue;
     }
 
