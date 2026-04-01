@@ -615,6 +615,28 @@ export function handleGetSessionSummary(
       }
     }
 
+    // Cost breakdown: supervisor cost vs worker costs
+    const supervisorCostUsd = typeof session['supervisor_cost_usd'] === 'number' ? session['supervisor_cost_usd'] : 0;
+
+    // worker_cost_by_model: prefer stored worker_costs_json if present, else use computed perModelCost
+    let workerCostByModel: Record<string, number> = Object.fromEntries(
+      Object.entries(perModelCost).map(([k, v]) => [k, Math.round(v * 10000) / 10000]),
+    );
+    if (typeof session['worker_costs_json'] === 'string' && session['worker_costs_json'].length > 2) {
+      try {
+        const stored = JSON.parse(session['worker_costs_json'] as string) as Record<string, number>;
+        if (typeof stored === 'object' && stored !== null && !Array.isArray(stored)) {
+          workerCostByModel = Object.fromEntries(
+            Object.entries(stored).map(([k, v]) => [k, Math.round((v as number) * 10000) / 10000]),
+          );
+        }
+      } catch {
+        // Fallback to computed value on parse error
+      }
+    }
+
+    const workerCostTotal = Object.values(workerCostByModel).reduce((s, v) => s + v, 0);
+
     // Elapsed time
     const startedAt = new Date(session['started_at'] as string).getTime();
     const endedAt = session['ended_at'] ? new Date(session['ended_at'] as string).getTime() : Date.now();
@@ -642,6 +664,11 @@ export function handleGetSessionSummary(
             input: totalInputTokens,
             output: totalOutputTokens,
             cache: totalCacheTokens,
+          },
+          cost_breakdown: {
+            supervisor_cost: Math.round(supervisorCostUsd * 10000) / 10000,
+            worker_cost_by_model: workerCostByModel,
+            total_cost: Math.round((supervisorCostUsd + workerCostTotal) * 10000) / 10000,
           },
         }, null, 2),
       }],

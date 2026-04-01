@@ -329,6 +329,18 @@ CREATE TABLE IF NOT EXISTS task_subtasks (
   updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
+const SKILL_INVOCATIONS_TABLE = `
+CREATE TABLE IF NOT EXISTS skill_invocations (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  skill_name  TEXT NOT NULL,
+  session_id  TEXT,
+  worker_id   TEXT,
+  task_id     TEXT,
+  invoked_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  duration_ms INTEGER,
+  outcome     TEXT
+)`;
+
 const SESSION_EVALUATIONS_TABLE = `
 CREATE TABLE IF NOT EXISTS session_evaluations (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -383,6 +395,10 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_id)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_parent_order ON tasks(parent_task_id, subtask_order)',
   'CREATE INDEX IF NOT EXISTS idx_session_evaluations_session ON session_evaluations(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_skill ON skill_invocations(skill_name)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_session ON skill_invocations(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_invoked_at ON skill_invocations(invoked_at)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_task ON skill_invocations(task_id)',
 ];
 
 // Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
@@ -412,7 +428,9 @@ const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'total_input_tokens',        ddl: 'ALTER TABLE sessions ADD COLUMN total_input_tokens INTEGER' },
   { column: 'total_output_tokens',       ddl: 'ALTER TABLE sessions ADD COLUMN total_output_tokens INTEGER' },
   { column: 'last_heartbeat',            ddl: 'ALTER TABLE sessions ADD COLUMN last_heartbeat TEXT' },
-  { column: 'drain_requested',            ddl: 'ALTER TABLE sessions ADD COLUMN drain_requested INTEGER NOT NULL DEFAULT 0' },
+  { column: 'drain_requested',           ddl: 'ALTER TABLE sessions ADD COLUMN drain_requested INTEGER NOT NULL DEFAULT 0' },
+  { column: 'supervisor_cost_usd',       ddl: 'ALTER TABLE sessions ADD COLUMN supervisor_cost_usd REAL' },
+  { column: 'worker_costs_json',         ddl: "ALTER TABLE sessions ADD COLUMN worker_costs_json TEXT" },
 ];
 
 const WORKER_MIGRATIONS: Array<{ column: string; ddl: string }> = [
@@ -643,6 +661,7 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(TASK_CONTEXTS_TABLE);
   db.exec(TASK_SUBTASKS_TABLE);
   db.exec(SESSION_EVALUATIONS_TABLE);
+  db.exec(SKILL_INVOCATIONS_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }
