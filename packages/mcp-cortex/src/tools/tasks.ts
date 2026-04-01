@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
@@ -24,6 +24,21 @@ export function writeStatusFile(projectRoot: string, taskId: string, status: str
       mkdirSync(taskDir, { recursive: true });
     }
     writeFileSync(join(taskDir, 'status'), status, 'utf-8');
+  } catch {
+    // best-effort — don't fail the DB update if fs write fails
+  }
+}
+
+export function writeTitleToTaskMd(projectRoot: string, taskId: string, newTitle: string): void {
+  if (!TASK_ID_RE.test(taskId)) return;
+  const taskMdPath = join(projectRoot, 'task-tracking', taskId, 'task.md');
+  try {
+    if (!existsSync(taskMdPath)) return;
+    const content = readFileSync(taskMdPath, 'utf-8');
+    const updated = content.replace(/^# Task:.*$/m, `# Task: ${newTitle}`);
+    if (updated !== content) {
+      writeFileSync(taskMdPath, updated, 'utf-8');
+    }
   } catch {
     // best-effort — don't fail the DB update if fs write fails
   }
@@ -287,11 +302,15 @@ export function handleUpdateTask(
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }] };
   }
 
-  // Keep status file and registry.md in sync with DB
+  // Keep status file, task.md title, and registry.md in sync with DB
   if (projectRoot !== undefined) {
     const newStatus = args.fields['status'];
     if (typeof newStatus === 'string' && VALID_STATUSES.has(newStatus)) {
       writeStatusFile(projectRoot, args.task_id, newStatus);
+    }
+    const newTitle = args.fields['title'];
+    if (typeof newTitle === 'string') {
+      writeTitleToTaskMd(projectRoot, args.task_id, newTitle);
     }
     generateRegistryFromDb(db, projectRoot);
   }
@@ -334,6 +353,7 @@ export function handleBulkUpdateTasks(
 
   const results: BulkUpdateResult[] = [];
   const statusChanges: Array<{ task_id: string; status: string }> = [];
+  const titleChanges: Array<{ task_id: string; title: string }> = [];
 
   // Single transaction — valid updates commit, invalid ones are skipped without rolling back
   db.transaction(() => {
@@ -382,12 +402,19 @@ export function handleBulkUpdateTasks(
       if (typeof newStatus === 'string' && VALID_STATUSES.has(newStatus)) {
         statusChanges.push({ task_id: update.task_id, status: newStatus });
       }
+      const newTitle = update.fields['title'];
+      if (typeof newTitle === 'string') {
+        titleChanges.push({ task_id: update.task_id, title: newTitle });
+      }
     }
   })();
 
-  if (projectRoot !== undefined && statusChanges.length > 0) {
+  if (projectRoot !== undefined && (statusChanges.length > 0 || titleChanges.length > 0)) {
     for (const { task_id, status } of statusChanges) {
       writeStatusFile(projectRoot, task_id, status);
+    }
+    for (const { task_id, title } of titleChanges) {
+      writeTitleToTaskMd(projectRoot, task_id, title);
     }
     generateRegistryFromDb(db, projectRoot);
   }
