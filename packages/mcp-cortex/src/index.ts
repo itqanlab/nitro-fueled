@@ -24,6 +24,16 @@ import { handleListWorkflows, handleGetWorkflow, handleCreateWorkflow, handleUpd
 import { handleListLaunchers, handleGetLauncher, handleRegisterLauncher, handleUpdateLauncher, handleDeregisterLauncher } from './tools/launcher-tools.js';
 import { handleLogCompatibility, handleQueryCompatibility } from './tools/compatibility-tools.js';
 import { handleCreateSubtask, handleBulkCreateSubtasks, handleGetSubtasks, handleGetParentStatusRollup } from './tools/subtask-tools.js';
+import {
+  handleWriteReview, handleReadReviews,
+  handleWriteTestReport, handleReadTestReport,
+  handleWriteCompletionReport, handleReadCompletionReport,
+  handleWritePlan, handleReadPlan,
+  handleWriteTaskDescription, handleReadTaskDescription,
+  handleWriteContext, handleReadContext,
+  handleWriteSubtasks, handleReadSubtasks,
+  handleGetTaskArtifacts,
+} from './tools/artifacts.js';
 
 const projectRoot = process.cwd();
 const dbPath = join(projectRoot, '.nitro', 'cortex.db');
@@ -814,6 +824,136 @@ server.registerTool('get_parent_status_rollup', {
     parent_task_id: z.string().max(200).describe('Parent task ID to compute rollup for'),
   },
 }, (args) => handleGetParentStatusRollup(db, args));
+
+// --- Task Artifact tools ---
+
+server.registerTool('write_review', {
+  description: 'Write a code review artifact for a task. Validates task_id exists before inserting. Use read_reviews to retrieve all reviews for a task.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this review belongs to'),
+    review_type: z.enum(['style', 'logic', 'security', 'visual', 'other']).describe('Type of review performed'),
+    verdict: z.enum(['PASS', 'FAIL']).describe('Overall review outcome'),
+    findings: z.string().max(50000).optional().describe('Detailed review findings (markdown)'),
+    reviewer: z.string().max(200).optional().describe('Agent or reviewer identifier'),
+  },
+}, (args) => handleWriteReview(db, args));
+
+server.registerTool('read_reviews', {
+  description: 'Return all review records for a task, ordered by insertion time. Filter by review_type to get a specific review.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve reviews for'),
+    review_type: z.enum(['style', 'logic', 'security', 'visual', 'other']).optional().describe('Filter to a specific review type'),
+  },
+}, (args) => handleReadReviews(db, args));
+
+server.registerTool('write_test_report', {
+  description: 'Write a test report artifact for a task. Validates task_id exists before inserting. Use read_test_report to retrieve.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this test report belongs to'),
+    status: z.enum(['PASS', 'FAIL', 'SKIPPED']).describe('Overall test run outcome'),
+    summary: z.string().max(5000).optional().describe('Short summary of test results'),
+    details: z.string().max(50000).optional().describe('Full test output or detailed breakdown'),
+  },
+}, (args) => handleWriteTestReport(db, args));
+
+server.registerTool('read_test_report', {
+  description: 'Return the most recent test report for a task.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve the test report for'),
+  },
+}, (args) => handleReadTestReport(db, args));
+
+server.registerTool('write_completion_report', {
+  description: 'Write a completion report artifact for a task. Validates task_id exists before inserting. Use read_completion_report to retrieve.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this completion report belongs to'),
+    summary: z.string().max(10000).optional().describe('Summary of what was built'),
+    review_results: z.string().max(10000).optional().describe('Aggregated review outcomes'),
+    test_results: z.string().max(10000).optional().describe('Test run outcome summary'),
+    follow_on_tasks: z.string().max(5000).optional().describe('Any follow-on tasks or TODOs'),
+    files_changed_count: z.number().int().min(0).optional().describe('Number of files changed'),
+  },
+}, (args) => handleWriteCompletionReport(db, args));
+
+server.registerTool('read_completion_report', {
+  description: 'Return the most recent completion report for a task.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve the completion report for'),
+  },
+}, (args) => handleReadCompletionReport(db, args));
+
+server.registerTool('write_plan', {
+  description: 'Write an implementation plan artifact for a task. Validates task_id exists before inserting. Use read_plan to retrieve.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this plan belongs to'),
+    content: z.string().max(100000).describe('Implementation plan content (markdown)'),
+  },
+}, (args) => handleWritePlan(db, args));
+
+server.registerTool('read_plan', {
+  description: 'Return the most recent implementation plan for a task.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve the plan for'),
+  },
+}, (args) => handleReadPlan(db, args));
+
+server.registerTool('write_task_description', {
+  description: 'Write a task description (PM requirements) artifact. Validates task_id exists before inserting. Use read_task_description to retrieve.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this description belongs to'),
+    content: z.string().max(100000).describe('Task description content (markdown)'),
+  },
+}, (args) => handleWriteTaskDescription(db, args));
+
+server.registerTool('read_task_description', {
+  description: 'Return the most recent task description for a task.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve the description for'),
+  },
+}, (args) => handleReadTaskDescription(db, args));
+
+server.registerTool('write_context', {
+  description: 'Write a context artifact (PM context gathering) for a task. Validates task_id exists before inserting. Use read_context to retrieve.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID this context belongs to'),
+    content: z.string().max(100000).describe('Context content (markdown)'),
+  },
+}, (args) => handleWriteContext(db, args));
+
+server.registerTool('read_context', {
+  description: 'Return the most recent context artifact for a task.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve the context for'),
+  },
+}, (args) => handleReadContext(db, args));
+
+server.registerTool('write_subtasks', {
+  description: 'Replace all subtasks for a task with a fresh list. Runs as a single transaction: deletes existing subtasks, then inserts the new batch. Use read_subtasks to retrieve current state.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID these subtasks belong to'),
+    subtasks: z.array(z.object({
+      batch_number: z.number().int().min(1).optional().describe('Batch number (default: 1)'),
+      subtask_name: z.string().max(500).describe('Name or description of the subtask'),
+      status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED']).optional().describe('Subtask status (default: PENDING)'),
+      assigned_to: z.string().max(200).optional().describe('Agent or role assigned to this subtask'),
+    })).max(500).describe('Full list of subtasks to write (replaces existing)'),
+  },
+}, (args) => handleWriteSubtasks(db, args));
+
+server.registerTool('read_subtasks', {
+  description: 'Return all subtasks for a task ordered by batch_number then insertion order. Filter by batch_number to get a specific batch.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve subtasks for'),
+    batch_number: z.number().int().min(1).optional().describe('Filter to a specific batch number'),
+  },
+}, (args) => handleReadSubtasks(db, args));
+
+server.registerTool('get_task_artifacts', {
+  description: 'Convenience tool: return all artifact types for a task in one call. Includes context, task_description, plan, all reviews, test_report, completion_report, and subtasks.',
+  inputSchema: {
+    task_id: z.string().max(200).describe('Task ID to retrieve all artifacts for'),
+  },
+}, (args) => handleGetTaskArtifacts(db, args));
 
 // --- Start ---
 
