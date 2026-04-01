@@ -6,7 +6,7 @@
  * child processes that run orchestration tasks autonomously.
  */
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -27,6 +27,7 @@ export interface SpawnWorkerOpts {
   model: string;
   provider: ProviderType;
   retryNumber: number;
+  workflowPhase: string;
 }
 
 export interface SpawnResult {
@@ -71,6 +72,10 @@ export class WorkerManagerService implements OnModuleDestroy {
       }
     }
 
+    // Record spawn start time before DB insert for accurate first-output timing
+    const spawnStartMs = Date.now();
+    let firstOutputRecorded = false;
+
     // Insert worker row BEFORE spawning (H2 safety: DB row exists if process exits immediately)
     this.supervisorDb.insertWorker({
       workerId,
@@ -82,6 +87,7 @@ export class WorkerManagerService implements OnModuleDestroy {
       model: opts.model,
       provider: opts.provider,
       retryNumber: opts.retryNumber,
+      workflowPhase: opts.workflowPhase,
     });
 
     // Setup log file
@@ -109,9 +115,13 @@ export class WorkerManagerService implements OnModuleDestroy {
       env,
     });
 
-    // Pipe stdout to log file
+    // Pipe stdout to log file; record first-output timing on first chunk
     child.stdout?.on('data', (chunk: Buffer) => {
       appendFileSync(logPath, chunk);
+      if (!firstOutputRecorded) {
+        firstOutputRecorded = true;
+        this.supervisorDb.updateWorkerFirstOutput(workerId, Date.now() - spawnStartMs);
+      }
     });
 
     child.stderr?.on('data', (chunk: Buffer) => {
@@ -126,9 +136,14 @@ export class WorkerManagerService implements OnModuleDestroy {
       appendFileSync(logPath, `\n[EXIT] code=${code} signal=${signal}\n`);
       const pid = child.pid;
       if (pid !== undefined) this.childProcesses.delete(pid);
-      // Update worker status in DB
+      const totalDurationMs = Date.now() - spawnStartMs;
       const newStatus = code === 0 ? 'completed' : 'failed';
+      const outcome = code === 0 ? 'COMPLETE' : 'FAILED';
       this.supervisorDb.updateWorkerStatus(workerId, newStatus);
+      this.supervisorDb.updateWorkerCompletion(workerId, totalDurationMs, outcome);
+      if (code === 0) {
+        this.recordFilesChanged(workerId, opts.workingDirectory);
+      }
     });
 
     if (!child.pid) {
@@ -180,6 +195,22 @@ export class WorkerManagerService implements OnModuleDestroy {
   // ============================================================
   // Private helpers
   // ============================================================
+
+  private recordFilesChanged(workerId: string, workingDirectory: string): void {
+    try {
+      const output = execSync('git diff --name-only HEAD~1 HEAD 2>/dev/null || true', {
+        cwd: workingDirectory,
+        encoding: 'utf8',
+        timeout: 5000,
+      });
+      const files = output.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+      if (files.length > 0) {
+        this.supervisorDb.updateWorkerFilesChanged(workerId, files.length, files);
+      }
+    } catch {
+      // best effort — do not throw
+    }
+  }
 
   private buildSpawnCommand(opts: {
     prompt: string;

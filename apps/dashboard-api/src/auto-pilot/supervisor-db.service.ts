@@ -344,17 +344,19 @@ export class SupervisorDbService implements OnModuleDestroy {
     model: string;
     provider: ProviderType;
     retryNumber: number;
+    workflowPhase: string;
   }): void {
     const db = this.getDb();
     const launcher = this.getLauncherForProvider(opts.provider);
     db.prepare(`
-      INSERT INTO workers (id, session_id, task_id, worker_type, label, status, working_directory, model, provider, launcher, auto_close, retry_number, tokens_json, cost_json, progress_json)
-      VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 0, ?, ?, ?, ?)
+      INSERT INTO workers (id, session_id, task_id, worker_type, label, status, working_directory, model, provider, launcher, auto_close, retry_number, tokens_json, cost_json, progress_json, workflow_phase)
+      VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
     `).run(
       opts.workerId, opts.sessionId, opts.taskId,
       opts.workerType, opts.label, opts.workingDirectory,
       opts.model, opts.provider, launcher, opts.retryNumber,
       JSON.stringify(EMPTY_TOKENS), JSON.stringify(EMPTY_COST), JSON.stringify(EMPTY_PROGRESS),
+      opts.workflowPhase,
     );
   }
 
@@ -369,11 +371,45 @@ export class SupervisorDbService implements OnModuleDestroy {
     const current = db.prepare('SELECT status FROM workers WHERE id = ?').get(workerId) as { status: string } | undefined;
     if (current && current.status === 'killed') return;
     db.prepare('UPDATE workers SET status = ? WHERE id = ?').run(status, workerId);
+
+    if (status === 'failed') {
+      const row2 = db.prepare('SELECT spawn_time FROM workers WHERE id = ?').get(workerId) as { spawn_time: string } | undefined;
+      const dur = row2 ? Date.now() - new Date(row2.spawn_time).getTime() : null;
+      db.prepare("UPDATE workers SET outcome = 'FAILED', total_duration_ms = COALESCE(total_duration_ms, ?) WHERE id = ?")
+        .run(dur, workerId);
+    }
   }
 
   public markWorkerKilled(workerId: string): void {
     const db = this.getDb();
-    db.prepare("UPDATE workers SET status = 'killed' WHERE id = ?").run(workerId);
+    const row = db.prepare('SELECT spawn_time FROM workers WHERE id = ?').get(workerId) as { spawn_time: string } | undefined;
+    const totalDurationMs = row ? Date.now() - new Date(row.spawn_time).getTime() : null;
+    db.prepare("UPDATE workers SET status = 'killed', outcome = 'FAILED', total_duration_ms = COALESCE(total_duration_ms, ?) WHERE id = ?")
+      .run(totalDurationMs, workerId);
+  }
+
+  public updateWorkerFirstOutput(workerId: string, spawnToFirstOutputMs: number): void {
+    const db = this.getDb();
+    db.prepare('UPDATE workers SET spawn_to_first_output_ms = ? WHERE id = ? AND spawn_to_first_output_ms IS NULL')
+      .run(spawnToFirstOutputMs, workerId);
+  }
+
+  public updateWorkerCompletion(workerId: string, totalDurationMs: number, outcome: string): void {
+    const db = this.getDb();
+    db.prepare('UPDATE workers SET total_duration_ms = ?, outcome = ? WHERE id = ?')
+      .run(totalDurationMs, outcome, workerId);
+  }
+
+  public updateWorkerFilesChanged(workerId: string, count: number, files: string[]): void {
+    const db = this.getDb();
+    db.prepare('UPDATE workers SET files_changed_count = ?, files_changed = ? WHERE id = ?')
+      .run(count, JSON.stringify(files), workerId);
+  }
+
+  public updateWorkerReviewOutcome(workerId: string, result: string, findingsCount: number): void {
+    const db = this.getDb();
+    db.prepare('UPDATE workers SET review_result = ?, review_findings_count = ? WHERE id = ?')
+      .run(result, findingsCount, workerId);
   }
 
   public getActiveWorkers(sessionId: string): ActiveWorkerInfo[] {

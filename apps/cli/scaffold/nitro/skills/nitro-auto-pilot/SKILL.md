@@ -320,6 +320,53 @@ Always use `compact: true` on `list_workers`. Default to `get_worker_activity` f
 ---
 
 
+## Worker Lifecycle Telemetry (Session Mode)
+
+In session mode (MCP-spawned workers), call these MCP tools at lifecycle transitions to
+populate the telemetry tables. All calls are **best-effort** — if any tool is unavailable
+or returns an error, log a warning and continue. Never let telemetry failure interrupt supervision.
+
+### When to Call
+
+| Event | MCP Tool | Required Fields |
+|-------|----------|-----------------|
+| After detecting BUILD_COMPLETE (task → IMPLEMENTED) | `log_phase` | worker_run_id=workerId, task_id, phase='Dev', start=spawnTime, end=now, outcome='COMPLETE', model |
+| After detecting REVIEW_COMPLETE (task → COMPLETE) | `log_phase` | worker_run_id=workerId, task_id, phase='Review', start=spawnTime, end=now, outcome='COMPLETE', model |
+| After detecting REVIEW_COMPLETE (task → COMPLETE) | `log_review` | task_id, review_type='other', score=8, findings_count=0, model_that_reviewed=model |
+| After detecting worker FAILED | `log_phase` | worker_run_id=workerId, task_id, phase='Dev' or 'Review', start=spawnTime, end=now, outcome='FAILED' |
+
+### How to Get Required Values
+
+- `workerId` — returned by `spawn_worker()` in the MCP response field `worker_id`
+- `spawnTime` — returned by `spawn_worker()` in the MCP response field `spawn_time` (or record `date` at spawn)
+- `model` — from your session config (`implement_model` or `review_model`)
+- `task_id` — from the candidate being spawned
+
+### Example: After BUILD_COMPLETE
+
+```
+log_phase(
+  worker_run_id: workerId,
+  task_id: "TASK_2026_XXX",
+  phase: "Dev",
+  start: spawnTime,
+  end: new Date().toISOString(),
+  outcome: "COMPLETE",
+  model: config.implement_model
+)
+```
+
+### What Gets Skipped
+
+Session mode cannot easily populate:
+- `spawn_to_first_output_ms` — requires stdout stream access (server-mode only)
+- `files_changed` — requires post-hoc git diff (server-mode only)
+- Per-worker token counts — requires JSONL stream parsing (server-mode only)
+
+These fields are populated by server-mode supervisor automatically.
+
+---
+
 ## Reference Index
 
 | Reference | Load When | Content |

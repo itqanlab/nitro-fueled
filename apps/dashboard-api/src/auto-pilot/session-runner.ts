@@ -224,6 +224,7 @@ export class SessionRunner {
           this.sessionId, worker.taskId, 'supervisor', 'REVIEW_COMPLETE',
           { workerId: worker.workerId, provider: worker.provider },
         );
+        this.supervisorDb.updateWorkerReviewOutcome(worker.workerId, 'COMPLETE', 0);
         this.emitEvent('worker:completed', { taskId: worker.taskId, workerType: 'review' });
         this.emitEvent('task:completed', { taskId: worker.taskId });
       } else {
@@ -453,6 +454,8 @@ export class SessionRunner {
           workingDirectory: this.config.working_directory,
         });
 
+    const workflowPhase = isBuild ? 'implementation' : 'review';
+
     try {
       const result = this.workerManager.spawnWorker({
         sessionId: this.sessionId,
@@ -464,6 +467,7 @@ export class SessionRunner {
         model,
         provider,
         retryNumber,
+        workflowPhase,
       });
 
       this.supervisorDb.logEvent(
