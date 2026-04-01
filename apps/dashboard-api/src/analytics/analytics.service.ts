@@ -100,6 +100,20 @@ export class AnalyticsService {
     };
   }
 
+  private groupWorkersByLauncher(workers: CortexWorker[]): Map<string, CortexWorker[]> {
+    const map = new Map<string, CortexWorker[]>();
+    for (const w of workers) {
+      const key = w.launcher ?? 'unknown';
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(w);
+      } else {
+        map.set(key, [w]);
+      }
+    }
+    return map;
+  }
+
   private aggregateLauncherWorkers(launcher: string, workers: CortexWorker[]): LauncherMetricsDto {
     const total = workers.length;
     const completedCount = workers.filter((w) => this.isWorkerComplete(w)).length;

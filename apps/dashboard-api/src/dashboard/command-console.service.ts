@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolveProjectRoot } from '../app/resolve-project-root';
 import { PipelineService } from './pipeline.service';
 
 export interface CommandCatalogEntry {
@@ -174,7 +175,7 @@ export class CommandConsoleService {
   private readonly catalog: readonly CommandCatalogEntry[];
 
   public constructor(private readonly pipelineService: PipelineService) {
-    this.commandsDir = path.resolve(process.cwd(), '.claude', 'commands');
+    this.commandsDir = path.resolve(resolveProjectRoot(), '.claude', 'commands');
     this.catalog = this.loadCatalog();
   }
 

@@ -24,8 +24,8 @@
         <span class="detail-title-label">{{ m.title }}</span>
       </div>
       <div class="detail-header-badges">
-        <nz-tag [nzColor]="statusColorMap[m.status] ?? 'default'">{{ m.status }}</nz-tag>
-        <nz-tag [nzColor]="priorityColorMap[m.priority] ?? 'default'">{{ m.priority }}</nz-tag>
+        <nz-tag [nzColor]="statusColorMap[m.status] || 'default'">{{ m.status }}</nz-tag>
+        <nz-tag [nzColor]="priorityColorMap[m.priority] || 'default'">{{ m.priority }}</nz-tag>
         <nz-tag>{{ m.type }}</nz-tag>
         <nz-tag>{{ m.complexity }}</nz-tag>
       </div>
@@ -70,7 +70,7 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">Status</span>
-          <nz-tag [nzColor]="statusColorMap[m.status] ?? 'default'">{{ m.status }}</nz-tag>
+          <nz-tag [nzColor]="statusColorMap[m.status] || 'default'">{{ m.status }}</nz-tag>
         </div>
         <div class="meta-item">
           <span class="meta-label">Created</span>
@@ -148,7 +148,7 @@
             <div class="h-timeline-node">
               <div class="h-timeline-dot" [ngClass]="node.statusClass"></div>
               <div class="h-timeline-content">
-                <nz-tag [nzColor]="statusColorMap[node.to] ?? 'default'" class="h-timeline-tag">{{ node.to }}</nz-tag>
+                <nz-tag [nzColor]="statusColorMap[node.to] || 'default'" class="h-timeline-tag">{{ node.to }}</nz-tag>
                 <span class="h-timeline-time">{{ node.formattedTime | date:'shortDate' }}</span>
                 @if (node.duration) {
                   <span class="h-timeline-duration">{{ node.duration }}</span>

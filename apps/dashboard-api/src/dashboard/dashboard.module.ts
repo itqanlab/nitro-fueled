@@ -18,6 +18,8 @@ import { ReportsService } from './reports.service';
 import { ProgressCenterService } from './progress-center.service';
 import { CommandConsoleController } from './command-console.controller';
 import { CommandConsoleService } from './command-console.service';
+import { HydrationService } from './hydration.service';
+import { resolveProjectRoot } from '../app/resolve-project-root';
 
 @Module({
   imports: [OrchestrationModule],
@@ -29,7 +31,7 @@ import { CommandConsoleService } from './command-console.service';
     SessionsService,
     {
       provide: AnalyticsService,
-      useFactory: () => new AnalyticsService(process.cwd()),
+      useFactory: () => new AnalyticsService(resolveProjectRoot()),
     },
     WatcherService,
     DashboardGateway,
@@ -37,7 +39,7 @@ import { CommandConsoleService } from './command-console.service';
     SessionsHistoryService,
     {
       provide: ReportsService,
-      useFactory: (cortexService: CortexService) => new ReportsService(cortexService, process.cwd()),
+      useFactory: (cortexService: CortexService) => new ReportsService(cortexService, resolveProjectRoot()),
       inject: [CortexService],
     },
     WsAuthGuard,
@@ -45,6 +47,7 @@ import { CommandConsoleService } from './command-console.service';
     LogsService,
     ProgressCenterService,
     CommandConsoleService,
+    HydrationService,
   ],
   exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, SessionsHistoryService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService, DashboardGateway],
 })

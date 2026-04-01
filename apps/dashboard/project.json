@@ -11,7 +11,7 @@
         "outputPath": "apps/dashboard/dist",
         "index": "apps/dashboard/src/index.html",
         "browser": "apps/dashboard/src/main.ts",
-        "tsConfig": "apps/dashboard/tsconfig.json",
+        "tsConfig": "apps/dashboard/tsconfig.app.json",
         "assets": [
           {
             "glob": "**/*",
@@ -51,6 +51,10 @@
     },
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "port": 2323,
+        "proxyConfig": "apps/dashboard/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "dashboard:build:production"

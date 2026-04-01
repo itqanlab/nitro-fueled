@@ -20,6 +20,7 @@ import type {
   PlanData,
   DashboardEvent,
 } from './dashboard.types';
+import { CortexService } from './cortex.service';
 import { DiffService } from './diff.service';
 import { WorkerTreeService } from './worker-tree.service';
 
@@ -76,6 +77,7 @@ export class PipelineService {
   private readonly sessionAnalyticsMap: Map<string, SessionAnalytics> = new Map();
 
   public constructor(
+    private readonly cortexService: CortexService,
     private readonly diffService: DiffService,
     private readonly workerTreeService: WorkerTreeService,
   ) {}
@@ -236,23 +238,13 @@ export class PipelineService {
     const completionRate = totalTasks > 0 ? completedCount / totalTasks : 0;
     const activeWorkers = this.orchestratorState?.activeWorkers.length ?? 0;
 
-    // Aggregate cost and token data from the orchestrator session log if available.
-    let totalCost = 0;
-    let totalTokens = 0;
-    const costByModel: Record<string, number> = {};
-    const tokensByModel: Record<string, number> = {};
-
-    if (this.orchestratorState) {
-      for (const worker of this.orchestratorState.activeWorkers) {
-        const cost = worker.cost ?? 0;
-        const tokens = worker.tokens ?? 0;
-        const model = worker.model ?? 'unknown';
-        totalCost += cost;
-        totalTokens += tokens;
-        if (cost > 0) costByModel[model] = (costByModel[model] ?? 0) + cost;
-        if (tokens > 0) tokensByModel[model] = (tokensByModel[model] ?? 0) + tokens;
-      }
-    }
+    // Pull cost and token aggregates from cortex DB (worker cost_json / tokens_json).
+    const cortexAgg = this.cortexService.getCostTokenAggregates();
+    const totalCost = cortexAgg?.totalCost ?? 0;
+    const totalTokens = cortexAgg?.totalTokens ?? 0;
+    const costByModel = cortexAgg?.costByModel ?? {};
+    const tokensByModel = cortexAgg?.tokensByModel ?? {};
+    const recentSessions = this.cortexService.getRecentSessionStats(10) ?? [];
 
     return {
       totalTasks,
@@ -265,6 +257,7 @@ export class PipelineService {
       totalTokens,
       costByModel,
       tokensByModel,
+      recentSessions,
     };
   }
 

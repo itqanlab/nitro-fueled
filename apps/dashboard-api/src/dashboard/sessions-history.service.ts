@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { readFile } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
+import { resolveProjectRoot } from '../app/resolve-project-root';
 import { CortexService } from './cortex.service';
 import type { CortexSession, CortexWorker, CortexEvent, CortexTaskTrace } from './cortex.types';
 
@@ -257,7 +258,7 @@ export class SessionsHistoryService {
   }
 
   private async readLogContent(sessionId: string): Promise<string | null> {
-    const projectRoot = process.cwd();
+    const projectRoot = resolveProjectRoot();
     const resolvedRoot = resolve(projectRoot);
     const candidates = [
       join(projectRoot, 'task-tracking', 'sessions', sessionId, 'log.md'),

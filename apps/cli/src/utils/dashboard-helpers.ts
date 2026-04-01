@@ -12,6 +12,8 @@ export const POLL_INTERVAL_MS = 100;
 export function findEntryScript(): string | null {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    // Monorepo dev: apps/dashboard-api/dist/cli-entry.js (relative to apps/cli/dist/utils/)
+    resolve(thisDir, '../../../dashboard-api/dist/cli-entry.js'),
     // Installed as a peer npm package (published CLI consumer)
     resolve(thisDir, '../../node_modules/@nitro-fueled/dashboard-service/dist/cli-entry.js'),
   ];
@@ -24,6 +26,8 @@ export function findEntryScript(): string | null {
 export function findWebDistPath(): string | undefined {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    // Monorepo dev: apps/dashboard/dist/browser (Angular build output)
+    resolve(thisDir, '../../../dashboard/dist/browser'),
     // Embedded in published CLI package (copied during build)
     resolve(thisDir, '../../dashboard-assets'),
     // Installed as a peer npm package

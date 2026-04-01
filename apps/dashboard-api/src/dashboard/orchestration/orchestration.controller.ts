@@ -235,7 +235,7 @@ export class OrchestrationController {
         throw new HttpException('Custom flow name is required', HttpStatus.BAD_REQUEST);
       }
 
-      const modifiedPhases = this.applyPhaseModifications(sourceFlow.phases, request.phaseModifications);
+      const modifiedPhases = this.applyPhaseModifications(sourceFlow.phases, request.phaseModifications as unknown as { [phaseOrder: number]: Partial<FlowPhase> });
       const phases: CustomFlowPhaseRecord[] = modifiedPhases.map((p, i) => ({
         order: p.order ?? i + 1,
         agentName: p.agent?.name ?? '',

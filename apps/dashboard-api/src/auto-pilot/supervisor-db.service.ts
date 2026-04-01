@@ -7,7 +7,8 @@
  */
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { existsSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { dirname } from 'node:path';
+import { resolveCortexDbPath } from '../app/resolve-project-root';
 import Database from 'better-sqlite3';
 import type {
   LoopStatus,
@@ -128,7 +129,7 @@ export class SupervisorDbService implements OnModuleDestroy {
   private readonly dbPath: string;
 
   public constructor() {
-    this.dbPath = join(process.cwd(), '.nitro', 'cortex.db');
+    this.dbPath = resolveCortexDbPath();
   }
 
   public onModuleDestroy(): void {

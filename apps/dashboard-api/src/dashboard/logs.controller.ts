@@ -17,7 +17,7 @@ import {
 import { LogsService, WorkerLogEntry } from './logs.service';
 
 @ApiTags('logs')
-@Controller({ path: 'api', version: '1' })
+@Controller('api')
 export class LogsController {
   public constructor(private readonly logsService: LogsService) {}
 

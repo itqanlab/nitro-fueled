@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { VersioningType, ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { ResponseEnvelopeInterceptor } from './app/interceptors/response-envelope.interceptor';
@@ -23,9 +23,6 @@ async function bootstrap(): Promise<void> {
       forbidNonWhitelisted: true,
     }),
   );
-
-  // Enable URI versioning: /api/v1/...
-  app.enableVersioning({ type: VersioningType.URI });
 
   // Global interceptor — wraps all responses in { success, data, meta }
   app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());

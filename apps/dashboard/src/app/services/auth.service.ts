@@ -10,13 +10,30 @@ export class AuthService {
   private readonly API_KEY_STORAGE = 'nitro_api_key';
   private readonly apiBase = environment.apiUrl;
 
+  /** True when the server doesn't require auth (local dev). */
+  public readonly authDisabled = signal(false);
+
   public readonly apiKey = signal<string | null>(
     localStorage.getItem(this.API_KEY_STORAGE),
   );
 
   public readonly isAuthenticated = computed(
-    () => this.apiKey() !== null && this.apiKey()!.trim().length > 0,
+    () => this.authDisabled() || (this.apiKey() !== null && this.apiKey()!.trim().length > 0),
   );
+
+  /**
+   * Probe the server health endpoint without credentials.
+   * If it succeeds, auth is disabled on the server side.
+   */
+  public checkAuthRequired(): Observable<boolean> {
+    return this.http.get(`${this.apiBase}/health`).pipe(
+      map(() => {
+        this.authDisabled.set(true);
+        return false; // auth NOT required
+      }),
+      catchError(() => of(true)), // auth IS required
+    );
+  }
 
   public setApiKey(key: string): void {
     localStorage.setItem(this.API_KEY_STORAGE, key);

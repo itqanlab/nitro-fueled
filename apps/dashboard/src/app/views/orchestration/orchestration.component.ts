@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -11,7 +10,7 @@ import { OrchestrationService } from './services/orchestration.service';
 @Component({
   selector: 'app-orchestration',
   standalone: true,
-  imports: [NgClass, FormsModule, FlowEditorComponent],
+  imports: [FormsModule, FlowEditorComponent],
   templateUrl: './orchestration.component.html',
   styleUrl: './orchestration.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -5,7 +5,7 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import { NgClass, DecimalPipe, DatePipe, SlicePipe } from '@angular/common';
+import { DecimalPipe, DatePipe, SlicePipe } from '@angular/common';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -24,7 +24,6 @@ import {
   selector: 'app-session-comparison',
   standalone: true,
   imports: [
-    NgClass,
     DecimalPipe,
     DatePipe,
     SlicePipe,

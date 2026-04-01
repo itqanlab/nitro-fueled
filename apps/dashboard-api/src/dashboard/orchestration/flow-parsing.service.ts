@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { 
+import { resolveProjectRoot } from '../../app/resolve-project-root';
+import {
   FlowDefinition, 
   FlowAgent, 
   FlowPhase, 
@@ -20,7 +21,7 @@ export class FlowParsingService {
   private cachedFlows: FlowDefinition[] = [];
 
   constructor() {
-    this.skillFilePath = path.join(process.cwd(), '.claude/skills/orchestration/SKILL.md');
+    this.skillFilePath = path.join(resolveProjectRoot(), '.claude/skills/orchestration/SKILL.md');
   }
 
   /**

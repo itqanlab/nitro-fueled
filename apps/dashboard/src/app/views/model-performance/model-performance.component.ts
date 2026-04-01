@@ -5,7 +5,7 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import { NgClass, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -26,7 +26,6 @@ import {
   selector: 'app-model-performance',
   standalone: true,
   imports: [
-    NgClass,
     DecimalPipe,
     FormsModule,
     NzTableModule,

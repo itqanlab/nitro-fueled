@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { existsSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { dirname } from 'node:path';
+import { resolveCortexDbPath } from '../../app/resolve-project-root';
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import type {
@@ -49,7 +50,7 @@ export class CustomFlowsService {
   private readonly dbPath: string;
 
   public constructor() {
-    this.dbPath = join(process.cwd(), '.nitro', 'cortex.db');
+    this.dbPath = resolveCortexDbPath();
   }
 
   public isAvailable(): boolean {

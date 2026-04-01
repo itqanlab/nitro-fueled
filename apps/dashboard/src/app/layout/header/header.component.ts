@@ -10,7 +10,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     <div class="shell-header">
       <div class="shell-header-left">
         <div class="app-logo">N</div>
-        <span class="app-title">N.Gine</span>
+        <span class="app-title">Nitro-Fueled</span>
       </div>
       <div class="shell-header-right">
         <button class="header-btn" title="Search">

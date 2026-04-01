@@ -85,15 +85,15 @@ export class TaskDetailComponent {
         });
       }),
     ),
-    { initialValue: undefined as TaskDataBundle | undefined },
+    { initialValue: null as TaskDataBundle | null },
   );
 
-  public readonly loading = computed(() => this.dataSignal() === undefined);
+  public readonly loading = computed(() => this.dataSignal() === null);
 
   public readonly vm = computed<TaskDetailViewModel | null>(() => {
     const data = this.dataSignal();
     const id = this.taskId();
-    if (data === undefined || !id) return null;
+    if (!data || !id) return null;
     if (!data) return null;
     return adaptTaskDetail(id, data.taskData, data.traceData, data.contextData, data.pipelineData);
   });

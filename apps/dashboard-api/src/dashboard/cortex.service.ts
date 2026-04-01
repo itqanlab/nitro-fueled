@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { resolveCortexDbPath } from '../app/resolve-project-root';
 import Database from 'better-sqlite3';
 import {
   queryTasks,
@@ -52,7 +52,8 @@ export class CortexService {
   private readonly dbPath: string;
 
   public constructor() {
-    this.dbPath = join(process.cwd(), '.nitro', 'cortex.db');
+    this.dbPath = resolveCortexDbPath();
+    this.logger.log(`Cortex DB path: ${this.dbPath}`);
   }
 
   /** Returns true when the cortex DB file exists. Used by controllers to distinguish 503 from 404. */
@@ -247,6 +248,101 @@ export class CortexService {
       return queryEventsSince(db, sinceId);
     } catch (err) {
       this.logger.error(`getEventsSince failed (sinceId=${sinceId}): ${String(err)}`);
+      return null;
+    } finally {
+      db.close();
+    }
+  }
+
+  // ============================================================
+  // Recent Sessions with Cost/Token Aggregates
+  // ============================================================
+
+  public getRecentSessionStats(limit = 10): Array<{
+    sessionId: string;
+    date: string;
+    tokens: number;
+    cost: number;
+  }> | null {
+    const db = this.openDb();
+    if (!db) return null;
+    try {
+      const rows = db.prepare(`
+        SELECT s.id, s.started_at, w.cost_json, w.tokens_json
+        FROM sessions s
+        LEFT JOIN workers w ON w.session_id = s.id
+        ORDER BY s.started_at DESC
+      `).all() as Array<{ id: string; started_at: string; cost_json: string | null; tokens_json: string | null }>;
+
+      const sessionMap = new Map<string, { date: string; tokens: number; cost: number }>();
+      for (const row of rows) {
+        if (!sessionMap.has(row.id)) {
+          sessionMap.set(row.id, { date: row.started_at, tokens: 0, cost: 0 });
+        }
+        const entry = sessionMap.get(row.id)!;
+        if (row.cost_json) {
+          try { entry.cost += JSON.parse(row.cost_json).total_usd ?? 0; } catch { /* skip */ }
+        }
+        if (row.tokens_json) {
+          try {
+            const t = JSON.parse(row.tokens_json);
+            entry.tokens += t.total_combined ?? (t.total_input ?? 0) + (t.total_output ?? 0);
+          } catch { /* skip */ }
+        }
+      }
+
+      return Array.from(sessionMap.entries())
+        .slice(0, limit)
+        .map(([sessionId, data]) => ({ sessionId, ...data }));
+    } catch (err) {
+      this.logger.error(`getRecentSessionStats failed: ${String(err)}`);
+      return null;
+    } finally {
+      db.close();
+    }
+  }
+
+  // ============================================================
+  // Cost & Token Aggregates
+  // ============================================================
+
+  public getCostTokenAggregates(): {
+    totalCost: number;
+    totalTokens: number;
+    costByModel: Record<string, number>;
+    tokensByModel: Record<string, number>;
+  } | null {
+    const db = this.openDb();
+    if (!db) return null;
+    try {
+      const rows = db.prepare(
+        `SELECT model, cost_json, tokens_json FROM workers WHERE cost_json IS NOT NULL`,
+      ).all() as Array<{ model: string | null; cost_json: string; tokens_json: string }>;
+
+      let totalCost = 0;
+      let totalTokens = 0;
+      const costByModel: Record<string, number> = {};
+      const tokensByModel: Record<string, number> = {};
+
+      for (const row of rows) {
+        const model = row.model ?? 'unknown';
+        try {
+          const cost = JSON.parse(row.cost_json);
+          const usd = cost.total_usd ?? 0;
+          totalCost += usd;
+          if (usd > 0) costByModel[model] = (costByModel[model] ?? 0) + usd;
+        } catch { /* skip malformed */ }
+        try {
+          const tokens = JSON.parse(row.tokens_json);
+          const combined = tokens.total_combined ?? (tokens.total_input ?? 0) + (tokens.total_output ?? 0);
+          totalTokens += combined;
+          if (combined > 0) tokensByModel[model] = (tokensByModel[model] ?? 0) + combined;
+        } catch { /* skip malformed */ }
+      }
+
+      return { totalCost, totalTokens, costByModel, tokensByModel };
+    } catch (err) {
+      this.logger.error(`getCostTokenAggregates failed: ${String(err)}`);
       return null;
     } finally {
       db.close();

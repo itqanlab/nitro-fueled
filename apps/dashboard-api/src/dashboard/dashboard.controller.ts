@@ -40,7 +40,7 @@ const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/;
  * DO NOT expose on a non-loopback interface without adding authentication.
  */
 @ApiTags('registry')
-@Controller({ path: 'api', version: '1' })
+@Controller('api')
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
 
