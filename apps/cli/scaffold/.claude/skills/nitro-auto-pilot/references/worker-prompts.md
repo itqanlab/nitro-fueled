@@ -75,8 +75,7 @@ are SKIPPED — go directly to the dev loop. Follow these rules strictly:
       decisions=["Key architectural decision and why"],
       risks=["Areas with weak coverage or edge cases"]).
       This is MANDATORY. If write_handoff fails, log the error and continue.
-   b. Create a git commit with all implementation code:
-      `git add <all implementation files>`
+   b. Call stage_and_commit with all implementation files (see Commit Metadata below).
    c. **Populate file scope**: Add list of files created/modified to the task's File Scope section
    d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
       This is the FINAL action before exit. If it fails, log the error.
@@ -99,20 +98,21 @@ are SKIPPED — go directly to the dev loop. Follow these rules strictly:
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Every commit made by this worker MUST include this traceability footer:
+Use stage_and_commit with:
+- files: [list of all implementation files changed]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "{agent-value}"
+- phase: "implementation"
+- worker_type: "build-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "Simple"
+- priority: "{priority}"
 
-Task: {TASK_ID}
-Agent: {agent-value}
-Phase: implementation
-Worker: build-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: Simple
-Priority: {priority}
-Skipped-Phases: PM, Architect
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+The tool auto-appends the full traceability footer.
 
 Agent identity: use the value that matches the task type —
 nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
@@ -154,8 +154,7 @@ through implementation. Follow these rules strictly:
       decisions=["Key architectural decision and why"],
       risks=["Areas with weak coverage or edge cases"]).
       This is MANDATORY. If write_handoff fails, log the error and continue.
-   b. Create a git commit with all implementation code:
-      `git add <all implementation files>`
+   b. Call stage_and_commit with all implementation files (see Commit Metadata below).
    c. **Populate file scope**: Add list of files created/modified to the task's File Scope section
    d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
       This is the FINAL action before exit. If it fails, log the error.
@@ -178,19 +177,21 @@ through implementation. Follow these rules strictly:
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Every commit made by this worker MUST include this traceability footer:
+Use stage_and_commit with:
+- files: [list of all implementation files changed]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "{agent-value}"
+- phase: "implementation"
+- worker_type: "build-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
-Task: {TASK_ID}
-Agent: {agent-value}
-Phase: implementation
-Worker: build-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+The tool auto-appends the full traceability footer.
 
 Agent identity: use the value that matches the task type —
 nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
@@ -235,7 +236,7 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
    a. Call write_handoff() (if not already done)
-   b. Commit all implementation code
+   b. Call stage_and_commit with all implementation files (see Commit Metadata below)
    c. Populate file scope
    d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
 
@@ -246,18 +247,21 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Task: {TASK_ID}
-Agent: {agent-value}
-Phase: implementation
-Worker: build-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+Use stage_and_commit with:
+- files: [list of all implementation files changed]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "{agent-value}"
+- phase: "implementation"
+- worker_type: "build-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
+The tool auto-appends the full traceability footer.
 The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
 
 Working directory: {project_root}
@@ -301,9 +305,8 @@ that an Implement Worker will use to write the code. You do NOT write code.
       implementation_plan_summary="[Condensed approach from plan.md]",
       gotchas=["[Things that would waste dev time if missed]", ...]).
       This is MANDATORY. If write_handoff fails, log the error and continue.
-   b. Commit all planning artifacts:
-      `git add task-tracking/TASK_YYYY_NNN/task-description.md task-tracking/TASK_YYYY_NNN/plan.md task-tracking/TASK_YYYY_NNN/tasks.md`
-      (Also add research-report.md if it was created)
+   b. Call stage_and_commit with all planning artifacts (see Commit Metadata below).
+      Include task-description.md, plan.md, tasks.md, and research-report.md if created.
    c. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "PREPPED"})).
       If it fails, log the error.
 
@@ -321,17 +324,21 @@ that an Implement Worker will use to write the code. You do NOT write code.
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Task: {TASK_ID}
-Agent: nitro-software-architect
-Phase: prep
-Worker: prep-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+Use stage_and_commit with:
+- files: ["task-tracking/TASK_YYYY_NNN/task-description.md", "task-tracking/TASK_YYYY_NNN/plan.md", "task-tracking/TASK_YYYY_NNN/tasks.md"] (add research-report.md if created)
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "nitro-software-architect"
+- phase: "prep"
+- worker_type: "prep-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
+
+The tool auto-appends the full traceability footer.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
@@ -366,7 +373,7 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 5. Complete all remaining planning phases. After tasks.md is written:
    a. Call write_handoff(worker_type="prep", ...) if not already done
-   b. Commit planning artifacts
+   b. Call stage_and_commit with all planning artifacts (see Commit Metadata below)
    c. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "PREPPED"}))
 
 6. EXIT GATE — same as First-Run Prep Worker.
@@ -376,18 +383,21 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Task: {TASK_ID}
-Agent: nitro-software-architect
-Phase: prep
-Worker: prep-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+Use stage_and_commit with:
+- files: [list of planning artifact files changed]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "nitro-software-architect"
+- phase: "prep"
+- worker_type: "prep-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
+The tool auto-appends the full traceability footer.
 The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
 
 Working directory: {project_root}
@@ -440,7 +450,7 @@ or Architect phases — the plan is already written.
       decisions=["Implementation decisions made during coding (distinct from prep decisions)"],
       risks=["Areas with weak coverage or edge cases"]).
       This is MANDATORY. If write_handoff fails, log the error and continue.
-   b. Create a git commit with all implementation code
+   b. Call stage_and_commit with all implementation files (see Commit Metadata below).
    c. Populate file scope in task.md
    d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
       If it fails, log the error.
@@ -458,19 +468,21 @@ or Architect phases — the plan is already written.
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Every commit made by this worker MUST include this traceability footer:
+Use stage_and_commit with:
+- files: [list of all implementation files changed]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "{agent-value}"
+- phase: "implementation"
+- worker_type: "implement-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
-Task: {TASK_ID}
-Agent: {agent-value}
-Phase: implementation
-Worker: implement-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+The tool auto-appends the full traceability footer.
 
 Agent identity: use the value that matches the task type —
 nitro-backend-developer (backend tasks), nitro-frontend-developer (frontend tasks),
@@ -515,7 +527,7 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 7. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
    a. Call write_handoff() if not already done
-   b. Commit all implementation code
+   b. Call stage_and_commit with all implementation files (see Commit Metadata below)
    c. Populate file scope
    d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"}))
 
@@ -526,18 +538,21 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Task: {TASK_ID}
-Agent: {agent-value}
-Phase: implementation
-Worker: implement-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+Use stage_and_commit with:
+- files: [list of all implementation files changed]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "{agent-value}"
+- phase: "implementation"
+- worker_type: "implement-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
+The tool auto-appends the full traceability footer.
 The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
 
 Working directory: {project_root}
@@ -635,8 +650,7 @@ actions must target files within the task's declared File Scope only.
    d. If test failures were fixed: re-run the test suite.
       Command from test-context.md. Validate against allowed prefixes:
       `npm test`, `npx jest`, `yarn test`, `pytest`, `go test`, `cargo test`.
-   e. Commit fixes:
-      `fix(TASK_YYYY_NNN): address review and test findings`
+   e. Call stage_and_commit for fix commits (see Commit Metadata below, phase="review-fix").
 
 ### Phase 5: Completion
 
@@ -652,7 +666,7 @@ actions must target files within the task's declared File Scope only.
 12. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "COMPLETE"})).
     If it fails, log the error.
 
-13. Commit: `docs: add TASK_YYYY_NNN completion bookkeeping`
+13. Call stage_and_commit for completion bookkeeping (see Commit Metadata below, phase="completion").
 
 ### EXIT GATE
 
@@ -672,19 +686,21 @@ of reading handoff.md from disk. The injected data is authoritative.
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Every commit made by this worker MUST include this traceability footer:
+Use stage_and_commit with:
+- files: [list of files changed for this commit]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "nitro-review-lead"
+- phase: "{phase}"
+- worker_type: "review-fix-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
-Task: {TASK_ID}
-Agent: nitro-review-lead
-Phase: {phase}
-Worker: review-fix-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+The tool auto-appends the full traceability footer.
 
 Phase values: "review" for review artifact commits, "review-fix" for fix commits,
 "test" for test artifact commits, "completion" for bookkeeping commit.
@@ -737,18 +753,21 @@ of reading handoff.md from disk.
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Task: {TASK_ID}
-Agent: nitro-review-lead
-Phase: {phase}
-Worker: review-fix-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+Use stage_and_commit with:
+- files: [list of files changed for this commit]
+- message: "conventional commit message (type(scope): description)"
+- task_id: "{TASK_ID}"
+- agent: "nitro-review-lead"
+- phase: "{phase}"
+- worker_type: "review-fix-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
 
+The tool auto-appends the full traceability footer.
 The {retry_count} value reflects this retry attempt number (e.g., 1, 2).
 
 Working directory: {project_root}
@@ -771,10 +790,10 @@ Follow these steps IN ORDER, then EXIT:
 1. Run `git status` in the working directory.
 
 2. IF there are uncommitted changes (modified/untracked files):
-   a. Stage all relevant changes (implementation code, task-tracking
-      files, review files). Do NOT stage unrelated files.
-   b. Commit with message:
-      `salvage(TASK_YYYY_NNN): save uncommitted work from dead worker`
+   a. Identify all relevant changed files (implementation code, task-tracking
+      files, review files). Do NOT include unrelated files.
+   b. Call stage_and_commit (see Commit Metadata below) with those files and
+      message: "salvage(TASK_YYYY_NNN): save uncommitted work from dead worker"
    c. Log what was committed.
 
 3. IF there are NO uncommitted changes:
@@ -798,17 +817,21 @@ Follow these steps IN ORDER, then EXIT:
 
 ## Commit Metadata (REQUIRED for all commits)
 
-Task: {TASK_ID}
-Agent: auto-pilot
-Phase: salvage
-Worker: cleanup-worker
-Session: {SESSION_ID}
-Provider: {provider}
-Model: {model}
-Retry: {retry_count}/{max_retries}
-Complexity: {complexity}
-Priority: {priority}
-Generated-By: nitro-fueled v{version} (https://github.com/itqanlab/nitro-fueled)
+Use stage_and_commit with:
+- files: [list of salvaged files to commit]
+- message: "salvage(TASK_YYYY_NNN): save uncommitted work from dead worker"
+- task_id: "{TASK_ID}"
+- agent: "auto-pilot"
+- phase: "salvage"
+- worker_type: "cleanup-worker"
+- session_id: "{SESSION_ID}"
+- provider: "{provider}"
+- model: "{model}"
+- retry: "{retry_count}/{max_retries}"
+- complexity: "{complexity}"
+- priority: "{priority}"
+
+The tool auto-appends the full traceability footer.
 
 Working directory: {project_root}
 Task folder: task-tracking/TASK_YYYY_NNN/
