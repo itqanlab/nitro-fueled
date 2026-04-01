@@ -1,5 +1,5 @@
 import { existsSync, copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { Flags } from '@oclif/core';
@@ -454,6 +454,7 @@ function printSummary(skipCortex: boolean): void {
   logger.log('  .claude/review-lessons/ Empty review templates (grow over time)');
   logger.log('  task-tracking/         Task registry and template');
   logger.log('  .nitro/CLAUDE.nitro.md Nitro-fueled conventions (nitro-managed)');
+  logger.log('  .cursorrules, .clinerules  AI tool context (Cursor, Cline, Copilot)');
   logger.log('  CLAUDE.md              Your project conventions (user-owned, import added)');
   logger.log('');
   logger.log('Next steps:');
@@ -465,6 +466,63 @@ function printSummary(skipCortex: boolean): void {
     logger.log(`  ${step++}. npx nitro-fueled init --cortex-path <path>   Configure nitro-cortex MCP server`);
   }
   logger.log('');
+}
+
+interface MultiToolContextResult {
+  generated: string[];
+  skipped: string[];
+}
+
+function generateMultiToolContextFiles(
+  cwd: string,
+  nitroMdPath: string,
+  overwrite: boolean,
+): MultiToolContextResult {
+  const result: MultiToolContextResult = { generated: [], skipped: [] };
+
+  // Read source content
+  let sourceContent = '';
+  try {
+    sourceContent = readFileSync(nitroMdPath, 'utf-8');
+  } catch {
+    // CLAUDE.nitro.md not available — skip generation
+    return result;
+  }
+
+  const tools: Array<{ relPath: string; header: string }> = [
+    {
+      relPath: '.cursorrules',
+      header: '# Cursor Rules\n\nProject conventions for Cursor AI assistant.\n\n',
+    },
+    {
+      relPath: '.github/copilot-instructions.md',
+      header: '# GitHub Copilot Instructions\n\nProject conventions for GitHub Copilot.\n\n',
+    },
+    {
+      relPath: '.clinerules',
+      header: '# Cline Rules\n\nProject conventions for Cline AI assistant.\n\n',
+    },
+  ];
+
+  for (const tool of tools) {
+    const dest = resolve(cwd, tool.relPath);
+
+    if (!overwrite && existsSync(dest)) {
+      result.skipped.push(dest);
+      continue;
+    }
+
+    try {
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, tool.header + sourceContent, 'utf-8');
+      result.generated.push(dest);
+    } catch {
+      // Best-effort — log but don't fail init
+      logger.log(`  Warning: could not write ${tool.relPath}`);
+    }
+  }
+
+  return result;
 }
 
 export default class Init extends BaseCommand {
@@ -571,6 +629,16 @@ export default class Init extends BaseCommand {
     }
     allCreatedFiles.push(...agentPaths);
 
+    // Step 8b: Generate multi-tool context files (.cursorrules, copilot-instructions, .clinerules)
+    const multiToolResult = generateMultiToolContextFiles(cwd, nitroMdPath, opts.overwrite);
+    allCreatedFiles.push(...multiToolResult.generated);
+    if (multiToolResult.generated.length > 0) {
+      logger.log(`  Multi-tool context: generated ${multiToolResult.generated.length} files (.cursorrules, copilot-instructions.md, .clinerules)`);
+    }
+    if (multiToolResult.skipped.length > 0) {
+      logger.log(`  Multi-tool context: ${multiToolResult.skipped.length} already exist (use --overwrite to regenerate)`);
+    }
+
     if (detectedStacks.length > 0) {
       const detectedLabel = detectedStacks.map((s) =>
         s.frameworks.length > 0 ? `${s.language} (${s.frameworks.join(', ')})` : s.language
@@ -596,6 +664,11 @@ export default class Init extends BaseCommand {
     // Developer agents
     for (const agentPath of agentPaths) {
       generatedFileInfos.push({ path: agentPath, stack: stackLabel, generator: 'ai' });
+    }
+
+    // Multi-tool context files
+    for (const filePath of multiToolResult.generated) {
+      generatedFileInfos.push({ path: filePath, stack: stackLabel, generator: 'ai' });
     }
 
     try {
