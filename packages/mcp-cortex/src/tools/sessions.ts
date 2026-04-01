@@ -9,6 +9,7 @@ import { handleReleaseOrphanedClaims } from './tasks.js';
 // where the caller wants to set them independently.
 const UPDATABLE_SESSION_COLUMNS = new Set([
   'loop_status', 'tasks_terminal', 'config', 'task_limit', 'source', 'ended_at', 'summary',
+  'supervisor_model', 'supervisor_launcher', 'mode', 'total_cost', 'total_input_tokens', 'total_output_tokens',
 ]);
 
 export function handleCreateSession(

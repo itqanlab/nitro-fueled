@@ -201,6 +201,52 @@ describe('handleUpdateSession', () => {
     const data = parseText(result) as { ok: boolean };
     expect(data.ok).toBe(true);
   });
+
+  it('updates supervisor_model field', () => {
+    const result = handleUpdateSession(db, {
+      session_id: sessionId,
+      fields: { supervisor_model: 'claude-sonnet-4-6' },
+    });
+    const data = parseText(result) as { ok: boolean };
+    expect(data.ok).toBe(true);
+    const row = db.prepare('SELECT supervisor_model FROM sessions WHERE id = ?').get(sessionId) as { supervisor_model: string };
+    expect(row.supervisor_model).toBe('claude-sonnet-4-6');
+  });
+
+  it('updates mode field', () => {
+    const result = handleUpdateSession(db, {
+      session_id: sessionId,
+      fields: { mode: 'auto-pilot' },
+    });
+    const data = parseText(result) as { ok: boolean };
+    expect(data.ok).toBe(true);
+    const row = db.prepare('SELECT mode FROM sessions WHERE id = ?').get(sessionId) as { mode: string };
+    expect(row.mode).toBe('auto-pilot');
+  });
+
+  it('updates total_cost field', () => {
+    const result = handleUpdateSession(db, {
+      session_id: sessionId,
+      fields: { total_cost: 1.23 },
+    });
+    const data = parseText(result) as { ok: boolean };
+    expect(data.ok).toBe(true);
+    const row = db.prepare('SELECT total_cost FROM sessions WHERE id = ?').get(sessionId) as { total_cost: number };
+    expect(row.total_cost).toBeCloseTo(1.23);
+  });
+
+  it('updates supervisor_model, mode, and total_cost in a single call', () => {
+    const result = handleUpdateSession(db, {
+      session_id: sessionId,
+      fields: { supervisor_model: 'claude-opus-4-6', mode: 'split', total_cost: 4.56 },
+    });
+    const data = parseText(result) as { ok: boolean };
+    expect(data.ok).toBe(true);
+    const row = db.prepare('SELECT supervisor_model, mode, total_cost FROM sessions WHERE id = ?').get(sessionId) as { supervisor_model: string; mode: string; total_cost: number };
+    expect(row.supervisor_model).toBe('claude-opus-4-6');
+    expect(row.mode).toBe('split');
+    expect(row.total_cost).toBeCloseTo(4.56);
+  });
 });
 
 describe('handleListSessions', () => {

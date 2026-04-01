@@ -47,7 +47,7 @@ const server = new McpServer({
 server.registerTool('get_tasks', {
   description: 'Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE. Use compact=true to omit description/acceptance_criteria/file_scope (saves ~80% tokens).',
   inputSchema: {
-    status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
+    status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
@@ -60,7 +60,7 @@ server.registerTool('get_tasks', {
 server.registerTool('query_tasks', {
   description: 'Alias for get_tasks. Filtered task list. When unblocked=true, resolves dependency graph and returns only tasks whose dependencies are all COMPLETE. Use compact=true to omit description/acceptance_criteria/file_scope (saves ~80% tokens).',
   inputSchema: {
-    status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).optional().describe('Filter by task status'),
+    status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE']).optional().describe('Filter by task status'),
     type: z.string().optional().describe('Filter by task type'),
     priority: z.string().optional().describe('Filter by priority'),
     unblocked: z.boolean().optional().describe('When true, return only unblocked tasks'),
@@ -88,7 +88,7 @@ server.registerTool('release_task', {
   description: 'Release a claimed task, clearing the claim and setting a new status.',
   inputSchema: {
     task_id: z.string().describe('Task ID to release'),
-    new_status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED']).describe('New status to set'),
+    new_status: z.enum(['CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE']).describe('New status to set'),
   },
 }, (args) => handleReleaseTask(db, args));
 
@@ -234,7 +234,7 @@ server.registerTool('get_session', {
 }, (args) => handleGetSession(db, args));
 
 server.registerTool('update_session', {
-  description: 'Partial update of session fields (loop_status, tasks_terminal, config, etc.).',
+  description: 'Partial update of session fields (loop_status, tasks_terminal, config, supervisor_model, mode, total_cost, etc.).',
   inputSchema: {
     session_id: z.string().describe('Session ID to update'),
     fields: z.string().describe('JSON string of fields to update'),
