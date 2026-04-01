@@ -20,11 +20,13 @@ import { CommandConsoleController } from './command-console.controller';
 import { CommandConsoleService } from './command-console.service';
 import { HydrationService } from './hydration.service';
 import { McpService } from './mcp.service';
+import { SettingsService } from './settings.service';
+import { SettingsController } from './settings.controller';
 import { resolveProjectRoot } from '../app/resolve-project-root';
 
 @Module({
   imports: [OrchestrationModule],
-  controllers: [DashboardController, LogsController, CommandConsoleController],
+  controllers: [DashboardController, LogsController, CommandConsoleController, SettingsController],
   providers: [
     DiffService,
     WorkerTreeService,
@@ -50,6 +52,10 @@ import { resolveProjectRoot } from '../app/resolve-project-root';
     CommandConsoleService,
     HydrationService,
     McpService,
+    {
+      provide: SettingsService,
+      useFactory: () => new SettingsService(resolveProjectRoot()),
+    },
   ],
   exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, SessionsHistoryService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService, DashboardGateway],
 })
