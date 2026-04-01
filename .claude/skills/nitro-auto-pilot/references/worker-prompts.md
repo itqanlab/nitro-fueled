@@ -52,12 +52,9 @@ WORKER_ID: {worker_id}
 You are a Build Worker for a Simple-complexity task. PM and Architect phases
 are SKIPPED — go directly to the dev loop. Follow these rules strictly:
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IN_PROGRESS (no trailing newline). This signals the Supervisor that work has begun.
-   Then call MCP emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
-   If the nitro-cortex MCP server is available:
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
-   Best-effort — if it fails, continue. The status file is the authoritative signal.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
+   Then call emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
+   If update_task fails, log the error and continue.
 
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints and continue immediately. There is no human at this terminal.
@@ -72,27 +69,17 @@ are SKIPPED — go directly to the dev loop. Follow these rules strictly:
    Complete ALL batches until tasks.md shows all tasks COMPLETE.
 
 4. After ALL development is complete (all batches COMPLETE in tasks.md):
-   a. Write task-tracking/TASK_YYYY_NNN/handoff.md — this is MANDATORY before committing:
-      ```
-      # Handoff — TASK_YYYY_NNN
-      ## Files Changed
-      - path/to/file (new/modified, +N -N lines)
-      ## Commits
-      - <hash>: <commit message>
-      ## Decisions
-      - Key architectural decision and why
-      ## Known Risks
-      - Areas with weak coverage or edge cases
-      ```
-   b. Create a git commit with all implementation code AND handoff.md:
-      `git add <all implementation files> task-tracking/TASK_YYYY_NNN/handoff.md`
+   a. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="build",
+      files_changed=[{path: "...", action: "new|modified|deleted", lines: N}, ...],
+      commits=["<sha>: <message>", ...],
+      decisions=["Key architectural decision and why"],
+      risks=["Areas with weak coverage or edge cases"]).
+      This is MANDATORY. If write_handoff fails, log the error and continue.
+   b. Create a git commit with all implementation code:
+      `git add <all implementation files>`
    c. **Populate file scope**: Add list of files created/modified to the task's File Scope section
-   d. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED (no trailing
-      newline). This is the FINAL action before exit.
-      If the nitro-cortex MCP server is available:
-      also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
-      Best-effort — if it fails, continue.
-   e. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
+   d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
+      This is the FINAL action before exit. If it fails, log the error.
 
 5. Before developers write any code, they MUST read
    ALL review-lessons files and anti-patterns:
@@ -101,12 +88,11 @@ are SKIPPED — go directly to the dev loop. Follow these rules strictly:
 
 6. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
-   - [ ] task-tracking/TASK_YYYY_NNN/handoff.md exists with all 4 sections
-   - [ ] Implementation code is committed (handoff.md included in commit)
-   - [ ] task-tracking/TASK_YYYY_NNN/status contains IMPLEMENTED
-   - [ ] Status file commit exists in git log
+   - [ ] read_handoff("TASK_YYYY_NNN") returns a non-empty record with all 4 sections
+   - [ ] Implementation code is committed
+   - [ ] get_task_context("TASK_YYYY_NNN") shows status IMPLEMENTED
    If any check fails, fix it before exiting.
-   If you cannot pass the Exit Gate, write exit-gate-failure.md.
+   If you cannot pass the Exit Gate, call write_context(task_id="TASK_YYYY_NNN", content="EXIT GATE FAILURE: <reason>") and exit.
 
 7. You do NOT run reviews. You do NOT write completion-report.md.
    You do NOT mark the task COMPLETE. Stop after IMPLEMENTED.
@@ -150,12 +136,9 @@ WORKER_ID: {worker_id}
 You are a Build Worker. Your job is to take this task from CREATED
 through implementation. Follow these rules strictly:
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IN_PROGRESS (no trailing newline). This signals the Supervisor that work has begun.
-   Then call MCP emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
-   If the nitro-cortex MCP server is available (get_tasks tool is in the tool list):
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
-   This is best-effort — if it fails, continue. The status file is the authoritative signal.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
+   Then call emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
+   If update_task fails, log the error and continue.
 
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints (Scope, Requirements, Architecture, QA Choice)
@@ -165,27 +148,17 @@ through implementation. Follow these rules strictly:
    Complete ALL batches until tasks.md shows all tasks COMPLETE.
 
 4. After ALL development is complete (all batches COMPLETE in tasks.md):
-   a. Write task-tracking/TASK_YYYY_NNN/handoff.md — this is MANDATORY before committing:
-      ```
-      # Handoff — TASK_YYYY_NNN
-      ## Files Changed
-      - path/to/file (new/modified, +N -N lines)
-      ## Commits
-      - <hash>: <commit message>
-      ## Decisions
-      - Key architectural decision and why
-      ## Known Risks
-      - Areas with weak coverage or edge cases
-      ```
-   b. Create a git commit with all implementation code AND handoff.md:
-      `git add <all implementation files> task-tracking/TASK_YYYY_NNN/handoff.md`
+   a. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="build",
+      files_changed=[{path: "...", action: "new|modified|deleted", lines: N}, ...],
+      commits=["<sha>: <message>", ...],
+      decisions=["Key architectural decision and why"],
+      risks=["Areas with weak coverage or edge cases"]).
+      This is MANDATORY. If write_handoff fails, log the error and continue.
+   b. Create a git commit with all implementation code:
+      `git add <all implementation files>`
    c. **Populate file scope**: Add list of files created/modified to the task's File Scope section
-   d. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED (no trailing
-      newline). This is the FINAL action before exit.
-      If the nitro-cortex MCP server is available:
-      also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
-      Best-effort — if it fails, continue. The status file is authoritative.
-   e. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
+   d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
+      This is the FINAL action before exit. If it fails, log the error.
 
 5. Before developers write any code, they MUST read
    ALL review-lessons files and anti-patterns:
@@ -194,13 +167,11 @@ through implementation. Follow these rules strictly:
 
 6. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
-   - [ ] task-tracking/TASK_YYYY_NNN/handoff.md exists with all 4 sections
-   - [ ] Implementation code is committed (handoff.md included in commit)
-   - [ ] task-tracking/TASK_YYYY_NNN/status contains IMPLEMENTED
-   - [ ] Status file commit exists in git log
+   - [ ] read_handoff("TASK_YYYY_NNN") returns a non-empty record with all 4 sections
+   - [ ] Implementation code is committed
+   - [ ] get_task_context("TASK_YYYY_NNN") shows status IMPLEMENTED
    If any check fails, fix it before exiting.
-   If you cannot pass the Exit Gate, write exit-gate-failure.md
-   documenting the failure, then exit.
+   If you cannot pass the Exit Gate, call write_context(task_id="TASK_YYYY_NNN", content="EXIT GATE FAILURE: <reason>") and exit.
 
 7. You do NOT run reviews. You do NOT write completion-report.md.
    You do NOT mark the task COMPLETE. Stop after IMPLEMENTED.
@@ -241,11 +212,8 @@ The previous Build Worker {reason: stuck / crashed / stopped}.
 
 AUTONOMOUS MODE — follow these rules strictly:
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IN_PROGRESS (no trailing newline), if not already.
-   If the nitro-cortex MCP server is available:
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
-   Best-effort — if it fails, continue.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"}))
+   if not already. If it fails, log the error and continue.
 
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints and continue immediately. No human at this terminal.
@@ -266,11 +234,10 @@ AUTONOMOUS MODE — follow these rules strictly:
    - Read .claude/anti-patterns.md
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
-   a. Write handoff.md (if not already written)
-   b. Commit all implementation code AND handoff.md
+   a. Call write_handoff() (if not already done)
+   b. Commit all implementation code
    c. Populate file scope
-   d. Write IMPLEMENTED to status file. Update cortex if available.
-   e. Commit the status file
+   d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
 
 7. EXIT GATE — same as First-Run Build Worker.
    If you cannot pass the Exit Gate, write exit-gate-failure.md.
@@ -311,12 +278,9 @@ You are a Prep Worker. Your job is to take this task from CREATED through
 planning. You produce the planning artifacts and a prep-handoff contract
 that an Implement Worker will use to write the code. You do NOT write code.
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IN_PROGRESS (no trailing newline).
-   Then call MCP emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
-   If nitro-cortex MCP available:
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
-   Best-effort — if it fails, continue. The status file is authoritative.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
+   Then call emit_event(worker_id="{worker_id}", label="IN_PROGRESS", data={"task_id":"TASK_YYYY_NNN"}).
+   If update_task fails, log the error and continue.
 
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints (Scope, Requirements, Architecture) and continue
@@ -330,50 +294,25 @@ that an Implement Worker will use to write the code. You do NOT write code.
    Stop after Team Leader MODE 1. Do NOT enter MODE 2 (dev loop).
 
 4. After tasks.md is written with all batches PENDING:
-   a. Write task-tracking/TASK_YYYY_NNN/prep-handoff.md — this is MANDATORY:
-      ```
-      # Prep Handoff — TASK_YYYY_NNN
-
-      ## Implementation Plan Summary
-      [Condensed approach from plan.md — what the developer needs to know]
-
-      ## Files to Touch
-      | File | Action | Why |
-      |------|--------|-----|
-      | path/to/file.ts | modify | Add new method |
-      | path/to/new.ts | new | New service |
-
-      ## Batches
-      - Batch 1: [summary] — files: [list]
-      - Batch 2: [summary] — files: [list]
-
-      ## Key Decisions
-      - [Architectural decision and why — implement worker should NOT re-decide these]
-
-      ## Gotchas
-      - [Things that would waste dev time if missed]
-      ```
-   b. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="prep",
-      files_to_touch=[...], batches=[...], key_decisions=[...],
-      implementation_plan_summary="...", gotchas=[...]).
-      Best-effort — if it fails, continue. The file is authoritative.
-   c. Commit all planning artifacts:
-      `git add task-tracking/TASK_YYYY_NNN/task-description.md task-tracking/TASK_YYYY_NNN/plan.md task-tracking/TASK_YYYY_NNN/tasks.md task-tracking/TASK_YYYY_NNN/prep-handoff.md`
+   a. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="prep",
+      files_to_touch=[{path: "...", action: "modify|new", reason: "..."},...],
+      batches=["Batch 1: [summary] — files: [list]", ...],
+      key_decisions=["[Architectural decision and why]", ...],
+      implementation_plan_summary="[Condensed approach from plan.md]",
+      gotchas=["[Things that would waste dev time if missed]", ...]).
+      This is MANDATORY. If write_handoff fails, log the error and continue.
+   b. Commit all planning artifacts:
+      `git add task-tracking/TASK_YYYY_NNN/task-description.md task-tracking/TASK_YYYY_NNN/plan.md task-tracking/TASK_YYYY_NNN/tasks.md`
       (Also add research-report.md if it was created)
-   d. Write task-tracking/TASK_YYYY_NNN/status with the single word PREPPED
-      (no trailing newline).
-      If nitro-cortex available:
-      also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "PREPPED"})).
-      Best-effort — if it fails, continue.
-   e. Commit the status file: `docs: mark TASK_YYYY_NNN PREPPED`
+   c. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "PREPPED"})).
+      If it fails, log the error.
 
 5. EXIT GATE — Before exiting, verify:
    - [ ] plan.md exists with implementation approach
    - [ ] tasks.md exists with at least 1 batch (all PENDING)
-   - [ ] prep-handoff.md exists with all 5 sections (Implementation Plan Summary, Files to Touch, Batches, Key Decisions, Gotchas)
+   - [ ] read_handoff("TASK_YYYY_NNN", worker_type="prep") returns a non-empty record with all 5 fields
    - [ ] Planning artifacts are committed
-   - [ ] task-tracking/TASK_YYYY_NNN/status contains PREPPED
-   - [ ] Status file commit exists in git log
+   - [ ] get_task_context("TASK_YYYY_NNN") shows status PREPPED
    If any check fails, fix it before exiting.
    If you cannot pass the Exit Gate, write exit-gate-failure.md.
 
@@ -409,11 +348,8 @@ The previous Prep Worker {reason: stuck / crashed / stopped}.
 
 AUTONOMOUS MODE — follow these rules strictly:
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IN_PROGRESS (no trailing newline), if not already.
-   If nitro-cortex available:
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"})).
-   Best-effort.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_PROGRESS"}))
+   if not already. If it fails, log the error and continue.
 
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints and continue immediately. No human at this terminal.
@@ -422,17 +358,16 @@ AUTONOMOUS MODE — follow these rules strictly:
    - task-description.md exists? -> PM phase already done
    - plan.md exists? -> Architecture already done
    - tasks.md exists? -> Team Leader MODE 1 already done
-   - prep-handoff.md exists? -> Prep handoff already done
+   - read_handoff("TASK_YYYY_NNN", worker_type="prep") returns data? -> Prep handoff already done
    The orchestration skill's phase detection will automatically
    determine where to resume.
 
 4. Do NOT restart from scratch. Resume from the detected phase.
 
 5. Complete all remaining planning phases. After tasks.md is written:
-   a. Write prep-handoff.md (if not already written)
+   a. Call write_handoff(worker_type="prep", ...) if not already done
    b. Commit planning artifacts
-   c. Write PREPPED to status file. Update cortex if available.
-   d. Commit the status file
+   c. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "PREPPED"}))
 
 6. EXIT GATE — same as First-Run Prep Worker.
    If you cannot pass the Exit Gate, write exit-gate-failure.md.
@@ -474,16 +409,12 @@ for this task. Your job is to read the prep handoff, execute the dev loop,
 and take this task from PREPPED to IMPLEMENTED. You do NOT run PM, Researcher,
 or Architect phases — the plan is already written.
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IMPLEMENTING (no trailing newline).
-   Then call MCP emit_event(worker_id="{worker_id}", label="IMPLEMENTING", data={"task_id":"TASK_YYYY_NNN"}).
-   If nitro-cortex MCP available:
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTING"})).
-   Best-effort — if it fails, continue. The status file is authoritative.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTING"})).
+   Then call emit_event(worker_id="{worker_id}", label="IMPLEMENTING", data={"task_id":"TASK_YYYY_NNN"}).
+   If update_task fails, log the error and continue.
 
 2. READ THE PREP HANDOFF — this is your first and most important action:
-   a. If nitro-cortex MCP available → call read_handoff("TASK_YYYY_NNN", worker_type="prep")
-   b. Fallback: read task-tracking/TASK_YYYY_NNN/prep-handoff.md
+   Call read_handoff("TASK_YYYY_NNN", worker_type="prep").
    The prep handoff contains: implementation plan summary, files to touch,
    batches, key decisions, and gotchas. Trust this contract — do NOT
    re-decide architectural choices made by the Prep Worker.
@@ -503,34 +434,24 @@ or Architect phases — the plan is already written.
    - Read .claude/anti-patterns.md
 
 6. After ALL development is complete (all batches COMPLETE in tasks.md):
-   a. Write task-tracking/TASK_YYYY_NNN/handoff.md — this is MANDATORY:
-      ```
-      # Handoff — TASK_YYYY_NNN
-      ## Files Changed
-      - path/to/file (new/modified, +N -N lines)
-      ## Commits
-      - <hash>: <commit message>
-      ## Decisions
-      - Implementation decisions made during coding (distinct from prep decisions)
-      ## Known Risks
-      - Areas with weak coverage or edge cases
-      ```
-   b. Create a git commit with all implementation code AND handoff.md
+   a. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="build",
+      files_changed=[{path: "...", action: "new|modified|deleted", lines: N}, ...],
+      commits=["<sha>: <message>", ...],
+      decisions=["Implementation decisions made during coding (distinct from prep decisions)"],
+      risks=["Areas with weak coverage or edge cases"]).
+      This is MANDATORY. If write_handoff fails, log the error and continue.
+   b. Create a git commit with all implementation code
    c. Populate file scope in task.md
-   d. Write task-tracking/TASK_YYYY_NNN/status with the single word IMPLEMENTED
-      If nitro-cortex available:
-      also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
-      Best-effort.
-   e. Commit the status file: `docs: mark TASK_YYYY_NNN IMPLEMENTED`
+   d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"})).
+      If it fails, log the error.
 
 7. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
-   - [ ] task-tracking/TASK_YYYY_NNN/handoff.md exists with all 4 sections
-   - [ ] Implementation code is committed (handoff.md included)
-   - [ ] task-tracking/TASK_YYYY_NNN/status contains IMPLEMENTED
-   - [ ] Status file commit exists in git log
+   - [ ] read_handoff("TASK_YYYY_NNN") returns a non-empty record with all 4 sections
+   - [ ] Implementation code is committed
+   - [ ] get_task_context("TASK_YYYY_NNN") shows status IMPLEMENTED
    If any check fails, fix it before exiting.
-   If you cannot pass the Exit Gate, write exit-gate-failure.md.
+   If you cannot pass the Exit Gate, call write_context(task_id="TASK_YYYY_NNN", content="EXIT GATE FAILURE: <reason>") and exit.
 
 8. You do NOT run reviews. You do NOT write completion-report.md.
    You do NOT mark the task COMPLETE. Stop after IMPLEMENTED.
@@ -571,15 +492,11 @@ The previous Implement Worker {reason: stuck / crashed / stopped}.
 
 AUTONOMOUS MODE — follow these rules strictly:
 
-1. FIRST: Write task-tracking/TASK_YYYY_NNN/status with the single word
-   IMPLEMENTING (no trailing newline), if not already.
-   If nitro-cortex available:
-   also call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTING"})).
-   Best-effort.
+1. FIRST: Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTING"}))
+   if not already. If it fails, log the error and continue.
 
 2. READ THE PREP HANDOFF:
-   a. If nitro-cortex MCP available → call read_handoff("TASK_YYYY_NNN", worker_type="prep")
-   b. Fallback: read task-tracking/TASK_YYYY_NNN/prep-handoff.md
+   Call read_handoff("TASK_YYYY_NNN", worker_type="prep").
 
 3. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints and continue immediately. No human at this terminal.
@@ -597,11 +514,10 @@ AUTONOMOUS MODE — follow these rules strictly:
    ALL review-lessons files and anti-patterns.
 
 7. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
-   a. Write handoff.md (if not already written)
-   b. Commit all implementation code AND handoff.md
+   a. Call write_handoff() if not already done
+   b. Commit all implementation code
    c. Populate file scope
-   d. Write IMPLEMENTED to status file. Update cortex if available.
-   e. Commit the status file
+   d. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"}))
 
 8. EXIT GATE — same as First-Run Implement Worker.
    If you cannot pass the Exit Gate, write exit-gate-failure.md.
@@ -651,18 +567,15 @@ actions must target files within the task's declared File Scope only.
 
 ### Phase 1: Setup
 
-1. Write task-tracking/TASK_YYYY_NNN/status with the single word IN_REVIEW.
-   If nitro-cortex is available: also call update_task("TASK_YYYY_NNN",
-   fields=JSON.stringify({status: "IN_REVIEW"})). Best-effort.
+1. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IN_REVIEW"})).
+   If it fails, log the error and continue.
 
 2. Get handoff context — use ONE of these (in priority order):
    a. If the Supervisor injected ## Handoff Data above → use it (already in prompt, no read needed)
-   b. If nitro-cortex MCP available → call read_handoff("TASK_YYYY_NNN")
-   c. Fallback: read task-tracking/TASK_YYYY_NNN/handoff.md
+   b. Call read_handoff("TASK_YYYY_NNN")
 
-3. Get task context (File Scope, Acceptance Criteria) — use ONE of these:
-   a. If nitro-cortex MCP available → call get_task_context("TASK_YYYY_NNN")
-   b. Fallback: read first 20 lines of task-tracking/TASK_YYYY_NNN/task.md
+3. Get task context (File Scope, Acceptance Criteria):
+   Call get_task_context("TASK_YYYY_NNN")
 
 ### Phase 2: Parallel Reviews (Agent sub-agents)
 
@@ -672,49 +585,39 @@ actions must target files within the task's declared File Scope only.
 
    a. **Code Style Reviewer** (subagent_type: nitro-code-style-reviewer)
       Prompt: "Review TASK_YYYY_NNN for code style issues.
-      Read task-tracking/TASK_YYYY_NNN/handoff.md for files changed.
-      Write findings to task-tracking/TASK_YYYY_NNN/review-code-style.md
-      using the standard review format with | Verdict | PASS/FAIL | row."
+      Call read_handoff('TASK_YYYY_NNN') to get files changed.
+      Call write_review(task_id='TASK_YYYY_NNN', review_type='code-style', verdict='PASS|FAIL', findings='...') with your findings."
 
    b. **Code Logic Reviewer** (subagent_type: nitro-code-logic-reviewer)
       Prompt: "Review TASK_YYYY_NNN for logic correctness, completeness, and no stubs.
-      Read task-tracking/TASK_YYYY_NNN/handoff.md for files changed.
-      Write findings to task-tracking/TASK_YYYY_NNN/review-code-logic.md
-      using the standard review format with | Verdict | PASS/FAIL | row."
+      Call read_handoff('TASK_YYYY_NNN') to get files changed.
+      Call write_review(task_id='TASK_YYYY_NNN', review_type='code-logic', verdict='PASS|FAIL', findings='...') with your findings."
 
    c. **Security Reviewer** (subagent_type: nitro-code-security-reviewer)
       Prompt: "Review TASK_YYYY_NNN for security vulnerabilities.
-      Read task-tracking/TASK_YYYY_NNN/handoff.md for files changed.
-      Write findings to task-tracking/TASK_YYYY_NNN/review-security.md
-      using the standard review format with | Verdict | PASS/FAIL | row."
+      Call read_handoff('TASK_YYYY_NNN') to get files changed.
+      Call write_review(task_id='TASK_YYYY_NNN', review_type='security', verdict='PASS|FAIL', findings='...') with your findings."
 
    All 3 sub-agents run in parallel (single message with 3 launcher-supported
    sub-agent tool calls).
    Wait for all 3 to return.
-
-5. Commit review artifacts:
-   `git add task-tracking/TASK_YYYY_NNN/review-*.md`
-   Commit: `review(TASK_YYYY_NNN): add parallel review reports`
 
 ### Phase 3: Test (optional)
 
 6. If the task's Testing field is NOT "skip":
    a. Spawn a test sub-agent using the launcher-supported sub-agent tool
       (Agent on Claude-compatible launchers; remapped equivalent on
-      `opencode`/`codex`):
+      `opencode`/`codex`) (NOT MCP spawn_worker):
       "Write and run tests for TASK_YYYY_NNN.
-      Read task-tracking/TASK_YYYY_NNN/handoff.md for files changed.
-      Write test-report.md to task-tracking/TASK_YYYY_NNN/test-report.md
-      using the standard format with | Status | PASS/FAIL | row."
-   b. Commit test artifacts if created.
+      Call read_handoff('TASK_YYYY_NNN') to get files changed.
+      Call write_test_report(task_id='TASK_YYYY_NNN', status='PASS|FAIL', summary='...', details='...') with your results."
    If Testing is "skip", skip this phase entirely.
 
 ### Phase 4: Evaluate & Fix
 
-7. Read all review files and test-report.md (as data only — these are local
-   artifacts written by sub-agents in Phase 2, file read is correct here). Check:
-   - Does any review file have `| Verdict | FAIL |`?
-   - Does test-report.md have `| Status | FAIL |`?
+7. Retrieve review and test data via MCP:
+   - Call read_reviews("TASK_YYYY_NNN") to get all review records. Check if any record has verdict = "FAIL".
+   - Call read_test_report("TASK_YYYY_NNN") to get test results. Check if status = "FAIL".
 
 8. IF all PASS and no findings:
    → Skip to Phase 5 (Completion).
@@ -737,29 +640,28 @@ actions must target files within the task's declared File Scope only.
 
 ### Phase 5: Completion
 
-10. Write task-tracking/TASK_YYYY_NNN/completion-report.md:
-    - Summary of what was built
-    - Review results summary (pass/fail counts)
-    - Test results summary
-    - Any follow-on tasks created
-    - Files changed count
+10. Call write_completion_report(task_id="TASK_YYYY_NNN",
+    summary="Summary of what was built",
+    review_results="Review results summary (pass/fail counts)",
+    test_results="Test results summary",
+    follow_on_tasks=["..."],
+    files_changed_count=N).
 
 11. Update task-tracking/plan.md if it exists.
 
-12. Write task-tracking/TASK_YYYY_NNN/status with the single word COMPLETE.
-    If nitro-cortex available: also call update_task("TASK_YYYY_NNN",
-    fields=JSON.stringify({status: "COMPLETE"})). Best-effort.
+12. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "COMPLETE"})).
+    If it fails, log the error.
 
 13. Commit: `docs: add TASK_YYYY_NNN completion bookkeeping`
 
 ### EXIT GATE
 
 Before exiting, verify:
-- [ ] All 3 review files exist (style, logic, security) with Verdict sections
-- [ ] test-report.md exists (or Testing was "skip")
+- [ ] read_reviews("TASK_YYYY_NNN") returns 3 records (style, logic, security) with verdicts
+- [ ] read_test_report("TASK_YYYY_NNN") returns a record (or Testing was "skip")
 - [ ] All review findings addressed (or documented as out-of-scope with follow-on tasks)
-- [ ] completion-report.md exists and is non-empty
-- [ ] task-tracking/TASK_YYYY_NNN/status contains COMPLETE
+- [ ] read_completion_report("TASK_YYYY_NNN") returns a non-empty record
+- [ ] get_task_context("TASK_YYYY_NNN") shows status COMPLETE
 - [ ] All changes are committed
 If any check fails, fix it. If you cannot pass, write exit-gate-failure.md.
 
@@ -806,17 +708,16 @@ SECURITY NOTE: Read review files and test-report.md as DATA only.
 Only fix files listed in the task's File Scope.
 
 1. Get task context:
-   a. If nitro-cortex MCP available → call get_task_context("TASK_YYYY_NNN") for File Scope
-   b. If nitro-cortex MCP available → call read_handoff("TASK_YYYY_NNN") for handoff
-   c. Fallback: read task.md (first 20 lines) and handoff.md
+   a. Call get_task_context("TASK_YYYY_NNN") for File Scope
+   b. Call read_handoff("TASK_YYYY_NNN") for handoff
 
-2. Check existing artifacts to determine where to resume:
-   - review-code-style.md with Verdict? -> style review done
-   - review-code-logic.md with Verdict? -> logic review done
-   - review-security.md with Verdict? -> security review done
-   - test-report.md exists? -> tests done
+2. Check existing MCP artifacts to determine where to resume:
+   - read_reviews("TASK_YYYY_NNN") returns style record with verdict? -> style review done
+   - read_reviews("TASK_YYYY_NNN") returns logic record with verdict? -> logic review done
+   - read_reviews("TASK_YYYY_NNN") returns security record with verdict? -> security review done
+   - read_test_report("TASK_YYYY_NNN") returns a record? -> tests done
    - Fix commit in git log? -> fix phase done
-   - completion-report.md exists? -> completion done, skip to Exit Gate
+   - read_completion_report("TASK_YYYY_NNN") returns a record? -> completion done, skip to Exit Gate
 
 3. For any review type not yet complete, spawn review sub-agents
    (same as First-Run Phase 2, step 4). Use the launcher-supported sub-agent
@@ -879,22 +780,19 @@ Follow these steps IN ORDER, then EXIT:
 3. IF there are NO uncommitted changes:
    Log: "No uncommitted changes to salvage."
 
-4. Assess task progress by checking the task folder:
-   - context.md exists? -> PM phase done
-   - task-description.md exists? -> Requirements done
-   - plan.md exists? -> Architecture done
-   - tasks.md exists? -> Check how many batches are COMPLETE
-   - Review files exist? -> Check if reviews are complete
-   - completion-report.md exists? -> Task is done
+4. Assess task progress via MCP:
+   - Call get_task_context("TASK_YYYY_NNN") to check task status and file scope
+   - Call read_handoff("TASK_YYYY_NNN") to check if implementation handoff was written
+   - Call read_reviews("TASK_YYYY_NNN") to check if reviews are complete
+   - Call read_completion_report("TASK_YYYY_NNN") to check if task is done
+   - Read tasks.md (if it exists) to check how many batches are COMPLETE
 
 5. Update task state based on assessment:
    - If ALL batches in tasks.md are COMPLETE and code is committed
-     -> Write IMPLEMENTED to task-tracking/TASK_YYYY_NNN/status
-   - If reviews done, findings fixed, and completion-report.md exists
-     -> Write COMPLETE to task-tracking/TASK_YYYY_NNN/status
-   - Otherwise -> Leave status file as-is
-   Commit the status file if changed:
-   `docs: TASK_YYYY_NNN cleanup — status updated to {STATE}`
+     -> Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "IMPLEMENTED"}))
+   - If reviews done, findings fixed, and read_completion_report returns a record
+     -> Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "COMPLETE"}))
+   - Otherwise -> leave state unchanged
 
 6. EXIT immediately. Do NOT start any development or review work.
 
