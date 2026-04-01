@@ -344,18 +344,18 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_218 | Session Creation Advanced Options Panel (incl. supervisor model selector) | COMPLETE | P1-High |
 | TASK_2026_230 | Instrument Worker Lifecycle -- Emit Telemetry Events | COMPLETE | P1-High |
 | TASK_2026_243 | Per-Task Model/Provider Editor in Dashboard | CREATED | P1-High |
-| TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CREATED | P1-High |
+| TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CANCELLED | P1-High |
 | TASK_2026_257 | Server Restart Recovery -- Reconstruct Active Sessions from DB | CREATED | P1-High |
 | TASK_2026_258 | Dashboard UI: Live Session Monitor via WebSocket | CREATED | P1-High |
 | TASK_2026_259 | Dashboard UI: Session Controls -- Start/Pause/Resume/Stop | COMPLETE | P1-High |
-| TASK_2026_262 | Worker Heartbeat Verification in Supervisor Tick Loop | CREATED | P1-High |
+| TASK_2026_262 | Worker Heartbeat Verification in Supervisor Tick Loop | CANCELLED | P1-High |
 
 #### Task Map — Wave 3 (depends on Wave 2)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
 | TASK_2026_219 | Queue Empty State and Re-Run Affordance | COMPLETE | P2-Medium |
 | TASK_2026_249 | Cortex Schema: Session Cost Breakdown Columns and Summary | CREATED | P2-Medium |
-| TASK_2026_261 | Tick Scheduler Service -- Spawn Claude Code Processes per Tick | CREATED | P0-Critical |
+| TASK_2026_261 | Tick Scheduler Service -- Spawn Claude Code Processes per Tick | CANCELLED | P0-Critical |
 | TASK_2026_260 | Dashboard UI: Tick Health Dashboard Card | CREATED | P2-Medium |
 
 #### Task Map — Wave 4 (depends on Wave 3)
@@ -390,6 +390,52 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_238 | Global Install + User-Scope Server Architecture | CANCELLED |
 | TASK_2026_239 | Workspace Management -- Register, Switch, List Projects | CANCELLED |
 | TASK_2026_240 | Dashboard Multi-Workspace Support | CANCELLED |
+| TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CANCELLED |
+| TASK_2026_261 | Tick Scheduler Service — Spawn Claude Code Processes per Tick | CANCELLED |
+| TASK_2026_262 | Worker Heartbeat Verification in Supervisor Tick Loop | CANCELLED |
+
+### Phase 18: Code-Based Supervisor Engine (Dual Mode)
+**Status**: NOT STARTED
+**Description**: Replace the AI-based supervisor with a deterministic TypeScript SupervisorEngine. The engine handles task queue management, dependency resolution, adaptive model routing, worker health monitoring, cost budget enforcement, and worker-exit reconciliation — all in code with zero AI token cost. Two entry points: CLI mode (`npx nitro run --batch`) and Server mode (`npx nitro serve`). Both write to the same cortex SQLite DB for unified dashboard tracing.
+
+#### Milestones
+- [ ] Core modules: dependency resolver, model router, cost budget, health monitor (Wave 1)
+- [ ] SupervisorEngine class wiring all modules into event loop (Wave 2)
+- [ ] CLI mode and server mode entry points (Wave 3)
+- [ ] Dashboard live updates via WebSocket (Wave 4)
+- [ ] Complexity-aware pipeline skip for Simple tasks (Wave 5)
+
+#### Task Map — Wave 1 (no dependencies, all parallel)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_335 | Dependency Resolver Module — Task Graph & Priority Sorting | COMPLETE | P0-Critical |
+| TASK_2026_330 | Model Router Module — Adaptive Provider/Model Selection | COMPLETE | P0-Critical |
+| TASK_2026_331 | Cost Budget & Circuit Breaker Module | CREATED | P1-High |
+| TASK_2026_332 | Health Monitor & Reconciliation Module | CREATED | P1-High |
+
+#### Task Map — Wave 2 (depends on Wave 1)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_338 | SupervisorEngine — Core Event Loop & Worker Orchestration | CREATED | P0-Critical |
+| TASK_2026_336 | SupervisorEngine — Recovery, Guards & Cost Enforcement | CREATED | P0-Critical |
+
+#### Task Map — Wave 3 (depends on Wave 2)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_333 | CLI Mode — Wire Engine into `run` Command | CREATED | P0-Critical |
+| TASK_2026_340 | NestJS SupervisorService — Engine Lifecycle Manager | CREATED | P1-High |
+| TASK_2026_337 | Supervisor REST Controller — Session Control Endpoints | CREATED | P1-High |
+| TASK_2026_339 | CLI `serve` Command — Start Persistent Server | CREATED | P1-High |
+
+#### Task Map — Wave 4 (depends on Wave 3)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_341 | Angular WebSocket Service — Live Engine Events | CREATED | P1-High |
+
+#### Task Map — Wave 5 (depends on Wave 2)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_334 | Complexity-Aware Pipeline Skip — Simple Tasks Skip PM+Architect | CREATED | P2-Medium |
 
 ### Phase 17: Subtask Support
 **Status**: NOT STARTED
@@ -426,17 +472,17 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 
 ## Current Focus
 
-**Active Phase**: Phase 16 -- v0.2.0 Tick-Based Supervisor + Configurable Session Launch
-**Active Milestone**: Wave 1 -- foundation tasks (WebSocket event wiring + schema extensions + stale session cleanup)
+**Active Phase**: Phase 18 -- Code-Based Supervisor Engine (Dual Mode)
+**Active Milestone**: Wave 1 -- core modules (resolver, router, budget, health)
 **Next Priorities**:
-1. TASK_2026_244 -- Dashboard API: Wire Supervisor Events to WebSocket Gateway (P0-Critical, no deps, enables all frontend real-time features)
-2. TASK_2026_254 -- MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup (P1-High, no deps)
-3. TASK_2026_222 -- Extend Cortex DB Schema (P1-High, no deps, also unblocks Phase 17 subtask schema)
-4. TASK_2026_229 -- Extend Cortex Schema for Worker Telemetry (P1-High, no deps)
-5. TASK_2026_247 -- Sessions List: Checkbox Selection and Compare Button (P2-Medium, no deps)
+1. TASK_2026_335 -- Dependency Resolver Module (P0-Critical, no deps, foundation for engine)
+2. TASK_2026_330 -- Model Router Module — Adaptive Selection (P0-Critical, no deps, foundation for engine)
+3. TASK_2026_331 -- Cost Budget & Circuit Breaker (P1-High, no deps)
+4. TASK_2026_332 -- Health Monitor & Reconciliation (P1-High, no deps)
+5. After Wave 1: TASK_2026_338 -- SupervisorEngine Core (P0-Critical, depends on all Wave 1)
 
 **Supervisor Guidance**: PROCEED
-**Guidance Note**: v0.2.0 architecture revised again -- now tick-based supervisor. The dashboard-api NestJS supervisor (SessionRunner) already runs in-process with setInterval ticks. Critical gaps being addressed: (1) Wire supervisor events to WebSocket (244, P0), (2) Server restart recovery (257), (3) Worker heartbeat verification (262), (4) Tick-mode CLI prompt (245), (5) Tick scheduler service (261). Run Wave 1 in parallel (244, 222, 229, 247, 254 -- all independent). Then Wave 2 (245, 257, 258, 259, 262 + existing 218, 230, 243). Priority: 244 is P0-Critical -- it unblocks all real-time frontend features and the tick architecture. Phase 17 (Subtask Support) is queued after Phase 16 -- TASK_2026_263 depends on TASK_2026_222 from Phase 16 Wave 1.
+**Guidance Note**: Architecture pivot from tick-based AI supervisor to code-based SupervisorEngine. Tick tasks cancelled (245, 261, 262). The engine replaces AI supervision with deterministic TypeScript — zero token cost for orchestration. Run Wave 1 in parallel (335, 330, 331, 332 — all independent, no shared files). Then Wave 2 (338 → 336 sequential). Then Wave 3 (333 + 340 parallel, then 337 + 339). Phase 16 remaining tasks (244, 254, 257, 258, etc.) are still valid for dashboard/cost work but are lower priority than Phase 18 engine tasks. Phase 17 (Subtask Support) queued after Phase 18.
 
 ### Research & Investigation Tasks
 | Task ID | Title | Status | Priority |
@@ -470,3 +516,6 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | 2026-03-31 | WebSocket supervisor events for real-time dashboard | SessionRunner.emitEvent currently logs to debug only. Wire through DashboardGateway with per-session rooms. Eliminates polling for session monitoring. |
 | 2026-03-31 | Server restart recovery from DB state | On NestJS startup, detect active sessions from cortex DB, verify worker heartbeats, reconcile dead workers, resume tick loops. No state lost on server restart. |
 | 2026-03-31 | Subtask support -- flat decomposition with per-subtask model routing | Medium/Complex tasks decomposed into flat subtasks (one level, no nesting). Each subtask spawns independently with its own model. Failed subtasks retry individually. Review is holistic at parent level. Subtask ID format: TASK_YYYY_NNN.M. 7 tasks across 4 waves. |
+| 2026-04-01 | Code-based SupervisorEngine replaces AI supervisor | AI supervisor burns tokens for deterministic work (queue mgmt, dep resolution, model routing, health monitoring). Replace with TypeScript SupervisorEngine — zero AI tokens for supervision. Dual mode: CLI (`npx nitro run --batch`) and Server (`npx nitro serve`). Same cortex DB, same dashboard tracing. Tick-based tasks (245, 261, 262) cancelled. 12 new tasks across 5 waves. |
+| 2026-04-01 | Adaptive model routing from compatibility data | Engine queries compatibility table for historical success_rate/cost/duration per model×task_type, uses weighted scoring to select optimal model. Falls back to hardcoded defaults when no history exists. |
+| 2026-04-01 | Per-task cost budget with circuit breaker | Simple=$3, Medium=$8, Complex=$15 max cost. Engine kills runaway workers that exceed budget. Addresses $8 Simple task spike. |
