@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
@@ -30,9 +31,12 @@ import { CortexService } from './cortex.service';
 import { OrchestrationFlowsService } from './orchestration-flows.service';
 import { ReportsService } from './reports.service';
 import { ProgressCenterService } from './progress-center.service';
+import { McpService, isValidServerName } from './mcp.service';
+import type { McpServerEntry, McpInstallRequest, McpToolAccessMatrix } from './mcp.service';
+import { resolveProjectRoot } from '../app/resolve-project-root';
 
 const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
-const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/;
+const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}[T_]\d{2}-\d{2}-\d{2}$/;
 
 /**
  * DashboardController — Internal dev-tool API.
@@ -53,6 +57,7 @@ export class DashboardController {
     private readonly orchestrationFlowsService: OrchestrationFlowsService,
     private readonly reportsService: ReportsService,
     private readonly progressCenterService: ProgressCenterService,
+    private readonly mcpService: McpService,
   ) {}
 
   // === Health ===
@@ -227,7 +232,7 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Session detail' })
   @ApiResponse({ status: 404, description: 'Session not found' })
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
-  @Get('sessions/:id')
+  @Get('session-history/:id')
   public async getSession(@Param('id') id: string): Promise<Awaited<ReturnType<SessionsHistoryService['getSessionDetail']>>> {
     if (!SESSION_ID_RE.test(id)) {
       throw new BadRequestException({ error: 'Invalid session ID format' });
@@ -246,7 +251,7 @@ export class DashboardController {
   @ApiOperation({ summary: 'Get session history', description: 'Returns all sessions from cortex with summary stats (completed, failed, blocked counts)' })
   @ApiResponse({ status: 200, description: 'Session history list' })
   @ApiResponse({ status: 503, description: 'Cortex DB unavailable' })
-  @Get('sessions')
+  @Get('session-history')
   public getSessions() {
     const result = this.sessionsHistoryService.getSessionsList();
     if (result === null) {
@@ -651,6 +656,92 @@ export class DashboardController {
       throw new ServiceUnavailableException({ error: 'Cortex DB unavailable' });
     }
     return result;
+  }
+
+  // === MCP Server Management ===
+
+  @ApiTags('mcp')
+  @ApiOperation({ summary: 'List MCP servers', description: 'Returns all MCP servers from ~/.claude/mcp_config.json and project .mcp.json' })
+  @ApiResponse({ status: 200, description: 'MCP server list' })
+  @Get('mcp/servers')
+  public getMcpServers(): McpServerEntry[] {
+    return this.mcpService.listServers(resolveProjectRoot());
+  }
+
+  @ApiTags('mcp')
+  @ApiOperation({ summary: 'Install MCP server', description: 'Adds a new MCP server to ~/.claude/mcp_config.json. Provide either package (npm) or path (local).' })
+  @ApiBody({ schema: { properties: { name: { type: 'string' }, package: { type: 'string' }, path: { type: 'string' }, args: { type: 'array', items: { type: 'string' } }, env: { type: 'object' } } } })
+  @ApiResponse({ status: 201, description: 'Server installed' })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @Post('mcp/servers')
+  @HttpCode(HttpStatus.CREATED)
+  public installMcpServer(@Body() body: McpInstallRequest): McpServerEntry {
+    if (!body.name || !isValidServerName(body.name)) {
+      throw new BadRequestException({ error: 'name is required and must be alphanumeric (hyphens, underscores, dots allowed, max 64 chars)' });
+    }
+    if (!body.package && !body.path) {
+      throw new BadRequestException({ error: 'Either package (npm package name) or path (local file path) is required' });
+    }
+    if (body.package && typeof body.package !== 'string') {
+      throw new BadRequestException({ error: 'package must be a string' });
+    }
+    if (body.path && typeof body.path !== 'string') {
+      throw new BadRequestException({ error: 'path must be a string' });
+    }
+    try {
+      return this.mcpService.installServer(body);
+    } catch (err) {
+      this.logger.error('Failed to install MCP server:', err);
+      throw new InternalServerErrorException({ error: 'Failed to write MCP config' });
+    }
+  }
+
+  @ApiTags('mcp')
+  @ApiOperation({ summary: 'Remove MCP server', description: 'Removes an MCP server from ~/.claude/mcp_config.json' })
+  @ApiParam({ name: 'id', description: 'Server name/ID', example: 'playwright' })
+  @ApiResponse({ status: 200, description: 'Server removed' })
+  @ApiResponse({ status: 400, description: 'Invalid server ID' })
+  @ApiResponse({ status: 404, description: 'Server not found in user config' })
+  @Delete('mcp/servers/:id')
+  @HttpCode(HttpStatus.OK)
+  public removeMcpServer(@Param('id') id: string): { id: string; removed: boolean } {
+    if (!isValidServerName(id)) {
+      throw new BadRequestException({ error: 'Invalid server ID' });
+    }
+    const removed = this.mcpService.removeServer(id);
+    if (!removed) {
+      throw new NotFoundException({ error: 'Server not found in user config (project-level servers are read-only)' });
+    }
+    return { id, removed: true };
+  }
+
+  @ApiTags('mcp')
+  @ApiOperation({ summary: 'Restart MCP server', description: 'Signals that an MCP server should restart. Takes effect on the next Claude Code connection.' })
+  @ApiParam({ name: 'id', description: 'Server name/ID', example: 'playwright' })
+  @ApiResponse({ status: 200, description: 'Restart acknowledged' })
+  @ApiResponse({ status: 400, description: 'Invalid server ID' })
+  @ApiResponse({ status: 404, description: 'Server not found' })
+  @Post('mcp/servers/:id/restart')
+  @HttpCode(HttpStatus.OK)
+  public restartMcpServer(@Param('id') id: string): { id: string; action: string; note: string } {
+    if (!isValidServerName(id)) {
+      throw new BadRequestException({ error: 'Invalid server ID' });
+    }
+    const servers = this.mcpService.listServers(resolveProjectRoot());
+    const exists = servers.some((s) => s.id === id);
+    if (!exists) {
+      throw new NotFoundException({ error: 'Server not found' });
+    }
+    // stdio MCP servers are managed by Claude Code; restart takes effect on next connection
+    return { id, action: 'restart_requested', note: 'Restart will take effect on the next Claude Code session' };
+  }
+
+  @ApiTags('mcp')
+  @ApiOperation({ summary: 'Get MCP tool access matrix', description: 'Returns a matrix of agent × MCP server access for all configured servers' })
+  @ApiResponse({ status: 200, description: 'Tool access matrix' })
+  @Get('mcp/tool-access')
+  public getMcpToolAccess(): McpToolAccessMatrix {
+    return this.mcpService.getToolAccess(resolveProjectRoot());
   }
 
 }

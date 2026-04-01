@@ -19,6 +19,7 @@ import { ProgressCenterService } from './progress-center.service';
 import { CommandConsoleController } from './command-console.controller';
 import { CommandConsoleService } from './command-console.service';
 import { HydrationService } from './hydration.service';
+import { McpService } from './mcp.service';
 import { resolveProjectRoot } from '../app/resolve-project-root';
 
 @Module({
@@ -48,6 +49,7 @@ import { resolveProjectRoot } from '../app/resolve-project-root';
     ProgressCenterService,
     CommandConsoleService,
     HydrationService,
+    McpService,
   ],
   exports: [DiffService, WorkerTreeService, PipelineService, SessionsService, AnalyticsService, WatcherService, CortexService, SessionsHistoryService, ReportsService, OrchestrationFlowsService, LogsService, ProgressCenterService, CommandConsoleService, DashboardGateway],
 })
