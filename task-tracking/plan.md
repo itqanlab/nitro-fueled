@@ -347,7 +347,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CREATED | P1-High |
 | TASK_2026_257 | Server Restart Recovery -- Reconstruct Active Sessions from DB | CREATED | P1-High |
 | TASK_2026_258 | Dashboard UI: Live Session Monitor via WebSocket | CREATED | P1-High |
-| TASK_2026_259 | Dashboard UI: Session Controls -- Start/Pause/Resume/Stop | CREATED | P1-High |
+| TASK_2026_259 | Dashboard UI: Session Controls -- Start/Pause/Resume/Stop | COMPLETE | P1-High |
 | TASK_2026_262 | Worker Heartbeat Verification in Supervisor Tick Loop | CREATED | P1-High |
 
 #### Task Map — Wave 3 (depends on Wave 2)
