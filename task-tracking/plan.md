@@ -269,6 +269,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_079 | Analytics & Insights view | COMPLETE | P1-High |
 | TASK_2026_080 | Agent Editor view | COMPLETE | P1-High |
 | TASK_2026_081 | MCP Integrations view | COMPLETE | P1-High |
+| TASK_2026_303 | MCP server management API endpoints (backend) | COMPLETE | P1-High |
 | TASK_2026_082 | Model Assignments view | COMPLETE | P1-High |
 | TASK_2026_083 | New Task view | CREATED | P1-High |
 | TASK_2026_084 | Project Onboarding view | CREATED | P1-High |
