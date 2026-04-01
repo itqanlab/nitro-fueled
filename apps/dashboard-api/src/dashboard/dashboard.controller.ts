@@ -395,6 +395,76 @@ export class DashboardController {
     }
   }
 
+  @ApiTags('analytics')
+  @ApiOperation({ summary: 'Get model performance analytics', description: 'Returns aggregated model performance (phases + reviews) from the cortex DB' })
+  @ApiQuery({ name: 'taskType', required: false, description: 'Filter by task type' })
+  @ApiResponse({ status: 200, description: 'Model performance data' })
+  @ApiResponse({ status: 503, description: 'Analytics unavailable' })
+  @Get('analytics/model-performance')
+  public getAnalyticsModelPerformance(
+    @Query('taskType') taskType?: string,
+  ): { data: object[]; total: number } {
+    const rows = this.cortexService.getModelPerformance({ taskType });
+    if (rows === null) {
+      throw new ServiceUnavailableException({ error: 'Analytics unavailable' });
+    }
+    const data = rows.map(r => ({
+      model: r.model,
+      taskType: r.task_type,
+      phaseCount: r.phase_count,
+      reviewCount: r.review_count,
+      avgDurationMinutes: r.avg_duration_minutes,
+      totalInputTokens: r.total_input_tokens,
+      totalOutputTokens: r.total_output_tokens,
+      avgReviewScore: r.avg_review_score,
+    }));
+    return { data, total: data.length };
+  }
+
+  @ApiTags('analytics')
+  @ApiOperation({ summary: 'Get launcher metrics analytics', description: 'Returns aggregated worker stats grouped by launcher' })
+  @ApiResponse({ status: 200, description: 'Launcher metrics data' })
+  @ApiResponse({ status: 503, description: 'Analytics unavailable' })
+  @Get('analytics/launchers')
+  public getAnalyticsLaunchers(): { data: object[]; total: number } {
+    const rows = this.cortexService.getLauncherMetrics();
+    if (rows === null) {
+      throw new ServiceUnavailableException({ error: 'Analytics unavailable' });
+    }
+    const data = rows.map(r => ({
+      launcher: r.launcher,
+      totalWorkers: r.total_workers,
+      completedCount: r.completed_count,
+      failedCount: r.failed_count,
+      completionRate: r.completion_rate,
+      totalCost: r.total_cost,
+      totalInputTokens: r.total_input_tokens,
+      totalOutputTokens: r.total_output_tokens,
+    }));
+    return { data, total: data.length };
+  }
+
+  @ApiTags('analytics')
+  @ApiOperation({ summary: 'Get routing recommendations', description: 'Returns per-task-type model routing recommendations based on builder quality scores' })
+  @ApiResponse({ status: 200, description: 'Routing recommendations data' })
+  @ApiResponse({ status: 503, description: 'Analytics unavailable' })
+  @Get('analytics/routing-recommendations')
+  public getAnalyticsRoutingRecommendations(): { recommendations: object[]; total: number } {
+    const rows = this.cortexService.getRoutingRecommendations();
+    if (rows === null) {
+      throw new ServiceUnavailableException({ error: 'Analytics unavailable' });
+    }
+    const recommendations = rows.map(r => ({
+      taskType: r.task_type,
+      recommendedModel: r.recommended_model,
+      reason: r.reason,
+      avgBuilderScore: r.avg_builder_score,
+      avgDurationMinutes: r.avg_duration_minutes,
+      evidenceCount: r.evidence_count,
+    }));
+    return { recommendations, total: recommendations.length };
+  }
+
   @ApiTags('reports')
   @ApiOperation({ summary: 'Get analytics reports overview', description: 'Returns session, success, cost, model, and quality reports for the selected date range' })
   @ApiQuery({ name: 'from', required: false, description: 'Start date (YYYY-MM-DD)' })

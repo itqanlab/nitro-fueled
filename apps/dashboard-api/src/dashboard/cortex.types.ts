@@ -295,3 +295,35 @@ export interface PhaseTimingRow {
   min_duration_minutes: number | null;
   max_duration_minutes: number | null;
 }
+
+/** Aggregated metrics per launcher (from workers table). */
+export interface CortexLauncherMetrics {
+  launcher: string;
+  total_workers: number;
+  completed_count: number;
+  failed_count: number;
+  completion_rate: number;
+  total_cost: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+}
+
+export interface LauncherMetricsRow {
+  launcher: string;
+  total_workers: number;
+  completed_count: number;
+  failed_count: number;
+  total_cost: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+}
+
+/** Best model recommendation per task type (derived from builder quality). */
+export interface CortexRoutingRecommendation {
+  task_type: string;
+  recommended_model: string;
+  reason: string;
+  avg_builder_score: number | null;
+  avg_duration_minutes: number | null;
+  evidence_count: number;
+}

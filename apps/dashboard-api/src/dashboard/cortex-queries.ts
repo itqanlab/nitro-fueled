@@ -16,6 +16,8 @@ export {
   queryBuilderQuality,
   queryPhaseTiming,
   queryEventsSince,
+  queryLauncherMetrics,
+  queryRoutingRecommendations,
   mapWorker,
   mapEvent,
 } from './cortex-queries-worker';

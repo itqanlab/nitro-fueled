@@ -13,6 +13,8 @@ import {
   queryBuilderQuality,
   queryPhaseTiming,
   queryEventsSince,
+  queryLauncherMetrics,
+  queryRoutingRecommendations,
 } from './cortex-queries';
 import type {
   CortexTask,
@@ -25,6 +27,8 @@ import type {
   CortexModelPerformance,
   CortexBuilderQuality,
   CortexPhaseTiming,
+  CortexLauncherMetrics,
+  CortexRoutingRecommendation,
 } from './cortex.types';
 
 export type {
@@ -343,6 +347,36 @@ export class CortexService {
       return { totalCost, totalTokens, costByModel, tokensByModel };
     } catch (err) {
       this.logger.error(`getCostTokenAggregates failed: ${String(err)}`);
+      return null;
+    } finally {
+      db.close();
+    }
+  }
+
+  // ============================================================
+  // Analytics — Launchers & Routing Recommendations
+  // ============================================================
+
+  public getLauncherMetrics(): CortexLauncherMetrics[] | null {
+    const db = this.openDb();
+    if (!db) return null;
+    try {
+      return queryLauncherMetrics(db);
+    } catch (err) {
+      this.logger.error(`getLauncherMetrics failed: ${String(err)}`);
+      return null;
+    } finally {
+      db.close();
+    }
+  }
+
+  public getRoutingRecommendations(): CortexRoutingRecommendation[] | null {
+    const db = this.openDb();
+    if (!db) return null;
+    try {
+      return queryRoutingRecommendations(db);
+    } catch (err) {
+      this.logger.error(`getRoutingRecommendations failed: ${String(err)}`);
       return null;
     } finally {
       db.close();
