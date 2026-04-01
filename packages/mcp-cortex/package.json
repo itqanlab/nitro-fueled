@@ -4,6 +4,17 @@
   "description": "MCP server — shared intelligence layer for task state, session coordination, and worker management",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./supervisor": {
+      "types": "./dist/supervisor/index.d.ts",
+      "default": "./dist/supervisor/index.js"
+    },
+    "./process/spawn": {
+      "types": "./dist/process/spawn.d.ts",
+      "default": "./dist/process/spawn.js"
+    }
+  },
   "bin": {
     "nitro-cortex": "dist/index.js"
   },

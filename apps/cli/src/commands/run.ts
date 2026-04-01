@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { Args, Flags } from '@oclif/core';
@@ -19,6 +20,12 @@ import {
   pollForPortFile,
 } from '../utils/dashboard-helpers.js';
 import { checkProviderConfig } from '../utils/provider-config.js';
+import { initCortexDatabase } from '../utils/cortex-db-init.js';
+import type DatabaseType from 'better-sqlite3';
+import { SupervisorEngine } from '@itqanlab/nitro-cortex/supervisor';
+import type { SpawnParams, SpawnOutcome, EngineConfig } from '@itqanlab/nitro-cortex/supervisor';
+import { spawnWorkerProcess, resolveGlmApiKey } from '@itqanlab/nitro-cortex/process/spawn';
+import { attachEngineOutput, printSessionSummary } from '../utils/engine-output.js';
 
 interface RunFlags {
   task: string | undefined;
@@ -27,6 +34,7 @@ interface RunFlags {
   interval: string | undefined;
   retries: string | undefined;
   'skip-connectivity': boolean;
+  engine: boolean;
 }
 
 function displaySummary(rows: RegistryRow[], options: RunFlags): void {
@@ -41,8 +49,8 @@ function displaySummary(rows: RegistryRow[], options: RunFlags): void {
   ).length;
 
   const concurrency = options.concurrency ?? '3';
-  const interval = options.interval ?? '10m';
-  const mode = options['dry-run'] ? 'dry-run' : 'all';
+  const interval = options.interval ?? '15s';
+  const mode = options['dry-run'] ? 'dry-run' : options.engine ? 'engine' : 'all';
 
   logger.log('');
   logger.log('SUPERVISOR STARTING');
@@ -155,7 +163,6 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
   const taskTrackingDir = resolve(cwd, 'task-tracking');
   const { portFilePath } = dashboardFilePaths(taskTrackingDir);
 
-  // Check if already running
   const existingPort = await checkExistingService(portFilePath);
   if (existingPort !== null) {
     logger.log(`Dashboard already running at http://localhost:${existingPort}`);
@@ -190,7 +197,7 @@ async function startDashboardService(cwd: string): Promise<ChildProcess | null> 
   return child;
 }
 
-function spawnSupervisor(cwd: string, options: RunFlags): void {
+function spawnSupervisorClaude(cwd: string, options: RunFlags): void {
   const autoPilotParts = buildAutoPilotArgs(options);
   const autoPilotPrompt = ['/auto-pilot', ...autoPilotParts].join(' ');
 
@@ -221,6 +228,201 @@ function resolveTaskId(positional: string | undefined, shorthand: string | undef
   return undefined;
 }
 
+/** Parse interval string like "10m", "30s", "1h" into milliseconds. */
+function parseIntervalMs(interval: string): number {
+  const match = /^(\d+)([msh])$/.exec(interval);
+  if (!match) return 15_000;
+  const value = Number(match[1]);
+  switch (match[2]) {
+    case 's': return value * 1000;
+    case 'm': return value * 60_000;
+    case 'h': return value * 3_600_000;
+    default:  return 15_000;
+  }
+}
+
+/** Return true when there is nothing left to process. */
+function isQueueDone(db: DatabaseType.Database, targetTaskId: string | undefined): boolean {
+  if (targetTaskId !== undefined) {
+    const row = db
+      .prepare('SELECT status FROM tasks WHERE id = ?')
+      .get(targetTaskId) as { status: string } | undefined;
+    const status = row?.status ?? '';
+    // Done when task leaves the active build states
+    return !['CREATED', 'IN_PROGRESS'].includes(status);
+  }
+  // Batch: done when no tasks remain in active build states
+  const row = db.prepare(`
+    SELECT COUNT(*) as cnt FROM tasks
+    WHERE status IN ('CREATED', 'IN_PROGRESS')
+  `).get() as { cnt: number };
+  return row.cnt === 0;
+}
+
+/** Insert a session row and return its ID. Non-fatal on DB errors. */
+function ensureSession(db: DatabaseType.Database): string {
+  const sessionId = `SESSION_CLI_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  try {
+    db.prepare(`
+      INSERT OR IGNORE INTO sessions (id, source, loop_status)
+      VALUES (?, 'cli-run', 'running')
+    `).run(sessionId);
+  } catch {
+    // older DBs without sessions table — non-fatal
+  }
+  return sessionId;
+}
+
+/** Mark the session as stopped. Non-fatal on DB errors. */
+function closeSession(db: DatabaseType.Database, sessionId: string): void {
+  try {
+    db.prepare(`
+      UPDATE sessions SET loop_status = 'stopped', ended_at = ?
+      WHERE id = ?
+    `).run(new Date().toISOString(), sessionId);
+  } catch {
+    // non-fatal
+  }
+}
+
+/**
+ * Build a SpawnFn compatible with SupervisorEngine.
+ * Inserts a worker DB row, spawns the worker process, and wires the exit
+ * callback back into the DB.
+ */
+function buildSpawnFn(
+  db: DatabaseType.Database,
+  cwd: string,
+): (params: SpawnParams) => SpawnOutcome {
+  const glmApiKey = resolveGlmApiKey(cwd);
+  const validProviders = new Set(['claude', 'glm', 'opencode', 'codex']);
+
+  return (params: SpawnParams): SpawnOutcome => {
+    const workerId = `WID_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+    const now = new Date().toISOString();
+
+    try {
+      db.prepare(`
+        INSERT INTO workers
+          (id, session_id, task_id, worker_type, label, status,
+           working_directory, model, provider, launcher, spawn_time)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
+      `).run(
+        workerId,
+        params.sessionId,
+        params.taskId,
+        params.workerType,
+        params.label,
+        cwd,
+        params.model,
+        params.provider,
+        params.launcher,
+        now,
+      );
+    } catch (err) {
+      return { ok: false, reason: `DB insert failed: ${String(err)}` };
+    }
+
+    const provider = validProviders.has(params.provider)
+      ? (params.provider as 'claude' | 'glm' | 'opencode' | 'codex')
+      : 'claude';
+
+    try {
+      const result = spawnWorkerProcess({
+        prompt: params.prompt,
+        workingDirectory: cwd,
+        label: params.label,
+        model: params.model,
+        provider,
+        glmApiKey,
+        onExit: (code: number | null) => {
+          const current = db
+            .prepare('SELECT status FROM workers WHERE id = ?')
+            .get(workerId) as { status: string } | undefined;
+          if (current?.status === 'killed') return;
+          const newStatus = code === 0 ? 'completed' : 'failed';
+          db.prepare('UPDATE workers SET status = ?, updated_at = ? WHERE id = ?')
+            .run(newStatus, new Date().toISOString(), workerId);
+        },
+      });
+
+      db.prepare('UPDATE workers SET pid = ? WHERE id = ?').run(result.pid, workerId);
+      return { ok: true, workerId };
+    } catch (err) {
+      db.prepare("UPDATE workers SET status = 'failed' WHERE id = ?").run(workerId);
+      return { ok: false, reason: `Spawn failed: ${String(err)}` };
+    }
+  };
+}
+
+/**
+ * Run the SupervisorEngine in-process. Resolves when the queue is empty
+ * (batch) or the target task leaves an active build state (single-task).
+ * Handles SIGINT/SIGTERM with a graceful engine.stop() + orphan guard.
+ */
+async function runWithEngine(
+  cwd: string,
+  options: RunFlags,
+  targetTaskId: string | undefined,
+): Promise<void> {
+  const dbPath = resolve(cwd, '.nitro', 'cortex.db');
+  const { db } = initCortexDatabase(dbPath);
+  const sessionId = ensureSession(db);
+
+  const concurrencyLimit = options.concurrency !== undefined ? Number(options.concurrency) : 3;
+  const intervalMs = options.interval !== undefined
+    ? parseIntervalMs(options.interval)
+    : 15_000;
+
+  const cfg: EngineConfig = {
+    sessionId,
+    workingDirectory: cwd,
+    concurrencyLimit,
+    intervalMs,
+    spawnFn: buildSpawnFn(db, cwd),
+  };
+
+  const engine = new SupervisorEngine(db, cfg);
+  const summary = attachEngineOutput(engine);
+
+  let stopped = false;
+
+  const shutdown = (signal: string): void => {
+    if (stopped) return;
+    stopped = true;
+    logger.log(`\nReceived ${signal} — stopping engine and running orphan guard...`);
+    engine.stop();
+  };
+
+  process.once('SIGINT', () => shutdown('SIGINT'));
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+
+  engine.start();
+
+  await new Promise<void>((resolve) => {
+    const pollInterval = setInterval(() => {
+      if (stopped || isQueueDone(db, targetTaskId)) {
+        clearInterval(pollInterval);
+        if (!stopped) engine.stop();
+        resolve();
+      }
+    }, 5_000);
+
+    engine.on('task:transitioned', () => {
+      if (stopped || isQueueDone(db, targetTaskId)) {
+        clearInterval(pollInterval);
+        if (!stopped) engine.stop();
+        resolve();
+      }
+    });
+  });
+
+  closeSession(db, sessionId);
+  db.close();
+
+  printSessionSummary(summary);
+}
+
 export default class Run extends BaseCommand {
   public static override description = 'Start the Supervisor loop, or orchestrate a single task inline';
 
@@ -231,10 +433,11 @@ export default class Run extends BaseCommand {
   public static override flags = {
     task: Flags.string({ description: 'Task number shorthand (e.g. 043 → TASK_<current-year>_043)' }),
     'dry-run': Flags.boolean({ description: 'Show execution plan without spawning workers (batch mode only)', default: false }),
-    concurrency: Flags.string({ description: 'Max simultaneous workers (default: 3) — batch mode only' }),
-    interval: Flags.string({ description: 'Monitoring interval e.g. 5m (default: 10m) — batch mode only' }),
-    retries: Flags.string({ description: 'Max retries per task (default: 2) — batch mode only' }),
-    'skip-connectivity': Flags.boolean({ description: 'Skip MCP connectivity check (batch mode only)', default: false }),
+    concurrency: Flags.string({ description: 'Max simultaneous workers (default: 3)' }),
+    interval: Flags.string({ description: 'Engine/monitoring interval e.g. 5m, 30s (default: 15s for engine, 10m for AI supervisor)' }),
+    retries: Flags.string({ description: 'Max retries per task (default: 2) — AI supervisor only' }),
+    'skip-connectivity': Flags.boolean({ description: 'Skip MCP connectivity check (AI supervisor batch mode only)', default: false }),
+    engine: Flags.boolean({ description: 'Use SupervisorEngine in-process (no AI supervisor session spawned)', default: false }),
   };
 
   public async run(): Promise<void> {
@@ -252,14 +455,10 @@ export default class Run extends BaseCommand {
     const taskId = resolveTaskId(args.taskId, opts.task);
 
     if (taskId !== undefined) {
-      // Single-task mode: spawn Claude with /orchestrate TASK_ID (inline, no MCP workers)
+      // ── Single-task mode ──────────────────────────────────────────────────
 
-      // Reject batch-only options — they are silently ignored in this path otherwise
       const batchOnlyUsed: string[] = [];
       if (opts['dry-run']) batchOnlyUsed.push('--dry-run');
-      if (opts.concurrency !== undefined) batchOnlyUsed.push('--concurrency');
-      if (opts.interval !== undefined) batchOnlyUsed.push('--interval');
-      if (opts.retries !== undefined) batchOnlyUsed.push('--retries');
       if (opts['skip-connectivity']) batchOnlyUsed.push('--skip-connectivity');
       if (batchOnlyUsed.length > 0) {
         const plural = batchOnlyUsed.length === 1 ? 'is a batch-only option' : 'are batch-only options';
@@ -269,7 +468,6 @@ export default class Run extends BaseCommand {
         return;
       }
 
-      // Basic workspace + Claude CLI check (no MCP needed — /orchestrate runs inline)
       if (!basicPreflightChecks(cwd)) {
         process.exitCode = 1;
         return;
@@ -312,6 +510,17 @@ export default class Run extends BaseCommand {
       }
 
       logger.log('');
+
+      if (opts.engine) {
+        logger.log('RUNNING SINGLE TASK (engine mode)');
+        logger.log('---------------------------------');
+        logger.log(`Task: ${taskId}`);
+        logger.log('');
+        await runWithEngine(cwd, opts, taskId);
+        return;
+      }
+
+      // Default single-task: spawn Claude with /orchestrate (interactive)
       logger.log('ORCHESTRATING SINGLE TASK');
       logger.log('-------------------------');
       logger.log(`Task: ${taskId}`);
@@ -321,7 +530,7 @@ export default class Run extends BaseCommand {
       return;
     }
 
-    // Batch mode: full Supervisor loop
+    // ── Batch mode ──────────────────────────────────────────────────────────
     const result = preflightChecks(cwd, undefined);
     if (result === null) {
       process.exitCode = 1;
@@ -344,7 +553,6 @@ export default class Run extends BaseCommand {
       return;
     }
 
-    // Provider config pre-flight (fail fast if enabled provider has empty credentials)
     const providerIssues = checkProviderConfig(cwd);
     if (providerIssues.length > 0) {
       for (const issue of providerIssues) {
@@ -354,6 +562,15 @@ export default class Run extends BaseCommand {
       return;
     }
 
+    if (opts.engine) {
+      // Engine mode: use SupervisorEngine in-process for batch
+      logger.log('Starting batch engine mode...');
+      logger.log('');
+      await runWithEngine(cwd, opts, undefined);
+      return;
+    }
+
+    // Default batch: spawn Claude AI supervisor session
     if (!opts['skip-connectivity']) {
       logger.log('Verifying MCP nitro-cortex connectivity...');
       const connectivity = testMcpConnectivity(result.mcpConfig);
@@ -368,8 +585,6 @@ export default class Run extends BaseCommand {
       logger.log('');
     }
 
-    // Start dashboard service in the background so it's available during the run.
-    // Failures are non-fatal — the Supervisor must start regardless.
     let dashboardProcess: ChildProcess | null = null;
     try {
       dashboardProcess = await startDashboardService(cwd);
@@ -378,9 +593,6 @@ export default class Run extends BaseCommand {
     }
 
     if (dashboardProcess !== null) {
-      // Use process.on('exit') only — spawnClaude already registers SIGINT/SIGTERM
-      // handlers that forward to the Claude child. When Claude exits, Node drains
-      // naturally, triggering 'exit', which sends SIGTERM to the dashboard child.
       process.on('exit', () => {
         if (dashboardProcess!.pid !== undefined) {
           try { process.kill(dashboardProcess!.pid, 'SIGTERM'); } catch { /* already exited */ }
@@ -388,6 +600,6 @@ export default class Run extends BaseCommand {
       });
     }
 
-    spawnSupervisor(cwd, opts);
+    spawnSupervisorClaude(cwd, opts);
   }
 }

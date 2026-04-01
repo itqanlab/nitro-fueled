@@ -46,6 +46,7 @@
     }
   },
   "dependencies": {
+    "@itqanlab/nitro-cortex": "*",
     "@oclif/core": "^4.10.3",
     "better-sqlite3": "^11.8.2"
   },
