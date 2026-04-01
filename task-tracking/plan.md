@@ -410,8 +410,8 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 |---------|-------|--------|----------|
 | TASK_2026_335 | Dependency Resolver Module — Task Graph & Priority Sorting | COMPLETE | P0-Critical |
 | TASK_2026_330 | Model Router Module — Adaptive Provider/Model Selection | COMPLETE | P0-Critical |
-| TASK_2026_331 | Cost Budget & Circuit Breaker Module | CREATED | P1-High |
-| TASK_2026_332 | Health Monitor & Reconciliation Module | CREATED | P1-High |
+| TASK_2026_331 | Cost Budget & Circuit Breaker Module | COMPLETE | P1-High |
+| TASK_2026_332 | Health Monitor & Reconciliation Module | COMPLETE | P1-High |
 
 #### Task Map — Wave 2 (depends on Wave 1)
 | Task ID | Title | Status | Priority |
