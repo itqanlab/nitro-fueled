@@ -254,6 +254,81 @@ CREATE TABLE IF NOT EXISTS compatibility (
   created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
+const TASK_REVIEWS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_reviews (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id      TEXT NOT NULL REFERENCES tasks(id),
+  review_type  TEXT NOT NULL CHECK(review_type IN ('style','logic','security','visual','other')),
+  verdict      TEXT NOT NULL CHECK(verdict IN ('PASS','FAIL')),
+  findings     TEXT NOT NULL DEFAULT '',
+  reviewer     TEXT,
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_TEST_REPORTS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_test_reports (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  status     TEXT NOT NULL CHECK(status IN ('PASS','FAIL','SKIPPED')),
+  summary    TEXT NOT NULL DEFAULT '',
+  details    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_COMPLETION_REPORTS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_completion_reports (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id             TEXT NOT NULL REFERENCES tasks(id),
+  summary             TEXT NOT NULL DEFAULT '',
+  review_results      TEXT NOT NULL DEFAULT '',
+  test_results        TEXT NOT NULL DEFAULT '',
+  follow_on_tasks     TEXT NOT NULL DEFAULT '',
+  files_changed_count INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_PLANS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_plans (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  content    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_DESCRIPTIONS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_descriptions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  content    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_CONTEXTS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_contexts (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  content    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_SUBTASKS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_subtasks (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id      TEXT NOT NULL REFERENCES tasks(id),
+  batch_number INTEGER NOT NULL DEFAULT 1,
+  subtask_name TEXT NOT NULL,
+  status       TEXT NOT NULL CHECK(status IN ('PENDING','IN_PROGRESS','COMPLETE','FAILED','BLOCKED','CANCELLED')) DEFAULT 'PENDING',
+  assigned_to  TEXT,
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_claimed ON tasks(session_claimed)',
@@ -284,6 +359,13 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_compatibility_model ON compatibility(model)',
   'CREATE INDEX IF NOT EXISTS idx_compatibility_task_type ON compatibility(task_type)',
   'CREATE INDEX IF NOT EXISTS idx_compatibility_outcome ON compatibility(outcome)',
+  'CREATE INDEX IF NOT EXISTS idx_task_reviews_task ON task_reviews(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_test_reports_task ON task_test_reports(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_completion_reports_task ON task_completion_reports(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_plans_task ON task_plans(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_descriptions_task ON task_descriptions(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_contexts_task ON task_contexts(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_subtasks_task ON task_subtasks(task_id)',
 ];
 
 // Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
@@ -534,6 +616,13 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(WORKFLOWS_TABLE);
   db.exec(LAUNCHERS_TABLE);
   db.exec(COMPATIBILITY_TABLE);
+  db.exec(TASK_REVIEWS_TABLE);
+  db.exec(TASK_TEST_REPORTS_TABLE);
+  db.exec(TASK_COMPLETION_REPORTS_TABLE);
+  db.exec(TASK_PLANS_TABLE);
+  db.exec(TASK_DESCRIPTIONS_TABLE);
+  db.exec(TASK_CONTEXTS_TABLE);
+  db.exec(TASK_SUBTASKS_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }
