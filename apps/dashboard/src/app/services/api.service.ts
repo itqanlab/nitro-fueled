@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import type { ApiKeyEntry, LauncherEntry, ModelMapping, SubscriptionEntry } from '../models/settings.model';
 
 interface HealthResponse {
   status: string;
@@ -550,6 +551,81 @@ export class ApiService {
 
   public getMcpToolAccess(): Observable<McpToolAccessMatrix> {
     return this.http.get<McpToolAccessMatrix>(`${environment.apiUrl}/api/mcp/tool-access`);
+  }
+
+  // ── Settings ──────────────────────────────────────────────────────────────
+
+  public getSettingsApiKeys(): Observable<ApiKeyEntry[]> {
+    return this.http.get<ApiKeyEntry[]>(`${this.base}/settings/api-keys`);
+  }
+
+  public createSettingsApiKey(body: {
+    label?: string;
+    key: string;
+    providerId?: string;
+    provider: string;
+    detectedModels?: string[];
+  }): Observable<ApiKeyEntry> {
+    return this.http.post<ApiKeyEntry>(`${this.base}/settings/api-keys`, body);
+  }
+
+  public updateSettingsApiKey(id: string, patch: Partial<Omit<ApiKeyEntry, 'id'>>): Observable<ApiKeyEntry> {
+    return this.http.patch<ApiKeyEntry>(`${this.base}/settings/api-keys/${encodeURIComponent(id)}`, patch);
+  }
+
+  public deleteSettingsApiKey(id: string): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${this.base}/settings/api-keys/${encodeURIComponent(id)}`);
+  }
+
+  public setSettingsApiKeyActive(id: string, isActive: boolean): Observable<ApiKeyEntry> {
+    return this.http.patch<ApiKeyEntry>(
+      `${this.base}/settings/api-keys/${encodeURIComponent(id)}/active`,
+      { isActive },
+    );
+  }
+
+  public getSettingsLaunchers(): Observable<LauncherEntry[]> {
+    return this.http.get<LauncherEntry[]>(`${this.base}/settings/launchers`);
+  }
+
+  public createSettingsLauncher(body: {
+    name: string;
+    type: 'cli' | 'ide' | 'desktop';
+    path: string;
+  }): Observable<LauncherEntry> {
+    return this.http.post<LauncherEntry>(`${this.base}/settings/launchers`, body);
+  }
+
+  public setSettingsLauncherActive(id: string, isActive: boolean): Observable<LauncherEntry> {
+    return this.http.patch<LauncherEntry>(
+      `${this.base}/settings/launchers/${encodeURIComponent(id)}/active`,
+      { isActive },
+    );
+  }
+
+  public getSettingsSubscriptions(): Observable<SubscriptionEntry[]> {
+    return this.http.get<SubscriptionEntry[]>(`${this.base}/settings/subscriptions`);
+  }
+
+  public connectSettingsSubscription(id: string): Observable<SubscriptionEntry> {
+    return this.http.post<SubscriptionEntry>(
+      `${this.base}/settings/subscriptions/${encodeURIComponent(id)}/connect`,
+      null,
+    );
+  }
+
+  public disconnectSettingsSubscription(id: string): Observable<SubscriptionEntry> {
+    return this.http.delete<SubscriptionEntry>(
+      `${this.base}/settings/subscriptions/${encodeURIComponent(id)}/disconnect`,
+    );
+  }
+
+  public getSettingsMappings(): Observable<ModelMapping[]> {
+    return this.http.get<ModelMapping[]>(`${this.base}/settings/mapping`);
+  }
+
+  public replaceSettingsMappings(mappings: ModelMapping[]): Observable<ModelMapping[]> {
+    return this.http.put<ModelMapping[]>(`${this.base}/settings/mapping`, mappings);
   }
 }
 
