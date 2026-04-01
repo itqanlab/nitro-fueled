@@ -424,7 +424,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 |---------|-------|--------|----------|
 | TASK_2026_333 | CLI Mode — Wire Engine into `run` Command | CREATED | P0-Critical |
 | TASK_2026_340 | NestJS SupervisorService — Engine Lifecycle Manager | CREATED | P1-High |
-| TASK_2026_337 | Supervisor REST Controller — Session Control Endpoints | CREATED | P1-High |
+| TASK_2026_337 | Supervisor REST Controller — Session Control Endpoints | COMPLETE | P1-High |
 | TASK_2026_339 | CLI `serve` Command — Start Persistent Server | COMPLETE | P1-High |
 
 #### Task Map — Wave 4 (depends on Wave 3)
