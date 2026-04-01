@@ -342,7 +342,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
 | TASK_2026_218 | Session Creation Advanced Options Panel (incl. supervisor model selector) | COMPLETE | P1-High |
-| TASK_2026_230 | Instrument Worker Lifecycle -- Emit Telemetry Events | CREATED | P1-High |
+| TASK_2026_230 | Instrument Worker Lifecycle -- Emit Telemetry Events | COMPLETE | P1-High |
 | TASK_2026_243 | Per-Task Model/Provider Editor in Dashboard | CREATED | P1-High |
 | TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CREATED | P1-High |
 | TASK_2026_257 | Server Restart Recovery -- Reconstruct Active Sessions from DB | CREATED | P1-High |

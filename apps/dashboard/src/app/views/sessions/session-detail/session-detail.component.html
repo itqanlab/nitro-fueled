@@ -33,6 +33,73 @@
       </div>
     </div>
 
+    @if (isActiveSession()) {
+      <div class="controls-card">
+        <h2 class="section-title">Session Controls</h2>
+
+        @if (actionError()) {
+          <div class="controls-error" role="alert">{{ actionError() }}</div>
+        }
+
+        <div class="controls-row">
+          @if (canPause()) {
+            <button
+              nz-button
+              nzType="default"
+              [nzLoading]="actionInFlight()"
+              [disabled]="actionInFlight()"
+              (click)="pause()"
+            >Pause</button>
+          }
+          @if (canResume()) {
+            <button
+              nz-button
+              nzType="primary"
+              [nzLoading]="actionInFlight()"
+              [disabled]="actionInFlight()"
+              (click)="resume()"
+            >Resume</button>
+          }
+          @if (canStop()) {
+            <button
+              nz-button
+              nzType="default"
+              nzDanger
+              [nzLoading]="actionInFlight()"
+              [disabled]="actionInFlight()"
+              (click)="stop()"
+            >Stop</button>
+          }
+          @if (canDrain()) {
+            <button
+              nz-button
+              nzType="default"
+              [nzLoading]="actionInFlight()"
+              [disabled]="actionInFlight()"
+              (click)="drain()"
+            >Drain</button>
+          }
+        </div>
+
+        @if (liveStatus(); as ls) {
+          <div class="live-status-row">
+            <span class="live-status-item">
+              <span class="meta-label">Loop status:</span>
+              <nz-tag [nzColor]="ls.loopStatus === 'running' ? 'green' : ls.loopStatus === 'paused' ? 'gold' : 'default'">
+                {{ ls.loopStatus }}
+              </nz-tag>
+            </span>
+            <span class="live-status-item"><span class="meta-label">Active workers:</span> {{ ls.workers.active }}</span>
+            <span class="live-status-item"><span class="meta-label">Tasks done:</span> {{ ls.tasks.completed }}</span>
+            <span class="live-status-item"><span class="meta-label">Remaining:</span> {{ ls.tasks.remaining }}</span>
+            @if (ls.drainRequested) {
+              <nz-tag nzColor="orange">Drain Requested</nz-tag>
+            }
+          </div>
+        }
+      </div>
+    }
+
     @if (d.taskResults.length > 0) {
       <section class="section">
         <h2 class="section-title">Tasks ({{ d.taskResults.length }})</h2>

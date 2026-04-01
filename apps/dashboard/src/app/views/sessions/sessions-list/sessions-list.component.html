@@ -19,6 +19,7 @@
       <nz-empty nzNotFoundContent="No session history available"></nz-empty>
     } @else if (enriched().length > 0) {
       <nz-table
+        #sessionTable
         [nzData]="enriched()"
         [nzShowPagination]="enriched().length > 20"
         [nzPageSize]="20"
@@ -33,10 +34,11 @@
             <th scope="col">Cost</th>
             <th scope="col">Tasks</th>
             <th scope="col">Supervisor</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
-          @for (session of enriched(); track session.id) {
+          @for (session of sessionTable.data; track session.id) {
             <tr class="clickable-row" [routerLink]="['/sessions', session.id]">
               <td class="source-cell">{{ session.id }}</td>
               <td><nz-tag [nzColor]="session.statusColor">{{ session.statusLabel }}</nz-tag></td>
@@ -49,6 +51,19 @@
                 </span>
               </td>
               <td class="model-cell">{{ session.supervisorModel }}</td>
+              <td class="actions-cell">
+                @if (session.statusLabel === 'running') {
+                  <button
+                    nz-button
+                    nzType="default"
+                    nzDanger
+                    nzSize="small"
+                    [nzLoading]="isStopping(session.id)"
+                    [disabled]="isStopping(session.id)"
+                    (click)="stopSession(session.id, $event)"
+                  >Stop</button>
+                }
+              </td>
             </tr>
           }
         </tbody>

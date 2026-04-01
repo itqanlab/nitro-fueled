@@ -7,36 +7,48 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, of, switchMap } from 'rxjs';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { Observable, catchError, filter, finalize, map, merge, of, switchMap, take } from 'rxjs';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 import { ApiService } from '../../../services/api.service';
-import type { LoopStatus, SessionStatusResponse } from '../../../models/api.types';
+import { WebSocketService } from '../../../services/websocket.service';
+import type {
+  SessionHistoryDetail,
+  SessionEndStatus,
+  SessionHistoryTaskResult,
+  SessionHistoryWorker,
+  SessionHistoryTimelineEvent,
+  SessionStatusResponse,
+  SessionActionResponse,
+} from '../../../models/api.types';
 
 interface EnrichedDetail {
-  readonly sessionId: string;
+  readonly id: string;
   readonly source: string;
   readonly startedAt: string;
+  readonly endedAt: string | null;
   readonly statusColor: string;
-  readonly statusLabel: LoopStatus;
+  readonly statusLabel: SessionEndStatus;
   readonly formattedDuration: string;
-  readonly concurrency: number;
+  readonly formattedCost: string;
+  readonly mode: string;
+  readonly supervisorModel: string;
   readonly workerCount: number;
-  readonly activeWorkerCount: number;
-  readonly workersCompleted: number;
-  readonly workersFailed: number;
-  readonly tasksCompleted: number;
-  readonly tasksFailed: number;
-  readonly tasksInProgress: number;
-  readonly tasksRemaining: number;
   readonly drainRequested: boolean;
+  readonly taskResults: readonly SessionHistoryTaskResult[];
+  readonly workers: readonly SessionHistoryWorker[];
+  readonly timeline: readonly SessionHistoryTimelineEvent[];
+  readonly logContent: string | null;
 }
 
 @Component({
   selector: 'app-session-detail',
   standalone: true,
-  imports: [RouterLink, NzTagModule, NzSkeletonModule],
+  imports: [RouterLink, DatePipe, DecimalPipe, NzTagModule, NzSkeletonModule, NzTableModule, NzButtonModule],
   templateUrl: './session-detail.component.html',
   styleUrl: './session-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +56,7 @@ interface EnrichedDetail {
 export class SessionDetailComponent {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly ws = inject(WebSocketService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly detailRaw = toSignal(
@@ -51,13 +64,17 @@ export class SessionDetailComponent {
       switchMap(params => {
         const id = params.get('id') ?? '';
         return id
-          ? this.api.getAutoSession(id).pipe(
-              catchError(() => of(null as SessionStatusResponse | null)),
+          ? this.api.getSessionHistoryDetail(id).pipe(
+              catchError(() => of(null as SessionHistoryDetail | null)),
             )
-          : of(null as SessionStatusResponse | null);
+          : of(null as SessionHistoryDetail | null);
       }),
     ),
   );
+
+  public readonly liveStatus = signal<SessionStatusResponse | null>(null);
+  public readonly actionInFlight = signal(false);
+  public readonly actionError = signal<string | null>(null);
 
   public readonly loading = computed(() => this.detailRaw() === undefined);
   public readonly unavailable = computed(() => this.detailRaw() === null);
@@ -65,64 +82,121 @@ export class SessionDetailComponent {
   public readonly detail = computed<EnrichedDetail | null>(() => {
     const raw = this.detailRaw();
     if (!raw) return null;
-    const workerCount = raw.workers.active + raw.workers.completed + raw.workers.failed;
     return {
-      sessionId: raw.sessionId,
-      source: raw.config.working_directory,
+      id: raw.id,
+      source: raw.source,
       startedAt: raw.startedAt,
-      statusColor: this.statusColor(raw.loopStatus),
-      statusLabel: raw.loopStatus,
-      formattedDuration: `${raw.uptimeMinutes}m`,
-      concurrency: raw.config.concurrency,
-      workerCount,
-      activeWorkerCount: raw.workers.active,
-      workersCompleted: raw.workers.completed,
-      workersFailed: raw.workers.failed,
-      tasksCompleted: raw.tasks.completed,
-      tasksFailed: raw.tasks.failed,
-      tasksInProgress: raw.tasks.inProgress,
-      tasksRemaining: raw.tasks.remaining,
+      endedAt: raw.endedAt,
+      statusColor: this.statusColor(raw.endStatus),
+      statusLabel: raw.endStatus,
+      formattedDuration: raw.durationMinutes !== null ? `${raw.durationMinutes}m` : '—',
+      formattedCost: raw.totalCost > 0 ? `$${raw.totalCost.toFixed(4)}` : '—',
+      mode: raw.mode || '—',
+      supervisorModel: raw.supervisorModel || '—',
+      workerCount: raw.workerCount,
       drainRequested: raw.drainRequested,
+      taskResults: raw.taskResults,
+      workers: raw.workers,
+      timeline: raw.timeline,
+      logContent: raw.logContent,
     };
   });
 
-  public readonly showConfirmDialog = signal(false);
-  public readonly isDraining = signal(false);
-  public readonly drainError = signal<string | null>(null);
+  public readonly isActiveSession = computed(() => this.detail()?.statusLabel === 'running');
 
-  public requestDrain(): void {
-    this.showConfirmDialog.set(true);
-  }
+  public readonly canPause = computed(() => {
+    const ls = this.liveStatus();
+    return ls !== null && ls.loopStatus === 'running' && !ls.drainRequested;
+  });
 
-  public cancelDrain(): void {
-    this.showConfirmDialog.set(false);
-  }
+  public readonly canResume = computed(() => {
+    const ls = this.liveStatus();
+    return ls !== null && ls.loopStatus === 'paused';
+  });
 
-  public confirmDrain(): void {
-    const raw = this.detailRaw();
-    if (!raw) return;
-    const sessionId = raw.sessionId;
-    this.showConfirmDialog.set(false);
-    this.isDraining.set(true);
-    this.drainError.set(null);
-    this.api.drainSession(sessionId).pipe(
+  public readonly canStop = computed(() => {
+    const ls = this.liveStatus();
+    return ls !== null && (ls.loopStatus === 'running' || ls.loopStatus === 'paused');
+  });
+
+  public readonly canDrain = computed(() => {
+    const ls = this.liveStatus();
+    return ls !== null && ls.loopStatus === 'running' && !ls.drainRequested;
+  });
+
+  constructor() {
+    const sessionId$ = this.route.paramMap.pipe(map(p => p.get('id') ?? ''));
+
+    const wsRefresh$ = this.ws.events$.pipe(
+      filter(e => e.type === 'session:updated' || e.type === 'sessions:changed' || e.type === 'session:update'),
+      switchMap(() => sessionId$.pipe(take(1))),
+    );
+
+    merge(sessionId$, wsRefresh$).pipe(
       takeUntilDestroyed(this.destroyRef),
-    ).subscribe({
-      next: () => {
-        this.isDraining.set(false);
-      },
-      error: () => {
-        this.isDraining.set(false);
-        this.drainError.set('Failed to request session stop. Please try again.');
-      },
+      switchMap(id => {
+        if (!id) return of(null as SessionStatusResponse | null);
+        return this.api.getAutoSession(id).pipe(
+          catchError(() => of(null as SessionStatusResponse | null)),
+        );
+      }),
+    ).subscribe(status => {
+      this.liveStatus.set(status);
     });
   }
 
-  private statusColor(status: LoopStatus): string {
+  public pause(): void {
+    this.runAction(id => this.api.pauseAutoSession(id));
+  }
+
+  public resume(): void {
+    this.runAction(id => this.api.resumeAutoSession(id));
+  }
+
+  public stop(): void {
+    this.runAction(id => this.api.stopAutoSession(id));
+  }
+
+  public drain(): void {
+    this.runAction(id => this.api.drainSession(id));
+  }
+
+  private runAction(action: (id: string) => Observable<SessionActionResponse>): void {
+    const id = this.detail()?.id;
+    if (!id || this.actionInFlight()) return;
+    this.actionInFlight.set(true);
+    this.actionError.set(null);
+    action(id).pipe(
+      catchError((err: unknown) => {
+        const msg = err instanceof Error ? err.message :
+          (typeof err === 'object' && err !== null && 'error' in err &&
+            typeof (err as Record<string, unknown>)['error'] === 'object' &&
+            (err as { error: Record<string, unknown> }).error !== null &&
+            typeof (err as { error: Record<string, unknown> }).error['message'] === 'string')
+          ? (err as { error: { message: string } }).error.message
+          : 'Action failed';
+        this.actionError.set(msg);
+        return of(null);
+      }),
+      finalize(() => {
+        this.actionInFlight.set(false);
+        // Refresh live status after action
+        if (id) {
+          this.api.getAutoSession(id).pipe(
+            catchError(() => of(null as SessionStatusResponse | null)),
+          ).subscribe(s => this.liveStatus.set(s));
+        }
+      }),
+    ).subscribe();
+  }
+
+  private statusColor(status: SessionEndStatus): string {
     switch (status) {
-      case 'running': return 'blue';
-      case 'paused': return 'gold';
-      case 'stopped': return 'default';
+      case 'running': return 'green';
+      case 'completed': return 'blue';
+      case 'stopped': return 'gold';
+      case 'crashed': return 'red';
+      case 'killed': return 'orange';
       default: return 'default';
     }
   }
