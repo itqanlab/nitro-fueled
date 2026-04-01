@@ -20,8 +20,14 @@ export interface AgentProposal {
 }
 
 /** Structured response from AI workspace analysis */
-export interface AIAnalysisResult {
+export interface ProjectProfile {
   domains: string[];
+  stack: string[];
+  architecturePatterns: string[];
+  namingConventions: string;
+  folderOrganization: string;
+  antiPatterns: string[];
+  testPatterns: string[];
   agents: Array<{
     name: string;
     title: string;
@@ -31,10 +37,13 @@ export interface AIAnalysisResult {
   summary: string;
 }
 
+/** @deprecated Use ProjectProfile */
+export type AIAnalysisResult = ProjectProfile;
+
 /** Combined result from workspace analysis (AI + heuristic) */
 export interface WorkspaceAnalysisResult {
   stacks: DetectedStack[];
-  aiAnalysis: AIAnalysisResult | null;
+  aiAnalysis: ProjectProfile | null;
   proposals: AgentProposal[];
   method: 'ai' | 'heuristic';
 }
@@ -356,29 +365,38 @@ export function proposeAgentsFromMarkers(markers: string[]): AgentProposal[] {
   return proposals;
 }
 
-const AI_ANALYSIS_PROMPT = `You are analyzing a software workspace to determine what development domains are present and what specialized developer agents would be helpful.
+const AI_ANALYSIS_PROMPT = `You are analyzing a software workspace to understand its architecture, conventions, and development patterns.
 
 Analyze the workspace signals below and return a JSON object with this exact structure:
 {
-  "domains": ["frontend", "backend", "design", "infrastructure", "data-science", ...],
+  "domains": ["frontend", "backend", "design", "infrastructure", "data-science"],
+  "stack": ["TypeScript", "Angular 19", "NestJS", "PostgreSQL"],
+  "architecturePatterns": ["monorepo", "feature-based-modules", "event-driven"],
+  "namingConventions": "camelCase for variables/functions, PascalCase for classes/components, kebab-case for files",
+  "folderOrganization": "Nx monorepo with apps/ and libs/, feature modules inside apps/",
+  "antiPatterns": ["avoid inline styles in Angular templates", "do not use any type"],
+  "testPatterns": ["Jest unit tests co-located with source", "Cypress e2e in apps/e2e/"],
   "agents": [
     {
-      "name": "agent-name-kebab-case",
-      "title": "Human Readable Title",
-      "reason": "Brief explanation of why this agent is needed",
-      "confidence": "high" | "medium" | "low"
+      "name": "angular-developer",
+      "title": "Angular Developer",
+      "reason": "Angular 19 + NG-ZORRO detected in package.json",
+      "confidence": "high"
     }
   ],
-  "summary": "One-sentence summary of the workspace"
+  "summary": "Nx monorepo with Angular 19 frontend, NestJS API, and Oclif CLI"
 }
 
 Rules:
+- "stack" lists actual detected technologies (2-8 items), not generic categories
+- "architecturePatterns" lists observable patterns from structure (2-5 items max)
+- "namingConventions" is a single brief string
+- "folderOrganization" is a single brief string
+- "antiPatterns" lists 2-5 specific anti-patterns to avoid, based on evidence from source files or conventions; empty array if nothing observed
+- "testPatterns" lists observed test approaches (0-3 items)
 - Only propose agents you are confident about based on the evidence
-- Use kebab-case for agent names (e.g., "react-developer", "terraform-developer")
-- "high" confidence: clear manifest/config evidence
-- "medium" confidence: file patterns suggest it but no definitive config
-- "low" confidence: possible but uncertain
-- Keep the agent list focused — don't propose agents for every possible tool
+- Use kebab-case for agent names
+- "high" confidence: clear manifest/config evidence; "medium": file patterns suggest it; "low": possible but uncertain
 - Return ONLY the JSON object, no markdown fences, no explanation
 
 Here are the workspace signals:
@@ -395,7 +413,7 @@ const MAX_TITLE_LEN = 100;
 const MAX_REASON_LEN = 500;
 const MAX_SUMMARY_LEN = 300;
 
-function parseAIAnalysisResponse(responseText: string): AIAnalysisResult | null {
+function parseAIAnalysisResponse(responseText: string): ProjectProfile | null {
   // Strip markdown code fences if present
   let cleaned = responseText.trim();
   if (cleaned.startsWith('```')) {
@@ -416,10 +434,44 @@ function parseAIAnalysisResponse(responseText: string): AIAnalysisResult | null 
   if (!Array.isArray(rawDomains)) return null;
   const domains = rawDomains.filter((d): d is string => typeof d === 'string');
 
+  // Validate stack
+  const rawStack = parsed['stack'];
+  const stack: string[] = Array.isArray(rawStack)
+    ? rawStack.filter((s): s is string => typeof s === 'string')
+    : [];
+
+  // Validate architecturePatterns
+  const rawArchitecturePatterns = parsed['architecturePatterns'];
+  const architecturePatterns: string[] = Array.isArray(rawArchitecturePatterns)
+    ? rawArchitecturePatterns.filter((s): s is string => typeof s === 'string')
+    : [];
+
+  // Validate namingConventions
+  const rawNamingConventions = parsed['namingConventions'];
+  const namingConventions =
+    typeof rawNamingConventions === 'string' ? rawNamingConventions.slice(0, 300) : '';
+
+  // Validate folderOrganization
+  const rawFolderOrganization = parsed['folderOrganization'];
+  const folderOrganization =
+    typeof rawFolderOrganization === 'string' ? rawFolderOrganization.slice(0, 300) : '';
+
+  // Validate antiPatterns
+  const rawAntiPatterns = parsed['antiPatterns'];
+  const antiPatterns: string[] = Array.isArray(rawAntiPatterns)
+    ? rawAntiPatterns.filter((s): s is string => typeof s === 'string')
+    : [];
+
+  // Validate testPatterns
+  const rawTestPatterns = parsed['testPatterns'];
+  const testPatterns: string[] = Array.isArray(rawTestPatterns)
+    ? rawTestPatterns.filter((s): s is string => typeof s === 'string')
+    : [];
+
   // Validate agents
   const rawAgents = parsed['agents'];
   if (!Array.isArray(rawAgents)) return null;
-  const agents: AIAnalysisResult['agents'] = [];
+  const agents: ProjectProfile['agents'] = [];
   for (const agentEntry of rawAgents) {
     if (!isRecord(agentEntry)) continue;
     if (typeof agentEntry['name'] !== 'string' || typeof agentEntry['title'] !== 'string') continue;
@@ -440,14 +492,24 @@ function parseAIAnalysisResponse(responseText: string): AIAnalysisResult | null 
   const rawSummary = parsed['summary'];
   const summary = typeof rawSummary === 'string' ? rawSummary.slice(0, MAX_SUMMARY_LEN) : '';
 
-  return { domains, agents, summary };
+  return {
+    domains,
+    stack,
+    architecturePatterns,
+    namingConventions,
+    folderOrganization,
+    antiPatterns,
+    testPatterns,
+    agents,
+    summary,
+  };
 }
 
 /**
  * Run AI-assisted workspace analysis using Claude CLI.
  * Returns the structured analysis result, or null if the AI call fails.
  */
-export function runAIAnalysis(signals: WorkspaceSignals): AIAnalysisResult | null {
+export function runAIAnalysis(signals: WorkspaceSignals): ProjectProfile | null {
   const promptContent = AI_ANALYSIS_PROMPT + formatSignalsForPrompt(signals);
 
   const result = spawnSync('claude', ['-p', promptContent, '--output-format', 'text'], {
@@ -474,7 +536,7 @@ export function runAIAnalysis(signals: WorkspaceSignals): AIAnalysisResult | nul
  * Convert AI analysis agent proposals into AgentProposal format.
  * Enriches proposals with AI reasoning and confidence.
  */
-function aiAgentsToProposals(aiAgents: AIAnalysisResult['agents']): AgentProposal[] {
+function aiAgentsToProposals(aiAgents: ProjectProfile['agents']): AgentProposal[] {
   return aiAgents.map((a) => ({
     agentName: a.name,
     agentTitle: a.title,
@@ -527,7 +589,7 @@ export function analyzeWorkspace(cwd: string, claudeAvailable: boolean): Workspa
   const markerProposals = proposeAgentsFromMarkers(signals.presenceMarkers);
 
   // Step 3: Try AI analysis if Claude is available
-  let aiAnalysis: AIAnalysisResult | null = null;
+  let aiAnalysis: ProjectProfile | null = null;
   if (claudeAvailable) {
     aiAnalysis = runAIAnalysis(signals);
   }

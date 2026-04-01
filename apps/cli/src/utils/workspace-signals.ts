@@ -1,5 +1,6 @@
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, extname } from 'node:path';
+import { resolve, extname, basename } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 export interface WorkspaceSignals {
   /** Directory tree (depth 3, filtered) */
@@ -10,6 +11,14 @@ export interface WorkspaceSignals {
   configFiles: Record<string, string>;
   /** Presence markers for special workspace patterns */
   presenceMarkers: string[];
+  /** README.md content (truncated) */
+  readmeContent: string;
+  /** Top 10 most-changed files from git log */
+  activityFiles: string[];
+  /** Detected entry point file paths */
+  entryPoints: string[];
+  /** Content of up to 3 source files */
+  sampledFiles: Record<string, string>;
 }
 
 const IGNORED_DIRS = new Set([
@@ -51,6 +60,26 @@ const CONFIG_FILES = [
 
 /** Maximum bytes to read from any single config file */
 const MAX_CONFIG_BYTES = 4096;
+
+const README_NAMES = ['README.md', 'Readme.md', 'readme.md', 'README.txt', 'README.rst'];
+const MAX_README_BYTES = 2048;
+const MAX_SAMPLED_FILE_BYTES = 1536; // 1.5 KB per sampled file
+const MAX_SAMPLED_FILES = 3;
+const SOURCE_EXTENSIONS = new Set([
+  '.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs',
+  '.py', '.go', '.rs', '.java', '.kt', '.swift', '.cs', '.rb', '.php',
+]);
+const ENTRY_POINT_NAMES = new Set([
+  'main.ts', 'main.tsx', 'main.js', 'main.jsx',
+  'app.ts', 'app.tsx', 'app.js', 'app.jsx',
+  'index.ts', 'index.tsx', 'index.js', 'index.jsx',
+  'server.ts', 'server.js',
+  'main.py', 'app.py',
+  'main.go',
+  'main.rs', 'lib.rs',
+  'Program.cs', 'Startup.cs',
+  'main.swift', 'application.rb',
+]);
 
 function readFileSafe(filePath: string, maxBytes: number = MAX_CONFIG_BYTES): string {
   try {
@@ -233,6 +262,120 @@ function collectConfigFiles(cwd: string): Record<string, string> {
 }
 
 /**
+ * Read README content from the workspace root.
+ * Tries common README filenames, returns first found (truncated).
+ */
+function readReadme(cwd: string): string {
+  for (const name of README_NAMES) {
+    const filePath = resolve(cwd, name);
+    if (!existsSync(filePath)) continue;
+    try {
+      const stat = lstatSync(filePath);
+      if (stat.isSymbolicLink() || !stat.isFile()) continue; // skip symlinks
+      const content = readFileSafe(filePath, MAX_README_BYTES);
+      if (content !== '') return content;
+    } catch {
+      // intentional: skip unreadable files
+    }
+  }
+  return '';
+}
+
+/**
+ * Collect top changed files from git log.
+ * Security: skips paths with path traversal or null bytes.
+ */
+function collectGitActivityFiles(cwd: string, limit = 10): string[] {
+  const result = spawnSync('git', ['log', '--name-only', '--pretty=format:', '-100'], {
+    cwd,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 10_000,
+  });
+
+  if (result.status !== 0 || result.signal !== null) {
+    return [];
+  }
+
+  const stdout = result.stdout?.toString() ?? '';
+  const counts = new Map<string, number>();
+
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed === '') continue;
+    // Security: skip path traversal, absolute paths, and null bytes
+    if (trimmed.includes('..') || trimmed.startsWith('/') || trimmed.includes('\0')) continue;
+    counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([filePath]) => filePath);
+}
+
+/**
+ * Detect entry point files from the directory tree.
+ */
+function detectEntryPoints(treeEntries: string[]): string[] {
+  return treeEntries.filter((entry) => {
+    if (entry.endsWith('/')) return false;
+    return ENTRY_POINT_NAMES.has(basename(entry));
+  });
+}
+
+/**
+ * Sample source file contents for AI analysis.
+ * Merges entry points and activity files, reads up to MAX_SAMPLED_FILES.
+ * Security: validates resolved paths stay within workspace root.
+ */
+function sampleSourceFiles(
+  cwd: string,
+  activityFiles: string[],
+  entryPoints: string[]
+): Record<string, string> {
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+
+  // Entry points first, then activity files (deduplicated)
+  for (const candidate of [...entryPoints, ...activityFiles]) {
+    if (!seen.has(candidate)) {
+      seen.add(candidate);
+      candidates.push(candidate);
+    }
+  }
+
+  const resolvedCwd = resolve(cwd);
+  const result: Record<string, string> = {};
+
+  for (const candidate of candidates) {
+    if (Object.keys(result).length >= MAX_SAMPLED_FILES) break;
+
+    // Only sample source files
+    if (!SOURCE_EXTENSIONS.has(extname(candidate).toLowerCase())) continue;
+
+    const fullPath = resolve(cwd, candidate);
+
+    // Security: ensure resolved path stays within workspace root
+    if (!fullPath.startsWith(resolvedCwd + '/')) continue;
+
+    try {
+      const stat = lstatSync(fullPath);
+      if (stat.isSymbolicLink() || !stat.isFile()) continue;
+    } catch {
+      // intentional: skip on stat failure
+      continue;
+    }
+
+    const content = readFileSafe(fullPath, MAX_SAMPLED_FILE_BYTES);
+    if (content !== '') {
+      result[candidate] = content;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Collect all workspace signals for AI analysis.
  * This is fast and synchronous — no AI calls.
  */
@@ -241,12 +384,20 @@ export function collectWorkspaceSignals(cwd: string): WorkspaceSignals {
   const extensionHistogram = buildExtensionHistogram(directoryTree);
   const configFiles = collectConfigFiles(cwd);
   const presenceMarkers = detectPresenceMarkers(cwd, directoryTree);
+  const readmeContent = readReadme(cwd);
+  const activityFiles = collectGitActivityFiles(cwd);
+  const entryPoints = detectEntryPoints(directoryTree);
+  const sampledFiles = sampleSourceFiles(cwd, activityFiles, entryPoints);
 
   return {
     directoryTree,
     extensionHistogram,
     configFiles,
     presenceMarkers,
+    readmeContent,
+    activityFiles,
+    entryPoints,
+    sampledFiles,
   };
 }
 
@@ -266,10 +417,30 @@ export function formatSignalsForPrompt(signals: WorkspaceSignals): string {
     sections.push('  (no files found)');
   }
 
+  // README
+  sections.push('\n## README');
+  sections.push(signals.readmeContent !== '' ? signals.readmeContent : '(not found)');
+
   // Presence markers
   sections.push('\n## Presence Markers');
   if (signals.presenceMarkers.length > 0) {
     sections.push(signals.presenceMarkers.map((m) => `  - ${m}`).join('\n'));
+  } else {
+    sections.push('  (none detected)');
+  }
+
+  // Git activity
+  sections.push('\n## Git Activity (Top Changed Files)');
+  if (signals.activityFiles.length > 0) {
+    sections.push(signals.activityFiles.map((f) => `  - ${f}`).join('\n'));
+  } else {
+    sections.push('  (not available)');
+  }
+
+  // Entry points
+  sections.push('\n## Entry Points');
+  if (signals.entryPoints.length > 0) {
+    sections.push(signals.entryPoints.map((f) => `  - ${f}`).join('\n'));
   } else {
     sections.push('  (none detected)');
   }
@@ -285,6 +456,18 @@ export function formatSignalsForPrompt(signals: WorkspaceSignals): string {
     }
   } else {
     sections.push('  (no config files found)');
+  }
+
+  // Sampled source files
+  sections.push('\n## Sampled Source Files');
+  const sampledEntries = Object.entries(signals.sampledFiles);
+  if (sampledEntries.length > 0) {
+    for (const [filePath, content] of sampledEntries) {
+      const safeContent = content.replace(/```/g, '\\`\\`\\`');
+      sections.push(`\n### ${filePath}\n\`\`\`\n${safeContent}\n\`\`\``);
+    }
+  } else {
+    sections.push('  (no source files sampled)');
   }
 
   // Directory tree (first 100 entries to keep prompt reasonable)
