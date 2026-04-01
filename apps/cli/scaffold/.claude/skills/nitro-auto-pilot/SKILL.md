@@ -4,7 +4,7 @@ description: >
   Supervisor loop for Nitro-Fueled orchestration.
   Use when: Running batch task execution, processing a task backlog,
   or spawning parallel workers for multiple tasks.
-  Reads the task registry and task folders, builds a dependency graph,
+  Queries the cortex DB for task state, builds a dependency graph,
   spawns Build Workers and Review Workers via MCP nitro-cortex,
   monitors health and state transitions, and loops.
   Invoked via /auto-pilot command.
@@ -129,7 +129,7 @@ Session registration and worker-slot accounting are multi-session safe only when
 | Worker health | `get_worker_activity(worker_id)` MCP (5-line compact) | `get_worker_stats` (15+ lines), file reads |
 | Task state transitions | `get_pending_events()` and `get_tasks(compact: true)` MCP | Per-task `status` files, `registry.md`, task-folder polling |
 
-**File reads are ONLY acceptable when:** MCP tools are confirmed unavailable (`cortex_available = false`). Inside the DB-backed loop, `registry.md`, task `status` files, and `task.md` are all banned.
+Inside the loop, `registry.md`, task `status` files, and `task.md` are banned. DB only.
 
 **`npx nitro-fueled status` is PROHIBITED** inside the supervisor loop — it spawns a subprocess, reads all task files, and wastes context. Use MCP tools instead.
 
@@ -232,30 +232,14 @@ The Supervisor MUST use MCP `spawn_worker` to create separate terminal sessions 
 Detection runs at **Step 2**: call `get_tasks()`. Calling `get_tasks()` is the authoritative
 detection method because it tests actual DB functionality, not just tool list presence.
 
-**Default behavior** (allowFileFallback not set, or set to false):
 If `get_tasks()` fails, **STOP IMMEDIATELY** and display:
-`"FATAL: nitro-cortex DB unavailable. The Supervisor requires nitro-cortex to be operational. Set \"allowFileFallback\": true in .nitro-fueled/config.json to enable degraded file-based mode, then restart."`
+`"FATAL: nitro-cortex DB unavailable. The Supervisor requires nitro-cortex to be operational. Ensure nitro-cortex is running and configured in .mcp.json, then restart."`
 
-**With `"allowFileFallback": true`** (opt-in degraded mode, set in `.nitro-fueled/config.json`):
-If `get_tasks()` fails, set `cortex_available = false` and proceed with file-based fallback
-paths documented in `references/parallel-mode.md`. This degrades task coordination
-but allows the Supervisor to run without the cortex DB.
+**No degraded mode**: The Supervisor does not fall back to file-based task state. DB unavailable = FATAL exit.
 
-`cortex_available` is a session flag — it is NOT re-checked per loop iteration.
-
-> **Bootstrap note**: On first run against a new project, call `sync_tasks_from_files()`
-> once to import existing task-tracking files into the nitro-cortex DB before calling
-> `get_tasks()`. This only needs to run once (safe to re-run — upsert). After the initial
-> sync, all subsequent state changes go through the MCP tools and the DB stays current.
->
-> **Startup reconciliation**: On every startup when `cortex_available = true`, also call
-> `reconcile_status_files()` immediately after `sync_tasks_from_files()`. This fixes any
-> status drift from the previous session (file wins). This is best-effort — if it fails
-> or the tool is unavailable, log a warning and proceed. Do not abort startup.
->
-> **Orphan release**: After `reconcile_status_files()` completes, call `release_orphaned_claims()`
-> to auto-release tasks claimed by dead/missing sessions or expired TTL. This eliminates the
-> manual release-reclaim cycle (claim fails → get_session → session_not_found → release_task).
+> **Orphan release**: On startup, call `release_orphaned_claims()` to auto-release tasks
+> claimed by dead/missing sessions or expired TTL. This eliminates the manual release-reclaim
+> cycle (claim fails → get_session → session_not_found → release_task).
 > Best-effort — log released count or error and continue.
 
 ---
@@ -388,9 +372,9 @@ These fields are populated by server-mode supervisor automatically.
 
 1. **You are the Supervisor** -- spawn, monitor, loop
 2. **Workers invoke /orchestrate** -- you never re-implement agent logic
-3. **The cortex DB is the source of truth during the live loop** — registry and task files are fallback-only artifacts
+3. **The cortex DB is the source of truth** — registry.md and task files are not read during the loop
 4. **Compaction recovery is DB re-query** — `list_workers()` + `get_tasks()` rebuild the loop state
-5. **`state.md` and `log.md` are debug outputs, not loop inputs** on the DB-backed path
+5. **`state.md` and `log.md` are debug outputs, not loop inputs**
 6. **Prefer get_worker_activity over get_worker_stats** for context efficiency
 7. **Never spawn duplicate workers** -- check both registry (IN_PROGRESS/IN_REVIEW) and state (active workers), and verify worker_type matches expected worker for current state
 8. **A completed task triggers immediate re-evaluation** of the dependency graph
