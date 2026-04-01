@@ -12,12 +12,55 @@ const UPDATABLE_SESSION_COLUMNS = new Set([
   'supervisor_model', 'supervisor_launcher', 'mode', 'total_cost', 'total_input_tokens', 'total_output_tokens',
 ]);
 
+const STARTUP_STALE_TTL_MINUTES = 10;
+
+function autoCloseStaleSessions(db: Database.Database): number {
+  const cutoffTime = new Date(Date.now() - STARTUP_STALE_TTL_MINUTES * 60 * 1000).toISOString();
+
+  const staleSessions = db.prepare(
+    `SELECT id FROM sessions
+     WHERE loop_status = 'running'
+       AND (last_heartbeat IS NULL OR last_heartbeat < ?)`,
+  ).all(cutoffTime) as Array<{ id: string }>;
+
+  if (staleSessions.length === 0) {
+    return 0;
+  }
+
+  const now = new Date().toISOString();
+  let closedCount = 0;
+
+  for (const session of staleSessions) {
+    const activeWorkerRow = db.prepare(
+      `SELECT COUNT(*) as count FROM workers WHERE session_id = ? AND status = 'active'`,
+    ).get(session.id) as { count: number };
+
+    if (activeWorkerRow.count > 0) {
+      continue;
+    }
+
+    db.prepare(
+      `UPDATE sessions SET loop_status = 'completed', ended_at = ?, summary = ?, updated_at = ? WHERE id = ?`,
+    ).run(now, 'auto-closed: stale at startup', now, session.id);
+    closedCount++;
+  }
+
+  return closedCount;
+}
+
 export function handleCreateSession(
   db: Database.Database,
   args: { source?: string; config?: string; task_count?: number; skip_orphan_recovery?: boolean },
 ): ToolResult {
   const id = buildSessionId();
   const config = args.config ?? '{}';
+
+  let autoClosedSessions = 0;
+  try {
+    autoClosedSessions = autoCloseStaleSessions(db);
+  } catch {
+    // Best-effort — do not block session creation
+  }
 
   db.prepare(
     `INSERT INTO sessions (id, source, config, task_limit) VALUES (?, ?, ?, ?)`,
@@ -37,10 +80,18 @@ export function handleCreateSession(
     }
   }
 
-  const result: { ok: true; session_id: string; orphan_recovery?: typeof recoveryResult } = {
+  const result: {
+    ok: true;
+    session_id: string;
+    auto_closed_sessions?: number;
+    orphan_recovery?: typeof recoveryResult;
+  } = {
     ok: true,
     session_id: id,
   };
+  if (autoClosedSessions > 0) {
+    result.auto_closed_sessions = autoClosedSessions;
+  }
   if (recoveryResult !== null) {
     result.orphan_recovery = recoveryResult;
   }
