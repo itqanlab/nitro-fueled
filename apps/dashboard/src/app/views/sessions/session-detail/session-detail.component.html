@@ -6,7 +6,7 @@
 
   @if (unavailable()) {
     <div class="unavailable-banner" role="alert">
-      Session data unavailable — could not reach the API.
+      Session not found or data unavailable.
     </div>
   }
 
@@ -15,90 +15,116 @@
   }
 
   @if (detail(); as d) {
-    @if (!loading()) {
-      @if (isDraining()) {
-        <div class="drain-banner" role="status">
-          <nz-tag nzColor="gold">Session ending by user request…</nz-tag>
-          <span>Waiting for {{ d.activeWorkerCount }} active worker(s) to finish.</span>
-        </div>
-      }
-
-      @if (showConfirmDialog()) {
-        <div class="confirm-overlay" role="dialog" aria-modal="true">
-          <div class="confirm-card">
-            <h3>End Session?</h3>
-            <p>This will signal the supervisor to stop after current workers finish. This cannot be undone.</p>
-            <div class="confirm-actions">
-              <button class="btn btn-secondary" (click)="cancelDrain()">Cancel</button>
-              <button class="btn btn-danger" (click)="confirmDrain()">End Session</button>
-            </div>
-          </div>
-        </div>
-      }
-
-      @if (drainError(); as err) {
-        <div class="drain-error" role="alert">{{ err }}</div>
-      }
-
-      <div class="meta-card">
-        <div class="meta-row">
-          <nz-tag [nzColor]="d.statusColor">{{ d.statusLabel }}</nz-tag>
-          @if (d.statusLabel === 'running' && !d.drainRequested && !isDraining()) {
-            <button class="btn btn-danger btn-sm end-session-btn" (click)="requestDrain()">End Session</button>
-          }
-          @if (d.drainRequested && !isDraining()) {
-            <nz-tag nzColor="orange">Drain Requested</nz-tag>
-          }
-          <span class="meta-item"><span class="meta-label">Session ID:</span> {{ d.sessionId }}</span>
-          <span class="meta-item"><span class="meta-label">Source:</span> {{ d.source }}</span>
-          <span class="meta-item"><span class="meta-label">Uptime:</span> {{ d.formattedDuration }}</span>
-          <span class="meta-item"><span class="meta-label">Cost:</span> —</span>
-          <span class="meta-item"><span class="meta-label">Workers:</span> {{ d.workerCount }}</span>
-          <span class="meta-item"><span class="meta-label">Concurrency:</span> {{ d.concurrency }}</span>
-        </div>
-        <div class="meta-row meta-times">
-          <span class="meta-item"><span class="meta-label">Started:</span> {{ d.startedAt }}</span>
-        </div>
+    <div class="meta-card">
+      <div class="meta-row">
+        <nz-tag [nzColor]="d.statusColor">{{ d.statusLabel }}</nz-tag>
+        <span class="meta-item"><span class="meta-label">Session ID:</span> {{ d.id }}</span>
+        <span class="meta-item"><span class="meta-label">Source:</span> {{ d.source }}</span>
+        <span class="meta-item"><span class="meta-label">Duration:</span> {{ d.formattedDuration }}</span>
+        <span class="meta-item"><span class="meta-label">Cost:</span> {{ d.formattedCost }}</span>
+        <span class="meta-item"><span class="meta-label">Mode:</span> {{ d.mode }}</span>
+        <span class="meta-item"><span class="meta-label">Model:</span> {{ d.supervisorModel }}</span>
       </div>
+      <div class="meta-row meta-times">
+        <span class="meta-item"><span class="meta-label">Started:</span> {{ d.startedAt | date:'medium' }}</span>
+        @if (d.endedAt) {
+          <span class="meta-item"><span class="meta-label">Ended:</span> {{ d.endedAt | date:'medium' }}</span>
+        }
+      </div>
+    </div>
 
+    @if (d.taskResults.length > 0) {
       <section class="section">
-        <h2 class="section-title">Tasks</h2>
-        <div class="count-grid">
-          <div class="count-item">
-            <span class="count-label">In Progress</span>
-            <nz-tag nzColor="blue">{{ d.tasksInProgress }}</nz-tag>
-          </div>
-          <div class="count-item">
-            <span class="count-label">Remaining</span>
-            <nz-tag nzColor="default">{{ d.tasksRemaining }}</nz-tag>
-          </div>
-          <div class="count-item">
-            <span class="count-label">Completed</span>
-            <nz-tag nzColor="green">{{ d.tasksCompleted }}</nz-tag>
-          </div>
-          <div class="count-item">
-            <span class="count-label">Failed</span>
-            <nz-tag nzColor="red">{{ d.tasksFailed }}</nz-tag>
-          </div>
-        </div>
+        <h2 class="section-title">Tasks ({{ d.taskResults.length }})</h2>
+        <nz-table [nzData]="d.taskResults" nzSize="small" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th scope="col">Task ID</th>
+              <th scope="col">Outcome</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Cost</th>
+              <th scope="col">Model</th>
+              <th scope="col">Review</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of d.taskResults; track t.taskId) {
+              <tr>
+                <td>{{ t.taskId }}</td>
+                <td><nz-tag [nzColor]="t.outcome === 'COMPLETE' ? 'green' : t.outcome === 'FAILED' ? 'red' : 'default'">{{ t.outcome }}</nz-tag></td>
+                <td>{{ t.durationMinutes !== null ? t.durationMinutes + 'm' : '—' }}</td>
+                <td>{{ t.cost > 0 ? '$' + (t.cost | number:'1.4-4') : '—' }}</td>
+                <td>{{ t.model || '—' }}</td>
+                <td>{{ t.reviewScore !== null ? t.reviewScore : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
       </section>
+    }
 
+    @if (d.workers.length > 0) {
       <section class="section">
-        <h2 class="section-title">Workers</h2>
-        <div class="count-grid">
-          <div class="count-item">
-            <span class="count-label">Active</span>
-            <nz-tag nzColor="blue">{{ d.activeWorkerCount }}</nz-tag>
-          </div>
-          <div class="count-item">
-            <span class="count-label">Completed</span>
-            <nz-tag nzColor="green">{{ d.workersCompleted }}</nz-tag>
-          </div>
-          <div class="count-item">
-            <span class="count-label">Failed</span>
-            <nz-tag nzColor="red">{{ d.workersFailed }}</nz-tag>
-          </div>
-        </div>
+        <h2 class="section-title">Workers ({{ d.workers.length }})</h2>
+        <nz-table [nzData]="d.workers" nzSize="small" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th scope="col">Label</th>
+              <th scope="col">Type</th>
+              <th scope="col">Status</th>
+              <th scope="col">Model</th>
+              <th scope="col">Cost</th>
+              <th scope="col">Tokens In</th>
+              <th scope="col">Tokens Out</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of d.workers; track w.id) {
+              <tr>
+                <td>{{ w.label || w.id }}</td>
+                <td>{{ w.workerType }}</td>
+                <td><nz-tag [nzColor]="w.status === 'completed' ? 'green' : w.status === 'failed' ? 'red' : 'blue'">{{ w.status }}</nz-tag></td>
+                <td>{{ w.model || '—' }}</td>
+                <td>{{ w.cost > 0 ? '$' + (w.cost | number:'1.4-4') : '—' }}</td>
+                <td>{{ w.inputTokens | number }}</td>
+                <td>{{ w.outputTokens | number }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </section>
+    }
+
+    @if (d.timeline.length > 0) {
+      <section class="section">
+        <h2 class="section-title">Timeline ({{ d.timeline.length }})</h2>
+        <nz-table [nzData]="d.timeline" nzSize="small" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Type</th>
+              <th scope="col">Source</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of d.timeline; track e.id) {
+              <tr>
+                <td>{{ e.timestamp | date:'HH:mm:ss' }}</td>
+                <td>{{ e.type }}</td>
+                <td>{{ e.source }}</td>
+                <td>{{ e.description }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </section>
+    }
+
+    @if (d.logContent) {
+      <section class="section">
+        <h2 class="section-title">Log</h2>
+        <pre class="log-content">{{ d.logContent }}</pre>
       </section>
     }
   }

@@ -18,8 +18,6 @@ export interface SessionRow {
   isSelected: boolean;
 }
 
-export const FALLBACK_SESSION_ROWS: SessionRow[] = [];
-
 function computeStatusClass(
   loopStatus: string,
 ): 'status-active' | 'status-done' | 'status-failed' | 'status-unknown' {
@@ -37,7 +35,7 @@ function computeDurationHours(startedAt: string, endedAt: string | null): number
 }
 
 export function adaptSessions(raw: CortexSession[] | null): SessionRow[] {
-  if (!raw) return FALLBACK_SESSION_ROWS;
+  if (!raw) return [];
   return raw.map((item): SessionRow => ({
     id: item.id,
     startedAt: item.started_at,

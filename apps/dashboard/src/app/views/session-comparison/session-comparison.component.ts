@@ -16,7 +16,6 @@ import { ApiService } from '../../services/api.service';
 import type { CortexSession } from '../../models/api.types';
 import {
   adaptSessions,
-  FALLBACK_SESSION_ROWS,
   SessionRow,
 } from './session-comparison.adapters';
 
@@ -66,7 +65,7 @@ export class SessionComparisonComponent {
       this.loading = false;
       if (raw === null) {
         this.unavailable = true;
-        this.rows = FALLBACK_SESSION_ROWS;
+        this.rows = [];
       } else {
         this.unavailable = false;
         this.rows = this.rowsComputed();
