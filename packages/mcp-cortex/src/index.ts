@@ -9,7 +9,7 @@ import { CANONICAL_TASK_TYPES, initDatabase } from './db/schema.js';
 import { handleGetTasks, handleClaimTask, handleReleaseTask, handleUpdateTask, handleUpsertTask, handleGetOrphanedClaims, handleReleaseOrphanedClaims, handleBulkUpdateTasks, handleGetBacklogSummary } from './tools/tasks.js';
 import { handleGetNextWave } from './tools/wave.js';
 import { handleSyncTasksFromFiles, handleReconcileStatusFiles } from './tools/sync.js';
-import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession, handleUpdateHeartbeat, handleCloseStaleSessions } from './tools/sessions.js';
+import { handleCreateSession, handleGetSession, handleUpdateSession, handleListSessions, handleEndSession, handleUpdateHeartbeat, handleCloseStaleSessions, handleEvaluateSession } from './tools/sessions.js';
 import { handleSpawnWorker, handleListWorkers, handleGetWorkerStats, handleGetWorkerActivity, handleKillWorker } from './tools/workers.js';
 import { FileWatcher, EmitQueue, handleSubscribeWorker, handleGetPendingEvents, handleEmitEvent } from './events/subscriptions.js';
 import { JsonlWatcher } from './process/jsonl-watcher.js';
@@ -531,6 +531,13 @@ server.registerTool('get_session_telemetry', {
     session_id: z.string().max(200).describe('Session ID to aggregate telemetry for'),
   },
 }, (args) => handleGetSessionTelemetry(db, args));
+
+server.registerTool('evaluate_session', {
+  description: 'Compute quality scores for a session across 4 dimensions: Quality (35%), Efficiency (30%), Process (20%), Outcome (15%). Writes result to session_evaluations table.',
+  inputSchema: {
+    session_id: z.string().max(200).describe('Session ID to evaluate'),
+  },
+}, (args) => handleEvaluateSession(db, args));
 
 // --- Provider tools ---
 

@@ -329,6 +329,20 @@ CREATE TABLE IF NOT EXISTS task_subtasks (
   updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
+const SESSION_EVALUATIONS_TABLE = `
+CREATE TABLE IF NOT EXISTS session_evaluations (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id       TEXT NOT NULL REFERENCES sessions(id),
+  overall_score    REAL NOT NULL,
+  quality_score    REAL NOT NULL,
+  efficiency_score REAL NOT NULL,
+  process_score    REAL NOT NULL,
+  outcome_score    REAL NOT NULL,
+  signals_json     TEXT NOT NULL DEFAULT '{}',
+  schema_version   INTEGER NOT NULL DEFAULT 1,
+  created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_claimed ON tasks(session_claimed)',
@@ -368,6 +382,7 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_task_subtasks_task ON task_subtasks(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_id)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_parent_order ON tasks(parent_task_id, subtask_order)',
+  'CREATE INDEX IF NOT EXISTS idx_session_evaluations_session ON session_evaluations(session_id)',
 ];
 
 // Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
@@ -627,6 +642,7 @@ export function initDatabase(dbPath: string): Database.Database {
   db.exec(TASK_DESCRIPTIONS_TABLE);
   db.exec(TASK_CONTEXTS_TABLE);
   db.exec(TASK_SUBTASKS_TABLE);
+  db.exec(SESSION_EVALUATIONS_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }
