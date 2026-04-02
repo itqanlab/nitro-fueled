@@ -418,6 +418,40 @@ export class SessionRunner {
   // Spawn workers
   // ============================================================
 
+  /**
+   * Resolve provider + model for a subtask in the implement (PREPPED) phase.
+   *
+   * Routing rules (in precedence order):
+   *  1. Explicit `model` field on the subtask — use that, provider: claude
+   *  2. Subtask's own complexity — Simple→Haiku, Medium→Sonnet, Complex→Opus
+   *  3. If subtask has no explicit complexity, inherit from parent task
+   */
+  private resolveSubtaskImplementModel(candidate: TaskCandidate): { provider: ProviderType; model: string } {
+    // Rule 1: explicit model override
+    if (candidate.model) {
+      return { provider: 'claude', model: candidate.model };
+    }
+
+    // Determine effective complexity: subtask's own (if set) or parent's
+    let complexity = candidate.rawComplexity;
+    if (!complexity && candidate.parentTaskId) {
+      complexity = this.supervisorDb.getTaskComplexity(candidate.parentTaskId);
+    }
+    // Final fallback if neither subtask nor parent has complexity
+    complexity = complexity ?? 'Medium';
+
+    // Rule 2 / 3: map complexity to model
+    switch (complexity) {
+      case 'Simple':
+        return { provider: 'claude', model: 'claude-haiku-4-5-20251001' };
+      case 'Complex':
+        return { provider: 'claude', model: 'claude-opus-4-6' };
+      default:
+        // Medium (and any unknown value) → Sonnet
+        return { provider: 'claude', model: 'claude-sonnet-4-6' };
+    }
+  }
+
   private spawnForCandidate(candidate: TaskCandidate): void {
     const isBuild = candidate.status === 'CREATED' || candidate.status === 'PREPPED';
     const workerType = isBuild ? 'build' : 'review';
@@ -433,8 +467,14 @@ export class SessionRunner {
       provider = this.config.prep_provider;
       model = this.config.prep_model;
     } else if (candidate.status === 'PREPPED') {
-      // Use fallback on retries (GLM failed, switch to claude)
-      if (retryNumber > 0) {
+      if (candidate.parentTaskId !== null) {
+        // Subtask implement phase: route by the subtask's own complexity (or explicit model).
+        // Subtasks are always run with Claude (not GLM) since they are already small units.
+        const resolved = this.resolveSubtaskImplementModel(candidate);
+        provider = resolved.provider;
+        model = resolved.model;
+      } else if (retryNumber > 0) {
+        // Top-level task: use fallback on retries (GLM failed, switch to claude)
         provider = this.config.implement_fallback_provider;
         model = this.config.implement_fallback_model;
       } else {

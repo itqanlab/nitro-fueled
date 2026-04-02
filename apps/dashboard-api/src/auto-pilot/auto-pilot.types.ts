@@ -86,6 +86,12 @@ export interface TaskCandidate {
   type: string;
   priority: string;
   complexity: string;
+  /**
+   * Raw complexity value from the DB row — null means the subtask has no explicit complexity
+   * set and should inherit from its parent task for model routing purposes.
+   * Always non-null for top-level tasks (defaults to 'Medium').
+   */
+  rawComplexity: string | null;
   dependencies: string[];
   model: string | null;
   customFlowId: string | null;

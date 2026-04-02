@@ -286,6 +286,7 @@ export class SupervisorDbService implements OnModuleDestroy {
         type: row.type,
         priority: row.priority,
         complexity: row.complexity ?? 'Medium',
+        rawComplexity: row.complexity ?? null,
         dependencies: parseJson<string[]>(row.dependencies, []),
         model: row.model,
         customFlowId: row.custom_flow_id ?? null,
@@ -553,6 +554,13 @@ export class SupervisorDbService implements OnModuleDestroy {
     const db = this.getDb();
     const row = db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
     return row?.status ?? null;
+  }
+
+  /** Returns the raw complexity value for a task, or null if not set. */
+  public getTaskComplexity(taskId: string): string | null {
+    const db = this.getDb();
+    const row = db.prepare('SELECT complexity FROM tasks WHERE id = ?').get(taskId) as { complexity: string | null } | undefined;
+    return row?.complexity ?? null;
   }
 
   // ============================================================
