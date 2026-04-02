@@ -1,7 +1,18 @@
 <div class="sessions-page">
   <div class="page-header">
-    <h1 class="page-title">Session History</h1>
-    <p class="page-subtitle">Browse all past auto-pilot and orchestration sessions</p>
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">Session History</h1>
+        <p class="page-subtitle">Browse all past auto-pilot and orchestration sessions</p>
+      </div>
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="!canCompare()"
+        (click)="compareSelected()"
+        class="compare-btn"
+      >Compare Sessions</button>
+    </div>
   </div>
 
   @if (unavailable()) {
@@ -27,6 +38,7 @@
       >
         <thead>
           <tr>
+            <th scope="col" class="checkbox-col"></th>
             <th scope="col">Session ID</th>
             <th scope="col">Status</th>
             <th scope="col">Started</th>
@@ -40,6 +52,9 @@
         <tbody>
           @for (session of sessionTable.data; track session.id) {
             <tr class="clickable-row" [routerLink]="['/sessions', session.id]">
+              <td class="checkbox-col" (click)="toggleSelection(session.id, $event)">
+                <label nz-checkbox [nzChecked]="isSelected(session.id)" (click)="$event.stopPropagation()"></label>
+              </td>
               <td class="source-cell">{{ session.id }}</td>
               <td><nz-tag [nzColor]="session.statusColor">{{ session.statusLabel }}</nz-tag></td>
               <td>{{ session.startedAt | date:'short' }}</td>

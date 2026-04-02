@@ -122,6 +122,13 @@ export const APP_ROUTES: Routes = [
           ),
       },
       {
+        path: 'sessions/compare',
+        loadComponent: () =>
+          import('./views/session-comparison/session-comparison.component').then(
+            (m) => m.SessionComparisonComponent,
+          ),
+      },
+      {
         path: 'sessions/:id',
         loadComponent: () =>
           import('./views/sessions/session-detail/session-detail.component').then(

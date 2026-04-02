@@ -335,7 +335,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_229 | Extend Cortex Schema for Worker Telemetry | COMPLETE | P1-High |
 | TASK_2026_295 | Fix Session Telemetry Gaps — extend update_session for supervisor_model, mode, total_cost (Part 1) | COMPLETE | P1-High |
 | TASK_2026_244 | Dashboard API: Wire Supervisor Events to WebSocket Gateway | CREATED | P0-Critical |
-| TASK_2026_247 | Sessions List: Checkbox Selection and Compare Button | CREATED | P2-Medium |
+| TASK_2026_247 | Sessions List: Checkbox Selection and Compare Button | COMPLETE | P2-Medium |
 | TASK_2026_254 | MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup | CREATED | P1-High |
 
 #### Task Map — Wave 2 (depends on Wave 1)

@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, finalize, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -14,7 +14,9 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { ApiService } from '../../../services/api.service';
+import { SessionsSelectionService } from './sessions-selection.service';
 import type { SessionHistoryListItem, SessionEndStatus } from '../../../models/api.types';
 
 interface EnrichedSession {
@@ -35,13 +37,15 @@ interface EnrichedSession {
 @Component({
   selector: 'app-sessions-list',
   standalone: true,
-  imports: [DatePipe, RouterLink, NzTableModule, NzTagModule, NzEmptyModule, NzSkeletonModule, NzButtonModule],
+  imports: [DatePipe, RouterLink, NzTableModule, NzTagModule, NzEmptyModule, NzSkeletonModule, NzButtonModule, NzCheckboxModule],
   templateUrl: './sessions-list.component.html',
   styleUrl: './sessions-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SessionsListComponent {
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
+  public readonly selection = inject(SessionsSelectionService);
 
   private readonly sessionsRaw = toSignal(
     this.api.getSessionHistory().pipe(
@@ -72,6 +76,22 @@ export class SessionsListComponent {
       models: s.models,
     }));
   });
+
+  public readonly canCompare = computed(() => this.selection.selectedIds().size === 2);
+
+  public isSelected(id: string): boolean {
+    return this.selection.selectedIds().has(id);
+  }
+
+  public toggleSelection(id: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.selection.toggle(id);
+  }
+
+  public compareSelected(): void {
+    const [a, b] = [...this.selection.selectedIds()];
+    this.router.navigate(['/sessions', 'compare'], { queryParams: { a, b } });
+  }
 
   public isStopping(id: string): boolean {
     return this.stoppingIds().has(id);
