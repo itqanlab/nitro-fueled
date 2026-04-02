@@ -467,7 +467,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 #### Task Map -- Wave 4 (depends on Wave 3)
 | Task ID | Title | Status | Priority |
 |---------|-------|--------|----------|
-| TASK_2026_266 | Supervisor: Per-Subtask Model Routing | CREATED | P1-High |
+| TASK_2026_266 | Supervisor: Per-Subtask Model Routing | COMPLETE | P1-High |
 | TASK_2026_267 | Review Worker: Holistic Parent Review After Subtask Completion | CREATED | P1-High |
 
 ## Current Focus
