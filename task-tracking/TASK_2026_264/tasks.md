@@ -116,12 +116,13 @@
 
 ---
 
-## Batch 2: Supervisor Loop — Decomposed Task Routing IMPLEMENTED
+## Batch 2: Supervisor Loop — Decomposed Task Routing COMPLETE
 
 **Developer**: nitro-systems-developer
 **Tasks**: 4 | **Dependencies**: Batch 1 complete (conceptually independent, but same developer flow)
+**Commit**: 7067edc
 
-### Task 2.1: Add subtask ID pattern recognition and DECOMPOSED_PARENT classification to Step 3 IMPLEMENTED
+### Task 2.1: Add subtask ID pattern recognition and DECOMPOSED_PARENT classification to Step 3 COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/nitro-auto-pilot/references/parallel-mode.md`
 **Spec Reference**: plan.md lines 224–236
@@ -140,7 +141,7 @@
 
 ---
 
-### Task 2.2: Add decomposed parent handling + subtask routing + parent auto-promotion to Step 4 IMPLEMENTED
+### Task 2.2: Add decomposed parent handling + subtask routing + parent auto-promotion to Step 4 COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/nitro-auto-pilot/references/parallel-mode.md`
 **Spec Reference**: plan.md lines 238–261
@@ -159,7 +160,7 @@
 
 ---
 
-### Task 2.3: Add subtask completion detection hook to Step 7 IMPLEMENTED
+### Task 2.3: Add subtask completion detection hook to Step 7 COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/nitro-auto-pilot/references/parallel-mode.md`
 **Spec Reference**: plan.md lines 263–273
@@ -173,7 +174,7 @@
 
 ---
 
-### Task 2.4: Add subtask row to Worker-Exit Reconciliation table + post-reconciliation note IMPLEMENTED
+### Task 2.4: Add subtask row to Worker-Exit Reconciliation table + post-reconciliation note COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/skills/nitro-auto-pilot/references/parallel-mode.md`
 **Spec Reference**: plan.md lines 275–289
@@ -186,7 +187,7 @@
 
 ---
 
-### Task 2.5: Sync Batch 2 changes to scaffold copy IMPLEMENTED
+### Task 2.5: Sync Batch 2 changes to scaffold copy COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/apps/cli/scaffold/.claude/skills/nitro-auto-pilot/references/parallel-mode.md`
 **Spec Reference**: Plan note on scaffold sync (enforced by pre-commit hook)
@@ -210,12 +211,12 @@
 
 ---
 
-## Batch 3: Team-Leader Agent Clarification Note PENDING
+## Batch 3: Team-Leader Agent Clarification Note IN PROGRESS
 
 **Developer**: nitro-systems-developer
 **Tasks**: 1 | **Dependencies**: None (independent of Batches 1 and 2)
 
-### Task 3.1: Add MODE 1 bypass note to nitro-team-leader.md PENDING
+### Task 3.1: Add MODE 1 bypass note to nitro-team-leader.md IN PROGRESS
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/agents/nitro-team-leader.md`
 **Spec Reference**: plan.md lines 292–303
@@ -247,9 +248,9 @@
 | 1.3 | Update Step 5 Exit Gate with conditional checks | COMPLETE |
 | 1.4 | Update Retry Prep Worker Step 3 with decomposition resume detection | COMPLETE |
 | 1.5 | Sync Batch 1 changes to scaffold copy | COMPLETE |
-| 2.1 | Add subtask classification to parallel-mode.md Step 3 | IMPLEMENTED |
-| 2.2 | Add decomposed parent handling to parallel-mode.md Step 4 | IMPLEMENTED |
-| 2.3 | Add subtask completion detection to parallel-mode.md Step 7 | IMPLEMENTED |
-| 2.4 | Add subtask row to Worker-Exit Reconciliation table | IMPLEMENTED |
-| 2.5 | Sync Batch 2 changes to scaffold copy | IMPLEMENTED |
-| 3.1 | Add MODE 1 bypass note to nitro-team-leader.md | PENDING |
+| 2.1 | Add subtask classification to parallel-mode.md Step 3 | COMPLETE |
+| 2.2 | Add decomposed parent handling to parallel-mode.md Step 4 | COMPLETE |
+| 2.3 | Add subtask completion detection to parallel-mode.md Step 7 | COMPLETE |
+| 2.4 | Add subtask row to Worker-Exit Reconciliation table | COMPLETE |
+| 2.5 | Sync Batch 2 changes to scaffold copy | COMPLETE |
+| 3.1 | Add MODE 1 bypass note to nitro-team-leader.md | IN PROGRESS |
