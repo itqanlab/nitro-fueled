@@ -9,6 +9,7 @@ import type {
   CortexSession,
   CortexSessionSummary,
   CortexSessionWorker,
+  CostBreakdown,
   RawTask,
   RawSubtask,
   RawSession,
@@ -25,7 +26,7 @@ export const TASK_COLS =
 export const SUBTASK_COLS =
   'id, title, status, complexity, model, subtask_order, file_scope';
 export const SESSION_COLS =
-  'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat, drain_requested';
+  'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat, drain_requested, supervisor_cost_usd, worker_costs_json';
 export const WORKER_COLS =
   'id, session_id, task_id, worker_type, label, status, model, provider, launcher, spawn_time, tokens_json, cost_json, outcome, retry_number';
 
@@ -166,5 +167,41 @@ export function querySessionSummary(db: Database.Database, sessionId: string): C
     };
   });
 
-  return { ...mapSession(sessionRow), workers };
+  // Compute cost_breakdown from workers' cost_json, then refine with stored session columns
+  const perModelCost: Record<string, number> = {};
+  for (const w of workerRows) {
+    if (!w.cost_json) continue;
+    try {
+      const cost = JSON.parse(w.cost_json) as { total_usd?: number };
+      if (cost.total_usd != null) {
+        const key = w.model ?? 'unknown';
+        perModelCost[key] = (perModelCost[key] ?? 0) + cost.total_usd;
+      }
+    } catch { /* skip malformed rows */ }
+  }
+
+  const supervisorCost = typeof sessionRow.supervisor_cost_usd === 'number' ? sessionRow.supervisor_cost_usd : 0;
+
+  let workerCostByModel: Record<string, number> = Object.fromEntries(
+    Object.entries(perModelCost).map(([k, v]) => [k, Math.round(v * 10000) / 10000]),
+  );
+  if (sessionRow.worker_costs_json) {
+    try {
+      const stored = JSON.parse(sessionRow.worker_costs_json) as Record<string, number>;
+      if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+        workerCostByModel = Object.fromEntries(
+          Object.entries(stored).map(([k, v]) => [k, Math.round(v * 10000) / 10000]),
+        );
+      }
+    } catch { /* use computed fallback */ }
+  }
+
+  const workerCostTotal = Object.values(workerCostByModel).reduce((s, v) => s + v, 0);
+  const costBreakdown: CostBreakdown = {
+    supervisor_cost: Math.round(supervisorCost * 10000) / 10000,
+    worker_cost_by_model: workerCostByModel,
+    total_cost: Math.round((supervisorCost + workerCostTotal) * 10000) / 10000,
+  };
+
+  return { ...mapSession(sessionRow), workers, cost_breakdown: costBreakdown };
 }

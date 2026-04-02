@@ -69,8 +69,15 @@ export interface CortexSessionWorker {
   output_tokens: number;
 }
 
+export interface CostBreakdown {
+  supervisor_cost: number;
+  worker_cost_by_model: Record<string, number>;
+  total_cost: number;
+}
+
 export interface CortexSessionSummary extends CortexSession {
   workers: CortexSessionWorker[];
+  cost_breakdown: CostBreakdown | null;
 }
 
 export interface CortexWorker {
@@ -224,6 +231,8 @@ export interface RawSession {
   total_output_tokens: number;
   last_heartbeat: string | null;
   drain_requested: number;
+  supervisor_cost_usd: number | null;
+  worker_costs_json: string | null;
 }
 
 export interface RawWorker {
