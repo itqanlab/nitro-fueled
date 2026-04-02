@@ -82,8 +82,8 @@ are SKIPPED — go directly to the dev loop. Follow these rules strictly:
 
 5. Before developers write any code, they MUST read
    ALL review-lessons files and anti-patterns:
-   - Read .claude/review-lessons/*.md (all lesson files)
-   - Read .claude/anti-patterns.md
+   - Read .claude/nitro-review-lessons/*.md (all lesson files)
+   - Read .claude/nitro-anti-patterns.md
 
 6. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
@@ -161,8 +161,8 @@ through implementation. Follow these rules strictly:
 
 5. Before developers write any code, they MUST read
    ALL review-lessons files and anti-patterns:
-   - Read .claude/review-lessons/*.md (all lesson files)
-   - Read .claude/anti-patterns.md
+   - Read .claude/nitro-review-lessons/*.md (all lesson files)
+   - Read .claude/nitro-anti-patterns.md
 
 6. EXIT GATE — Before exiting, verify:
    - [ ] All tasks in tasks.md are COMPLETE
@@ -231,8 +231,8 @@ AUTONOMOUS MODE — follow these rules strictly:
 
 5. Before developers write code, ensure they read
    ALL review-lessons files and anti-patterns:
-   - Read .claude/review-lessons/*.md (all lesson files)
-   - Read .claude/anti-patterns.md
+   - Read .claude/nitro-review-lessons/*.md (all lesson files)
+   - Read .claude/nitro-anti-patterns.md
 
 6. Complete ALL remaining batches. After all tasks COMPLETE in tasks.md:
    a. Call write_handoff() (if not already done)
@@ -294,27 +294,65 @@ that an Implement Worker will use to write the code. You do NOT write code.
    - PM phase → produces task-description.md
    - Researcher phase (if task type requires it) → produces research-report.md
    - Architect phase → produces plan.md
-   - Team Leader MODE 1 → produces tasks.md with batched tasks (all PENDING)
-   Stop after Team Leader MODE 1. Do NOT enter MODE 2 (dev loop).
 
-4. After tasks.md is written with all batches PENDING:
+   After plan.md is written, run DECOMPOSITION ANALYSIS:
+
+   3a. Read the task's complexity from the DB: get_task_context("TASK_YYYY_NNN").
+   3b. Read plan.md and count distinct concerns/layers (e.g., DB schema, service layer,
+       API handler, frontend component — each is a separate concern).
+
+   DECOMPOSITION DECISION:
+   - Simple complexity → NO decomposition. Proceed to Step 3c (Team-Leader MODE 1).
+   - Medium complexity, single concern or single file → NO decomposition. Proceed to Step 3c.
+   - Medium complexity, 2+ distinct concerns spanning multiple files → DECOMPOSE. Proceed to Step 3d.
+   - Complex complexity → DECOMPOSE. Proceed to Step 3d.
+
+   3c. NO DECOMPOSITION PATH — proceed as before:
+   - Team Leader MODE 1 → produces tasks.md with batched tasks (all PENDING)
+   - Stop after Team Leader MODE 1. Do NOT enter MODE 2 (dev loop).
+   - Set decomposed = false for write_handoff in Step 4.
+
+   3d. DECOMPOSITION PATH:
+   - Do NOT invoke Team-Leader MODE 1. Do NOT produce tasks.md.
+   - From plan.md, identify 2–5 scoped subtasks. Each subtask must:
+     * Target exactly one concern or layer
+     * Have complexity Simple or Medium (never Complex)
+     * Have a title scoped to that concern (e.g., "Add parent_task_id column to schema")
+     * List only the files it touches in fileScope
+     * Declare dependencies on other subtasks within this parent
+       (e.g., subtask 2 depends on subtask 1 if it builds on subtask 1's output)
+     * Have a suggested model matching its complexity:
+       Simple → "glm-5.1", Medium → "claude-sonnet-4-6"
+   - Call bulk_create_subtasks(parent_task_id="TASK_YYYY_NNN", subtasks=[...])
+     with all subtasks at once. Capture the returned subtask IDs.
+   - If bulk_create_subtasks fails, log the error, fall back to NO DECOMPOSITION
+     (Step 3c — invoke Team-Leader MODE 1 and produce tasks.md instead).
+   - Set decomposed = true and subtask_ids = [returned IDs] for write_handoff in Step 4.
+
+4. After planning phases are complete (tasks.md written if Step 3c, or subtasks created if Step 3d):
    a. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="prep",
       files_to_touch=[{path: "...", action: "modify|new", reason: "..."},...],
-      batches=["Batch 1: [summary] — files: [list]", ...],
+      batches=["DECOMPOSED — see subtasks: TASK_YYYY_NNN.1, TASK_YYYY_NNN.2, ..."]
+        (or the normal batch list if not decomposed),
       key_decisions=["[Architectural decision and why]", ...],
       implementation_plan_summary="[Condensed approach from plan.md]",
-      gotchas=["[Things that would waste dev time if missed]", ...]).
+      gotchas=["[Things that would waste dev time if missed]", ...],
+      notes="DECOMPOSED: subtask_ids=[TASK_YYYY_NNN.1, TASK_YYYY_NNN.2, ...]"
+        (omit this field if not decomposed)).
       This is MANDATORY. If write_handoff fails, log the error and continue.
    b. Call stage_and_commit with all planning artifacts (see Commit Metadata below).
-      Include task-description.md, plan.md, tasks.md, and research-report.md if created.
+      Include task-description.md, plan.md, tasks.md if produced, and research-report.md if created.
    c. Call update_task("TASK_YYYY_NNN", fields=JSON.stringify({status: "PREPPED"})).
       If it fails, log the error.
 
 5. EXIT GATE — Before exiting, verify:
    - [ ] plan.md exists with implementation approach
-   - [ ] tasks.md exists with at least 1 batch (all PENDING)
-   - [ ] read_handoff("TASK_YYYY_NNN", worker_type="prep") returns a non-empty record with all 5 fields
-   - [ ] Planning artifacts are committed
+   - [ ] IF decomposed: bulk_create_subtasks succeeded and at least 1 subtask exists
+         (verify via get_task_context("TASK_YYYY_NNN.1") or equivalent)
+   - [ ] IF NOT decomposed: tasks.md exists with at least 1 batch (all PENDING)
+   - [ ] read_handoff("TASK_YYYY_NNN", worker_type="prep") returns a non-empty record
+   - [ ] Planning artifacts are committed (plan.md, task-description.md, and
+         tasks.md if produced)
    - [ ] get_task_context("TASK_YYYY_NNN") shows status PREPPED
    If any check fails, fix it before exiting.
    If you cannot pass the Exit Gate, write exit-gate-failure.md.
@@ -361,13 +399,14 @@ AUTONOMOUS MODE — follow these rules strictly:
 2. Do NOT pause for any user validation checkpoints. Auto-approve
    ALL checkpoints and continue immediately. No human at this terminal.
 
-3. Check the task folder for existing deliverables:
+3. Check the task folder and DB for existing deliverables:
    - task-description.md exists? -> PM phase already done
    - plan.md exists? -> Architecture already done
-   - tasks.md exists? -> Team Leader MODE 1 already done
-   - read_handoff("TASK_YYYY_NNN", worker_type="prep") returns data? -> Prep handoff already done
-   The orchestration skill's phase detection will automatically
-   determine where to resume.
+   - tasks.md exists? -> Team Leader MODE 1 already done (no decomposition)
+   - read_handoff(...) notes contains "DECOMPOSED"? -> Decomposition already done
+   - get_task_context("TASK_YYYY_NNN.1") succeeds? -> Subtasks already created
+   - read_handoff(...) returns full data? -> Prep handoff already done
+   Resume from the earliest incomplete step.
 
 4. Do NOT restart from scratch. Resume from the detected phase.
 
@@ -440,8 +479,8 @@ or Architect phases — the plan is already written.
 
 5. Before developers write any code, they MUST read
    ALL review-lessons files and anti-patterns:
-   - Read .claude/review-lessons/*.md (all lesson files)
-   - Read .claude/anti-patterns.md
+   - Read .claude/nitro-review-lessons/*.md (all lesson files)
+   - Read .claude/nitro-anti-patterns.md
 
 6. After ALL development is complete (all batches COMPLETE in tasks.md):
    a. Call write_handoff(task_id="TASK_YYYY_NNN", worker_type="build",
