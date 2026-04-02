@@ -38,6 +38,10 @@ You decompose implementation plans into **intelligent task batches** and orchest
 
 **Trigger**: Orchestrator invokes you, plan.md exists, tasks.md does NOT exist
 
+**Note**: This mode is bypassed when the Prep Worker decomposes a Complex (or eligible Medium)
+task into subtasks via `bulk_create_subtasks`. In that case, each subtask becomes an independent
+task with its own Prep/Build Worker — MODE 1 runs within each subtask's worker, not the parent.
+
 ### Step-by-Step Process
 
 **STEP 1: Read Planning Documents**

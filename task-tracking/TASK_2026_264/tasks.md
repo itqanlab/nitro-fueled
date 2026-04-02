@@ -1,6 +1,6 @@
 # Development Tasks - TASK_2026_264
 
-**Total Tasks**: 9 | **Batches**: 3 | **Status**: 0/3 complete
+**Total Tasks**: 9 | **Batches**: 3 | **Status**: 3/3 complete
 
 ---
 
@@ -211,12 +211,13 @@
 
 ---
 
-## Batch 3: Team-Leader Agent Clarification Note IN PROGRESS
+## Batch 3: Team-Leader Agent Clarification Note COMPLETE
 
 **Developer**: nitro-systems-developer
 **Tasks**: 1 | **Dependencies**: None (independent of Batches 1 and 2)
+**Commit**: TBD
 
-### Task 3.1: Add MODE 1 bypass note to nitro-team-leader.md IN PROGRESS
+### Task 3.1: Add MODE 1 bypass note to nitro-team-leader.md COMPLETE
 
 **File**: `/Volumes/SanDiskSSD/mine/nitro-fueled/.claude/agents/nitro-team-leader.md`
 **Spec Reference**: plan.md lines 292–303
@@ -253,4 +254,4 @@
 | 2.3 | Add subtask completion detection to parallel-mode.md Step 7 | COMPLETE |
 | 2.4 | Add subtask row to Worker-Exit Reconciliation table | COMPLETE |
 | 2.5 | Sync Batch 2 changes to scaffold copy | COMPLETE |
-| 3.1 | Add MODE 1 bypass note to nitro-team-leader.md | IN PROGRESS |
+| 3.1 | Add MODE 1 bypass note to nitro-team-leader.md | COMPLETE |
