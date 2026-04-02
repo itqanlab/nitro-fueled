@@ -24,6 +24,7 @@
       <nz-empty nzNotFoundContent="No session data available"></nz-empty>
     } @else {
       <nz-table
+        #compTable
         [nzData]="rows"
         [nzShowPagination]="rows.length > 20"
         [nzPageSize]="20"
@@ -43,7 +44,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of rows; track row.id) {
+          @for (row of compTable.data; track row.id) {
             <tr
               (click)="toggleSelect(row)"
               [class.row-selected]="row.isSelected"

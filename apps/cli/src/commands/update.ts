@@ -1,16 +1,18 @@
-import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { existsSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, sep } from 'node:path';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
+import { logger } from '../utils/logger.js';
 import { resolveScaffoldRoot, walkScaffoldFiles } from '../utils/scaffold.js';
 import { readManifest, writeManifest, computeChecksum, buildCoreFileEntry } from '../utils/manifest.js';
 import type { Manifest } from '../utils/manifest.js';
+import { threeWayMerge, aiAssistMerge } from '../utils/merge.js';
 import { detectStack } from '../utils/stack-detect.js';
 import { generateAntiPatterns } from '../utils/anti-patterns.js';
 import { getPackageVersion } from '../utils/package-version.js';
 import { runCortexStep } from '../utils/cortex-hydrate.js';
 
-type FileOutcome = 'updated' | 'added' | 'skipped' | 'reinstalled';
+type FileOutcome = 'updated' | 'added' | 'skipped' | 'reinstalled' | 'auto-merged' | 'ai-merged' | 'conflict';
 
 interface FileResult {
   relPath: string;
@@ -30,6 +32,12 @@ function copyFile(srcPath: string, destPath: string, dryRun: boolean): void {
   copyFileSync(srcPath, destPath);
 }
 
+function writeTextFile(destPath: string, content: string, dryRun: boolean): void {
+  if (dryRun) return;
+  ensureParentDir(destPath);
+  writeFileSync(destPath, content, 'utf8');
+}
+
 function getCurrentChecksum(filePath: string): string | null {
   if (!existsSync(filePath)) return null;
   try {
@@ -43,7 +51,8 @@ function processScaffoldFiles(
   scaffoldFiles: Map<string, string>,
   manifest: Manifest,
   cwd: string,
-  dryRun: boolean
+  dryRun: boolean,
+  enableAiMerge: boolean,
 ): FileResult[] {
   const results: FileResult[] = [];
 
@@ -56,7 +65,7 @@ function processScaffoldFiles(
     const destPath = resolve(cwd, relPath);
     const cwdNorm = resolve(cwd) + sep;
     if (!destPath.startsWith(cwdNorm) && destPath !== resolve(cwd)) {
-      console.error(`Warning: skipping ${relPath} — resolved path escapes project root`);
+      logger.error(`Warning: skipping ${relPath} — resolved path escapes project root`);
       continue;
     }
     const inManifest = relPath in manifest.coreFiles;
@@ -83,8 +92,41 @@ function processScaffoldFiles(
       copyFile(srcPath, destPath, dryRun);
       results.push({ relPath, outcome: 'updated' });
     } else {
-      // User has modified this file — skip it
-      results.push({ relPath, outcome: 'skipped' });
+      // User has modified this file — attempt three-way merge
+      const base = manifest.coreFiles[relPath].scaffoldContent;
+      if (base === undefined) {
+        // No merge base in manifest (installed before this feature) — skip
+        results.push({ relPath, outcome: 'skipped' });
+        continue;
+      }
+
+      let theirs: string;
+      try {
+        theirs = readFileSync(srcPath, 'utf8');
+      } catch {
+        results.push({ relPath, outcome: 'skipped' });
+        continue;
+      }
+
+      const ours = readFileSync(destPath, 'utf8');
+      const mergeResult = threeWayMerge(base, ours, theirs);
+
+      if (mergeResult.conflicts === 0) {
+        writeTextFile(destPath, mergeResult.merged, dryRun);
+        results.push({ relPath, outcome: 'auto-merged' });
+      } else if (enableAiMerge) {
+        logger.log(`  ${relPath}: conflicts detected — invoking AI merge...`);
+        const aiResult = aiAssistMerge(base, ours, theirs, relPath);
+        if (aiResult !== null) {
+          writeTextFile(destPath, aiResult, dryRun);
+          results.push({ relPath, outcome: 'ai-merged' });
+        } else {
+          logger.warn(`  ${relPath}: AI merge failed — leaving file unchanged`);
+          results.push({ relPath, outcome: 'conflict' });
+        }
+      } else {
+        results.push({ relPath, outcome: 'conflict' });
+      }
     }
   }
 
@@ -102,16 +144,16 @@ function updateManifestData(
   manifest.version = latestVersion;
   manifest.updatedAt = now;
 
-  // Update entries for all processed files (updated, added, reinstalled)
+  // Update entries for all processed files (updated, added, reinstalled, merged)
   for (const result of results) {
-    if (result.outcome === 'skipped') continue;
+    if (result.outcome === 'skipped' || result.outcome === 'conflict') continue;
     const destPath = resolve(cwd, result.relPath);
     if (!existsSync(destPath)) continue;
     try {
       manifest.coreFiles[result.relPath] = buildCoreFileEntry(destPath, latestVersion);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Warning: could not checksum ${result.relPath}: ${msg}`);
+      logger.error(`Warning: could not checksum ${result.relPath}: ${msg}`);
     }
   }
 
@@ -134,52 +176,73 @@ function printResults(
   const added = results.filter((r) => r.outcome === 'added');
   const reinstalled = results.filter((r) => r.outcome === 'reinstalled');
   const skipped = results.filter((r) => r.outcome === 'skipped');
+  const autoMerged = results.filter((r) => r.outcome === 'auto-merged');
+  const aiMerged = results.filter((r) => r.outcome === 'ai-merged');
+  const conflicts = results.filter((r) => r.outcome === 'conflict');
 
   const dryRunLabel = dryRun ? ' [dry-run]' : '';
 
   for (const r of updated) {
-    console.log(`  ✓ ${r.relPath.padEnd(55)} auto-updated (unchanged)${dryRunLabel}`);
+    logger.log(`  ✓ ${r.relPath.padEnd(55)} auto-updated (unchanged)${dryRunLabel}`);
   }
   for (const r of reinstalled) {
-    console.log(`  ✓ ${r.relPath.padEnd(55)} reinstalled (was deleted)${dryRunLabel}`);
+    logger.log(`  ✓ ${r.relPath.padEnd(55)} reinstalled (was deleted)${dryRunLabel}`);
   }
   for (const r of added) {
-    console.log(`  + ${r.relPath.padEnd(55)} new in v${latestVersion} — added${dryRunLabel}`);
+    logger.log(`  + ${r.relPath.padEnd(55)} new in v${latestVersion} — added${dryRunLabel}`);
+  }
+  for (const r of autoMerged) {
+    logger.log(`  ↕ ${r.relPath.padEnd(55)} auto-merged (your changes + scaffold update)${dryRunLabel}`);
+  }
+  for (const r of aiMerged) {
+    logger.log(`  ✦ ${r.relPath.padEnd(55)} AI-merged (review recommended)${dryRunLabel}`);
   }
   for (const r of skipped) {
-    console.log(`  ~ ${r.relPath.padEnd(55)} modified by you — skipped`);
+    logger.log(`  ~ ${r.relPath.padEnd(55)} modified by you — skipped (no merge base)`);
+  }
+  for (const r of conflicts) {
+    logger.log(`  ✗ ${r.relPath.padEnd(55)} conflict — update manually`);
   }
 
-  console.log('');
-  const totalChanged = updated.length + reinstalled.length + added.length;
-  console.log(`Updated: ${totalChanged} file${totalChanged !== 1 ? 's' : ''}`);
+  logger.log('');
+  const totalChanged = updated.length + reinstalled.length + added.length + autoMerged.length + aiMerged.length;
+  logger.log(`Updated: ${totalChanged} file${totalChanged !== 1 ? 's' : ''}`);
+  if (autoMerged.length > 0) {
+    logger.log(`Auto-merged: ${autoMerged.length} file${autoMerged.length !== 1 ? 's' : ''}`);
+  }
+  if (aiMerged.length > 0) {
+    logger.log(`AI-merged: ${aiMerged.length} file${aiMerged.length !== 1 ? 's' : ''} (review recommended)`);
+  }
+  if (conflicts.length > 0) {
+    logger.log(`Conflicts (manual merge needed): ${conflicts.length} file${conflicts.length !== 1 ? 's' : ''}`);
+  }
   if (skipped.length > 0) {
-    console.log(`Skipped (modified): ${skipped.length} file${skipped.length !== 1 ? 's' : ''}`);
+    logger.log(`Skipped (modified): ${skipped.length} file${skipped.length !== 1 ? 's' : ''}`);
   }
   if (added.length > 0) {
-    console.log(`New files added: ${added.length} file${added.length !== 1 ? 's' : ''}`);
+    logger.log(`New files added: ${added.length} file${added.length !== 1 ? 's' : ''}`);
   }
 
   const generatedKeys = Object.keys(manifest.generatedFiles);
   if (generatedKeys.length > 0) {
-    console.log('');
-    console.log('Generated files (not touched):');
+    logger.log('');
+    logger.log('Generated files (not touched):');
     for (const key of generatedKeys) {
-      console.log(`  ${key.padEnd(55)} (use --regen to regenerate)`);
+      logger.log(`  ${key.padEnd(55)} (use --regen to regenerate)`);
     }
   }
 
   if (!dryRun) {
-    console.log('');
-    console.log(`Manifest updated to v${latestVersion}`);
+    logger.log('');
+    logger.log(`Manifest updated to v${latestVersion}`);
   }
 }
 
 function handleRegen(cwd: string, scaffoldRoot: string, manifest: Manifest, dryRun: boolean): void {
-  console.log('');
-  console.log('Regenerating project-specific files...');
+  logger.log('');
+  logger.log('Regenerating project-specific files...');
   if (dryRun) {
-    console.log('(dry-run — skipping regeneration)');
+    logger.log('(dry-run — skipping regeneration)');
     return;
   }
 
@@ -187,9 +250,9 @@ function handleRegen(cwd: string, scaffoldRoot: string, manifest: Manifest, dryR
   const stacks = detectStack(cwd);
   const generated = generateAntiPatterns(cwd, stacks, scaffoldRoot);
   if (generated) {
-    console.log('  anti-patterns.md: regenerated');
+    logger.log('  anti-patterns.md: regenerated');
   } else {
-    console.log('  anti-patterns.md: master file not found; skipped');
+    logger.log('  anti-patterns.md: master file not found; skipped');
   }
 
   // AI agents cannot be auto-regenerated
@@ -198,10 +261,10 @@ function handleRegen(cwd: string, scaffoldRoot: string, manifest: Manifest, dryR
     .map(([relPath]) => relPath);
 
   if (aiAgents.length > 0) {
-    console.log('');
-    console.log('Re-generation of AI agents is not yet automated. Use /create-agent to regenerate manually:');
+    logger.log('');
+    logger.log('Re-generation of AI agents is not yet automated. Use /create-agent to regenerate manually:');
     for (const agentPath of aiAgents) {
-      console.log(`  ${agentPath}`);
+      logger.log(`  ${agentPath}`);
     }
   }
 }
@@ -212,21 +275,25 @@ export default class Update extends BaseCommand {
   public static override flags = {
     'dry-run': Flags.boolean({ description: 'Show what would change without writing any files', default: false }),
     regen: Flags.boolean({ description: 'Also regenerate AI agents and anti-patterns', default: false }),
+    'ai-merge': Flags.boolean({
+      description: 'Use AI to resolve merge conflicts in modified files (requires Claude CLI)',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Update);
     const cwd = process.cwd();
 
-    console.log('');
-    console.log('nitro-fueled update');
-    console.log('===================');
-    console.log('');
+    logger.log('');
+    logger.log('nitro-fueled update');
+    logger.log('===================');
+    logger.log('');
 
     // Step 1: Read the manifest
     const manifest = readManifest(cwd);
     if (manifest === null) {
-      console.error('Error: No manifest found. Run `npx nitro-fueled init` first.');
+      logger.error('Error: No manifest found. Run `npx nitro-fueled init` first.');
       process.exitCode = 1;
       return;
     }
@@ -237,64 +304,64 @@ export default class Update extends BaseCommand {
       scaffoldRoot = resolveScaffoldRoot();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Error: ${msg}`);
+      logger.error(`Error: ${msg}`);
       process.exitCode = 1;
       return;
     }
 
     // Step 3: Determine versions
     const latestVersion = getPackageVersion();
-    console.log(`Current version: ${manifest.version}`);
-    console.log(`Latest version:  ${latestVersion}`);
-    console.log('');
+    logger.log(`Current version: ${manifest.version}`);
+    logger.log(`Latest version:  ${latestVersion}`);
+    logger.log('');
 
     if (flags['dry-run']) {
-      console.log('(dry-run — no files will be written)');
-      console.log('');
+      logger.log('(dry-run — no files will be written)');
+      logger.log('');
     }
 
     // Step 4: Walk scaffold and process files
-    console.log('Checking core files...');
+    logger.log('Checking core files...');
     let scaffoldFiles: Map<string, string>;
     try {
       scaffoldFiles = walkScaffoldFiles(scaffoldRoot);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Error: Failed to walk scaffold directory: ${msg}`);
+      logger.error(`Error: Failed to walk scaffold directory: ${msg}`);
       process.exitCode = 1;
       return;
     }
 
-    const results = processScaffoldFiles(scaffoldFiles, manifest, cwd, flags['dry-run']);
+    const results = processScaffoldFiles(scaffoldFiles, manifest, cwd, flags['dry-run'], flags['ai-merge']);
 
     // Step 5: Print summary
     printResults(results, manifest, latestVersion, flags['dry-run']);
 
     // Step 5.5: Cortex DB check — create/migrate/reconcile
     if (!flags['dry-run']) {
-      console.log('');
-      console.log('Checking cortex database...');
+      logger.log('');
+      logger.log('Checking cortex database...');
       const cortexResult = runCortexStep(cwd, 'init-or-migrate');
       if (cortexResult !== null) {
         if (cortexResult.migrationsApplied > 0) {
-          console.log(`  Applied ${cortexResult.migrationsApplied} schema migration${cortexResult.migrationsApplied !== 1 ? 's' : ''}`);
+          logger.log(`  Applied ${cortexResult.migrationsApplied} schema migration${cortexResult.migrationsApplied !== 1 ? 's' : ''}`);
         }
         if (cortexResult.tasks.imported > 0 || cortexResult.sessions.imported > 0) {
-          console.log(`  Hydrated ${cortexResult.tasks.imported} tasks, ${cortexResult.sessions.imported} sessions`);
+          logger.log(`  Hydrated ${cortexResult.tasks.imported} tasks, ${cortexResult.sessions.imported} sessions`);
         }
         if (cortexResult.handoffs.imported > 0) {
-          console.log(`  Hydrated ${cortexResult.handoffs.imported} handoffs`);
+          logger.log(`  Hydrated ${cortexResult.handoffs.imported} handoffs`);
         }
         if (cortexResult.drifted > 0) {
-          console.log(`  Fixed ${cortexResult.drifted} status drift(s)`);
+          logger.log(`  Fixed ${cortexResult.drifted} status drift(s)`);
         }
         if (cortexResult.tasks.errors.length > 0) {
           for (const e of cortexResult.tasks.errors) {
-            console.warn(`  Warning: ${e}`);
+            logger.warn(`  Warning: ${e}`);
           }
         }
         if (cortexResult.tasks.imported === 0 && cortexResult.drifted === 0) {
-          console.log('  Database in sync with files');
+          logger.log('  Database in sync with files');
         }
       }
     }
@@ -319,7 +386,7 @@ export default class Update extends BaseCommand {
         writeManifest(cwd, manifest);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error: Failed to write manifest: ${msg}`);
+        logger.error(`Error: Failed to write manifest: ${msg}`);
         process.exitCode = 1;
         return;
       }

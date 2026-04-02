@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
@@ -7,6 +7,7 @@ import { AsyncPipe } from '@angular/common';
   selector: 'app-placeholder-view',
   standalone: true,
   imports: [AsyncPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="placeholder">
       <h2>{{ title$ | async }}</h2>

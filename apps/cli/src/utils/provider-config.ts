@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { homedir } from 'node:os';
+import { logger } from './logger.js';
 import { isOldFormatConfig, buildMigratedConfig } from './provider-migration.js';
 
 // Re-export defaults and GLM test utilities so existing callers do not need
@@ -74,14 +75,6 @@ export function getProjectConfigPath(cwd: string): string {
   return resolve(cwd, '.nitro-fueled', 'config.json');
 }
 
-/**
- * @deprecated Use getGlobalConfigPath() or getProjectConfigPath() instead.
- * Kept for backward-compat with existing callers (run.ts, config.ts --reset).
- */
-export function getConfigPath(cwd: string): string {
-  return getProjectConfigPath(cwd);
-}
-
 // ---------------------------------------------------------------------------
 // Type guards
 // ---------------------------------------------------------------------------
@@ -109,7 +102,7 @@ function parseConfigFile(filePath: string): unknown | null {
   } catch (err: unknown) {
     const raw = err instanceof Error ? err.message : String(err);
     const msg = raw.length > 200 ? raw.slice(0, 200) + '…' : raw;
-    console.warn(
+    logger.warn(
       `Warning: ${filePath} is unreadable (${msg}). Run 'npx nitro-fueled config' to reconfigure.`,
     );
     return null;
@@ -130,7 +123,7 @@ export function readConfig(cwd: string): NitroFueledConfig | null {
     const result = buildMigratedConfig(projectPath, projectRaw);
     if (result !== null) {
       writeConfig(result.migratedConfig);
-      console.log(
+      logger.log(
         `  Migrated old config to ${getGlobalConfigPath()} (backup: ${result.backupPath})`,
       );
     }
@@ -179,7 +172,7 @@ export function writeConfig(config: NitroFueledConfig): void {
   try {
     chmodSync(tmpPath, 0o600);
   } catch (err: unknown) {
-    console.debug(
+    logger.debug(
       `Note: chmod not supported on this platform: ${err instanceof Error ? err.message : String(err)}`,
     );
   }

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { initDatabase, emptyTokenStats, emptyCost, emptyProgress } from '../db/schema.js';
 import { handleCreateSession } from './sessions.js';
+import { toLegacySessionId } from './session-id.js';
 import {
   handleListWorkers,
   handleGetWorkerStats,
@@ -123,6 +124,13 @@ describe('handleListWorkers', () => {
     expect(data).toHaveLength(1);
     expect(data[0]!.label).toBe('build-worker-1');
     expect(data[0]!.status).toBe('active');
+  });
+
+  it('accepts legacy underscore session IDs when listing workers', () => {
+    insertWorkerRow(db, sessionId, { label: 'legacy-session-worker' });
+    const result = parseText(handleListWorkers(db, { session_id: toLegacySessionId(sessionId) })) as Array<{ label: string }>;
+    expect(result).toHaveLength(1);
+    expect(result[0]!.label).toBe('legacy-session-worker');
   });
 
   it('filters by status_filter', () => {
@@ -274,6 +282,21 @@ describe('handleSpawnWorker — DB insertion', () => {
     expect(row.worker_type).toBe('build');
   });
 
+  it('accepts legacy underscore session IDs when spawning a worker', async () => {
+    const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
+      session_id: toLegacySessionId(sessionId),
+      worker_type: 'build',
+      prompt: 'Do some work',
+      working_directory: '/tmp',
+      label: 'legacy-spawn-worker',
+    });
+    const data = parseText(result) as { ok: boolean; worker_id: string };
+    expect(data.ok).toBe(true);
+
+    const row = db.prepare('SELECT session_id FROM workers WHERE id = ?').get(data.worker_id) as { session_id: string };
+    expect(row.session_id).toBe(sessionId);
+  });
+
   it('returns error when GLM provider requested but no API key', async () => {
     const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
       session_id: sessionId,
@@ -302,5 +325,68 @@ describe('handleSpawnWorker — DB insertion', () => {
     const row = db.prepare('SELECT model FROM workers WHERE id = ?').get(data.worker_id) as { model: string };
     expect(typeof row.model).toBe('string');
     expect(row.model.length).toBeGreaterThan(0);
+  });
+});
+
+describe('handleSpawnWorker — launcher param', () => {
+  let db: Database.Database;
+  let cleanup: () => void;
+  let sessionId: string;
+
+  beforeEach(() => {
+    ({ db, cleanup } = makeTempDb());
+    sessionId = createTestSession(db);
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('sets provider=codex in DB when launcher=codex is passed', () => {
+    const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
+      session_id: sessionId,
+      worker_type: 'build',
+      prompt: 'Do codex work',
+      working_directory: '/tmp',
+      label: 'codex-launcher-worker',
+      launcher: 'codex',
+    });
+    const data = parseText(result) as { ok: boolean; worker_id: string };
+    expect(data.ok).toBe(true);
+
+    const row = db.prepare('SELECT provider FROM workers WHERE id = ?').get(data.worker_id) as { provider: string };
+    expect(row.provider).toBe('codex');
+  });
+
+  it('defaults to claude provider when launcher is absent', () => {
+    const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
+      session_id: sessionId,
+      worker_type: 'build',
+      prompt: 'Default launcher work',
+      working_directory: '/tmp',
+      label: 'default-launcher-worker',
+    });
+    const data = parseText(result) as { ok: boolean; worker_id: string };
+    expect(data.ok).toBe(true);
+
+    const row = db.prepare('SELECT provider FROM workers WHERE id = ?').get(data.worker_id) as { provider: string };
+    expect(row.provider).toBe('claude');
+  });
+
+  it('defaults to claude provider when launcher=claude-code is explicitly passed', () => {
+    const result = handleSpawnWorker(db, mockJsonlWatcher as never, {
+      session_id: sessionId,
+      worker_type: 'build',
+      prompt: 'Explicit claude-code launcher',
+      working_directory: '/tmp',
+      label: 'claude-code-launcher-worker',
+      launcher: 'claude-code',
+    });
+    const data = parseText(result) as { ok: boolean; worker_id: string };
+    expect(data.ok).toBe(true);
+
+    const row = db.prepare('SELECT provider FROM workers WHERE id = ?').get(data.worker_id) as { provider: string };
+    expect(row.provider).toBe('claude');
   });
 });

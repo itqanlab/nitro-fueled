@@ -3,6 +3,7 @@
  * Extracted from provider-flow.ts to keep that file within the 200-line limit.
  */
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { logger } from './logger.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -28,7 +29,7 @@ function parseOpenCodeAuthList(): OpenCodeAuthRow[] {
       maxBuffer: 1024 * 1024,
     });
   } catch (err: unknown) {
-    console.debug(`opencode auth list failed: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug(`opencode auth list failed: ${err instanceof Error ? err.message : String(err)}`);
     return [];
   }
 
@@ -65,7 +66,7 @@ function queryOpenCodeModels(): Map<string, string[]> {
       maxBuffer: 1024 * 1024,
     });
   } catch (err: unknown) {
-    console.debug(`opencode models failed: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug(`opencode models failed: ${err instanceof Error ? err.message : String(err)}`);
     return grouped;
   }
 
@@ -93,7 +94,7 @@ function detectClaude(): LauncherInfo {
       maxBuffer: 1024 * 1024,
     });
   } catch (err: unknown) {
-    console.debug(`claude --version failed: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug(`claude --version failed: ${err instanceof Error ? err.message : String(err)}`);
     return { found: false, authenticated: false, models: [] };
   }
 
@@ -112,7 +113,7 @@ function detectClaude(): LauncherInfo {
         maxBuffer: 1024 * 1024,
       });
     } catch (err: unknown) {
-      console.debug(`claude ${args.join(' ')} failed: ${err instanceof Error ? err.message : String(err)}`);
+      logger.debug(`claude ${args.join(' ')} failed: ${err instanceof Error ? err.message : String(err)}`);
       break;
     }
 
@@ -145,7 +146,7 @@ function detectOpenCode(): LauncherInfo {
       maxBuffer: 1024 * 1024,
     });
   } catch (err: unknown) {
-    console.debug(`opencode --version failed: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug(`opencode --version failed: ${err instanceof Error ? err.message : String(err)}`);
     return { found: false, authenticated: false, models: [] };
   }
 
@@ -220,7 +221,7 @@ function detectCodex(): LauncherInfo {
       maxBuffer: 1024 * 1024,
     });
   } catch (err: unknown) {
-    console.debug(`codex --version failed: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug(`codex --version failed: ${err instanceof Error ? err.message : String(err)}`);
     return { found: false, authenticated: false, models: [] };
   }
 
@@ -238,7 +239,7 @@ function detectCodex(): LauncherInfo {
   try {
     parsed = JSON.parse(readFileSync(authFile, 'utf8'));
   } catch (err: unknown) {
-    console.debug(
+    logger.debug(
       `Could not parse codex auth file: ${err instanceof Error ? err.message : String(err)}`,
     );
     return { found: true, authenticated: false, models: [] };
@@ -290,7 +291,7 @@ function printLauncherResult(name: LauncherName, info: LauncherInfo): void {
       opencode: 'install: npm i -g opencode',
       codex: 'install: npm i -g @openai/codex',
     };
-    console.log(`  ✗ ${name.padEnd(12)} not found — ${hints[name]}`);
+    logger.log(`  ✗ ${name.padEnd(12)} not found — ${hints[name]}`);
     return;
   }
 
@@ -300,13 +301,13 @@ function printLauncherResult(name: LauncherName, info: LauncherInfo): void {
       opencode: 'run: opencode auth login',
       codex: 'run: codex --login',
     };
-    console.log(`  ✗ ${name.padEnd(12)} not authenticated — ${hints[name]}`);
+    logger.log(`  ✗ ${name.padEnd(12)} not authenticated — ${hints[name]}`);
     return;
   }
 
   const detail =
     info.authMethods !== undefined ? info.authMethods.join(' + ') : 'connected';
-  console.log(`  ✓ ${name.padEnd(12)} ${detail}`);
+  logger.log(`  ✓ ${name.padEnd(12)} ${detail}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -317,7 +318,7 @@ function printLauncherResult(name: LauncherName, info: LauncherInfo): void {
 export function detectLaunchers(): Partial<LaunchersConfig> {
   const launchers: Partial<LaunchersConfig> = {};
 
-  console.log('\nDetecting launchers...');
+  logger.log('\nDetecting launchers...');
 
   const claude = detectClaude();
   launchers.claude = claude;

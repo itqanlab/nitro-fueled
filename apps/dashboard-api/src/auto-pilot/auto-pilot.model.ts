@@ -1,39 +1,80 @@
-export type AutoPilotSessionStatus = 'starting' | 'running' | 'stopped';
+/**
+ * API request/response DTOs for the session-centric auto-pilot endpoints.
+ *
+ * Uses camelCase field names for the HTTP API layer. The facade
+ * (auto-pilot.service.ts) maps these to snake_case SupervisorConfig keys.
+ */
+import type {
+  PriorityStrategy,
+  ProviderType,
+  SupervisorConfig,
+  SessionStatusResponse,
+} from './auto-pilot.types';
 
-export interface StartAutoPilotOptions {
-  readonly dryRun?: boolean;
+// ============================================================
+// Create Session
+// ============================================================
+
+export interface CreateSessionRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly supervisorModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
 }
 
-export interface StartAutoPilotRequest {
-  readonly taskIds?: ReadonlyArray<string>;
-  readonly options?: StartAutoPilotOptions;
-}
-
-export interface StartAutoPilotResponse {
+export interface CreateSessionResponse {
   readonly sessionId: string;
   readonly status: 'starting';
 }
 
-export interface StopAutoPilotRequest {
-  readonly sessionId: string;
+// ============================================================
+// Update Session Config
+// ============================================================
+
+export interface UpdateSessionConfigRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly supervisorModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
+  readonly pollIntervalMs?: number;
 }
 
-export interface StopAutoPilotResponse {
+export interface UpdateSessionConfigResponse {
   readonly sessionId: string;
-  readonly stopped: true;
+  readonly config: SupervisorConfig;
 }
 
-export interface AutoPilotStatusResponse {
+// ============================================================
+// Session Actions (Stop / Pause / Resume)
+// ============================================================
+
+export interface SessionActionResponse {
   readonly sessionId: string;
-  readonly status: AutoPilotSessionStatus;
-  readonly updatedAt: string;
+  readonly action: 'stopped' | 'paused' | 'resumed' | 'draining';
 }
 
-export interface MockAutoPilotSession {
-  readonly sessionId: string;
-  readonly taskIds: ReadonlyArray<string>;
-  readonly dryRun: boolean;
-  readonly createdAt: string;
-  readonly pollCount: number;
-  readonly stopped: boolean;
+// ============================================================
+// List Sessions
+// ============================================================
+
+export interface ListSessionsResponse {
+  readonly sessions: ReadonlyArray<SessionStatusResponse>;
 }

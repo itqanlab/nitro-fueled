@@ -4,6 +4,9 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Injectable, Logger, OnModuleDestroy, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -12,7 +15,10 @@ import { AnalyticsService } from './analytics.service';
 import { WatcherService } from './watcher.service';
 import { CortexService } from './cortex.service';
 import type { DashboardEvent, FileChangeEvent } from './dashboard.types';
+import type { SupervisorEvent } from '../auto-pilot/auto-pilot.types';
 import { WsAuthGuard } from './auth/ws-auth.guard';
+
+const SESSION_ID_RE = /^SESSION_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/;
 
 @WebSocketGateway({
   cors: {
@@ -63,6 +69,60 @@ export class DashboardGateway
 
   public handleDisconnect(client: Socket): void {
     this.logger.debug(`Client disconnected: ${client.id}`);
+  }
+
+  public emitSupervisorEvent(event: SupervisorEvent): void {
+    if (!this.server) return;
+    this.server.to(event.sessionId).emit('supervisor-event', event);
+    this.logger.debug(`supervisor-event: ${event.type} → room ${event.sessionId}`);
+  }
+
+  @UseGuards(WsAuthGuard)
+  @SubscribeMessage('join-session')
+  public handleJoinSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: unknown,
+  ): void {
+    if (
+      typeof data === 'object' &&
+      data !== null &&
+      'sessionId' in data &&
+      typeof (data as Record<string, unknown>)['sessionId'] === 'string'
+    ) {
+      const sessionId = (data as Record<string, unknown>)['sessionId'] as string;
+      if (!SESSION_ID_RE.test(sessionId)) {
+        this.logger.warn(`Client ${client.id} tried to join invalid session room: ${sessionId}`);
+        return;
+      }
+      void client.join(sessionId);
+      this.logger.debug(`Client ${client.id} joined session room: ${sessionId}`);
+    } else {
+      this.logger.debug(`Client ${client.id} sent malformed join-session payload`);
+    }
+  }
+
+  @UseGuards(WsAuthGuard)
+  @SubscribeMessage('leave-session')
+  public handleLeaveSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: unknown,
+  ): void {
+    if (
+      typeof data === 'object' &&
+      data !== null &&
+      'sessionId' in data &&
+      typeof (data as Record<string, unknown>)['sessionId'] === 'string'
+    ) {
+      const sessionId = (data as Record<string, unknown>)['sessionId'] as string;
+      if (!SESSION_ID_RE.test(sessionId)) {
+        this.logger.warn(`Client ${client.id} tried to leave invalid session room: ${sessionId}`);
+        return;
+      }
+      void client.leave(sessionId);
+      this.logger.debug(`Client ${client.id} left session room: ${sessionId}`);
+    } else {
+      this.logger.debug(`Client ${client.id} sent malformed leave-session payload`);
+    }
   }
 
   public onModuleDestroy(): void {

@@ -1,15 +1,27 @@
 import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
+import { mcpLogger } from '../utils/logger.js';
+import { normalizeSessionId } from './session-id.js';
+
+// Sentinel used for system-initiated events that have no associated user session.
+// Do not apply normalizeSessionId() to this value — it is intentionally non-canonical.
+const SYSTEM_SESSION_ID = 'system';
+
+const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
 const UPDATABLE_COLUMNS = new Set([
   'title', 'type', 'priority', 'status', 'complexity', 'model',
   'dependencies', 'description', 'acceptance_criteria', 'file_scope',
-  'session_claimed', 'claimed_at',
+  'session_claimed', 'claimed_at', 'preferred_provider', 'worker_mode',
 ]);
+
+// Lightweight columns returned when compact=true. Excludes description,
+// acceptance_criteria, and file_scope which can be 2-3 KB each.
+const COMPACT_COLS = 'id, title, status, type, priority, complexity, dependencies, model, created_at, updated_at';
 
 export function handleGetTasks(
   db: Database.Database,
-  args: { status?: string; type?: string; priority?: string; unblocked?: boolean },
+  args: { status?: string; type?: string; priority?: string; unblocked?: boolean; limit?: number; compact?: boolean },
 ): { content: Array<{ type: 'text'; text: string }> } {
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -28,25 +40,43 @@ export function handleGetTasks(
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const rows = db.prepare(`SELECT * FROM tasks ${where} ORDER BY id`).all(...params) as Array<Record<string, unknown>>;
+  const limit = args.limit !== undefined ? Math.min(Math.max(1, Math.trunc(args.limit)), 200) : undefined;
+  const cols = args.compact ? COMPACT_COLS : '*';
 
   if (args.unblocked) {
+    // When filtering for unblocked tasks, do NOT apply LIMIT in SQL — the SQL LIMIT would
+    // cap rows before dependency filtering, causing callers to get empty results when the
+    // first N rows by ID are all blocked. Instead, fetch all candidates and cap post-filter.
+    const rows = db.prepare(`SELECT ${cols} FROM tasks ${where} ORDER BY id`).all(...params) as Array<Record<string, unknown>>;
+
+    // Fetch IDs of all completed tasks for dependency resolution.
+    // Bounded at 1000 — this is only used for set-membership checks, so a large-but-finite
+    // limit is safe. Projects with more than 1000 COMPLETE tasks are pathological.
     const completeTasks = new Set(
-      (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE'").all() as Array<{ id: string }>).map(r => r.id),
+      (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE' LIMIT 1000").all() as Array<{ id: string }>).map(r => r.id),
     );
+
     const filtered = rows.filter(row => {
       let deps: unknown;
       try {
         deps = JSON.parse((row['dependencies'] as string) ?? '[]');
-      } catch {
+      } catch (err) {
+        mcpLogger.error(`get_tasks: failed to parse dependencies for task ${row['id'] as string}, treating as no deps`, err);
         deps = [];
       }
       if (!Array.isArray(deps)) deps = [];
       return (deps as string[]).length === 0 || (deps as string[]).every(d => completeTasks.has(d));
     });
-    return { content: [{ type: 'text' as const, text: JSON.stringify(filtered, null, 2) }] };
+
+    // Apply limit to the post-filter result so callers get at most N unblocked tasks.
+    const capped = limit !== undefined ? filtered.slice(0, limit) : filtered;
+    return { content: [{ type: 'text' as const, text: JSON.stringify(capped, null, 2) }] };
   }
 
+  // When unblocked filtering is not requested, apply LIMIT in SQL for efficiency.
+  const limitClause = limit !== undefined ? ' LIMIT ?' : '';
+  const queryParams = limit !== undefined ? [...params, limit] : params;
+  const rows = db.prepare(`SELECT ${cols} FROM tasks ${where} ORDER BY id${limitClause}`).all(...queryParams) as Array<Record<string, unknown>>;
   return { content: [{ type: 'text' as const, text: JSON.stringify(rows, null, 2) }] };
 }
 
@@ -55,23 +85,28 @@ export function handleClaimTask(
   args: { task_id: string; session_id: string },
 ): { content: Array<{ type: 'text'; text: string }> } {
   const now = new Date().toISOString();
+  const sessionId = normalizeSessionId(args.session_id);
+  if (sessionId === null) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }] };
+  }
 
   const result = db.transaction(() => {
     const row = db.prepare(
       'SELECT session_claimed FROM tasks WHERE id = ? AND (session_claimed IS NULL OR session_claimed = ?)',
-    ).get(args.task_id, args.session_id) as { session_claimed: string | null } | undefined;
+    ).get(args.task_id, sessionId) as { session_claimed: string | null } | undefined;
 
     if (!row) {
-      const existing = db.prepare('SELECT session_claimed FROM tasks WHERE id = ?').get(args.task_id) as { session_claimed: string } | undefined;
+      const existing = db.prepare('SELECT session_claimed FROM tasks WHERE id = ?').get(args.task_id) as { session_claimed: string | null } | undefined;
       if (!existing) {
         return { ok: false, reason: 'task_not_found' };
       }
-      return { ok: false, claimed_by: existing.session_claimed };
+      const claimedBy = existing.session_claimed ? normalizeSessionId(existing.session_claimed) : null;
+      return { ok: false, claimed_by: claimedBy ?? existing.session_claimed };
     }
 
     db.prepare(
       'UPDATE tasks SET session_claimed = ?, claimed_at = ?, status = ?, updated_at = ? WHERE id = ?',
-    ).run(args.session_id, now, 'IN_PROGRESS', now, args.task_id);
+    ).run(sessionId, now, 'IN_PROGRESS', now, args.task_id);
 
     return { ok: true };
   })();
@@ -201,5 +236,248 @@ export function handleUpdateTask(
   if (info.changes === 0) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'task_not_found' }) }] };
   }
+
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true }) }] };
+}
+
+interface BulkUpdateResult {
+  task_id: string;
+  ok: boolean;
+  error?: string;
+}
+
+export function handleBulkUpdateTasks(
+  db: Database.Database,
+  args: { updates: Array<{ task_id: string; fields: string }> },
+): ToolResult {
+  if (!Array.isArray(args.updates) || args.updates.length === 0) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'updates array is required and must not be empty' }) }], isError: true };
+  }
+
+  if (args.updates.length > 50) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'updates array exceeds maximum of 50 items' }) }], isError: true };
+  }
+
+  // Pre-parse all fields strings so parse errors surface as per-task errors, not a hard abort
+  const parsed: Array<{ task_id: string; fields: Record<string, unknown> | null; parseError?: string }> = [];
+  for (const item of args.updates) {
+    if (!TASK_ID_RE.test(item.task_id ?? '')) {
+      parsed.push({ task_id: item.task_id ?? '', fields: null, parseError: 'invalid_task_id_format' });
+      continue;
+    }
+    try {
+      parsed.push({ task_id: item.task_id, fields: JSON.parse(item.fields) as Record<string, unknown> });
+    } catch {
+      parsed.push({ task_id: item.task_id, fields: null, parseError: 'invalid_json_in_fields' });
+    }
+  }
+
+  const results: BulkUpdateResult[] = [];
+
+  // Single transaction — valid updates commit, invalid ones are skipped without rolling back
+  db.transaction(() => {
+    const now = new Date().toISOString();
+
+    for (const update of parsed) {
+      if (!update.fields) {
+        results.push({ task_id: update.task_id, ok: false, error: update.parseError });
+        continue;
+      }
+
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let hasColumnError = false;
+
+      for (const [key, value] of Object.entries(update.fields)) {
+        if (!UPDATABLE_COLUMNS.has(key)) {
+          results.push({ task_id: update.task_id, ok: false, error: `column '${key}' not updatable` });
+          hasColumnError = true;
+          break;
+        }
+        sets.push(`${key} = ?`);
+        params.push(typeof value === 'object' && value !== null ? JSON.stringify(value) : value);
+      }
+
+      if (hasColumnError) continue;
+
+      if (sets.length === 0) {
+        results.push({ task_id: update.task_id, ok: false, error: 'no fields provided' });
+        continue;
+      }
+
+      sets.push('updated_at = ?');
+      params.push(now, update.task_id);
+
+      const info = db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+      if (info.changes === 0) {
+        results.push({ task_id: update.task_id, ok: false, error: 'task_not_found' });
+        continue;
+      }
+
+      results.push({ task_id: update.task_id, ok: true });
+    }
+  })();
+
+  const succeeded = results.filter(r => r.ok).length;
+  const failed = results.filter(r => !r.ok).length;
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ succeeded, failed, results }, null, 2) }] };
+}
+
+export function handleGetBacklogSummary(
+  db: Database.Database,
+  args: { group_by?: string },
+): { content: Array<{ type: 'text'; text: string }> } {
+  if (args.group_by === 'priority') {
+    const rows = db.prepare(
+      'SELECT priority, status, COUNT(*) AS count FROM tasks GROUP BY priority, status ORDER BY priority, status',
+    ).all() as Array<{ priority: string; status: string; count: number }>;
+
+    const grouped: Record<string, Record<string, number>> = {};
+    let total = 0;
+    for (const row of rows) {
+      const p = row.priority ?? 'unknown';
+      grouped[p] = grouped[p] ?? {};
+      grouped[p][row.status] = row.count;
+      total += row.count;
+    }
+
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ by_priority: grouped, total }) }] };
+  }
+
+  const rows = db.prepare(
+    'SELECT status, COUNT(*) AS count FROM tasks GROUP BY status ORDER BY status',
+  ).all() as Array<{ status: string; count: number }>;
+
+  const counts: Record<string, number> = {};
+  let total = 0;
+  for (const row of rows) {
+    counts[row.status] = row.count;
+    total += row.count;
+  }
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ...counts, total }) }] };
+}
+
+function detectOrphanedClaims(db: Database.Database): Array<{
+  task_id: string;
+  title: string;
+  status: string;
+  claimed_by: string;
+  claimed_at: string;
+  stale_for_ms: number;
+}> {
+  const now = Date.now();
+
+  const claimedTasks = db.prepare(
+    `SELECT id, title, status, session_claimed, claimed_at, claim_timeout_ms
+     FROM tasks
+     WHERE session_claimed IS NOT NULL
+       AND status IN ('CREATED', 'IN_PROGRESS')`,
+  ).all() as Array<{
+    id: string;
+    title: string;
+    status: string;
+    session_claimed: string;
+    claimed_at: string | null;
+    claim_timeout_ms: number | null;
+  }>;
+
+  const activeSessions = new Set(
+    (db.prepare("SELECT id FROM sessions WHERE loop_status = 'running'").all() as Array<{ id: string }>).map(s => s.id),
+  );
+
+  const orphaned: Array<{
+    task_id: string;
+    title: string;
+    status: string;
+    claimed_by: string;
+    claimed_at: string;
+    stale_for_ms: number;
+  }> = [];
+
+  for (const task of claimedTasks) {
+    const claimedAt = task.claimed_at ? new Date(task.claimed_at).getTime() : 0;
+    const claimTimeout = task.claim_timeout_ms ?? null;
+
+    const normalizedClaim = normalizeSessionId(task.session_claimed) ?? task.session_claimed;
+    const isSessionDead = !activeSessions.has(normalizedClaim);
+    const isTtlExpired = claimTimeout !== null && (now - claimedAt) > claimTimeout;
+
+    if (isSessionDead || isTtlExpired) {
+      orphaned.push({
+        task_id: task.id,
+        title: task.title,
+        status: task.status,
+        claimed_by: task.session_claimed,
+        claimed_at: task.claimed_at ?? '',
+        stale_for_ms: now - claimedAt,
+      });
+    }
+  }
+
+  return orphaned;
+}
+
+export function handleGetOrphanedClaims(
+  db: Database.Database,
+): { content: Array<{ type: 'text'; text: string }> } {
+  const orphaned = detectOrphanedClaims(db);
+
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ orphaned }, null, 2) }] };
+}
+
+export function handleReleaseOrphanedClaims(
+  db: Database.Database,
+): { content: Array<{ type: 'text'; text: string }> } {
+  const orphaned = detectOrphanedClaims(db);
+  const releasedTaskIds: string[] = [];
+
+  // Fix 1: Wrap entire release loop in a transaction for atomicity.
+  // If any step fails, no partial releases are committed.
+  db.transaction(() => {
+    const now = new Date().toISOString();
+
+    for (const task of orphaned) {
+      // Fix 6 (bonus): Guard against concurrent release — skip event if task was
+      // already reclaimed or released between detectOrphanedClaims and this UPDATE.
+      const info = db.prepare(
+        `UPDATE tasks
+         SET session_claimed = NULL, claimed_at = NULL, status = 'CREATED', updated_at = ?
+         WHERE id = ? AND session_claimed IS NOT NULL`,
+      ).run(now, task.task_id);
+
+      if (info.changes === 0) {
+        // Concurrently reclaimed or already released — do not log a spurious event
+        continue;
+      }
+
+      releasedTaskIds.push(task.task_id);
+
+      // Fix 3: event_type = 'orphan_recovery', payload wrapped under 'details' key
+      // Fix 4: reuse stale_for_ms from detectOrphanedClaims instead of recomputing
+      const eventData = JSON.stringify({
+        details: {
+          was_claimed_by: task.claimed_by,
+          stale_for_ms: task.stale_for_ms,
+        },
+      });
+
+      db.prepare(
+        `INSERT INTO events (session_id, task_id, source, event_type, data)
+         VALUES (?, ?, ?, ?, ?)`,
+      ).run(SYSTEM_SESSION_ID, task.task_id, SYSTEM_SESSION_ID, 'orphan_recovery', eventData);
+    }
+  })();
+
+  return {
+    content: [{
+      type: 'text' as const,
+      text: JSON.stringify({
+        released: releasedTaskIds.length,
+        tasks: releasedTaskIds,
+      }, null, 2),
+    }],
+  };
 }

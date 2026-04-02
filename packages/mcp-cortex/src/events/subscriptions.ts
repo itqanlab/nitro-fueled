@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { ToolResult } from '../tools/types.js';
+import { normalizeSessionId } from '../tools/session-id.js';
 
 const MAX_CONDITIONS_PER_WORKER = 20;
 const MAX_EVENT_QUEUE_SIZE = 1_000;
@@ -91,6 +92,28 @@ export function handleEmitEvent(
     data: args.data,
     source: 'emit_event',
   });
+
+  // Capture SKILL_INVOKED events directly into the skill_invocations table.
+  // data.skill_name is required; other fields are optional.
+  if (args.label === 'SKILL_INVOKED' && args.data?.skill_name) {
+    try {
+      const durationMs = args.data.duration_ms !== undefined ? parseInt(args.data.duration_ms, 10) : null;
+      db.prepare(
+        `INSERT INTO skill_invocations (skill_name, session_id, worker_id, task_id, duration_ms, outcome)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        args.data.skill_name,
+        row.session_id,
+        args.worker_id,
+        args.data.task_id ?? null,
+        isNaN(durationMs as number) ? null : durationMs,
+        args.data.outcome ?? null,
+      );
+    } catch (err) {
+      process.stderr.write(`[emit_event] SKILL_INVOKED write failed: ${err instanceof Error ? err.message : String(err)}\n`);
+      // Non-fatal — continue
+    }
+  }
 
   return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, worker_id: args.worker_id, label: args.label }) }] };
 }
@@ -319,9 +342,12 @@ export function handleSubscribeWorker(
 }
 
 export function handleGetPendingEvents(fileWatcher: FileWatcher, emitQueue: EmitQueue, sessionId?: string): ToolResult {
+  // Normalize the optional session filter so legacy underscore IDs resolve to the canonical
+  // T-format that events are stored with (written by handleSpawnWorker after normalization).
+  const normalizedSessionId = sessionId ? (normalizeSessionId(sessionId) ?? sessionId) : undefined;
   // Filter both file-watcher events and emit-events by session_id when provided.
-  const fileEvents = fileWatcher.drainEvents(sessionId);
-  const emitEvents = emitQueue.drain(sessionId);
+  const fileEvents = fileWatcher.drainEvents(normalizedSessionId);
+  const emitEvents = emitQueue.drain(normalizedSessionId);
   const all = [...fileEvents, ...emitEvents];
   return { content: [{ type: 'text' as const, text: JSON.stringify({ events: all }, all.length > 0 ? null : undefined, all.length > 0 ? 2 : undefined) }] };
 }

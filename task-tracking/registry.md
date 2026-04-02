@@ -3,149 +3,344 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    | FEATURE | Build the task.md template system  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_002 | COMPLETE    | FEATURE | Build auto-pilot skill/command     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\| — | 2026-03-23 | — |
-| TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-24 | — |
-| TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-24 | — |
-| TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-24 | — |
-| TASK_2026_006 | CANCELLED   | FEATURE | Dynamic Agent and Skill Generation System | 2026-03-24 | — |
-| TASK_2026_007 | COMPLETE    | DOCUMENTATION | Update CLAUDE.md and Design Doc | 2026-03-24 | — |
-| TASK_2026_008 | COMPLETE    | FEATURE | CLI Package Scaffold | 2026-03-24 | — |
-| TASK_2026_009 | COMPLETE    | FEATURE | CLI init Command | 2026-03-24 | — |
-| TASK_2026_010 | COMPLETE    | FEATURE | CLI run Command | 2026-03-24 | — |
-| TASK_2026_011 | COMPLETE    | FEATURE | CLI status Command | 2026-03-24 | — |
-| TASK_2026_012 | COMPLETE    | FEATURE | CLI create Command | 2026-03-24 | — |
-| TASK_2026_013 | COMPLETE    | DEVOPS  | MCP Server Dependency Handling | 2026-03-24 | — |
-| TASK_2026_014 | COMPLETE    | RESEARCH | End-to-End Test on Fresh Project | 2026-03-24 | — |
-| TASK_2026_015 | COMPLETE    | FEATURE | Stack Detection Registry and Developer Agent Template | 2026-03-24 | — |
-| TASK_2026_016 | COMPLETE    | FEATURE | /create-agent Command with Catalog Integration | 2026-03-24 | — |
-| TASK_2026_017 | COMPLETE    | FEATURE | /create-skill Command | 2026-03-24 | — |
-| TASK_2026_018 | COMPLETE    | CREATIVE | Nitro-Fueled Landing Hero Visual Redesign | 2026-03-24 | — |
-| TASK_2026_019 | COMPLETE    | BUGFIX  | Fix Print Mode Token/Cost Tracking | 2026-03-24 | — |
-| TASK_2026_020 | COMPLETE    | FEATURE | Per-Task Model Selection | 2026-03-24 | — |
-| TASK_2026_021 | COMPLETE    | FEATURE | Three-Provider Routing — Claude, GLM, OpenCode | 2026-03-24 | [model name or default] |
-| TASK_2026_022 | COMPLETE    | FEATURE | Dashboard Data Service | 2026-03-24 | — |
-| TASK_2026_023 | COMPLETE    | FEATURE | Dashboard Web Client | 2026-03-24 | — |
-| TASK_2026_024 | COMPLETE    | FEATURE | Dashboard CLI Command + Service Integration | 2026-03-24 | — |
-| TASK_2026_025 | COMPLETE    | BUGFIX  | Fix Review Worker Startup Failure (100% first-attempt failure rate) | 2026-03-24 | — |
-| TASK_2026_026 | COMPLETE    | BUGFIX  | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-24 | — |
-| TASK_2026_027 | COMPLETE    | FEATURE | Add Shared Review Context and Task File-Scope Isolation | 2026-03-24 | — |
-| TASK_2026_028 | COMPLETE    | BUGFIX  | Enforce tasks.md as Required Build Artifact | 2026-03-24 | — |
-| TASK_2026_029 | COMPLETE    | FEATURE | Stack-Aware Anti-Patterns Generation at Init | 2026-03-24 | — |
-| TASK_2026_030 | COMPLETE    | BUGFIX  | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-24 | — |
-| TASK_2026_031 | COMPLETE    | FEATURE | Add --commit Flag to nitro-fueled init | 2026-03-24 | — |
-| TASK_2026_032 | COMPLETE    | FEATURE | Post-Session Analytics and Worker Log Enrichment | 2026-03-24 | — |
-| TASK_2026_033 | CANCELLED   | FEATURE | Pre-Flight Validation Before Auto-Pilot Spawns Workers | 2026-03-24 | — |
-| TASK_2026_034 | COMPLETE    | REFACTORING | Session-Scoped State Directories with Unified Event Log | 2026-03-24 | — |
-| TASK_2026_035 | COMPLETE    | FEATURE | Review Lead — Parallel Reviews with Model Routing | 2026-03-25 | — |
-| TASK_2026_036 | COMPLETE    | FEATURE | Test Lead — Parallel Test Writing and Execution with Model Routing | 2026-03-25 | — |
-| TASK_2026_037 | COMPLETE    | REFACTORING | Updated Pipeline Flow — Parallel Review + Test with Fix Phase | 2026-03-25 | — |
-| TASK_2026_038 | COMPLETE    | FEATURE | Dashboard Session Support — Multi-Session View and History | 2026-03-25 | — |
-| TASK_2026_039 | COMPLETE    | FEATURE | Dashboard Pipeline and Squad Visualization | 2026-03-25 | — |
-| TASK_2026_040 | COMPLETE    | FEATURE | Dashboard Dependency Graph Visualization | 2026-03-25 | — |
-| TASK_2026_041 | COMPLETE    | FEATURE | Dashboard Historical Analytics — Cross-Session Trends | 2026-03-25 | — |
-| TASK_2026_042 | COMPLETE    | FEATURE | CLI Provider Configuration and Dependency Validation | 2026-03-25 | — |
-| TASK_2026_043 | COMPLETE    | REFACTORING | Task Sizing Validation in /create-task Command | 2026-03-27 | — |
-| TASK_2026_044 | COMPLETE    | FEATURE | Pre-Flight Validation with Task Sizing Check | 2026-03-27 | — |
-| TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-27 | — |
-| TASK_2026_046 | COMPLETE    | BUGFIX  | Dashboard Data Service Completion and Validation | 2026-03-27 | — |
-| TASK_2026_047 | COMPLETE    | REFACTORING | Unified /run, /create, /status Commands + CLI Single-Task Run | 2026-03-27 | — |
-| TASK_2026_048 | COMPLETE    | FEATURE | /retrospective Command — Post-Session Analysis and Learning Loop | 2026-03-27 | — |
-| TASK_2026_049 | COMPLETE    | FEATURE | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-27 | — |
-| TASK_2026_050 | COMPLETE    | FEATURE | `update` Command — Manifest-Based Safe Updates | 2026-03-27 | — |
-| TASK_2026_051 | COMPLETE    | REFACTORING | Rename All Agents to `nitro-*` Prefix | 2026-03-27 | — |
-| TASK_2026_052 | COMPLETE    | FEATURE | Manifest — Version Tracking and Install Record | 2026-03-27 | — |
-| TASK_2026_053 | COMPLETE    | DOCUMENTATION | Update Docs and Workspace to Reflect Package Vision | 2026-03-27 | — |
-| TASK_2026_054 | COMPLETE    | FEATURE | OpenCode Provider — Subscription/OAuth Auth Support | 2026-03-27 | default |
-| TASK_2026_055 | COMPLETE    | DEVOPS  | Scaffold Astro Starlight Docs Site | 2026-03-27 | — |
-| TASK_2026_056 | COMPLETE    | CREATIVE | Build Nitro-Fueled Marketing Landing Page | 2026-03-27 | — |
-| TASK_2026_057 | COMPLETE    | DOCUMENTATION | Write Full Documentation Content | 2026-03-27 | — |
-| TASK_2026_058 | COMPLETE    | REFACTORING | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-27 | default |
-| TASK_2026_059 | COMPLETE    | BUGFIX  | MCP Server — Persist Worker Registry to Disk | 2026-03-27 | — |
-| TASK_2026_060 | COMPLETE    | BUGFIX  | Supervisor — File-System-First Reconciliation When MCP Returns Empty | 2026-03-27 | — |
-| TASK_2026_061 | COMPLETE    | FEATURE | Agent Record Schema and Failure Taxonomy | 2026-03-27 | default |
-| TASK_2026_062 | COMPLETE    | FEATURE | `/evaluate-agent` Command | 2026-03-27 | default |
-| TASK_2026_063 | COMPLETE    | REFACTORING | Move session-orchestrator into Monorepo | 2026-03-27 | default |
-| TASK_2026_064 | COMPLETE    | REFACTORING | Registry-Driven Supervisor — Priority and Dependencies in Registry | 2026-03-27 | default |
-| TASK_2026_065 | COMPLETE    | FEATURE | Orchestration Analytics — Per-Run Token and Cost Logging | 2026-03-27 | default |
-| TASK_2026_066 | COMPLETE    | BUGFIX  | Worker Compaction Circuit Breaker | 2026-03-27 | default |
-| TASK_2026_067 | COMPLETE    | FEATURE | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | 2026-03-27 | default |
-| TASK_2026_068 | COMPLETE    | BUGFIX  | Provider Config UX — State Display, Per-Provider Test and Unload | 2026-03-27 | default |
-| TASK_2026_069 | COMPLETE    | BUGFIX  | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | 2026-03-27 | default |
-| TASK_2026_070 | COMPLETE    | REFACTORING | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | 2026-03-27 | default |
-| TASK_2026_071 | COMPLETE    | BUGFIX  | Fix Worker Must Create Follow-On Tasks for Deferred Findings | 2026-03-27 | default |
-| TASK_2026_072 | COMPLETE    | DEVOPS  | Nx Workspace Initialization | 2026-03-28 | default |
-| TASK_2026_073 | COMPLETE    | REFACTORING | Workspace Folder Restructure (packages → apps + libs) | 2026-03-28 | default |
-| TASK_2026_074 | COMPLETE    | REFACTORING | Extract libs/worker-core from session-orchestrator | 2026-03-28 | default |
-| TASK_2026_075 | COMPLETE    | REFACTORING | Refactor session-orchestrator app to consume worker-core | 2026-03-28 | default |
-| TASK_2026_076 | COMPLETE    | DEVOPS  | Scaffold Angular 19 + NG-ZORRO app (apps/dashboard) | 2026-03-28 | default |
-| TASK_2026_077 | COMPLETE    | FEATURE | Angular shell — layout, sidebar, routing, dark theme, mock data service | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_078 | COMPLETE    | FEATURE | Dashboard main view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_079 | COMPLETE    | FEATURE | Analytics & Insights view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_080 | COMPLETE    | FEATURE | Agent Editor view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_081 | COMPLETE    | FEATURE | MCP Integrations view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_082 | COMPLETE    | FEATURE | Model Assignments view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_083 | COMPLETE    | FEATURE | New Task view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_084 | COMPLETE    | FEATURE | Project Onboarding view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_085 | COMPLETE    | FEATURE | Provider Hub view | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_086 | COMPLETE    | DEVOPS  | Scaffold NestJS app (apps/dashboard-api) | 2026-03-28 | default |
-| TASK_2026_087 | COMPLETE    | FEATURE | Migrate state services + REST controllers to NestJS | 2026-03-28 | default |
-| TASK_2026_088 | COMPLETE    | FEATURE | Migrate WebSocket server to NestJS gateway | 2026-03-28 | default |
-| TASK_2026_089 | COMPLETE    | DEVOPS  | Scaffold Oclif CLI app (apps/cli) | 2026-03-28 | default |
-| TASK_2026_090 | COMPLETE    | REFACTORING | Migrate init + run + status commands to Oclif | 2026-03-28 | default |
-| TASK_2026_091 | COMPLETE    | REFACTORING | Migrate create + dashboard + config + update commands to Oclif | 2026-03-28 | default |
-| TASK_2026_092 | COMPLETE    | FEATURE | Angular ↔ NestJS integration + CLI build pipeline update | 2026-03-28 | default |
-| TASK_2026_093 | COMPLETE    | REFACTORING | Deprecate old packages — remove packages/ after cutover | 2026-03-28 | default |
-| TASK_2026_094 | COMPLETE    | FEATURE | Worker-Side Phase Event Emission via MCP `emit_event` | 2026-03-28 | default |
-| TASK_2026_095 | CANCELLED   | REFACTORING | Global Config Infrastructure — Migrate Provider Config to User Workspace Scope | 2026-03-28 | default |
-| TASK_2026_096 | CANCELLED   | FEATURE | Dynamic Model Fetching, Auto-Refresh, and Auto-Fallback | 2026-03-28 | default |
-| TASK_2026_097 | COMPLETE    | FEATURE | Auto-Complexity Estimation at Task Creation | 2026-03-28 | default |
-| TASK_2026_098 | CREATED     | FEATURE | Provider/Model Tracing — Per-Task Run Telemetry | 2026-03-28 | default |
-| TASK_2026_099 | COMPLETE    | FEATURE | Per-Task Supervisor Config + Blocked Dependency Guardrail | 2026-03-28 | default |
-| TASK_2026_100 | COMPLETE    | REFACTORING | Nitro Commit Traceability Standard | 2026-03-28 | default |
-| TASK_2026_101 | COMPLETE    | FEATURE | Add CONTENT Orchestration Flow (Blog, Email, Newsletter, Ad Copy) | 2026-03-28 | default |
-| TASK_2026_102 | COMPLETE    | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-28 | default |
-| TASK_2026_103 | IN_PROGRESS | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-28 | default |
-| TASK_2026_104 | CREATED     | FEATURE | Enhance RESEARCH Orchestration Flow (Market, Competitive, Feasibility) | 2026-03-28 | default |
-| TASK_2026_105 | CREATED     | FEATURE | Add OPS Orchestration Flow (Project Setup, CI/CD, Infrastructure) | 2026-03-28 | default |
-| TASK_2026_106 | COMPLETE    | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_107 | IN_PROGRESS | REFACTORING | Update Orchestration Examples and Agent References to Generalized Artifact Names | 2026-03-28 | default |
-| TASK_2026_108 | CANCELLED   | REFACTORING | Remove OpenAI/OpenCode Provider Support (Temporary) | 2026-03-28 | default |
-| TASK_2026_109 | COMPLETE    | FEATURE | API Contract Layer — OpenAPI Spec, Typed DTOs, Versioned Endpoints | 2026-03-28 | default |
-| TASK_2026_110 | COMPLETE    | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_111 | COMPLETE    | FEATURE | Two-Phase Provider Resolver Engine (Part 2/3 — Provider Resolver Engine) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_112 | COMPLETE    | REFACTORING | Auto-Pilot Routing Update — Config-Driven with Codex Support (Part 3/3 — Provider Resolver Engine) | 2026-03-28 | default |
-| TASK_2026_113 | COMPLETE    | BUGFIX  | Add Phase-Boundary Git Commits to Orchestration Pipeline | 2026-03-28 | default |
-| TASK_2026_114 | COMPLETE    | BUGFIX  | Enforce Review-Lessons Pre-Read in Build Worker Prompt | 2026-03-28 | default |
-| TASK_2026_115 | CREATED     | REFACTORING | Extract Inline Template/Styles in Agent Editor Sub-Components | 2026-03-28 | default |
-| TASK_2026_116 | COMPLETE    | REFACTORING | Rename Commands to nitro-* Prefix — Source (.claude/commands/) — Part 1 of 2 | 2026-03-28 | default |
-| TASK_2026_117 | COMPLETE    | REFACTORING | Rename Commands to nitro-* Prefix — Scaffold Sync — Part 2 of 2 | 2026-03-28 | default |
-| TASK_2026_118 | COMPLETE    | FEATURE | /nitro-status Command — Registry-Only Project Status | 2026-03-28 | default |
-| TASK_2026_119 | CREATED     | FEATURE | /nitro-burn Command — Token and Cost Analytics | 2026-03-28 | default |
-| TASK_2026_120 | COMPLETE    | FEATURE | nitro-cortex — Package Scaffold + SQLite Schema + Task Tools (Part 1 of 3) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_121 | COMPLETE    | FEATURE | nitro-cortex — Session + Worker Tools (Part 2 of 3) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_122 | COMPLETE    | REFACTORING | nitro-cortex — Skill Integration (Part 3 of 3) | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_123 | COMPLETE    | FEATURE | Benchmark Suite — Generic Reusable Evaluation Tasks | 2026-03-28 | default |
-| TASK_2026_124 | COMPLETE    | FEATURE | Evaluation Supervisor — Single Model Mode | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_125 | COMPLETE    | FEATURE | Evaluation Supervisor — A/B Comparison and Role Testing | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_126 | COMPLETE    | FEATURE | Evaluation Review Scoring and Report Generation | 2026-03-28 | claude-opus-4-6 |
-| TASK_2026_127 | CREATED     | REFACTORING | Extract inline constants from new-task.component.ts to new-task.constants.ts | 2026-03-28 | default |
-| TASK_2026_128 | CREATED     | REFACTORING | Extract inline interfaces from dashboard/analytics/agent-editor components to model files | 2026-03-28 | default |
-| TASK_2026_129 | COMPLETE    | REFACTORING | Add SESSION_ID Validation to nitro-auto-pilot --continue Flag | 2026-03-28 | default |
-| TASK_2026_130 | CREATED     | BUGFIX  | Fix Retrospective Commit Step Ordering | 2026-03-28 | default |
-| TASK_2026_131 | CREATED     | BUGFIX  | Add Authentication Guard to NestJS WebSocket Gateway | 2026-03-28 | default |
-| TASK_2026_132 | CREATED     | BUGFIX  | Resolve Deferred TASK_2026_109 Findings — DTO Validation, File Split, ValidationPipe | 2026-03-28 | default |
-| TASK_2026_133 | COMPLETE    | FEATURE | Add sequential execution mode to auto-pilot | 2026-03-29 | default |
-| TASK_2026_134 | COMPLETE    | REFACTORING | Slim down auto-pilot SKILL.md — split into core + mode-specific references | 2026-03-29 | default |
-| TASK_2026_135 | COMPLETE    | REFACTORING | Event-driven supervisor loop — cache registry and plan, refresh on events only | 2026-03-29 | default |
-| TASK_2026_136 | COMPLETE    | REFACTORING | Partial task.md reads — extract metadata only before spawn | 2026-03-29 | default |
-| TASK_2026_137 | COMPLETE    | FEATURE | Build Worker handoff artifact — structured Build-to-Review communication | 2026-03-29 | default |
-| TASK_2026_138 | COMPLETE    | FEATURE | nitro-cortex schema extension — tasks, handoffs, and events tables | 2026-03-29 | default |
-| TASK_2026_139 | COMPLETE    | REFACTORING | Supervisor DB migration — query cortex instead of reading files | 2026-03-29 | default |
-| TASK_2026_140 | COMPLETE    | FEATURE | File-DB sync layer — bidirectional consistency between files and cortex | 2026-03-29 | default |
-| TASK_2026_141 | COMPLETE    | FEATURE | CLI update command — DB migration and hydration for existing projects | 2026-03-29 | default |
-| TASK_2026_142 | COMPLETE    | REFACTORING | Merge session-orchestrator into nitro-cortex — single MCP server | 2026-03-29 | default |
-| TASK_2026_143 | COMPLETE    | FEATURE | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | 2026-03-29 | default |
-| TASK_2026_144 | COMPLETE    | REFACTORING | Remove legacy dashboard apps (dashboard-service + dashboard-web) | 2026-03-29 | default |
-| TASK_2026_145 | COMPLETE    | REFACTORING | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | 2026-03-29 | default |
-| TASK_2026_146 | COMPLETE    | FEATURE | Dashboard telemetry views — model performance, phase timing, session analytics | 2026-03-29 | default |
+| TASK_2026_001 | COMPLETE    |         |  | 2026-04-02 | default |
+| TASK_2026_002 | COMPLETE    |         |  | 2026-04-02 | default |
+| TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-30 | default |
+| TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-30 | default |
+| TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-30 | default |
+| TASK_2026_006 | CANCELLED   | FEATURE | Dynamic Agent and Skill Generation System | 2026-03-30 | default |
+| TASK_2026_007 | COMPLETE    | DOCUMENTATION | Update CLAUDE.md and Design Doc | 2026-03-30 | default |
+| TASK_2026_008 | COMPLETE    | FEATURE | CLI Package Scaffold | 2026-03-30 | default |
+| TASK_2026_009 | COMPLETE    | FEATURE | CLI init Command | 2026-03-30 | default |
+| TASK_2026_010 | COMPLETE    | FEATURE | CLI run Command | 2026-03-30 | default |
+| TASK_2026_011 | COMPLETE    | FEATURE | CLI status Command | 2026-03-30 | default |
+| TASK_2026_012 | COMPLETE    | FEATURE | CLI create Command | 2026-03-30 | default |
+| TASK_2026_013 | COMPLETE    | DEVOPS  | MCP Server Dependency Handling | 2026-03-30 | default |
+| TASK_2026_014 | COMPLETE    | RESEARCH | End-to-End Test on Fresh Project | 2026-03-30 | default |
+| TASK_2026_015 | COMPLETE    | FEATURE | Stack Detection Registry and Developer Agent Template | 2026-03-30 | default |
+| TASK_2026_016 | COMPLETE    | FEATURE | /create-agent Command with Catalog Integration | 2026-03-30 | default |
+| TASK_2026_017 | COMPLETE    | FEATURE | /create-skill Command | 2026-03-30 | default |
+| TASK_2026_018 | COMPLETE    | CREATIVE | Nitro-Fueled Landing Hero Visual Redesign | 2026-03-30 | default |
+| TASK_2026_019 | COMPLETE    | BUGFIX  | Fix Print Mode Token/Cost Tracking | 2026-03-30 | default |
+| TASK_2026_020 | COMPLETE    | FEATURE | Per-Task Model Selection | 2026-03-30 | default |
+| TASK_2026_021 | COMPLETE    | FEATURE | Three-Provider Routing — Claude, GLM, OpenCode | 2026-03-30 | [model name or default] |
+| TASK_2026_022 | COMPLETE    | FEATURE | Dashboard Data Service | 2026-03-30 | default |
+| TASK_2026_023 | COMPLETE    | FEATURE | Dashboard Web Client | 2026-03-30 | default |
+| TASK_2026_024 | COMPLETE    | FEATURE | Dashboard CLI Command + Service Integration | 2026-03-30 | default |
+| TASK_2026_025 | COMPLETE    | BUGFIX  | Fix Review Worker Startup Failure (100% first-attempt failure rate) | 2026-03-30 | default |
+| TASK_2026_026 | COMPLETE    | BUGFIX  | Supervisor Must Track and Report Cost/Usage Per Session | 2026-03-30 | default |
+| TASK_2026_027 | COMPLETE    | FEATURE | Add Shared Review Context and Task File-Scope Isolation | 2026-03-30 | default |
+| TASK_2026_028 | COMPLETE    | BUGFIX  | Enforce tasks.md as Required Build Artifact | 2026-03-30 | default |
+| TASK_2026_029 | COMPLETE    | FEATURE | Stack-Aware Anti-Patterns Generation at Init | 2026-03-30 | default |
+| TASK_2026_030 | COMPLETE    | BUGFIX  | Unify All Timestamps to Local Time with Timezone Offset | 2026-03-30 | default |
+| TASK_2026_031 | COMPLETE    | FEATURE | Add --commit Flag to nitro-fueled init | 2026-03-30 | default |
+| TASK_2026_032 | COMPLETE    | FEATURE | Post-Session Analytics and Worker Log Enrichment | 2026-03-30 | default |
+| TASK_2026_033 | CANCELLED   | FEATURE | Pre-Flight Validation Before Auto-Pilot Spawns Workers | 2026-03-30 | default |
+| TASK_2026_034 | COMPLETE    | REFACTORING | Session-Scoped State Directories with Unified Event Log | 2026-03-30 | default |
+| TASK_2026_035 | COMPLETE    | FEATURE | Review Lead — Parallel Reviews with Model Routing | 2026-03-30 | default |
+| TASK_2026_036 | COMPLETE    | FEATURE | Test Lead — Parallel Test Writing and Execution with Model Routing | 2026-03-30 | default |
+| TASK_2026_037 | COMPLETE    | REFACTORING | Updated Pipeline Flow — Parallel Review + Test with Fix Phase | 2026-03-30 | default |
+| TASK_2026_038 | COMPLETE    | FEATURE | Dashboard Session Support — Multi-Session View and History | 2026-03-30 | default |
+| TASK_2026_039 | COMPLETE    | FEATURE | Dashboard Pipeline and Squad Visualization | 2026-03-30 | default |
+| TASK_2026_040 | COMPLETE    | FEATURE | Dashboard Dependency Graph Visualization | 2026-03-30 | default |
+| TASK_2026_041 | COMPLETE    | FEATURE | Dashboard Historical Analytics — Cross-Session Trends | 2026-03-30 | default |
+| TASK_2026_042 | COMPLETE    | FEATURE | CLI Provider Configuration and Dependency Validation | 2026-03-30 | default |
+| TASK_2026_043 | COMPLETE    | REFACTORING | Task Sizing Validation in /create-task Command | 2026-03-30 | default |
+| TASK_2026_044 | COMPLETE    | FEATURE | Pre-Flight Validation with Task Sizing Check | 2026-03-30 | default |
+| TASK_2026_045 | COMPLETE    | REFACTORING | Planner Retroactive Oversized Task Detection | 2026-03-30 | default |
+| TASK_2026_046 | COMPLETE    | BUGFIX  | Dashboard Data Service Completion and Validation | 2026-03-30 | default |
+| TASK_2026_047 | COMPLETE    | REFACTORING | Unified /run, /create, /status Commands + CLI Single-Task Run | 2026-03-30 | default |
+| TASK_2026_048 | COMPLETE    | FEATURE | /retrospective Command — Post-Session Analysis and Learning Loop | 2026-03-30 | default |
+| TASK_2026_049 | COMPLETE    | FEATURE | AI-Assisted Workspace Analysis for Stack Detection | 2026-03-30 | default |
+| TASK_2026_050 | COMPLETE    | FEATURE | `update` Command — Manifest-Based Safe Updates | 2026-03-30 | default |
+| TASK_2026_051 | COMPLETE    | REFACTORING | Rename All Agents to `nitro-*` Prefix | 2026-03-30 | default |
+| TASK_2026_052 | COMPLETE    | FEATURE | Manifest — Version Tracking and Install Record | 2026-03-30 | default |
+| TASK_2026_053 | COMPLETE    | DOCUMENTATION | Update Docs and Workspace to Reflect Package Vision | 2026-03-30 | default |
+| TASK_2026_054 | COMPLETE    | FEATURE | OpenCode Provider — Subscription/OAuth Auth Support | 2026-03-30 | default |
+| TASK_2026_055 | COMPLETE    | DEVOPS  | Scaffold Astro Starlight Docs Site | 2026-03-30 | default |
+| TASK_2026_056 | COMPLETE    | CREATIVE | Build Nitro-Fueled Marketing Landing Page | 2026-03-30 | default |
+| TASK_2026_057 | COMPLETE    | DOCUMENTATION | Write Full Documentation Content | 2026-03-30 | default |
+| TASK_2026_058 | COMPLETE    | REFACTORING | Per-Task Status Files — Single Source of Truth for Task State | 2026-03-30 | default |
+| TASK_2026_059 | COMPLETE    | BUGFIX  | MCP Server — Persist Worker Registry to Disk | 2026-03-30 | default |
+| TASK_2026_060 | COMPLETE    | BUGFIX  | Supervisor — File-System-First Reconciliation When MCP Returns Empty | 2026-03-30 | default |
+| TASK_2026_061 | COMPLETE    | FEATURE | Agent Record Schema and Failure Taxonomy | 2026-03-30 | default |
+| TASK_2026_062 | COMPLETE    | FEATURE | `/evaluate-agent` Command | 2026-03-30 | default |
+| TASK_2026_063 | COMPLETE    | REFACTORING | Move session-orchestrator into Monorepo | 2026-03-30 | default |
+| TASK_2026_064 | COMPLETE    | REFACTORING | Registry-Driven Supervisor — Priority and Dependencies in Registry | 2026-03-30 | default |
+| TASK_2026_065 | COMPLETE    | FEATURE | Orchestration Analytics — Per-Run Token and Cost Logging | 2026-03-30 | default |
+| TASK_2026_066 | COMPLETE    | BUGFIX  | Worker Compaction Circuit Breaker | 2026-03-30 | default |
+| TASK_2026_067 | COMPLETE    | FEATURE | Event-Driven Worker Completion — MCP File Watcher + Supervisor Subscriptions | 2026-03-30 | default |
+| TASK_2026_068 | COMPLETE    | BUGFIX  | Provider Config UX — State Display, Per-Provider Test and Unload | 2026-03-30 | default |
+| TASK_2026_069 | COMPLETE    | BUGFIX  | Supervisor Spawn Fallback — Retry with Claude Sonnet on Provider Failure | 2026-03-30 | default |
+| TASK_2026_070 | COMPLETE    | REFACTORING | Session Artifact Commit Ownership — Defined Committers and Stale Archive Pre-Flight | 2026-03-30 | default |
+| TASK_2026_071 | COMPLETE    | BUGFIX  | Fix Worker Must Create Follow-On Tasks for Deferred Findings | 2026-03-30 | default |
+| TASK_2026_072 | COMPLETE    | DEVOPS  | Nx Workspace Initialization | 2026-03-30 | default |
+| TASK_2026_073 | COMPLETE    | REFACTORING | Workspace Folder Restructure (packages → apps + libs) | 2026-03-30 | default |
+| TASK_2026_074 | COMPLETE    | REFACTORING | Extract libs/worker-core from session-orchestrator | 2026-03-30 | default |
+| TASK_2026_075 | COMPLETE    | REFACTORING | Refactor session-orchestrator app to consume worker-core | 2026-03-30 | default |
+| TASK_2026_076 | COMPLETE    | DEVOPS  | Scaffold Angular 19 + NG-ZORRO app (apps/dashboard) | 2026-03-30 | default |
+| TASK_2026_077 | COMPLETE    | FEATURE | Angular shell — layout, sidebar, routing, dark theme, mock data service | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_078 | COMPLETE    | FEATURE | Dashboard main view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_079 | COMPLETE    | FEATURE | Analytics & Insights view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_080 | COMPLETE    | FEATURE | Agent Editor view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_081 | COMPLETE    | FEATURE | MCP Integrations view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_082 | COMPLETE    | FEATURE | Model Assignments view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_083 | COMPLETE    | FEATURE | New Task view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_084 | COMPLETE    | FEATURE | Project Onboarding view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_085 | COMPLETE    | FEATURE | Provider Hub view | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_086 | COMPLETE    | DEVOPS  | Scaffold NestJS app (apps/dashboard-api) | 2026-03-30 | default |
+| TASK_2026_087 | COMPLETE    | FEATURE | Migrate state services + REST controllers to NestJS | 2026-03-30 | default |
+| TASK_2026_088 | COMPLETE    | FEATURE | Migrate WebSocket server to NestJS gateway | 2026-03-30 | default |
+| TASK_2026_089 | COMPLETE    | DEVOPS  | Scaffold Oclif CLI app (apps/cli) | 2026-03-30 | default |
+| TASK_2026_090 | COMPLETE    | REFACTORING | Migrate init + run + status commands to Oclif | 2026-03-30 | default |
+| TASK_2026_091 | COMPLETE    | REFACTORING | Migrate create + dashboard + config + update commands to Oclif | 2026-03-30 | default |
+| TASK_2026_092 | COMPLETE    | FEATURE | Angular ↔ NestJS integration + CLI build pipeline update | 2026-03-30 | default |
+| TASK_2026_093 | COMPLETE    | REFACTORING | Deprecate old packages — remove packages/ after cutover | 2026-03-30 | default |
+| TASK_2026_094 | COMPLETE    | FEATURE | Worker-Side Phase Event Emission via MCP `emit_event` | 2026-03-30 | default |
+| TASK_2026_095 | CANCELLED   | REFACTORING | Global Config Infrastructure — Migrate Provider Config to User Workspace Scope | 2026-03-30 | default |
+| TASK_2026_096 | CANCELLED   | FEATURE | Dynamic Model Fetching, Auto-Refresh, and Auto-Fallback | 2026-03-30 | default |
+| TASK_2026_097 | COMPLETE    | FEATURE | Auto-Complexity Estimation at Task Creation | 2026-03-30 | default |
+| TASK_2026_098 | BLOCKED     | FEATURE | Provider/Model Tracing — Per-Task Run Telemetry | 2026-03-30 | default |
+| TASK_2026_099 | COMPLETE    | FEATURE | Per-Task Supervisor Config + Blocked Dependency Guardrail | 2026-03-30 | default |
+| TASK_2026_100 | COMPLETE    | REFACTORING | Nitro Commit Traceability Standard | 2026-03-30 | default |
+| TASK_2026_101 | COMPLETE    | FEATURE | Add CONTENT Orchestration Flow (Blog, Email, Newsletter, Ad Copy) | 2026-03-30 | default |
+| TASK_2026_102 | COMPLETE    | FEATURE | Add SOCIAL Orchestration Flow (Social Media Campaigns) | 2026-03-30 | default |
+| TASK_2026_103 | COMPLETE    | FEATURE | Add DESIGN Orchestration Flow (UI/UX, Wireframes, Brand Identity) | 2026-03-30 | default |
+| TASK_2026_104 | COMPLETE    | FEATURE | Enhance RESEARCH Orchestration Flow (Market, Competitive, Feasibility) | 2026-03-30 | default |
+| TASK_2026_105 | COMPLETE    | FEATURE | Add OPS Orchestration Flow (Project Setup, CI/CD, Infrastructure) | 2026-03-30 | default |
+| TASK_2026_106 | COMPLETE    | REFACTORING | Generalize Orchestration Lifecycle — Type-Agnostic Artifact Names and Universal Flow | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_107 | COMPLETE    | REFACTORING | Update Orchestration Examples and Agent References to Generalized Artifact Names | 2026-03-30 | default |
+| TASK_2026_108 | CANCELLED   | REFACTORING | Remove OpenAI/OpenCode Provider Support (Temporary) | 2026-03-30 | default |
+| TASK_2026_109 | COMPLETE    | FEATURE | API Contract Layer — OpenAPI Spec, Typed DTOs, Versioned Endpoints | 2026-03-30 | default |
+| TASK_2026_110 | COMPLETE    | FEATURE | Launcher-Aware Config Schema + CLI Wizard (Part 1/3 — Provider Resolver Engine) | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_111 | COMPLETE    | FEATURE | Two-Phase Provider Resolver Engine (Part 2/3 — Provider Resolver Engine) | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_112 | COMPLETE    | REFACTORING | Auto-Pilot Routing Update — Config-Driven with Codex Support (Part 3/3 — Provider Resolver Engine) | 2026-03-30 | default |
+| TASK_2026_113 | COMPLETE    | BUGFIX  | Add Phase-Boundary Git Commits to Orchestration Pipeline | 2026-03-30 | default |
+| TASK_2026_114 | COMPLETE    | BUGFIX  | Enforce Review-Lessons Pre-Read in Build Worker Prompt | 2026-03-30 | default |
+| TASK_2026_115 | COMPLETE    | REFACTORING | Extract Inline Template/Styles in Agent Editor Sub-Components | 2026-03-30 | default |
+| TASK_2026_116 | COMPLETE    | REFACTORING | Rename Commands to nitro-* Prefix — Source (.claude/commands/) — Part 1 of 2 | 2026-03-30 | default |
+| TASK_2026_117 | COMPLETE    | REFACTORING | Rename Commands to nitro-* Prefix — Scaffold Sync — Part 2 of 2 | 2026-03-30 | default |
+| TASK_2026_118 | COMPLETE    | FEATURE | /nitro-status Command — Registry-Only Project Status | 2026-03-30 | default |
+| TASK_2026_119 | COMPLETE    | FEATURE | /nitro-burn Command — Token and Cost Analytics | 2026-03-30 | default |
+| TASK_2026_120 | COMPLETE    | FEATURE | nitro-cortex — Package Scaffold + SQLite Schema + Task Tools (Part 1 of 3) | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_121 | COMPLETE    | FEATURE | nitro-cortex — Session + Worker Tools (Part 2 of 3) | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_122 | COMPLETE    | REFACTORING | nitro-cortex — Skill Integration (Part 3 of 3) | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_123 | COMPLETE    | FEATURE | Benchmark Suite — Generic Reusable Evaluation Tasks | 2026-03-30 | default |
+| TASK_2026_124 | COMPLETE    | FEATURE | Evaluation Supervisor — Single Model Mode | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_125 | COMPLETE    | FEATURE | Evaluation Supervisor — A/B Comparison and Role Testing | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_126 | COMPLETE    | FEATURE | Evaluation Review Scoring and Report Generation | 2026-03-30 | claude-opus-4-6 |
+| TASK_2026_127 | COMPLETE    | REFACTORING | Extract inline constants from new-task.component.ts to new-task.constants.ts | 2026-03-30 | default |
+| TASK_2026_128 | COMPLETE    | REFACTORING | Extract inline interfaces from dashboard/analytics/agent-editor components to model files | 2026-03-30 | default |
+| TASK_2026_129 | COMPLETE    | REFACTORING | Add SESSION_ID Validation to nitro-auto-pilot --continue Flag | 2026-03-30 | default |
+| TASK_2026_130 | COMPLETE    | BUGFIX  | Fix Retrospective Commit Step Ordering | 2026-03-30 | default |
+| TASK_2026_131 | COMPLETE    | BUGFIX  | Add Authentication Guard to NestJS WebSocket Gateway | 2026-03-30 | default |
+| TASK_2026_132 | COMPLETE    | BUGFIX  | Resolve Deferred TASK_2026_109 Findings — DTO Validation, File Split, ValidationPipe | 2026-03-30 | default |
+| TASK_2026_133 | COMPLETE    | FEATURE | Add sequential execution mode to auto-pilot | 2026-03-30 | default |
+| TASK_2026_134 | COMPLETE    | REFACTORING | Slim down auto-pilot SKILL.md — split into core + mode-specific references | 2026-03-30 | default |
+| TASK_2026_135 | COMPLETE    | REFACTORING | Event-driven supervisor loop — cache registry and plan, refresh on events only | 2026-03-30 | default |
+| TASK_2026_136 | COMPLETE    | REFACTORING | Partial task.md reads — extract metadata only before spawn | 2026-03-30 | default |
+| TASK_2026_137 | COMPLETE    | FEATURE | Build Worker handoff artifact — structured Build-to-Review communication | 2026-03-30 | default |
+| TASK_2026_138 | COMPLETE    | FEATURE | nitro-cortex schema extension — tasks, handoffs, and events tables | 2026-03-30 | default |
+| TASK_2026_139 | COMPLETE    | REFACTORING | Supervisor DB migration — query cortex instead of reading files | 2026-03-30 | default |
+| TASK_2026_140 | COMPLETE    | FEATURE | File-DB sync layer — bidirectional consistency between files and cortex | 2026-03-30 | default |
+| TASK_2026_141 | COMPLETE    | FEATURE | CLI update command — DB migration and hydration for existing projects | 2026-03-30 | default |
+| TASK_2026_142 | COMPLETE    | REFACTORING | Merge session-orchestrator into nitro-cortex — single MCP server | 2026-03-30 | default |
+| TASK_2026_143 | COMPLETE    | FEATURE | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | 2026-03-30 | default |
+| TASK_2026_144 | COMPLETE    | REFACTORING | Remove legacy dashboard apps (dashboard-service + dashboard-web) | 2026-03-30 | default |
+| TASK_2026_145 | COMPLETE    | REFACTORING | Dashboard API cortex migration — replace session-orchestrator with cortex MCP | 2026-03-30 | default |
+| TASK_2026_146 | COMPLETE    | FEATURE | Dashboard telemetry views — model performance, phase timing, session analytics | 2026-03-30 | default |
+| TASK_2026_147 | COMPLETE    | FEATURE | Dashboard Home — Live Command Center Redesign | 2026-03-30 | default |
+| TASK_2026_148 | COMPLETE    | FEATURE | Settings Shell + Models + Mock Data | 2026-03-30 | default |
+| TASK_2026_149 | COMPLETE    | FEATURE | Settings — API Keys Management Tab | 2026-03-30 | default |
+| TASK_2026_150 | COMPLETE    | FEATURE | Settings — Launchers & Subscriptions Tabs | 2026-03-30 | default |
+| TASK_2026_151 | COMPLETE    | FEATURE | Settings — Default Mapping Configuration Tab | 2026-03-30 | default |
+| TASK_2026_152 | COMPLETE    | BUGFIX  | Fix Auto-Pilot Supervisor Pre-Flight Violations | 2026-03-30 | default |
+| TASK_2026_153 | COMPLETE    | BUGFIX  | Enforce Minimal Supervisor Output — Log to File, Not Conversation | 2026-03-30 | default |
+| TASK_2026_154 | COMPLETE    | REFACTORING | Stateless Supervisor — Offload All State to MCP DB | 2026-03-30 | default |
+| TASK_2026_155 | COMPLETE    | FEATURE | Project Page — Task Queue Board | 2026-03-30 | default |
+| TASK_2026_156 | COMPLETE    | FEATURE | Auto-Pilot Trigger — Backend Endpoint + Frontend Action | 2026-03-30 | default |
+| TASK_2026_157 | COMPLETE    | FEATURE | Live Session Chat UI — Real-Time Session Viewer | 2026-03-30 | default |
+| TASK_2026_158 | COMPLETE    | FEATURE | Session Monitor — Active Sessions List + Switching | 2026-03-30 | default |
+| TASK_2026_159 | COMPLETE    | FEATURE | New Task Page — Single Textarea Task Creator | 2026-03-30 | default |
+| TASK_2026_160 | COMPLETE    | REFACTORING | Shared UI Lib — Badge, Status Indicator, Empty State Components | 2026-03-30 | default |
+| TASK_2026_161 | COMPLETE    | REFACTORING | Shared UI Lib — Progress Bar, Tab Nav, Loading Spinner Components | 2026-03-30 | default |
+| TASK_2026_162 | COMPLETE    | REFACTORING | Shared UI Lib — Form Field, Expandable Panel, Button Group Components | 2026-03-30 | default |
+| TASK_2026_163 | COMPLETE    | FEATURE | Cortex MCP — Full Task Creation Tools (create_task, bulk_create_tasks, get_next_task_id) | 2026-03-30 | default |
+| TASK_2026_164 | COMPLETE    | BUGFIX  | Fix OpenCode Worker Telemetry Integration | 2026-03-30 | default |
+| TASK_2026_165 | COMPLETE    | BUGFIX  | Fix Auto-Pilot Multi-Session Support — DB Session Registration and Per-Session Concurrency | 2026-03-30 | default |
+| TASK_2026_166 | COMPLETE    | FEATURE | Rich Task Detail Page | 2026-03-30 | default |
+| TASK_2026_167 | COMPLETE    | FEATURE | Orchestration Flow Visualization & Templates | 2026-03-30 | default |
+| TASK_2026_168 | COMPLETE    | FEATURE | Project Tasks List — Search & Filters | 2026-03-30 | default |
+| TASK_2026_169 | COMPLETE    | FEATURE | Logs Dashboard — Event Viewer & Worker Logs | 2026-03-30 | default |
+| TASK_2026_170 | CANCELLED   | FEATURE | Orchestration Flow Editor & Auto-Pilot Integration | 2026-03-30 | default |
+| TASK_2026_171 | COMPLETE    | FEATURE | Analytics Reports — Session, Cost, Model & Quality Reports | 2026-03-30 | default |
+| TASK_2026_172 | COMPLETE    | BUGFIX  | Add CANCELLED Status to All Type Unions and Switch Statements | 2026-03-30 | default |
+| TASK_2026_173 | COMPLETE    | BUGFIX  | Add Authentication Guard to All NestJS HTTP Endpoints | 2026-03-30 | default |
+| TASK_2026_174 | COMPLETE    | RESEARCH | GLM-5 Reliability Investigation — Health Check Tuning | 2026-03-30 | default |
+| TASK_2026_175 | COMPLETE    | FEATURE | Add Angular Route Guards | 2026-03-30 | default |
+| TASK_2026_176 | COMPLETE    | REFACTORING | Replace Deprecated *ngIf/*ngFor with @if/@for Control Flow | 2026-03-30 | default |
+| TASK_2026_177 | COMPLETE    | DEVOPS  | Scaffold-SKILL.md Sync Automation | 2026-03-30 | default |
+| TASK_2026_178 | COMPLETE    | REFACTORING | Add OnPush Change Detection to All Angular Components | 2026-03-30 | default |
+| TASK_2026_179 | COMPLETE    | REFACTORING | Replace console.log/console.error with Structured Logger | 2026-03-30 | default |
+| TASK_2026_180 | COMPLETE    | REFACTORING | Migrate @Input/@Output Decorators to Signal-Based input()/output() | 2026-03-30 | default |
+| TASK_2026_181 | COMPLETE    | BUGFIX  | Replace Stale session-orchestrator References in Scaffold with nitro-cortex | 2026-03-30 | default |
+| TASK_2026_182 | COMPLETE    | REFACTORING | Remove Deprecated Code — getConfigPath, rxjs/operators Import, prebuild-install | 2026-03-30 | default |
+| TASK_2026_183 | COMPLETE    | FEATURE | Real-Time Progress Center — Live Status, Health & ETA | 2026-03-30 | default |
+| TASK_2026_184 | COMPLETE    | FEATURE | Interactive Command Console — Embedded Terminal & Chat in Dashboard | 2026-03-30 | default |
+| TASK_2026_185 | IN_PROGRESS | REFACTORING | MCP Cortex — Health Constants & context_overflow State | 2026-03-30 | default |
+| TASK_2026_186 | CREATED     | REFACTORING | Dashboard & Docs — Align Health States with MCP Cortex | 2026-03-30 | default |
+| TASK_2026_187 | COMPLETE    | FEATURE | Session History & Results Dashboard | 2026-03-30 | default |
+| TASK_2026_188 | COMPLETE    | BUGFIX  | Cortex MCP — Orphaned Claim Recovery & Multi-Session Health | 2026-03-30 | default |
+| TASK_2026_189 | COMPLETE    | BUGFIX  | Audit All JSON.parse Calls in mcp-cortex for try/catch Guards | 2026-03-30 | default |
+| TASK_2026_190 | COMPLETE    | RESEARCH | GLM-4.7 Review Worker Investigation — 0% Success Rate | 2026-03-30 | default |
+| TASK_2026_191 | COMPLETE    | BUGFIX  | Scaffold Sync Audit — Verify All Scaffold Files Match Source | 2026-03-30 | default |
+| TASK_2026_192 | IN_PROGRESS | BUGFIX  | Add Missing Unit Tests for Tasks 148, 155, 159 Utility Functions | 2026-03-30 | default |
+| TASK_2026_193 | COMPLETE    | BUGFIX  | Auto-Release Orphaned Task Claims on Session Startup | 2026-03-30 | default |
+| TASK_2026_194 | COMPLETE    | BUGFIX  | Normalize Session ID Format — Consistent T-Separator Everywhere | 2026-03-30 | default |
+| TASK_2026_195 | COMPLETE    | BUGFIX  | Auto-Close Dead Sessions — TTL-Based Expiry | 2026-03-30 | default |
+| TASK_2026_196 | COMPLETE    | BUGFIX  | Supervisor Task Prioritization — Build CREATED Before Review IMPLEMENTED | 2026-03-30 | default |
+| TASK_2026_197 | COMPLETE    | BUGFIX  | Prevent get_tasks(status: "COMPLETE") Overflow in Supervisor | 2026-03-30 | default |
+| TASK_2026_198 | IN_PROGRESS | BUGFIX  | Validate Provider Availability Before Session Config Assignment | 2026-03-30 | default |
+| TASK_2026_199 | CANCELLED   | FEATURE | Model × Launcher Performance Report | 2026-03-30 | default |
+| TASK_2026_200 | CANCELLED   | FEATURE | Session Run Configuration Panel + Queue Empty State | 2026-03-30 | default |
+| TASK_2026_201 | COMPLETE    | FEATURE | Provider Quota Panel | 2026-03-30 | default |
+| TASK_2026_202 | COMPLETE    | FEATURE | Graceful Session Termination | 2026-03-30 | default |
+| TASK_2026_203 | COMPLETE    | BUGFIX  | Wire Heartbeat Lifecycle | 2026-03-30 | default |
+| TASK_2026_204 | COMPLETE    | REFACTORING | Refactor Supervisor to Multi-Session Architecture | 2026-03-30 | default |
+| TASK_2026_205 | COMPLETE    | FEATURE | Write Prep Worker prompt and exit gate | 2026-03-30 | default |
+| TASK_2026_206 | COMPLETE    | FEATURE | Update Supervisor spawn logic for split worker mode routing | 2026-03-30 | default |
+| TASK_2026_207 | COMPLETE    | FEATURE | Add prep/implement worker types and prep handoff schema to cortex MCP | 2026-03-30 | default |
+| TASK_2026_208 | COMPLETE    | DOCUMENTATION | Add Worker Mode field and PREPPED/IMPLEMENTING statuses to template and docs | 2026-03-30 | default |
+| TASK_2026_209 | COMPLETE    | FEATURE | Write Implement Worker prompt and exit gate | 2026-03-30 | default |
+| TASK_2026_210 | COMPLETE    | FEATURE | Migrate Dashboard Frontend to Session-Centric API | 2026-03-30 | default |
+| TASK_2026_211 | COMPLETE    | BUGFIX  | Fix Dashboard Frontend Compile Errors | 2026-03-30 | default |
+| TASK_2026_212 | COMPLETE    | RESEARCH | GPT-5.4 Prep Worker Kill Rate — Root Cause Investigation | 2026-03-30 | default |
+| TASK_2026_213 | COMPLETE    | REFACTORING | Refactor Command Console Controller — NestJS DTO Validation | 2026-03-30 | default |
+| TASK_2026_214 | COMPLETE    | FEATURE | Orchestration Flow Editor — CRUD & Persistence | 2026-03-30 | default |
+| TASK_2026_215 | COMPLETE    | FEATURE | Auto-Pilot Custom Flow Routing | 2026-03-30 | default |
+| TASK_2026_216 | COMPLETE    | FEATURE | Analytics Backend — Model & Launcher Performance Endpoints | 2026-03-30 | default |
+| TASK_2026_217 | IMPLEMENTED | FEATURE | Analytics Frontend — Model × Launcher Performance Page | 2026-03-30 | default |
+| TASK_2026_218 | COMPLETE    | FEATURE | Session Creation Advanced Options Panel | 2026-03-30 | default |
+| TASK_2026_219 | COMPLETE    | FEATURE | Session View — Empty Queue State & Completion Banner | 2026-03-30 | default |
+| TASK_2026_220 | CANCELLED   | RESEARCH | Launcher Interface Definition | 2026-03-31 | default |
+| TASK_2026_221 | CANCELLED   | REFACTORING | Claude Code Launcher Adapter | 2026-03-31 | default |
+| TASK_2026_222 | COMPLETE    | FEATURE | Extend Cortex DB Schema — Agents, Workflows, Launchers, Compatibility | 2026-03-31 | default |
+| TASK_2026_223 | CANCELLED   | REFACTORING | Remove Task .md File Generation — DB-Only Task State | 2026-03-31 | default |
+| TASK_2026_224 | CANCELLED   | FEATURE | Server Supervisor Service | 2026-03-31 | default |
+| TASK_2026_225 | CANCELLED   | FEATURE | Supervisor REST API + WebSocket Events | 2026-03-31 | default |
+| TASK_2026_226 | CANCELLED   | REFACTORING | Refactor Session-Mode Supervisor — MCP Only | 2026-03-31 | default |
+| TASK_2026_227 | CANCELLED   | FEATURE | Worker Output Collection — Structured Parsing | 2026-03-31 | default |
+| TASK_2026_228 | CANCELLED   | FEATURE | Direct Mode — Single-Task Execution Without Supervisor | 2026-03-31 | default |
+| TASK_2026_229 | COMPLETE    | FEATURE | Extend Cortex Schema for Worker Telemetry | 2026-03-31 | default |
+| TASK_2026_230 | COMPLETE    | FEATURE | Instrument Worker Lifecycle — Emit Telemetry Events | 2026-03-31 | default |
+| TASK_2026_231 | CREATED     | FEATURE | Reporting API Endpoints | 2026-03-31 | default |
+| TASK_2026_232 | CREATED     | FEATURE | Dashboard Reports Page | 2026-03-31 | default |
+| TASK_2026_233 | CANCELLED   | FEATURE | Codex Launcher Adapter | 2026-03-31 | default |
+| TASK_2026_234 | CANCELLED   | FEATURE | Launcher Registry + Dashboard Configuration | 2026-03-31 | default |
+| TASK_2026_235 | CANCELLED   | FEATURE | Compatibility Tracking — Record Execution Outcomes | 2026-03-31 | default |
+| TASK_2026_236 | CANCELLED   | FEATURE | Auto-Routing Engine — Intelligent Launcher/Model Selection | 2026-03-31 | default |
+| TASK_2026_237 | CANCELLED   | FEATURE | Hybrid DB Architecture — Project-Level + Global DB | 2026-03-31 | default |
+| TASK_2026_238 | CANCELLED   | FEATURE | Global Install + User-Scope Server Architecture | 2026-03-31 | default |
+| TASK_2026_239 | CANCELLED   | FEATURE | Workspace Management — Register, Switch, List Projects | 2026-03-31 | default |
+| TASK_2026_240 | CANCELLED   | FEATURE | Dashboard Multi-Workspace Support | 2026-03-31 | default |
+| TASK_2026_241 | COMPLETE    | BUGFIX  | Supervisor: Reconcile Task State on Worker Exit (Don't Trust Worker Self-Reporting) | 2026-03-31 | default |
+| TASK_2026_242 | COMPLETE    | BUGFIX  | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | 2026-03-31 | default |
+| TASK_2026_243 | COMPLETE    | FEATURE | Per-Task Model/Provider Editor in Dashboard | 2026-03-31 | default |
+| TASK_2026_244 | COMPLETE    | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
+| TASK_2026_245 | CANCELLED   | FEATURE | Tick-Mode Auto-Pilot Skill Prompt | 2026-03-31 | default |
+| TASK_2026_246 | COMPLETE    | FEATURE | Dashboard UI: Session Cost Breakdown Card | 2026-03-31 | default |
+| TASK_2026_247 | COMPLETE    | FEATURE | Sessions List: Checkbox Selection and Compare Button | 2026-03-31 | default |
+| TASK_2026_248 | CREATED     | FEATURE | Session Comparison View -- Side-by-Side Model Cost/Performance | 2026-03-31 | default |
+| TASK_2026_249 | COMPLETE    | FEATURE | Cortex Schema: Session Cost Breakdown Columns and Summary | 2026-03-31 | default |
+| TASK_2026_250 | COMPLETE    | FEATURE | Dashboard API: Session Cost Breakdown Response | 2026-03-31 | default |
+| TASK_2026_251 | COMPLETE    | FEATURE | MCP Cortex: bulk_update_tasks Tool | 2026-03-31 | default |
+| TASK_2026_252 | COMPLETE    | BUGFIX  | MCP Cortex: update_task Syncs Title/Status to Disk Files | 2026-03-31 | default |
+| TASK_2026_253 | COMPLETE    | BUGFIX  | MCP Cortex: Reject Tasks with Empty/Default Titles on Create | 2026-03-31 | default |
+| TASK_2026_254 | COMPLETE    | BUGFIX  | MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup | 2026-03-31 | default |
+| TASK_2026_255 | COMPLETE    | REFACTORING | Auto-Pilot Skill: Use stage_and_commit MCP Instead of Bash Git | 2026-03-31 | default |
+| TASK_2026_256 | COMPLETE    | FEATURE | MCP Cortex: get_backlog_summary Tool — Status Counts Only | 2026-03-31 | default |
+| TASK_2026_257 | CREATED     | FEATURE | Server Restart Recovery — Reconstruct Active Sessions from DB | 2026-03-31 | default |
+| TASK_2026_258 | CREATED     | FEATURE | Dashboard UI: Live Session Monitor via WebSocket | 2026-03-31 | default |
+| TASK_2026_259 | COMPLETE    | FEATURE | Dashboard UI: Session Controls — Start/Pause/Resume/Stop | 2026-03-31 | default |
+| TASK_2026_260 | CREATED     | FEATURE | Dashboard UI: Tick Health Dashboard Card | 2026-03-31 | default |
+| TASK_2026_261 | CANCELLED   | FEATURE | Tick Scheduler Service -- Spawn Claude Code Processes per Tick | 2026-03-31 | default |
+| TASK_2026_262 | CANCELLED   | FEATURE | Worker Heartbeat Verification in Supervisor Tick Loop | 2026-03-31 | default |
+| TASK_2026_263 | COMPLETE    | FEATURE | Cortex DB Schema: Subtask Support | 2026-03-31 | default |
+| TASK_2026_264 | COMPLETE    | FEATURE | Prep Worker: Task Decomposition into Subtasks | 2026-03-31 | default |
+| TASK_2026_265 | COMPLETE    | FEATURE | Supervisor: Subtask-Aware Scheduling | 2026-03-31 | default |
+| TASK_2026_266 | COMPLETE    | FEATURE | Supervisor: Per-Subtask Model Routing | 2026-03-31 | default |
+| TASK_2026_267 | COMPLETE    | FEATURE | Review Worker: Holistic Parent Review After Subtask Completion | 2026-03-31 | default |
+| TASK_2026_268 | CREATED     | FEATURE | Dashboard UI: Subtask Tree Display in Task Detail | 2026-03-31 | default |
+| TASK_2026_269 | COMPLETE    | FEATURE | Dashboard API: Subtask Data in Task Response | 2026-03-31 | default |
+| TASK_2026_270 | COMPLETE    | FEATURE | MCP Cortex: Launcher-Aware spawn_worker and get_available_providers | 2026-03-31 | default |
+| TASK_2026_271 | CREATED     | FEATURE | Autopilot: Prompt Adapter Layer + Supervisor Codex Launcher Routing | 2026-03-31 | default |
+| TASK_2026_272 | CREATED     | RESEARCH | Research — Multi-Launcher Data Model, Compatibility Matrix, and MCP API Spec | 2026-03-31 | default |
+| TASK_2026_273 | CREATED     | RESEARCH | Research — Per-Harness Prompt Templates and Supervisor Routing Spec | 2026-03-31 | default |
+| TASK_2026_274 | COMPLETE    | FEATURE | Enforce preferred_tier at Task Creation and Hard-Route in Supervisor | 2026-03-31 | default |
+| TASK_2026_275 | CREATED     | FEATURE | Add work_type Field to Task Template for Tier Routing | 2026-03-31 | default |
+| TASK_2026_276 | CREATED     | FEATURE | Phase-Level Model Routing in Orchestration Skill | 2026-03-31 | default |
+| TASK_2026_277 | COMPLETE    | FEATURE | CLAUDE.md Split — Introduce .nitro/CLAUDE.nitro.md as Nitro's System Prompt | 2026-03-31 | default |
+| TASK_2026_278 | COMPLETE    | REFACTORING | Scaffold Source Restructure — Replace scaffold/.claude/ with scaffold/nitro/ and scaffold/nitro-root/ | 2026-03-31 | default |
+| TASK_2026_279 | COMPLETE    | REFACTORING | Rename Unprefixed .claude/ Dirs and Files to nitro-* (Structural Rename) | 2026-03-31 | default |
+| TASK_2026_280 | COMPLETE    | REFACTORING | Update All Internal References After nitro-* Rename | 2026-03-31 | default |
+| TASK_2026_281 | COMPLETE    | FEATURE | Smart Codebase Sampling for Init — Hybrid Signal Collection | 2026-03-31 | default |
+| TASK_2026_282 | COMPLETE    | FEATURE | AI-Generated Project Artifacts from Init Analysis — Single-Pass Generation | 2026-03-31 | default |
+| TASK_2026_283 | COMPLETE    | FEATURE | Multi-Tool Context File Generation — .cursorrules, copilot-instructions, .clinerules | 2026-03-31 | default |
+| TASK_2026_284 | COMPLETE    | FEATURE | AI-Assisted Three-Way Merge on Update (--ai-merge) | 2026-03-31 | default |
+| TASK_2026_285 | CREATED     | FEATURE | Update Change Summary — AI-Powered Diff Explanation | 2026-03-31 | default |
+| TASK_2026_286 | CREATED     | FEATURE | Generate .codex/ Configuration and Agent Files on Init | 2026-03-31 | default |
+| TASK_2026_287 | COMPLETE    | FEATURE | Cortex DB Schema: Task Artifact Tables | 2026-03-31 | default |
+| TASK_2026_288 | COMPLETE    | FEATURE | MCP Tools: Task Artifact CRUD Operations | 2026-03-31 | default |
+| TASK_2026_289 | IMPLEMENTED | REFACTORING | Worker Prompts: MCP-Only Artifact Access (Eliminate File I/O) | 2026-03-31 | default |
+| TASK_2026_290 | COMPLETE    | REFACTORING | Supervisor: Drop File-Based Fallback Paths, DB-Only Mode | 2026-03-31 | default |
+| TASK_2026_291 | COMPLETE    | REFACTORING | CLI and MCP — DB-Only Task Creation, Remove File-Based Artifacts | 2026-04-01 | default |
+| TASK_2026_292 | COMPLETE    | FEATURE | Cortex DB: Skill Invocations Table and MCP Analytics Tools | 2026-03-31 | default |
+| TASK_2026_293 | COMPLETE    | FEATURE | Dashboard API: Skill Usage Analytics Endpoint | 2026-03-31 | default |
+| TASK_2026_294 | COMPLETE    | FEATURE | Dashboard UI: Skill Usage Bubble Chart (D3 Circle Pack) | 2026-03-31 | default |
+| TASK_2026_295 | COMPLETE    | FEATURE | Extend update_session MCP tool to write supervisor_model, mode, total_cost | 2026-04-01 | default |
+| TASK_2026_296 | CREATED     | FEATURE | Wire auto-pilot supervisor to log session metadata, phases, and reviews | 2026-04-01 | default |
+| TASK_2026_297 | COMPLETE    | FEATURE | Wire Sidebar navigation to real data (badges, items) | 2026-04-01 | default |
+| TASK_2026_298 | COMPLETE    | BUGFIX  | Validate and fix Sessions List and Session Detail real API wiring | 2026-04-01 | default |
+| TASK_2026_299 | COMPLETE    | FEATURE | Wire Provider Hub screen to real provider API | 2026-04-01 | default |
+| TASK_2026_300 | COMPLETE    | FEATURE | Audit and fix Analytics screens (cost, efficiency, model performance) | 2026-04-01 | default |
+| TASK_2026_301 | COMPLETE    | FEATURE | Audit and fix Telemetry screens (phase-timing, task-trace) | 2026-04-01 | default |
+| TASK_2026_302 | CREATED     | REFACTORING | Remove all remaining mock data constants and dead imports | 2026-04-01 | default |
+| TASK_2026_303 | COMPLETE    | FEATURE | Add MCP server management API endpoints (backend) | 2026-04-01 | default |
+| TASK_2026_304 | COMPLETE    | FEATURE | Wire MCP Integrations frontend to real API | 2026-04-01 | default |
+| TASK_2026_305 | COMPLETE    | RESEARCH | Audit SettingsService — determine if it persists to backend or localStorage | 2026-04-01 | default |
+| TASK_2026_306 | COMPLETE    | FEATURE | Audit Agent Editor store and fix data source | 2026-04-01 | default |
+| TASK_2026_307 | COMPLETE    | FEATURE | Audit and fix Progress Center screen | 2026-04-01 | default |
+| TASK_2026_308 | CREATED     | FEATURE | Audit and fix Reports screen | 2026-04-01 | default |
+| TASK_2026_309 | CREATED     | FEATURE | Audit and fix Orchestration screen | 2026-04-01 | default |
+| TASK_2026_310 | CREATED     | FEATURE | Audit and fix Logs screen | 2026-04-01 | default |
+| TASK_2026_311 | CREATED     | FEATURE | Audit and fix Task Detail screen | 2026-04-01 | default |
+| TASK_2026_312 | CREATED     | FEATURE | Audit and fix Analytics screens | 2026-04-01 | default |
+| TASK_2026_313 | CREATED     | FEATURE | Audit and fix Phase Timing and Task Trace telemetry screens | 2026-04-01 | default |
+| TASK_2026_314 | CREATED     | REFACTORING | Remove all dead mock data constants and files | 2026-04-01 | default |
+| TASK_2026_315 | COMPLETE    | FEATURE | Add backend API endpoints for Settings persistence | 2026-04-01 | default |
+| TASK_2026_316 | COMPLETE    | FEATURE | Wire SettingsService to backend API for all tabs | 2026-04-01 | default |
+| TASK_2026_317 | COMPLETE    | FEATURE | Add ARCHIVE status to cortex DB schema and MCP task tools | 2026-04-01 | default |
+| TASK_2026_318 | CREATED     | FEATURE | Add ARCHIVE status to dashboard frontend and API | 2026-04-01 | default |
+| TASK_2026_319 | COMPLETE    | FEATURE | Add session_evaluations table and evaluate_session MCP tool | 2026-04-01 | default |
+| TASK_2026_320 | CANCELLED   | FEATURE | Write session evaluation markdown scorecard to disk | 2026-04-01 | default |
+| TASK_2026_321 | CREATED     | FEATURE | Enforce per-phase token capture in log_phase MCP tool | 2026-04-01 | default |
+| TASK_2026_322 | CREATED     | FEATURE | Add lesson_violations_count to reviews table and MCP log_review tool | 2026-04-01 | default |
+| TASK_2026_323 | CREATED     | FEATURE | Add context_percent_at_start to phases table and worker emission | 2026-04-01 | default |
+| TASK_2026_324 | CREATED     | FEATURE | Add structured kill_reason enum to workers table | 2026-04-01 | default |
+| TASK_2026_325 | CREATED     | FEATURE | Add first_attempt_pass flag to workers table | 2026-04-01 | default |
+| TASK_2026_326 | CREATED     | FEATURE | Add --trend flag to nitro-burn command showing session score history | 2026-04-01 | default |
+| TASK_2026_327 | CREATED     | REFACTORING | Compress orchestration SKILL.md to 500-token quick-reference header | 2026-04-01 | default |
+| TASK_2026_328 | CREATED     | REFACTORING | Skip pre-flight file dependency guardrail when WORKER_ID is in prompt | 2026-04-01 | default |
+| TASK_2026_329 | CREATED     | FEATURE | Write progress snapshot to handoffs on worker kill for retry recovery | 2026-04-01 | default |
+| TASK_2026_330 | COMPLETE    | FEATURE | Model Router Module — Adaptive Provider/Model Selection | 2026-04-01 | default |
+| TASK_2026_331 | COMPLETE    | FEATURE | Cost Budget & Circuit Breaker Module | 2026-04-01 | default |
+| TASK_2026_332 | COMPLETE    | FEATURE | Health Monitor & Reconciliation Module | 2026-04-01 | default |
+| TASK_2026_333 | COMPLETE    | FEATURE | CLI Mode — Wire SupervisorEngine into `run` Command | 2026-04-01 | default |
+| TASK_2026_334 | COMPLETE    | REFACTORING | Complexity-Aware Pipeline Skip — Simple Tasks Skip PM+Architect | 2026-04-01 | default |
+| TASK_2026_335 | COMPLETE    | FEATURE | Dependency Resolver Module — Task Graph & Priority Sorting | 2026-04-01 | default |
+| TASK_2026_336 | CREATED     | FEATURE | SupervisorEngine — Recovery, Guards & Cost Enforcement | 2026-04-01 | default |
+| TASK_2026_337 | COMPLETE    | FEATURE | Supervisor REST Controller — Session Control Endpoints | 2026-04-01 | default |
+| TASK_2026_338 | COMPLETE    | FEATURE | SupervisorEngine — Core Event Loop & Worker Orchestration | 2026-04-01 | default |
+| TASK_2026_339 | COMPLETE    | FEATURE | CLI `serve` Command | 2026-04-01 | default |
+| TASK_2026_340 | COMPLETE    | FEATURE | NestJS SupervisorService — Engine Lifecycle Manager | 2026-04-01 | default |
+| TASK_2026_341 | COMPLETE    | FEATURE | Angular WebSocket Service for Live Supervisor Events | 2026-04-01 | default |

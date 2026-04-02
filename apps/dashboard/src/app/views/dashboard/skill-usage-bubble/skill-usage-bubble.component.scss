@@ -1,0 +1,72 @@
+.skill-bubble-widget {
+  position: relative;
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.widget-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.period-select {
+  width: 110px;
+}
+
+.chart-container {
+  width: 100%;
+  min-height: 280px;
+
+  svg {
+    display: block;
+    width: 100%;
+  }
+}
+
+.unavailable-banner {
+  padding: 10px 14px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 6px;
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+.bubble-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(10, 10, 20, 0.92);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-primary, #e0e0e0);
+  white-space: nowrap;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.tt-skill {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--accent, #7c6aff);
+}
+
+.tt-row {
+  color: var(--text-secondary, #a0a0b0);
+
+  strong {
+    color: var(--text-primary, #e0e0e0);
+  }
+}

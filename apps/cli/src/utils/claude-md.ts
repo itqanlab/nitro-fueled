@@ -1,64 +1,159 @@
-import { existsSync, writeFileSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { existsSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { logger } from './logger.js';
+import type { ProjectProfile } from './stack-detect.js';
 
-export function generateClaudeMd(cwd: string, overwrite: boolean): boolean {
+const IMPORT_LINE = '@./.nitro/CLAUDE.nitro.md';
+
+export function ensureClaudeMdImport(cwd: string): boolean {
   const claudeMdPath = resolve(cwd, 'CLAUDE.md');
 
-  if (existsSync(claudeMdPath) && !overwrite) {
-    console.log('  CLAUDE.md already exists (skipped). Use --overwrite to replace.');
+  if (!existsSync(claudeMdPath)) {
+    try {
+      writeFileSync(claudeMdPath, `${IMPORT_LINE}\n`, 'utf-8');
+      logger.log('  CLAUDE.md created with nitro import line');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`Error: Could not write CLAUDE.md: ${msg}`);
+      return false;
+    }
     return true;
   }
 
-  const projectName = basename(resolve(cwd)) || 'project';
+  const existing = readFileSync(claudeMdPath, 'utf-8');
 
-  const content = `# ${projectName}
-
-## Project Structure
-\`\`\`
-.claude/
-  agents/       # Agent definitions (core + project-specific developers)
-  skills/       # Orchestration skills (auto-pilot, orchestration, etc.)
-  commands/     # Slash commands (/orchestrate, /plan, /create-task, etc.)
-  review-lessons/  # Accumulated QA findings (grows over time)
-  anti-patterns.md # Common pitfalls checklist
-task-tracking/
-  registry.md   # Task index with statuses
-  task-template.md  # Template for new tasks
-\`\`\`
-
-## Orchestration
-This project uses [Nitro-Fueled](https://github.com/anthropics/nitro-fueled) for AI-assisted development orchestration.
-
-### Quick Start
-\`\`\`bash
-npx nitro-fueled create          # Create a new task (interactive)
-npx nitro-fueled run             # Auto-pilot: process task backlog
-npx nitro-fueled run TASK_ID     # Run a specific task
-npx nitro-fueled status          # Show project status
-\`\`\`
-
-### Task States
-CREATED -> IN_PROGRESS -> IMPLEMENTED -> IN_REVIEW -> COMPLETE (or FAILED/BLOCKED)
-
-## Task Status Queries
-- When asked about project status, remaining tasks, what's next, or any task-related question:
-  1. **Run \`npx nitro-fueled status\`** first — this rebuilds \`task-tracking/registry.md\` from all status files on disk
-  2. **Then read \`task-tracking/registry.md\` ONLY** — do NOT read individual \`task.md\` files
-- The registry contains all task IDs, statuses, types, and descriptions — that is sufficient for status queries.
-
-## Conventions
-- Git: conventional commits with scopes
-- Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED | CANCELLED
-- Do NOT start git commit/push without explicit user instruction
-`;
+  if (existing.includes(IMPORT_LINE)) {
+    logger.log('  CLAUDE.md already imports .nitro/CLAUDE.nitro.md (skipped)');
+    return true;
+  }
 
   try {
-    writeFileSync(claudeMdPath, content, 'utf-8');
-    console.log('  CLAUDE.md generated');
+    writeFileSync(claudeMdPath, `${existing}\n${IMPORT_LINE}\n`, 'utf-8');
+    logger.log('  CLAUDE.md updated: appended nitro import line');
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`Error: Could not write CLAUDE.md: ${msg}`);
+    logger.error(`Error: Could not update CLAUDE.md: ${msg}`);
     return false;
   }
+  return true;
+}
+
+/**
+ * Build a CLAUDE.nitro.md content string from a ProjectProfile.
+ * The base template provides the structure; profile data fills in project-specific sections.
+ * Output is always under 200 lines.
+ */
+export function buildClaudeNitroMdFromProfile(
+  profile: ProjectProfile,
+  baseTemplate: string,
+): string {
+  const stackSection =
+    profile.stack.length > 0
+      ? profile.stack.map((s) => `- ${s}`).join('\n')
+      : '_No stack detected_';
+
+  const archSection =
+    profile.architecturePatterns.length > 0
+      ? profile.architecturePatterns.map((p) => `- ${p}`).join('\n')
+      : '_No patterns detected_';
+
+  const antiPatternsSection =
+    profile.antiPatterns.length > 0
+      ? profile.antiPatterns.map((p) => `- ${p}`).join('\n')
+      : '';
+
+  const testSection =
+    profile.testPatterns.length > 0
+      ? profile.testPatterns.map((p) => `- ${p}`).join('\n')
+      : '';
+
+  // Extract the Orchestration and Task States sections from the base template
+  const orchestrationMatch = /## Orchestration[\s\S]*?(?=\n## |\n# |$)/.exec(baseTemplate);
+  const orchestrationSection =
+    orchestrationMatch !== null ? orchestrationMatch[0].trimEnd() : '';
+
+  const taskStatusMatch = /## Task Status Queries[\s\S]*?(?=\n## |\n# |$)/.exec(baseTemplate);
+  const taskStatusSection =
+    taskStatusMatch !== null ? taskStatusMatch[0].trimEnd() : '';
+
+  const conventionsMatch = /## Conventions[\s\S]*?(?=\n## |\n# |$)/.exec(baseTemplate);
+  const conventionsSection =
+    conventionsMatch !== null ? conventionsMatch[0].trimEnd() : '';
+
+  const lines: string[] = [
+    `# Nitro-Fueled Conventions`,
+    ``,
+    `> This file is managed by nitro-fueled. Run \`npx nitro-fueled update\` to update it.`,
+    ``,
+    `## Project Stack`,
+    ``,
+    stackSection,
+    ``,
+    `## Architecture`,
+    ``,
+    archSection,
+  ];
+
+  if (profile.namingConventions !== '') {
+    lines.push(``, `## Naming Conventions`, ``, profile.namingConventions);
+  }
+
+  if (profile.folderOrganization !== '') {
+    lines.push(``, `## Folder Organization`, ``, profile.folderOrganization);
+  }
+
+  if (antiPatternsSection !== '') {
+    lines.push(``, `## Project Anti-Patterns`, ``, antiPatternsSection);
+  }
+
+  if (testSection !== '') {
+    lines.push(``, `## Test Patterns`, ``, testSection);
+  }
+
+  if (orchestrationSection !== '') {
+    lines.push(``, orchestrationSection);
+  }
+
+  if (taskStatusSection !== '') {
+    lines.push(``, taskStatusSection);
+  }
+
+  if (conventionsSection !== '') {
+    lines.push(``, conventionsSection);
+  }
+
+  lines.push(``, `> Generated by \`nitro-fueled init\` from workspace analysis.`);
+
+  return lines.join('\n') + '\n';
+}
+
+/**
+ * Write a CLAUDE.nitro.md generated from a ProjectProfile to .nitro/CLAUDE.nitro.md.
+ * Returns true if written, false if skipped (exists + no overwrite) or on error.
+ */
+export function generateClaudeNitroMd(
+  cwd: string,
+  profile: ProjectProfile,
+  baseTemplate: string,
+  overwrite: boolean,
+): boolean {
+  const dest = resolve(cwd, '.nitro', 'CLAUDE.nitro.md');
+
+  if (!overwrite && existsSync(dest)) {
+    logger.log('  CLAUDE.nitro.md: already exists (skipped — run with --overwrite to regenerate)');
+    return false;
+  }
+
+  const content = buildClaudeNitroMdFromProfile(profile, baseTemplate);
+
+  try {
+    mkdirSync(resolve(cwd, '.nitro'), { recursive: true });
+    writeFileSync(dest, content, 'utf-8');
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`  Warning: Could not write CLAUDE.nitro.md: ${msg}`);
+    return false;
+  }
+
   return true;
 }

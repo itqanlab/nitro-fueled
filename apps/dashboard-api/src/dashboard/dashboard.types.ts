@@ -197,6 +197,12 @@ export interface DashboardStats {
   readonly totalTokens: number;
   readonly costByModel: Record<string, number>;
   readonly tokensByModel: Record<string, number>;
+  readonly recentSessions: ReadonlyArray<{
+    readonly sessionId: string;
+    readonly date: string;
+    readonly tokens: number;
+    readonly cost: number;
+  }>;
 }
 
 export interface SessionSummary {

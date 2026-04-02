@@ -4,17 +4,7 @@
     <p class="settings-subtitle">Manage API keys, launchers, subscriptions, and model mappings</p>
   </div>
 
-  <nav class="settings-tabs">
-    @for (tab of tabs; track tab.id) {
-      <button
-        class="settings-tab"
-        [ngClass]="{ 'active': activeTab() === tab.id }"
-        (click)="selectTab(tab.id)">
-        <span class="tab-icon">{{ tab.icon }}</span>
-        <span class="tab-label">{{ tab.label }}</span>
-      </button>
-    }
-  </nav>
+  <app-tab-nav [tabs]="tabs" [activeTab]="activeTab()" (tabChange)="selectTab($event)"></app-tab-nav>
 
   <div class="settings-content">
     @switch (activeTab()) {
@@ -28,28 +18,10 @@
         <app-subscriptions></app-subscriptions>
       }
       @case ('mapping') {
-        <div class="settings-tab-panel">
-          <h2 class="panel-title">Model Mapping</h2>
-          <p class="panel-description">Map models to launchers and set defaults for each launcher.</p>
-          <div class="entries-list">
-            @for (mapping of mappings(); track mapping.id) {
-              <div class="entry-row">
-                <div class="entry-info">
-                  <span class="entry-model">{{ mapping.modelId }}</span>
-                  <span class="entry-arrow">→</span>
-                  <span class="entry-launcher">{{ mapping.launcherName }}</span>
-                </div>
-                <div class="entry-toggle">
-                  @if (mapping.isDefault) {
-                    <span class="default-badge">Default</span>
-                  }
-                </div>
-              </div>
-            } @empty {
-              <p class="empty-state">No model mappings configured.</p>
-            }
-          </div>
-        </div>
+        <app-mapping></app-mapping>
+      }
+      @case ('quota') {
+        <app-provider-quota></app-provider-quota>
       }
     }
   </div>

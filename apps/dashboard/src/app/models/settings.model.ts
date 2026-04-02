@@ -69,7 +69,7 @@ export interface SettingsState {
   readonly mappings: readonly ModelMapping[];
 }
 
-export type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping';
+export type SettingsTab = 'api-keys' | 'launchers' | 'subscriptions' | 'mapping' | 'quota';
 
 export interface SettingsTabDefinition {
   readonly id: SettingsTab;
@@ -81,9 +81,28 @@ export interface MappingDisplayEntry extends ModelMapping {
   readonly launcherName: string;
 }
 
+export interface MappingModelEntry {
+  readonly modelId: string;
+  readonly source: 'api-key' | 'subscription';
+  readonly sourceLabel: string;
+}
+
+export interface MappingLauncherEntry {
+  readonly launcherId: string;
+  readonly launcherName: string;
+}
+
+export interface MappingMatrixCell {
+  readonly modelId: string;
+  readonly launcherId: string;
+  readonly enabled: boolean;
+  readonly isDefault: boolean;
+}
+
 export const SETTINGS_TABS: readonly SettingsTabDefinition[] = [
   { id: 'api-keys', label: 'API Keys', icon: '🔑' },
   { id: 'launchers', label: 'Launchers', icon: '🚀' },
   { id: 'subscriptions', label: 'Subscriptions', icon: '📡' },
   { id: 'mapping', label: 'Mapping', icon: '🗺️' },
+  { id: 'quota', label: 'Provider Quota', icon: '📊' },
 ];

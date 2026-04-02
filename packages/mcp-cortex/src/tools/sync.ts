@@ -55,8 +55,16 @@ function parseFileScope(content: string): string[] {
 }
 
 function parseTitle(content: string): string {
-  const match = content.match(/^#\s+Task:\s*(.+)/m);
-  return match ? match[1].trim() : 'Untitled';
+  // Try metadata table Title row first (most explicit)
+  const metaMatch = content.match(/\|\s*Title\s*\|\s*(.+?)\s*\|/i);
+  if (metaMatch) return metaMatch[1].trim();
+  // Try "# Task: Title" format
+  const taskMatch = content.match(/^#\s+Task:\s*(.+)/m);
+  if (taskMatch) return taskMatch[1].trim();
+  // Try "# TASK_YYYY_NNN — Title" format
+  const headingMatch = content.match(/^#\s+TASK_\d{4}_\d{3}\s*[—–-]\s*(.+)/m);
+  if (headingMatch) return headingMatch[1].trim();
+  return 'Untitled';
 }
 
 function parseTaskFile(taskDir: string, taskId: string): ParsedTask | null {
@@ -145,8 +153,8 @@ export function handleSyncTasksFromFiles(
 }
 
 const VALID_TASK_STATUSES = new Set([
-  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
-  'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
+  'CREATED', 'IN_PROGRESS', 'PREPPED', 'IMPLEMENTING', 'IMPLEMENTED', 'IN_REVIEW',
+  'FIXING', 'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED', 'ARCHIVE',
 ]);
 
 export function handleReconcileStatusFiles(

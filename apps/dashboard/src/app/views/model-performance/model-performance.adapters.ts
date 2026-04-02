@@ -16,8 +16,6 @@ export interface ModelPerfRow {
   scoreClass: 'score-high' | 'score-mid' | 'score-low';
 }
 
-export const FALLBACK_MODEL_PERF_ROWS: ModelPerfRow[] = [];
-
 function computeScoreClass(score: number | null): 'score-high' | 'score-mid' | 'score-low' {
   if (score === null) return 'score-low';
   if (score >= 4) return 'score-high';
@@ -40,7 +38,7 @@ function computeQualityPerDollar(
 export function adaptModelPerformance(
   raw: CortexModelPerformance[] | null,
 ): ModelPerfRow[] {
-  if (!raw) return FALLBACK_MODEL_PERF_ROWS;
+  if (!raw) return [];
   return raw.map((item): ModelPerfRow => ({
     model: item.model,
     taskType: item.task_type ?? 'unknown',

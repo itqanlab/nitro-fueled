@@ -1,57 +1,129 @@
-import { Injectable } from '@nestjs/common';
-import {
-  AutoPilotStatusResponse,
-  MockAutoPilotSession,
-  StartAutoPilotRequest,
-  StartAutoPilotResponse,
-  StopAutoPilotResponse,
+/**
+ * AutoPilotService — thin facade over SessionManagerService.
+ *
+ * Translates camelCase HTTP-layer DTOs into snake_case SupervisorConfig
+ * keys and delegates all operations to SessionManagerService.
+ */
+import { Injectable, Logger } from '@nestjs/common';
+import { SessionManagerService } from './session-manager.service';
+import type {
+  CreateSessionRequest,
+  CreateSessionResponse,
+  UpdateSessionConfigRequest,
+  UpdateSessionConfigResponse,
+  SessionActionResponse,
+  ListSessionsResponse,
 } from './auto-pilot.model';
+import type {
+  SessionStatusResponse,
+  SupervisorConfig,
+  UpdateConfigRequest,
+} from './auto-pilot.types';
 
 @Injectable()
 export class AutoPilotService {
-  private readonly sessions = new Map<string, MockAutoPilotSession>();
-  private sessionCounter = 0;
+  private readonly logger = new Logger(AutoPilotService.name);
 
-  public start(request: StartAutoPilotRequest): StartAutoPilotResponse {
-    const sessionId = this.createSessionId();
-    this.sessions.set(sessionId, {
-      sessionId,
-      taskIds: request.taskIds ?? [],
-      dryRun: request.options?.dryRun ?? false,
-      createdAt: new Date().toISOString(),
-      pollCount: 0,
-      stopped: false,
-    });
+  public constructor(private readonly sessionManager: SessionManagerService) {}
+
+  // ============================================================
+  // Session lifecycle
+  // ============================================================
+
+  public createSession(request: CreateSessionRequest): CreateSessionResponse {
+    const config: Partial<SupervisorConfig> = {};
+
+    if (request.concurrency !== undefined) config.concurrency = request.concurrency;
+    if (request.limit !== undefined) config.limit = request.limit;
+    if (request.prepProvider !== undefined) config.prep_provider = request.prepProvider;
+    if (request.prepModel !== undefined) config.prep_model = request.prepModel;
+    if (request.implementProvider !== undefined) config.implement_provider = request.implementProvider;
+    if (request.implementModel !== undefined) config.implement_model = request.implementModel;
+    if (request.implementFallbackProvider !== undefined) config.implement_fallback_provider = request.implementFallbackProvider;
+    if (request.implementFallbackModel !== undefined) config.implement_fallback_model = request.implementFallbackModel;
+    if (request.reviewProvider !== undefined) config.review_provider = request.reviewProvider;
+    if (request.reviewModel !== undefined) config.review_model = request.reviewModel;
+    if (request.supervisorModel !== undefined) config.supervisor_model = request.supervisorModel;
+    if (request.priority !== undefined) config.priority = request.priority;
+    if (request.retries !== undefined) config.retries = request.retries;
+
+    const sessionId = this.sessionManager.createSession(config);
+
     return { sessionId, status: 'starting' };
   }
 
-  public stop(sessionId: string): StopAutoPilotResponse | null {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      return null;
-    }
-    this.sessions.set(sessionId, { ...session, stopped: true });
-    return { sessionId, stopped: true };
+  public stopSession(sessionId: string): SessionActionResponse | null {
+    const stopped = this.sessionManager.stopSession(sessionId);
+    if (!stopped) return null;
+
+    return { sessionId, action: 'stopped' };
   }
 
-  public getStatus(sessionId: string): AutoPilotStatusResponse | null {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      return null;
-    }
-    const nextPollCount = session.pollCount + 1;
-    const status = session.stopped ? 'stopped' : nextPollCount >= 2 ? 'running' : 'starting';
-    this.sessions.set(sessionId, { ...session, pollCount: nextPollCount });
-    return {
-      sessionId,
-      status,
-      updatedAt: new Date().toISOString(),
-    };
+  public pauseSession(sessionId: string): SessionActionResponse | null {
+    const paused = this.sessionManager.pauseSession(sessionId);
+    if (!paused) return null;
+
+    return { sessionId, action: 'paused' };
   }
 
-  private createSessionId(): string {
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    this.sessionCounter += 1;
-    return `SESSION_${stamp}_${this.sessionCounter}`;
+  public resumeSession(sessionId: string): SessionActionResponse | null {
+    const resumed = this.sessionManager.resumeSession(sessionId);
+    if (!resumed) return null;
+
+    return { sessionId, action: 'resumed' };
+  }
+
+  public drainSession(sessionId: string): SessionActionResponse | null {
+    const drained = this.sessionManager.drainSession(sessionId);
+    if (!drained) return null;
+
+    return { sessionId, action: 'draining' };
+  }
+
+  // ============================================================
+  // Config update
+  // ============================================================
+
+  public updateSessionConfig(
+    sessionId: string,
+    request: UpdateSessionConfigRequest,
+  ): UpdateSessionConfigResponse | null {
+    const patch: UpdateConfigRequest = {};
+
+    if (request.concurrency !== undefined) patch.concurrency = request.concurrency;
+    if (request.limit !== undefined) patch.limit = request.limit;
+    if (request.prepProvider !== undefined) patch.prep_provider = request.prepProvider;
+    if (request.prepModel !== undefined) patch.prep_model = request.prepModel;
+    if (request.implementProvider !== undefined) patch.implement_provider = request.implementProvider;
+    if (request.implementModel !== undefined) patch.implement_model = request.implementModel;
+    if (request.implementFallbackProvider !== undefined) patch.implement_fallback_provider = request.implementFallbackProvider;
+    if (request.implementFallbackModel !== undefined) patch.implement_fallback_model = request.implementFallbackModel;
+    if (request.reviewProvider !== undefined) patch.review_provider = request.reviewProvider;
+    if (request.reviewModel !== undefined) patch.review_model = request.reviewModel;
+    if (request.supervisorModel !== undefined) patch.supervisor_model = request.supervisorModel;
+    if (request.priority !== undefined) patch.priority = request.priority;
+    if (request.retries !== undefined) patch.retries = request.retries;
+    if (request.pollIntervalMs !== undefined) patch.poll_interval_ms = request.pollIntervalMs;
+
+    const updated = this.sessionManager.updateSessionConfig(sessionId, patch);
+    if (!updated) return null;
+
+    const runner = this.sessionManager.getRunner(sessionId);
+    if (!runner) return null;
+
+    return { sessionId, config: runner.getConfig() };
+  }
+
+  // ============================================================
+  // Query
+  // ============================================================
+
+  public getSessionStatus(sessionId: string): SessionStatusResponse | null {
+    return this.sessionManager.getSessionStatus(sessionId);
+  }
+
+  public listSessions(): ListSessionsResponse {
+    const sessions = this.sessionManager.listSessions();
+    return { sessions };
   }
 }

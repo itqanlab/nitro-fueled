@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { logger } from './logger.js';
 
 export type TaskStatus =
   | 'CREATED'
@@ -35,7 +36,7 @@ export function parseRegistry(cwd: string): RegistryRow[] {
   try {
     content = readFileSync(registryPath, 'utf-8');
   } catch {
-    console.error(`Warning: Could not read ${registryPath}`);
+    logger.error(`Warning: Could not read ${registryPath}`);
     return [];
   }
 
@@ -105,7 +106,7 @@ export function generateRegistry(cwd: string): void {
       .filter((name) => /^TASK_\d{4}_\d{3}$/.test(name))
       .sort();
   } catch {
-    console.error(`Warning: Could not read task-tracking directory at ${trackingDir}`);
+    logger.error(`Warning: Could not read task-tracking directory at ${trackingDir}`);
     return;
   }
 
@@ -122,17 +123,17 @@ export function generateRegistry(cwd: string): void {
       try {
         status = readFileSync(statusFilePath, 'utf-8').trim();
       } catch {
-        console.error(`[warn] ${taskId}: could not read status file, reading state from registry.md`);
+        logger.error(`[warn] ${taskId}: could not read status file, reading state from registry.md`);
         status = existingById.get(taskId)?.status ?? 'CREATED';
       }
     } else {
-      console.error(`[warn] ${taskId}: status file missing, reading state from registry.md`);
+      logger.error(`[warn] ${taskId}: status file missing, reading state from registry.md`);
       status = existingById.get(taskId)?.status ?? 'CREATED';
     }
 
     // Validate status
     if (!VALID_STATUSES.includes(status as TaskStatus)) {
-      console.error(`[warn] ${taskId}: unknown status "${status.slice(0, 64)}", defaulting to CREATED`);
+      logger.error(`[warn] ${taskId}: unknown status "${status.slice(0, 64)}", defaulting to CREATED`);
       status = 'CREATED';
     }
 
@@ -178,6 +179,6 @@ export function generateRegistry(cwd: string): void {
   try {
     writeFileSync(registryPath, output, 'utf-8');
   } catch {
-    console.error(`Warning: Could not write ${registryPath}`);
+    logger.error(`Warning: Could not write ${registryPath}`);
   }
 }

@@ -10,7 +10,7 @@ import { join } from 'node:path';
 export const TASK_ID_RE = /^TASK_\d{4}_\d{3}$/;
 
 export const VALID_STATUSES = new Set([
-  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW',
+  'CREATED', 'IN_PROGRESS', 'IMPLEMENTED', 'IN_REVIEW', 'FIXING',
   'COMPLETE', 'FAILED', 'BLOCKED', 'CANCELLED',
 ]);
 
@@ -78,7 +78,13 @@ export function syncTasksFromFiles(
   let skipped = 0;
   const errors: string[] = [];
 
-  const VALID_TYPES = new Set(['FEATURE', 'BUG', 'REFACTOR', 'DOCS', 'TEST', 'CHORE']);
+  const VALID_TYPES = new Set([
+    // Canonical types (from schema.ts CANONICAL_TASK_TYPES)
+    'FEATURE', 'BUGFIX', 'REFACTORING', 'DOCUMENTATION', 'RESEARCH',
+    'DEVOPS', 'OPS', 'CREATIVE', 'CONTENT', 'SOCIAL', 'DESIGN',
+    // Legacy aliases preserved for backward compatibility
+    'BUG', 'REFACTOR', 'DOCS', 'TEST', 'CHORE',
+  ]);
   const VALID_PRIORITIES = new Set(['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low']);
 
   const upsert = db.prepare(`

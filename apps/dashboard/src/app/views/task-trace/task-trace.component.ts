@@ -49,7 +49,6 @@ export class TaskTraceComponent {
     this.api
       .getCortexTasks()
       .pipe(catchError(() => of(null as CortexTask[] | null))),
-    { initialValue: null as CortexTask[] | null },
   );
 
   public readonly taskOptions = computed<Array<{ value: string; label: string }>>(() => {
@@ -58,7 +57,7 @@ export class TaskTraceComponent {
     return tasks.map(t => ({ value: t.id, label: `${t.id} — ${t.title}` }));
   });
 
-  /** True only while the tasks HTTP request is still in-flight (initial null). */
+  /** True only while the tasks HTTP request is still in-flight. */
   public tasksLoading = true;
 
   private readonly selectedTaskId$ = new BehaviorSubject<string | null>(null);
@@ -70,14 +69,14 @@ export class TaskTraceComponent {
           ? this.api
               .getCortexTaskTrace(id)
               .pipe(catchError(() => of(null as CortexTaskTrace | null)))
-          : of(null as CortexTaskTrace | null),
+          : of(undefined as CortexTaskTrace | null | undefined),
       ),
     ),
-    { initialValue: null as CortexTaskTrace | null },
+    { initialValue: undefined as CortexTaskTrace | null | undefined },
   );
 
   private readonly viewModelComputed = computed<TaskTraceViewModel | null>(() =>
-    adaptTaskTrace(this.traceSignal()),
+    adaptTaskTrace(this.traceSignal() ?? null),
   );
 
   public selectedTaskId: string | null = null;
@@ -86,15 +85,14 @@ export class TaskTraceComponent {
 
   constructor() {
     effect(() => {
-      const tasks = this.tasksSignal();
-      if (tasks !== null) {
+      if (this.tasksSignal() !== undefined) {
         this.tasksLoading = false;
       }
     });
 
     effect(() => {
       this.viewModel = this.viewModelComputed();
-      this.traceLoading = this.selectedTaskId !== null && this.traceSignal() === null;
+      this.traceLoading = this.selectedTaskId !== null && this.traceSignal() === undefined;
     });
   }
 

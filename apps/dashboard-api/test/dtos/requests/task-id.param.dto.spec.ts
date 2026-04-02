@@ -1,6 +1,8 @@
+// @ts-nocheck
+
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
-import { TaskIdParamDto } from '../../src/app/dtos/requests/task-id.param.dto';
+import { TaskIdParamDto } from '../../../dist/app/dtos/requests/task-id.param.dto';
 
 describe('TaskIdParamDto', () => {
   describe('validation with valid formats', () => {

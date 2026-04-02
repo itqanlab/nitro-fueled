@@ -36,8 +36,7 @@ Use `ng generate @angular/core:control-flow-migration` if available, or perform 
 
 ## File Scope
 
-- apps/dashboard/src/app/views/**/*.html
-- apps/dashboard/src/app/shared/**/*.html
+- apps/dashboard/src/app/views/project/project.component.html
 
 ## Parallelism
 

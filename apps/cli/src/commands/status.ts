@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
-import { parseRegistry, generateRegistry } from '../utils/registry.js';
+import { logger } from '../utils/logger.js';
 import type { RegistryRow, TaskStatus } from '../utils/registry.js';
 
 const TASK_STATUS_VALUES: ReadonlyArray<TaskStatus> = [
@@ -67,7 +67,7 @@ function parseActiveWorkers(cwd: string): WorkerEntry[] {
   try {
     content = readFileSync(statePath, 'utf-8');
   } catch {
-    console.error(`Warning: Could not read ${statePath}`);
+    logger.error(`Warning: Could not read ${statePath}`);
     return [];
   }
 
@@ -133,7 +133,7 @@ function parsePlan(cwd: string): PlanInfo | null {
   try {
     content = readFileSync(planPath, 'utf-8').replace(/\r\n/g, '\n');
   } catch {
-    console.error(`Warning: Could not read ${planPath}`);
+    logger.error(`Warning: Could not read ${planPath}`);
     return null;
   }
 
@@ -198,62 +198,62 @@ function displayBrief(rows: RegistryRow[], workers: WorkerEntry[]): void {
     parts.push(`${workers.length} workers active`);
   }
 
-  console.log(parts.join(' | '));
+  logger.log(parts.join(' | '));
 }
 
 function displayFull(rows: RegistryRow[], workers: WorkerEntry[], plan: PlanInfo | null): void {
   const counts = countByStatus(rows);
 
-  console.log('');
-  console.log('NITRO-FUELED STATUS');
-  console.log('===================');
-  console.log('');
+  logger.log('');
+  logger.log('NITRO-FUELED STATUS');
+  logger.log('===================');
+  logger.log('');
 
   // Task summary
-  console.log('Task Summary');
-  console.log('------------');
-  console.log(`Total: ${rows.length}`);
+  logger.log('Task Summary');
+  logger.log('------------');
+  logger.log(`Total: ${rows.length}`);
   for (const status of STATUS_ORDER) {
     const count = counts.get(status);
     if (count !== undefined && count > 0) {
-      console.log(`  ${status}: ${count}`);
+      logger.log(`  ${status}: ${count}`);
     }
   }
-  console.log('');
+  logger.log('');
 
   // Active workers
   if (workers.length > 0) {
-    console.log('Active Workers (Supervisor Running)');
-    console.log('-----------------------------------');
+    logger.log('Active Workers (Supervisor Running)');
+    logger.log('-----------------------------------');
     for (const w of workers) {
-      console.log(`  ${w.taskId} | ${w.workerType} Worker | ${w.health} | ${w.label}`);
+      logger.log(`  ${w.taskId} | ${w.workerType} Worker | ${w.health} | ${w.label}`);
     }
-    console.log('');
+    logger.log('');
   }
 
   // Plan progress
   if (plan !== null) {
-    console.log('Plan Progress');
-    console.log('-------------');
-    console.log(`Active Phase: ${plan.activePhase}`);
-    console.log(`Active Milestone: ${plan.activeMilestone}`);
-    console.log(`Supervisor Guidance: ${plan.guidance}`);
+    logger.log('Plan Progress');
+    logger.log('-------------');
+    logger.log(`Active Phase: ${plan.activePhase}`);
+    logger.log(`Active Milestone: ${plan.activeMilestone}`);
+    logger.log(`Supervisor Guidance: ${plan.guidance}`);
 
     if (plan.phases.length > 0) {
-      console.log('');
+      logger.log('');
       for (const phase of plan.phases) {
         const pct = phase.taskCount > 0
           ? Math.round((phase.completeCount / phase.taskCount) * 100)
           : 0;
-        console.log(`  ${phase.name}: ${phase.status} (${phase.completeCount}/${phase.taskCount} tasks, ${pct}%)`);
+        logger.log(`  ${phase.name}: ${phase.status} (${phase.completeCount}/${phase.taskCount} tasks, ${pct}%)`);
       }
     }
-    console.log('');
+    logger.log('');
   }
 
   // Task detail table
-  console.log('Task Details');
-  console.log('------------');
+  logger.log('Task Details');
+  logger.log('------------');
 
   const idWidth = 15;
   const statusWidth = 13;
@@ -274,8 +274,8 @@ function displayFull(rows: RegistryRow[], workers: WorkerEntry[], plan: PlanInfo
     '-'.repeat(descWidth),
   ].join('  ');
 
-  console.log(header);
-  console.log(separator);
+  logger.log(header);
+  logger.log(separator);
 
   for (const row of rows) {
     const desc = row.description.length > descWidth
@@ -287,21 +287,21 @@ function displayFull(rows: RegistryRow[], workers: WorkerEntry[], plan: PlanInfo
       row.type.padEnd(typeWidth),
       desc,
     ].join('  ');
-    console.log(line);
+    logger.log(line);
   }
 
   // Blockers / attention needed
   const blockers = rows.filter((r) => r.status === 'BLOCKED' || r.status === 'FAILED');
   if (blockers.length > 0) {
-    console.log('');
-    console.log('Needs Attention');
-    console.log('---------------');
+    logger.log('');
+    logger.log('Needs Attention');
+    logger.log('---------------');
     for (const b of blockers) {
-      console.log(`  ${b.id} (${b.status}): ${b.description}`);
+      logger.log(`  ${b.id} (${b.status}): ${b.description}`);
     }
   }
 
-  console.log('');
+  logger.log('');
 }
 
 export default class Status extends BaseCommand {
@@ -338,8 +338,9 @@ export default class Status extends BaseCommand {
     }
 
     if (!usedDb) {
-      generateRegistry(cwd);
-      rows = parseRegistry(cwd);
+      logger.error('Error: cortex DB unavailable. Run `npx nitro-fueled init` to configure nitro-cortex.');
+      process.exitCode = 1;
+      return;
     }
 
     const workers = parseActiveWorkers(cwd);
@@ -347,9 +348,9 @@ export default class Status extends BaseCommand {
     if (rows.length === 0) {
       const registryPath = resolve(cwd, 'task-tracking/registry.md');
       if (!existsSync(registryPath)) {
-        console.log('No task registry found. Run `npx nitro-fueled init` first.');
+        logger.log('No task registry found. Run `npx nitro-fueled init` first.');
       } else {
-        console.log('No tasks in registry.');
+        logger.log('No tasks in registry.');
       }
       return;
     }

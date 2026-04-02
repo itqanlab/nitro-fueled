@@ -11,6 +11,8 @@ import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import type { CreateTaskOverrides, CreatedTask, TaskCreationComplexity, TaskPriority, TaskType } from '../../models/api.types';
 import { TASK_COMPLEXITIES, TASK_PRIORITIES, TASK_TYPES } from '../../services/new-task.constants';
+import { FormFieldComponent } from '../../shared/form-field/form-field.component';
+import { ExpandablePanelComponent } from '../../shared/expandable-panel/expandable-panel.component';
 
 interface AdvancedOverrides {
   type: TaskType | '';
@@ -23,7 +25,7 @@ interface AdvancedOverrides {
 @Component({
   selector: 'app-new-task',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, FormFieldComponent, ExpandablePanelComponent],
   templateUrl: './new-task.component.html',
   styleUrl: './new-task.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,6 +68,10 @@ export class NewTaskComponent {
 
   public toggleAdvanced(): void {
     this.advancedOpen.set(!this.advancedOpen());
+  }
+
+  public onAdvancedToggle(value: boolean): void {
+    this.advancedOpen.set(value);
   }
 
   public onCancel(): void {

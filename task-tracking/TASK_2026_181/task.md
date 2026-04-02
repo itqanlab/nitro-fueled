@@ -35,10 +35,13 @@ Replace all `session-orchestrator` → `nitro-cortex` and all `mcp__session-orch
 
 ## File Scope
 
+- .claude/commands/nitro-auto-pilot.md
+- CLAUDE.md
 - apps/cli/scaffold/.claude/commands/nitro-auto-pilot.md
 - apps/cli/scaffold/.claude/skills/auto-pilot/SKILL.md
 - apps/cli/scaffold/.claude/skills/auto-pilot/references/worker-prompts.md
 - apps/cli/scaffold/.claude/skills/orchestration/references/agent-calibration.md
+- docs/mcp-nitro-cortex-design.md
 
 ## Parallelism
 

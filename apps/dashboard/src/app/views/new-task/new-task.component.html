@@ -71,84 +71,74 @@
       </section>
 
       <!-- Advanced Section -->
-      <section class="form-section advanced-section">
-        <button type="button" class="advanced-toggle" (click)="toggleAdvanced()">
-          <span class="advanced-toggle-label">&#x2699;&#xFE0F; Advanced Options</span>
-          <span class="chevron" [class.open]="advancedOpen()">&#x25B6;</span>
-        </button>
+      <app-expandable-panel
+        title="Advanced Options"
+        icon="⚙️"
+        [expanded]="advancedOpen()"
+        (toggle)="onAdvancedToggle($event)"
+      >
+        <p class="advanced-hint">All fields optional — leave blank to auto-detect from your description.</p>
 
-        @if (advancedOpen()) {
-          <div class="advanced-body">
-            <p class="advanced-hint">All fields optional — leave blank to auto-detect from your description.</p>
-
-            <div class="advanced-grid">
-              <div class="field-group">
-                <label class="field-label" for="adv-type">Type</label>
-                <div class="select-wrapper">
-                  <select id="adv-type" class="select" [(ngModel)]="overrides.type" name="adv-type">
-                    <option value="">Auto-detect</option>
-                    @for (t of taskTypes; track t) {
-                      <option [value]="t">{{ t }}</option>
-                    }
-                  </select>
-                  <span class="select-arrow">&#x25BC;</span>
-                </div>
-              </div>
-
-              <div class="field-group">
-                <label class="field-label" for="adv-priority">Priority</label>
-                <div class="select-wrapper">
-                  <select id="adv-priority" class="select" [(ngModel)]="overrides.priority" name="adv-priority">
-                    <option value="">Default (P2-Medium)</option>
-                    @for (p of priorities; track p) {
-                      <option [value]="p">{{ p }}</option>
-                    }
-                  </select>
-                  <span class="select-arrow">&#x25BC;</span>
-                </div>
-              </div>
-
-              <div class="field-group">
-                <label class="field-label" for="adv-complexity">Complexity</label>
-                <div class="select-wrapper">
-                  <select id="adv-complexity" class="select" [(ngModel)]="overrides.complexity" name="adv-complexity">
-                    <option value="">Auto-detect</option>
-                    @for (c of complexities; track c) {
-                      <option [value]="c">{{ c }}</option>
-                    }
-                  </select>
-                  <span class="select-arrow">&#x25BC;</span>
-                </div>
-              </div>
-
-              <div class="field-group">
-                <label class="field-label" for="adv-model">Model</label>
-                <input
-                  id="adv-model"
-                  class="input"
-                  type="text"
-                  placeholder="e.g. claude-sonnet-4-6"
-                  [(ngModel)]="overrides.model"
-                  name="adv-model"
-                />
-              </div>
+        <div class="advanced-grid">
+          <app-form-field label="Type">
+            <div class="select-wrapper">
+              <select class="select" [(ngModel)]="overrides.type" name="adv-type" id="adv-type">
+                <option value="">Auto-detect</option>
+                @for (t of taskTypes; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </select>
+              <span class="select-arrow">&#x25BC;</span>
             </div>
+          </app-form-field>
 
-            <div class="field-group field-group--full">
-              <label class="field-label" for="adv-deps">Dependencies</label>
-              <input
-                id="adv-deps"
-                class="input"
-                type="text"
-                placeholder="e.g. TASK_2026_155, TASK_2026_156 (comma-separated)"
-                [(ngModel)]="overrides.dependencies"
-                name="adv-deps"
-              />
-              <p class="field-hint">Comma-separated task IDs this task depends on.</p>
+          <app-form-field label="Priority">
+            <div class="select-wrapper">
+              <select class="select" [(ngModel)]="overrides.priority" name="adv-priority" id="adv-priority">
+                <option value="">Default (P2-Medium)</option>
+                @for (p of priorities; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+              <span class="select-arrow">&#x25BC;</span>
             </div>
-          </div>
-        }
-      </section>
+          </app-form-field>
+
+          <app-form-field label="Complexity">
+            <div class="select-wrapper">
+              <select class="select" [(ngModel)]="overrides.complexity" name="adv-complexity" id="adv-complexity">
+                <option value="">Auto-detect</option>
+                @for (c of complexities; track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
+              </select>
+              <span class="select-arrow">&#x25BC;</span>
+            </div>
+          </app-form-field>
+
+          <app-form-field label="Model">
+            <input
+              id="adv-model"
+              class="input"
+              type="text"
+              placeholder="e.g. claude-sonnet-4-6"
+              [(ngModel)]="overrides.model"
+              name="adv-model"
+            />
+          </app-form-field>
+        </div>
+
+        <app-form-field label="Dependencies" hint="Comma-separated task IDs this task depends on.">
+          <input
+            id="adv-deps"
+            class="input"
+            type="text"
+            placeholder="e.g. TASK_2026_155, TASK_2026_156 (comma-separated)"
+            [(ngModel)]="overrides.dependencies"
+            name="adv-deps"
+          />
+        </app-form-field>
+      </app-expandable-panel>
 
       <!-- Error -->
       @if (errorMessage() !== null) {

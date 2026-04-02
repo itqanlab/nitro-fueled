@@ -39,6 +39,12 @@ interface SessionAccumulator {
   model: string;
   endTurnAt: number | null;
   autoCloseTriggered: boolean;
+  /**
+   * Cumulative cost in USD reported directly by the launcher (e.g. opencode step_finish.part.cost).
+   * When > 0, this is used as the authoritative cost instead of the token-calculator estimate.
+   * Falls back to calculateCost() when the launcher does not report cost (e.g. Claude Code CLI).
+   */
+  directCost: number;
 }
 
 /** Validates that a value is a finite non-negative number (safe for token arithmetic). */
@@ -119,6 +125,7 @@ export class JsonlWatcher {
         lastAction: 'spawned', lastActionAt: now,
         spawnTime: now,
         model, endTurnAt: null, autoCloseTriggered: false,
+        directCost: 0,
       };
       this.accumulators.set(workerId, acc);
     }
@@ -148,6 +155,12 @@ export class JsonlWatcher {
         acc.totalCacheCreation = usage.cache_creation_input_tokens ?? acc.totalCacheCreation;
         acc.totalCacheRead = usage.cache_read_input_tokens ?? acc.totalCacheRead;
       }
+      // Pick up cost if the launcher reports it on the result message (not present today in
+      // Claude Code CLI, but extracted here so any future launcher format gets it for free).
+      const resultCost = (msg as Record<string, unknown>).cost_usd ?? (msg as Record<string, unknown>).cost;
+      if (isFiniteNonNeg(resultCost) && (resultCost as number) > 0) {
+        acc.directCost += resultCost as number;
+      }
       if (!acc.endTurnAt) acc.endTurnAt = Date.now();
       return;
     }
@@ -174,6 +187,13 @@ export class JsonlWatcher {
     acc.totalCacheCreation += cacheCreation;
     acc.totalCacheRead += cacheRead;
     acc.messageCount++;
+
+    // Pick up per-message cost if the launcher reports it (future-proofing for any Claude format update).
+    const msgCost = (assistant.message as unknown as Record<string, unknown>).cost_usd
+      ?? (assistant.message as unknown as Record<string, unknown>).cost;
+    if (isFiniteNonNeg(msgCost) && (msgCost as number) > 0) {
+      acc.directCost += msgCost as number;
+    }
 
     // M3: Use 0.3 threshold (tighter than 0.7) to reduce false positives from normal
     // tool-result context trimming. A >70% drop is a much stronger compaction signal.
@@ -244,10 +264,12 @@ export class JsonlWatcher {
         acc.autoCloseTriggered = false;
       }
 
-      // Extract cost if present (opencode provides per-step cost)
+      // Accumulate cost reported directly by the launcher (opencode/codex provide per-step cost).
+      // This is the authoritative source — more accurate than the token-calculator estimate,
+      // and the only source for subscription-tier models (e.g. GLM on zai-coding-plan).
       const cost = part.cost as number | undefined;
       if (isFiniteNonNeg(cost) && cost > 0) {
-        // Cost is tracked via token calculator, but opencode provides it directly — ignore for now
+        acc.directCost += cost;
       }
 
       return;
@@ -328,10 +350,11 @@ export class JsonlWatcher {
       context_percent: contextPercent, compaction_count: acc.compactionCount,
     };
 
-    const cost: WorkerCost = calculateCost(
-      acc.totalInput, acc.totalOutput,
-      acc.totalCacheCreation, acc.totalCacheRead, model,
-    );
+    // Use launcher-reported cost when available (opencode, codex, any future launcher that reports it).
+    // Fall back to token-calculator estimate for launchers that don't report cost (e.g. Claude Code CLI).
+    const cost: WorkerCost = acc.directCost > 0
+      ? { input_usd: 0, output_usd: 0, cache_usd: 0, total_usd: Math.round(acc.directCost * 100) / 100 }
+      : calculateCost(acc.totalInput, acc.totalOutput, acc.totalCacheCreation, acc.totalCacheRead, model);
 
     // L2: Compute elapsed_minutes from the spawn time recorded in the accumulator.
     const elapsedMinutes = Math.round((Date.now() - acc.spawnTime) / 60_000);

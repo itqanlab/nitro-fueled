@@ -225,6 +225,8 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_053 | Update Docs and Workspace to Reflect Package Vision | COMPLETE | P1-High |
 | TASK_2026_111 | Two-Phase Provider Resolver Engine (Part 2/3) | COMPLETE | P1-High |
 | TASK_2026_112 | Auto-Pilot Routing Update — Config-Driven (Part 3/3) | COMPLETE | P1-High |
+| TASK_2026_177 | Scaffold-SKILL.md Sync Automation — pre-commit hook + CI check | COMPLETE | P2-Medium |
+| TASK_2026_279 | Rename Unprefixed .claude/ Dirs and Files to nitro-* (Structural Rename, Part 1) | COMPLETE | P2-Medium |
 
 ### Phase 13: Documentation Site
 **Status**: COMPLETE
@@ -267,6 +269,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_079 | Analytics & Insights view | COMPLETE | P1-High |
 | TASK_2026_080 | Agent Editor view | COMPLETE | P1-High |
 | TASK_2026_081 | MCP Integrations view | COMPLETE | P1-High |
+| TASK_2026_303 | MCP server management API endpoints (backend) | COMPLETE | P1-High |
 | TASK_2026_082 | Model Assignments view | COMPLETE | P1-High |
 | TASK_2026_083 | New Task view | CREATED | P1-High |
 | TASK_2026_084 | Project Onboarding view | CREATED | P1-High |
@@ -275,6 +278,7 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_087 | Migrate state services + REST controllers to NestJS | COMPLETE | P1-High |
 | TASK_2026_088 | Migrate WebSocket server to NestJS gateway | COMPLETE | P1-High |
 | TASK_2026_089 | Scaffold Oclif CLI app (apps/cli) | COMPLETE | P1-High |
+| TASK_2026_180 | Migrate @Input/@Output Decorators to Signal-Based input()/output() | COMPLETE | P2-Medium |
 | TASK_2026_090 | Migrate init + run + status to Oclif commands | COMPLETE | P1-High |
 | TASK_2026_091 | Migrate create + dashboard + config + update to Oclif commands | COMPLETE | P1-High |
 | TASK_2026_092 | Angular ↔ NestJS integration + CLI build pipeline update | COMPLETE | P1-High |
@@ -305,16 +309,185 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | TASK_2026_142 | Merge session-orchestrator into nitro-cortex — single MCP server | COMPLETE | P1-High |
 | TASK_2026_143 | Agent helper MCP tools — context, lessons, commit, progress, and telemetry tools | COMPLETE | P1-High |
 | TASK_2026_141 | CLI update command — DB migration and hydration for existing projects | COMPLETE | P1-High |
+| TASK_2026_251 | MCP Cortex: bulk_update_tasks Tool | COMPLETE | P1-High |
+
+### Phase 16: v0.2.0 — Tick-Based Supervisor + Configurable Session Launch
+**Status**: NOT STARTED
+**Description**: Critical reliability fix for the supervisor architecture. Instead of one long-running supervisor session (which dies from context overflow, compaction loss, or crashes), the supervisor becomes a series of short-lived "ticks" orchestrated by the NestJS dashboard-api server. Each tick spawns a fresh Claude Code process (Haiku by default), reads state from cortex DB, makes one round of decisions, writes back, and exits. If a tick crashes, the next tick recovers from DB state. The dashboard-api is the persistent process; all state lives in cortex DB. Workers write heartbeats -- the server checks heartbeat freshness (not PIDs) for liveness detection. WebSocket events enable real-time frontend updates. User controls from dashboard UI: start/pause/resume/stop sessions.
+
+#### Milestones
+- [ ] Supervisor events wired through WebSocket for real-time frontend updates (Wave 1)
+- [ ] Tick-mode skill prompt and server restart recovery (Wave 2)
+- [ ] Tick scheduler service spawning Claude Code processes per tick (Wave 3)
+- [ ] Per-task model/provider editing and cost tracking (Wave 2-5)
+- [ ] Live session monitoring and controls in dashboard UI (Wave 2-3)
+
+#### Task Map — Wave 0 (Supervisor hotfixes, run before Wave 1)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_241 | Supervisor: Reconcile Task State on Worker Exit | COMPLETE | P0-Critical |
+| TASK_2026_242 | Supervisor: Ensure IMPLEMENTED Tasks Always Get a Review Worker Before Session End | COMPLETE | P1-High |
+
+#### Task Map — Wave 1 (no dependencies, can run in parallel)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_222 | Extend Cortex DB Schema -- Agents, Workflows, Launchers, Compatibility | COMPLETE | P1-High |
+| TASK_2026_229 | Extend Cortex Schema for Worker Telemetry | COMPLETE | P1-High |
+| TASK_2026_295 | Fix Session Telemetry Gaps — extend update_session for supervisor_model, mode, total_cost (Part 1) | COMPLETE | P1-High |
+| TASK_2026_244 | Dashboard API: Wire Supervisor Events to WebSocket Gateway | CREATED | P0-Critical |
+| TASK_2026_247 | Sessions List: Checkbox Selection and Compare Button | COMPLETE | P2-Medium |
+| TASK_2026_254 | MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup | CREATED | P1-High |
+
+#### Task Map — Wave 2 (depends on Wave 1)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_218 | Session Creation Advanced Options Panel (incl. supervisor model selector) | COMPLETE | P1-High |
+| TASK_2026_230 | Instrument Worker Lifecycle -- Emit Telemetry Events | COMPLETE | P1-High |
+| TASK_2026_243 | Per-Task Model/Provider Editor in Dashboard | CREATED | P1-High |
+| TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CANCELLED | P1-High |
+| TASK_2026_257 | Server Restart Recovery -- Reconstruct Active Sessions from DB | CREATED | P1-High |
+| TASK_2026_258 | Dashboard UI: Live Session Monitor via WebSocket | CREATED | P1-High |
+| TASK_2026_259 | Dashboard UI: Session Controls -- Start/Pause/Resume/Stop | COMPLETE | P1-High |
+| TASK_2026_262 | Worker Heartbeat Verification in Supervisor Tick Loop | CANCELLED | P1-High |
+
+#### Task Map — Wave 3 (depends on Wave 2)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_219 | Queue Empty State and Re-Run Affordance | COMPLETE | P2-Medium |
+| TASK_2026_249 | Cortex Schema: Session Cost Breakdown Columns and Summary | CREATED | P2-Medium |
+| TASK_2026_261 | Tick Scheduler Service -- Spawn Claude Code Processes per Tick | CANCELLED | P0-Critical |
+| TASK_2026_260 | Dashboard UI: Tick Health Dashboard Card | CREATED | P2-Medium |
+
+#### Task Map — Wave 4 (depends on Wave 3)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_250 | Dashboard API: Session Cost Breakdown Response | CREATED | P2-Medium |
+| TASK_2026_231 | Reporting API Endpoints | CREATED | P2-Medium |
+
+#### Task Map — Wave 5 (depends on Wave 4)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_246 | Dashboard UI: Session Cost Breakdown Card | CREATED | P2-Medium |
+| TASK_2026_232 | Dashboard Reports Page | CREATED | P2-Medium |
+| TASK_2026_248 | Session Comparison View -- Side-by-Side Model Cost/Performance | CREATED | P2-Medium |
+
+#### Cancelled (server-architecture tasks replaced by this phase)
+| Task ID | Title | Status |
+|---------|-------|--------|
+| TASK_2026_220 | Launcher Interface Definition | CANCELLED |
+| TASK_2026_221 | Claude Code Launcher Adapter | CANCELLED |
+| TASK_2026_223 | Remove Task .md File Generation -- DB-Only Task State | CANCELLED |
+| TASK_2026_224 | Server Supervisor Service | CANCELLED |
+| TASK_2026_225 | Supervisor REST API + WebSocket Events | CANCELLED |
+| TASK_2026_226 | Refactor Session-Mode Supervisor -- MCP Only | CANCELLED |
+| TASK_2026_227 | Worker Output Collection -- Structured Parsing | CANCELLED |
+| TASK_2026_228 | Direct Mode -- Single-Task Execution Without Supervisor | CANCELLED |
+| TASK_2026_233 | Codex Launcher Adapter | CANCELLED |
+| TASK_2026_234 | Launcher Registry + Dashboard Configuration | CANCELLED |
+| TASK_2026_235 | Compatibility Tracking -- Record Execution Outcomes | CANCELLED |
+| TASK_2026_236 | Auto-Routing Engine -- Intelligent Launcher/Model Selection | CANCELLED |
+| TASK_2026_237 | Hybrid DB Architecture -- Project-Level + Global DB | CANCELLED |
+| TASK_2026_238 | Global Install + User-Scope Server Architecture | CANCELLED |
+| TASK_2026_239 | Workspace Management -- Register, Switch, List Projects | CANCELLED |
+| TASK_2026_240 | Dashboard Multi-Workspace Support | CANCELLED |
+| TASK_2026_245 | Tick-Mode Auto-Pilot Skill Prompt | CANCELLED |
+| TASK_2026_261 | Tick Scheduler Service — Spawn Claude Code Processes per Tick | CANCELLED |
+| TASK_2026_262 | Worker Heartbeat Verification in Supervisor Tick Loop | CANCELLED |
+
+### Phase 18: Code-Based Supervisor Engine (Dual Mode)
+**Status**: NOT STARTED
+**Description**: Replace the AI-based supervisor with a deterministic TypeScript SupervisorEngine. The engine handles task queue management, dependency resolution, adaptive model routing, worker health monitoring, cost budget enforcement, and worker-exit reconciliation — all in code with zero AI token cost. Two entry points: CLI mode (`npx nitro run --batch`) and Server mode (`npx nitro serve`). Both write to the same cortex SQLite DB for unified dashboard tracing.
+
+#### Milestones
+- [ ] Core modules: dependency resolver, model router, cost budget, health monitor (Wave 1)
+- [ ] SupervisorEngine class wiring all modules into event loop (Wave 2)
+- [ ] CLI mode and server mode entry points (Wave 3)
+- [ ] Dashboard live updates via WebSocket (Wave 4)
+- [ ] Complexity-aware pipeline skip for Simple tasks (Wave 5)
+
+#### Task Map — Wave 1 (no dependencies, all parallel)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_335 | Dependency Resolver Module — Task Graph & Priority Sorting | COMPLETE | P0-Critical |
+| TASK_2026_330 | Model Router Module — Adaptive Provider/Model Selection | COMPLETE | P0-Critical |
+| TASK_2026_331 | Cost Budget & Circuit Breaker Module | COMPLETE | P1-High |
+| TASK_2026_332 | Health Monitor & Reconciliation Module | COMPLETE | P1-High |
+
+#### Task Map — Wave 2 (depends on Wave 1)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_338 | SupervisorEngine — Core Event Loop & Worker Orchestration | COMPLETE | P0-Critical |
+| TASK_2026_336 | SupervisorEngine — Recovery, Guards & Cost Enforcement | CREATED | P0-Critical |
+
+#### Task Map — Wave 3 (depends on Wave 2)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_333 | CLI Mode — Wire Engine into `run` Command | COMPLETE | P0-Critical |
+| TASK_2026_340 | NestJS SupervisorService — Engine Lifecycle Manager | COMPLETE | P1-High |
+| TASK_2026_337 | Supervisor REST Controller — Session Control Endpoints | COMPLETE | P1-High |
+| TASK_2026_339 | CLI `serve` Command — Start Persistent Server | COMPLETE | P1-High |
+
+#### Task Map — Wave 4 (depends on Wave 3)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_341 | Angular WebSocket Service — Live Engine Events | COMPLETE | P1-High |
+
+#### Task Map — Wave 5 (depends on Wave 2)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_334 | Complexity-Aware Pipeline Skip — Simple Tasks Skip PM+Architect | COMPLETE | P2-Medium |
+
+### Phase 17: Subtask Support
+**Status**: NOT STARTED
+**Description**: Add subtask decomposition to the task system. A parent task can be decomposed into flat subtasks (one level deep, no nesting). Each subtask is independently spawnable with its own model/complexity. The Prep Worker becomes the decomposer -- it analyzes the task and creates subtasks. The Supervisor schedules subtasks independently, retries only failed subtasks (not the whole parent), and routes each subtask to the optimal model based on its complexity. Review happens holistically at the parent level after all subtasks complete.
+
+#### Milestones
+- [ ] Cortex schema supports subtasks with parent_task_id, subtask_order, and TASK_YYYY_NNN.M ID format
+- [ ] Prep Worker decomposes Medium/Complex tasks into subtasks
+- [ ] Supervisor schedules subtasks independently with per-subtask model routing
+- [ ] Dashboard shows subtask tree with rollup progress
+
+#### Task Map -- Wave 1 (schema foundation)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_263 | Cortex DB Schema: Subtask Support | COMPLETE | P1-High |
+
+#### Task Map -- Wave 2 (depends on Wave 1)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_264 | Prep Worker: Task Decomposition into Subtasks | CREATED | P1-High |
+| TASK_2026_269 | Dashboard API: Subtask Data in Task Response | CREATED | P2-Medium |
+
+#### Task Map -- Wave 3 (depends on Wave 2)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_265 | Supervisor: Subtask-Aware Scheduling | CREATED | P1-High |
+| TASK_2026_268 | Dashboard UI: Subtask Tree Display in Task Detail | CREATED | P2-Medium |
+
+#### Task Map -- Wave 4 (depends on Wave 3)
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_266 | Supervisor: Per-Subtask Model Routing | COMPLETE | P1-High |
+| TASK_2026_267 | Review Worker: Holistic Parent Review After Subtask Completion | CREATED | P1-High |
 
 ## Current Focus
 
-**Active Phase**: Phase 14 — Nx Workspace Migration
-**Active Milestone**: Wave 2 (073) complete — Wave 3 is now unblocked
+**Active Phase**: Phase 18 -- Code-Based Supervisor Engine (Dual Mode)
+**Active Milestone**: Wave 1 -- core modules (resolver, router, budget, health)
 **Next Priorities**:
-1. Wave 3 in parallel: TASK_2026_074 + TASK_2026_076 + TASK_2026_086 + TASK_2026_089 (all unblocked after 073)
+1. TASK_2026_335 -- Dependency Resolver Module (P0-Critical, no deps, foundation for engine)
+2. TASK_2026_330 -- Model Router Module — Adaptive Selection (P0-Critical, no deps, foundation for engine)
+3. TASK_2026_331 -- Cost Budget & Circuit Breaker (P1-High, no deps)
+4. TASK_2026_332 -- Health Monitor & Reconciliation (P1-High, no deps)
+5. After Wave 1: TASK_2026_338 -- SupervisorEngine Core (P0-Critical, depends on all Wave 1)
 
 **Supervisor Guidance**: PROCEED
-**Guidance Note**: Phase 14 is the new active focus. Run strictly in wave order — 072 → 073 → parallel Wave 3 (074, 076, 086, 089) → parallel Wave 4 (075, 077, 087, 090) → parallel Wave 5 (078-085, 088, 091) → 092 → 093. Angular views 078-085 can all run in parallel after 077. Never start 092 before 077+088+091 are all COMPLETE.
+**Guidance Note**: Architecture pivot from tick-based AI supervisor to code-based SupervisorEngine. Tick tasks cancelled (245, 261, 262). The engine replaces AI supervision with deterministic TypeScript — zero token cost for orchestration. Run Wave 1 in parallel (335, 330, 331, 332 — all independent, no shared files). Then Wave 2 (338 → 336 sequential). Then Wave 3 (333 + 340 parallel, then 337 + 339). Phase 16 remaining tasks (244, 254, 257, 258, etc.) are still valid for dashboard/cost work but are lower priority than Phase 18 engine tasks. Phase 17 (Subtask Support) queued after Phase 18.
+
+### Research & Investigation Tasks
+| Task ID | Title | Status | Priority |
+|---------|-------|--------|----------|
+| TASK_2026_212 | GPT-5.4 PREP Worker Kill Rate — Root Cause Investigation | COMPLETE | P2-Medium |
 
 ## Decisions Log
 
@@ -335,3 +508,14 @@ nitro-fueled is a reusable AI development orchestration package. Install into an
 | 2026-03-28 | CLI migrated to Oclif (from Commander.js) | Structured command classes, auto-generated help, plugin system, Nx-native — scales better as commands grow |
 | 2026-03-28 | N.Gine branding used in Angular dashboard | Mockup reference retained as-is in the product |
 | 2026-03-28 | Angular app deployment model: bundled into CLI assets | Maintains current model — `nitro-fueled dashboard` serves Angular via CLI, no separate deploy needed |
+| 2026-03-31 | v0.2.0 architecture: Configurable Session Launch replaces server-based supervisor | Supervisor is a state machine that can run on Haiku for pennies. No need for expensive server architecture. Dashboard controls model selection, workers use per-task models independently. 16 server-architecture tasks cancelled. |
+| 2026-03-31 | Haiku as default supervisor model | Supervisor loop (query tasks, check health, spawn workers, route completions) is mechanical — does not need reasoning power. Haiku at $0.25/1M input tokens vs Sonnet at $3/1M. Expected 90%+ cost reduction for supervisor overhead. |
+| 2026-03-31 | Keep tasks 222, 229, 230 from original v0.2.0 plan | Cortex schema extensions and worker telemetry are architecture-neutral -- needed regardless of supervisor model. |
+| 2026-03-31 | v0.2.0 revised to tick-based supervisor architecture | Single long-running supervisor session dies from context overflow, compaction, crashes. Replace with short-lived ticks: NestJS spawns fresh Claude Code process per tick (Haiku default), reads DB, decides, writes back, exits. Fresh context every tick. If tick crashes, next tick recovers. All state in cortex DB. |
+| 2026-03-31 | Heartbeat-based worker liveness over PID checks | PIDs are invalid after server restart. Workers write heartbeats to DB; server checks heartbeat freshness (>5 min = dead). Works across restarts. |
+| 2026-03-31 | WebSocket supervisor events for real-time dashboard | SessionRunner.emitEvent currently logs to debug only. Wire through DashboardGateway with per-session rooms. Eliminates polling for session monitoring. |
+| 2026-03-31 | Server restart recovery from DB state | On NestJS startup, detect active sessions from cortex DB, verify worker heartbeats, reconcile dead workers, resume tick loops. No state lost on server restart. |
+| 2026-03-31 | Subtask support -- flat decomposition with per-subtask model routing | Medium/Complex tasks decomposed into flat subtasks (one level, no nesting). Each subtask spawns independently with its own model. Failed subtasks retry individually. Review is holistic at parent level. Subtask ID format: TASK_YYYY_NNN.M. 7 tasks across 4 waves. |
+| 2026-04-01 | Code-based SupervisorEngine replaces AI supervisor | AI supervisor burns tokens for deterministic work (queue mgmt, dep resolution, model routing, health monitoring). Replace with TypeScript SupervisorEngine — zero AI tokens for supervision. Dual mode: CLI (`npx nitro run --batch`) and Server (`npx nitro serve`). Same cortex DB, same dashboard tracing. Tick-based tasks (245, 261, 262) cancelled. 12 new tasks across 5 waves. |
+| 2026-04-01 | Adaptive model routing from compatibility data | Engine queries compatibility table for historical success_rate/cost/duration per model×task_type, uses weighted scoring to select optimal model. Falls back to hardcoded defaults when no history exists. |
+| 2026-04-01 | Per-task cost budget with circuit breaker | Simple=$3, Medium=$8, Complex=$15 max cost. Engine kills runaway workers that exceed budget. Addresses $8 Simple task spike. |

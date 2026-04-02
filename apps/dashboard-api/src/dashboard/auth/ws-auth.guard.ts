@@ -7,6 +7,8 @@ export class WsAuthGuard implements CanActivate {
   private readonly logger = new Logger(WsAuthGuard.name);
   private readonly validTokens: Set<string>;
 
+  private readonly authEnabled: boolean;
+
   constructor() {
     const tokens = process.env['WS_API_KEYS'];
     this.validTokens = new Set(
@@ -15,12 +17,13 @@ export class WsAuthGuard implements CanActivate {
         : []
     );
 
-    if (this.validTokens.size === 0) {
-      throw new Error(
-        'WS_API_KEYS environment variable is required. Set WS_API_KEYS with comma-separated API keys.'
-      );
+    this.authEnabled = this.validTokens.size > 0;
+
+    if (this.authEnabled) {
+      this.logger.log(`WebSocket auth guard enabled with ${this.validTokens.size} key(s)`);
+    } else {
+      this.logger.log('WebSocket auth guard disabled (no WS_API_KEYS configured)');
     }
-    this.logger.log('WebSocket authentication guard initialized');
   }
 
   canActivate(context: ExecutionContext): Observable<boolean> {
@@ -28,13 +31,12 @@ export class WsAuthGuard implements CanActivate {
   }
 
   private validateConnection(context: ExecutionContext): boolean {
+    if (!this.authEnabled) {
+      return true;
+    }
+
     const client = context.switchToWs().getClient<Socket>() as Socket;
     const authHeader = client.handshake.auth?.token || client.handshake.headers['authorization'];
-
-    if (this.validTokens.size === 0) {
-      this.logger.error(`Connection rejected (no API keys configured): ${client.id}`);
-      return false;
-    }
 
     let token: string | null = null;
 

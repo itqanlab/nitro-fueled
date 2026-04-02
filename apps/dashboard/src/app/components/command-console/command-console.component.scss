@@ -1,0 +1,469 @@
+$console-width: 480px;
+$console-height: 520px;
+$console-mobile-height: 70vh;
+$border-color: var(--border);
+$bg-primary: var(--bg-primary);
+$bg-secondary: var(--bg-secondary);
+$text-primary: var(--text-primary);
+$text-secondary: var(--text-secondary);
+$text-tertiary: var(--text-tertiary);
+$accent: var(--accent);
+$radius: var(--radius);
+
+.console-wrapper {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.console-toggle {
+  pointer-events: all;
+  position: fixed;
+  bottom: 52px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid $border-color;
+  background: $bg-secondary;
+  color: $text-primary;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: monospace;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s, background 0.15s;
+
+  &:hover {
+    background: $accent;
+    color: #fff;
+    transform: scale(1.08);
+  }
+}
+
+.console-wrapper.console-open .console-toggle {
+  bottom: calc(#{$console-height} + 12px);
+}
+
+.console-panel {
+  pointer-events: all;
+  width: $console-width;
+  height: $console-height;
+  display: flex;
+  flex-direction: column;
+  background: $bg-secondary;
+  border: 1px solid $border-color;
+  border-bottom: none;
+  border-radius: $radius $radius 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid $border-color;
+  flex-shrink: 0;
+}
+
+.console-header-title {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: monospace;
+  color: $text-primary;
+}
+
+.console-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-executing-indicator {
+  font-size: 11px;
+  color: var(--warning);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.console-close-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: $text-tertiary;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: $text-primary;
+  }
+}
+
+.console-quick-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid $border-color;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.quick-action-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid $border-color;
+  background: $bg-primary;
+  color: $text-secondary;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: $accent;
+    color: $text-primary;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.console-suggestions {
+  padding: 8px 16px;
+  border-bottom: 1px solid $border-color;
+  flex-shrink: 0;
+}
+
+.console-suggestions-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $text-tertiary;
+  margin-bottom: 6px;
+}
+
+.suggestion-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: $text-primary;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  transition: background 0.1s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.suggestion-cmd {
+  font-family: monospace;
+  color: $accent;
+  white-space: nowrap;
+}
+
+.suggestion-reason {
+  color: $text-tertiary;
+  font-size: 11px;
+}
+
+.console-transcript {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.transcript-entry {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.transcript-prompt {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.transcript-input .transcript-prompt {
+  color: $accent;
+}
+
+.transcript-output .transcript-prompt {
+  color: var(--success);
+}
+
+.transcript-error .transcript-prompt {
+  color: var(--danger);
+}
+
+.transcript-content {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.transcript-html {
+  :first-child {
+    margin-top: 0;
+  }
+
+  :last-child {
+    margin-bottom: 0;
+  }
+
+  h1, h2, h3, h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 8px 0 4px;
+    color: $text-primary;
+  }
+
+  h1 { font-size: 15px; }
+  h2 { font-size: 14px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 6px 0;
+  }
+
+  th, td {
+    padding: 3px 8px;
+    border: 1px solid $border-color;
+    text-align: left;
+  }
+
+  th {
+    background: rgba(255, 255, 255, 0.04);
+    font-weight: 600;
+  }
+
+  code {
+    font-family: monospace;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  pre {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 12px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  ul, ol {
+    padding-left: 20px;
+    margin: 4px 0;
+  }
+
+  li {
+    margin: 2px 0;
+  }
+}
+
+.transcript-plain {
+  margin: 0;
+  font-family: monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  color: $text-secondary;
+}
+
+.transcript-time {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: $text-tertiary;
+  align-self: flex-end;
+}
+
+.transcript-empty {
+  color: $text-tertiary;
+  font-size: 12px;
+  text-align: center;
+  padding: 24px 16px;
+
+  code {
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+
+  kbd {
+    font-family: monospace;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid $border-color;
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+}
+
+.console-input-area {
+  border-top: 1px solid $border-color;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: $bg-secondary;
+  border: 1px solid $border-color;
+  border-bottom: none;
+  border-radius: $radius $radius 0 0;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: $text-primary;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  transition: background 0.1s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.autocomplete-item.autocomplete-active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.autocomplete-cmd {
+  font-family: monospace;
+  font-weight: 600;
+  color: $accent;
+  white-space: nowrap;
+}
+
+.autocomplete-desc {
+  color: $text-tertiary;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.console-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+}
+
+.console-prompt {
+  font-family: monospace;
+  font-weight: 700;
+  color: $accent;
+  flex-shrink: 0;
+}
+
+.console-input {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 13px;
+  font-family: monospace;
+  background: transparent;
+  border: none;
+  color: $text-primary;
+  outline: none;
+
+  &::placeholder {
+    color: $text-tertiary;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 768px) {
+  .console-panel {
+    width: 100vw;
+    height: $console-mobile-height;
+    border-radius: $radius $radius 0 0;
+  }
+
+  .console-wrapper.console-open .console-toggle {
+    bottom: calc(#{$console-mobile-height} + 12px);
+    right: 16px;
+  }
+
+  .console-toggle {
+    bottom: 52px;
+    right: 16px;
+  }
+
+  .console-quick-actions {
+    padding: 6px 12px;
+  }
+
+  .quick-action-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+}

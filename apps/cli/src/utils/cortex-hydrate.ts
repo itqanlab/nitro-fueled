@@ -3,6 +3,7 @@
 // Sync logic:    cortex-sync.ts (syncTasksFromFiles, reconcileStatusFiles, hydrateSessions, hydrateHandoffs)
 
 import { existsSync } from 'node:fs';
+import { logger } from './logger.js';
 import { join, resolve } from 'node:path';
 import { initCortexDatabase } from './cortex-db-init.js';
 import { syncTasksFromFiles, reconcileStatusFiles } from './cortex-sync-tasks.js';
@@ -100,7 +101,7 @@ export function runCortexStep(
     }
     const message = err instanceof Error ? err.message : String(err);
     const capped = message.length > 200 ? message.slice(0, 200) + '...' : message;
-    console.error(`cortex-hydrate: DB error: ${capped}`);
+    logger.error(`cortex-hydrate: DB error: ${capped}`);
     return null;
   }
 }

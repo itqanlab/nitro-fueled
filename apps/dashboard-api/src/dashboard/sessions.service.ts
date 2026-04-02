@@ -130,4 +130,75 @@ export class SessionsService {
   public removeSession(id: string): void {
     this.sessions.delete(id);
   }
+
+  /**
+   * Get enhanced active sessions with mock task and phase data.
+   */
+  public getActiveSessionsEnhanced(): ReadonlyArray<{
+    sessionId: string;
+    taskId: string;
+    taskTitle: string;
+    startedAt: string;
+    currentPhase: 'PM' | 'Architect' | 'Team-Leader' | 'Dev' | 'QA';
+    status: 'running' | 'idle' | 'completed' | 'failed';
+    lastActivity: string;
+    duration: string;
+  }> {
+    const activeSessions = this.getSessions().filter(s => s.isActive);
+
+    return activeSessions.map(session => {
+      const started = new Date(session.started);
+      const now = new Date();
+      const diffMs = now.getTime() - started.getTime();
+      const duration = this.formatDuration(diffMs);
+
+      const projectName = session.source ? (session.source.split('/').pop() ?? session.source) : '—';
+
+      const currentPhase = this.derivePhase(session.loopStatus);
+      const status = this.deriveStatus(session.loopStatus);
+
+      return {
+        sessionId: session.sessionId,
+        taskId: projectName,
+        taskTitle: `Auto-pilot session for ${session.source}`,
+        startedAt: session.started,
+        currentPhase,
+        status,
+        lastActivity: `Processing ${session.taskCount} task item${session.taskCount !== 1 ? 's' : ''}`,
+        duration,
+      };
+    });
+  }
+
+  private derivePhase(loopStatus: string): 'PM' | 'Architect' | 'Team-Leader' | 'Dev' | 'QA' {
+    switch (loopStatus) {
+      case 'RUNNING': return 'Dev';
+      case 'WAITING': return 'PM';
+      case 'REVIEWING': return 'QA';
+      default: return 'Dev';
+    }
+  }
+
+  private deriveStatus(loopStatus: string): 'running' | 'idle' | 'completed' | 'failed' {
+    switch (loopStatus) {
+      case 'RUNNING': return 'running';
+      case 'COMPLETED': return 'completed';
+      case 'FAILED': return 'failed';
+      default: return 'idle';
+    }
+  }
+
+  private formatDuration(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
+  }
 }

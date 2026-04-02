@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { logger } from './logger.js';
 
 /**
  * Returns true if cwd is inside a git repository.
@@ -29,7 +30,7 @@ export function commitFiles(
 
   if (addResult.status !== 0) {
     const stderr = addResult.stderr?.toString().trim() ?? '';
-    console.error(`Commit: git add failed${stderr !== '' ? ': ' + stderr : ''}`);
+    logger.error(`Commit: git add failed${stderr !== '' ? ': ' + stderr : ''}`);
     return false;
   }
 
@@ -45,7 +46,7 @@ export function commitFiles(
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     const stderr = commitResult.stderr?.toString().trim() ?? '';
-    console.error(`Commit: git commit failed${stderr !== '' ? ': ' + stderr : ''}`);
+    logger.error(`Commit: git commit failed${stderr !== '' ? ': ' + stderr : ''}`);
     return false;
   }
 

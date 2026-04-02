@@ -1,8 +1,8 @@
 <!-- Page Header -->
-<div class="page-header">
+<div class="page-header" role="region" aria-label="Task Queue Header">
   <div class="page-header-left">
-    <h1 class="page-title">Task Queue</h1>
-    <div class="running-badge" [class.has-running]="runningCount() > 0">
+    <h1 class="page-title" id="page-title">Task Queue</h1>
+    <div class="running-badge" [class.has-running]="runningCount() > 0" aria-live="polite" aria-atomic="true">
       @if (runningCount() > 0) {
         <span class="running-dot"></span>
         {{ runningCount() }} Running
@@ -15,95 +15,648 @@
     <button
       class="btn btn-primary"
       type="button"
-      [class.btn-running]="autoPilotState() === 'running'"
-      [disabled]="isAutoPilotBusy()"
-      [attr.aria-label]="autoPilotState() === 'running' ? 'Auto-Pilot is running' : autoPilotState() === 'starting' ? 'Auto-Pilot is starting' : 'Start Auto-Pilot'"
-      (click)="onStartAutoPilot()"
+      [disabled]="createSessionPending()"
+      aria-label="New Session"
+      (click)="openSessionForm()"
+      (keydown.enter)="openSessionForm()"
+      (keydown.space)="openSessionForm()"
     >
-      @if (autoPilotState() === 'running') {
-        <span class="btn-dot running-dot--small"></span>
-        Auto-Pilot Running
-      } @else if (autoPilotState() === 'starting') {
-        <span class="btn-dot running-dot--small"></span>
-        Starting Auto-Pilot...
-      } @else {
-        &#x25B6; Start Auto-Pilot
-      }
+      New Session
     </button>
   </div>
 </div>
 
-@if (autoPilotError()) {
-  <div class="auto-pilot-note auto-pilot-note--error" role="status">{{ autoPilotError() }}</div>
-} @else if (autoPilotSessionId()) {
-  <div class="auto-pilot-note" role="status">
-    Session {{ autoPilotSessionId() }} is {{ autoPilotState() === 'running' ? 'running' : 'starting' }}.
+@if (sessionFormOpen()) {
+  <div class="session-form-panel" role="dialog" aria-label="New Session Form">
+    <h3 class="session-form-title">New Session</h3>
+    <div class="form-row">
+      <label class="form-label" for="session-limit">Task Limit</label>
+      <input
+        id="session-limit"
+        type="number"
+        class="form-input"
+        min="1"
+        max="100"
+        [value]="sessionConfig().limit ?? 10"
+        aria-label="Task limit"
+        (change)="onLimitChange($event)"
+      />
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-priority">Priority</label>
+      <select
+        id="session-priority"
+        class="form-select"
+        [value]="sessionConfig().priority ?? 'build-first'"
+        aria-label="Priority strategy"
+        (change)="onPriorityChange($event)"
+      >
+        <option value="build-first">Build First</option>
+        <option value="review-first">Review First</option>
+        <option value="balanced">Balanced</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-implement-provider">Implement Provider</label>
+      <select
+        id="session-implement-provider"
+        class="form-select"
+        [value]="sessionConfig().implementProvider ?? 'glm'"
+        aria-label="Implement provider"
+        (change)="onImplementProviderChange($event)"
+      >
+        <option value="claude">Claude</option>
+        <option value="glm">GLM</option>
+        <option value="opencode">OpenCode</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="session-review-provider">Review Provider</label>
+      <select
+        id="session-review-provider"
+        class="form-select"
+        [value]="sessionConfig().reviewProvider ?? 'claude'"
+        aria-label="Review provider"
+        (change)="onReviewProviderChange($event)"
+      >
+        <option value="claude">Claude</option>
+        <option value="glm">GLM</option>
+        <option value="opencode">OpenCode</option>
+      </select>
+    </div>
+
+    <!-- Advanced Options (collapsible) -->
+    <div class="advanced-options">
+      <button
+        class="advanced-toggle"
+        type="button"
+        [attr.aria-expanded]="advancedOpen()"
+        aria-controls="advanced-options-body"
+        (click)="toggleAdvanced()"
+        (keydown.enter)="toggleAdvanced()"
+        (keydown.space)="toggleAdvanced()"
+      >
+        <span class="advanced-toggle-label">Advanced Options</span>
+        <span class="advanced-toggle-arrow" [class.open]="advancedOpen()">&#x25BC;</span>
+      </button>
+      @if (advancedOpen()) {
+        <div class="advanced-options-body" id="advanced-options-body" role="group" aria-label="Advanced session options">
+          <div class="form-row">
+            <label class="form-label" for="session-supervisor-model">Supervisor Model</label>
+            <select
+              id="session-supervisor-model"
+              class="form-select"
+              [value]="sessionConfig().supervisorModel ?? 'claude-haiku-4-5-20251001'"
+              aria-label="Supervisor model"
+              (change)="onSupervisorModelChange($event)"
+            >
+              <option value="claude-haiku-4-5-20251001">Haiku (default)</option>
+              <option value="claude-sonnet-4-6">Sonnet</option>
+              <option value="claude-opus-4-6">Opus</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-concurrency">Concurrency</label>
+            <input
+              id="session-concurrency"
+              type="number"
+              class="form-input"
+              min="1"
+              max="10"
+              [value]="sessionConfig().concurrency ?? 2"
+              aria-label="Concurrency"
+              (change)="onConcurrencyChange($event)"
+            />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-retries">Max Retries</label>
+            <input
+              id="session-retries"
+              type="number"
+              class="form-input"
+              min="0"
+              max="5"
+              [value]="sessionConfig().retries ?? 2"
+              aria-label="Max retries"
+              (change)="onRetriesChange($event)"
+            />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-max-compactions">Max Compactions</label>
+            <input
+              id="session-max-compactions"
+              type="number"
+              class="form-input"
+              min="0"
+              max="10"
+              [value]="sessionConfig().maxCompactions ?? 3"
+              aria-label="Max compactions"
+              (change)="onMaxCompactionsChange($event)"
+            />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="session-poll-interval">Poll Interval</label>
+            <select
+              id="session-poll-interval"
+              class="form-select"
+              [value]="sessionConfig().pollIntervalMs ?? 30000"
+              aria-label="Poll interval"
+              (change)="onPollIntervalChange($event)"
+            >
+              <option value="10000">10 seconds</option>
+              <option value="30000">30 seconds (default)</option>
+              <option value="60000">1 minute</option>
+              <option value="120000">2 minutes</option>
+              <option value="300000">5 minutes</option>
+            </select>
+          </div>
+          <div class="form-row form-row--checkbox">
+            <label class="form-label" for="session-dry-run">Dry Run</label>
+            <input
+              id="session-dry-run"
+              type="checkbox"
+              class="form-checkbox"
+              [checked]="sessionConfig().dryRun ?? false"
+              aria-label="Dry run mode"
+              (change)="onDryRunChange($event)"
+            />
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (createSessionError()) {
+      <div class="error-msg" role="alert">{{ createSessionError() }}</div>
+    }
+    <div class="form-actions">
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="createSessionPending()"
+        aria-label="Create session"
+        (click)="onCreateSession()"
+        (keydown.enter)="onCreateSession()"
+        (keydown.space)="onCreateSession()"
+      >
+        @if (createSessionPending()) { Creating... } @else { Create Session }
+      </button>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        aria-label="Cancel"
+        (click)="closeSessionForm()"
+        (keydown.enter)="closeSessionForm()"
+        (keydown.space)="closeSessionForm()"
+      >
+        Cancel
+      </button>
+    </div>
   </div>
 }
 
-<!-- Toolbar: Filters + View Toggle -->
-<div class="toolbar">
-  <div class="toolbar-left">
-    <!-- Search input -->
+<!-- Main Content Grid -->
+<div class="project-grid">
+  <!-- Sessions Panel (Left Sidebar) -->
+  <aside class="sessions-sidebar">
+    <app-sessions-panel
+      [sessions]="activeSessions()"
+      (pauseSession)="onPauseSession($event)"
+      (resumeSession)="onResumeSession($event)"
+      (stopSession)="onStopSession($event)"
+      (drainSession)="onDrainSession($event)"
+    ></app-sessions-panel>
+  </aside>
+
+  <!-- Task Queue (Main Content) -->
+  <main class="task-queue-main">
+<!-- Enhanced Toolbar: Search + Filters + View Toggle -->
+<div class="toolbar" role="region" aria-label="Task Queue Controls">
+  <div class="toolbar-row toolbar-top">
     <div class="search-wrapper">
       <span class="search-icon" aria-hidden="true">&#x2315;</span>
       <input
         class="search-input"
         type="search"
-        placeholder="Search by ID or title..."
+        placeholder="Search by ID, title, description..."
         aria-label="Search tasks"
         [value]="searchQuery()"
         (input)="onSearchInput($event)"
+        (keydown.escape)="clearSearch()"
       />
     </div>
 
-    <!-- Status filter chips -->
-    <div class="filter-chips" role="group" aria-label="Filter by status">
-      @for (option of filterOptions; track option.value) {
-        <button
-          class="filter-chip"
-          type="button"
-          [class.active]="statusFilter() === option.value"
-          [attr.aria-pressed]="statusFilter() === option.value"
-          (click)="setStatusFilter(option.value)"
-        >
-          {{ option.label }}
-        </button>
+    <div class="filter-badges" role="status" aria-live="polite" aria-atomic="true">
+      @if (activeFilterCount() > 0) {
+        <div class="filter-badge">
+          <span class="filter-badge-count">{{ activeFilterCount() }}</span>
+          <span class="filter-badge-label">Filters Active</span>
+        </div>
       }
+    </div>
+
+    <div class="toolbar-right">
+      <!-- Sort dropdown -->
+      <div class="sort-control" role="group" aria-label="Sort tasks">
+        <span class="sort-label" id="sort-label">Sort:</span>
+        <select 
+          class="sort-select"
+          [value]="sortField() + '-' + sortDirection()"
+          (change)="onSortChange($event)"
+          aria-labelledby="sort-label"
+          aria-label="Sort by field and direction"
+        >
+          @for (opt of sortFieldOptions; track opt.value) {
+            <optgroup label="{{ opt.label }}">
+              <option value="{{ opt.value }}-asc">Ascending</option>
+              <option value="{{ opt.value }}-desc">Descending</option>
+            </optgroup>
+          }
+        </select>
+      </div>
+
+      <!-- View mode toggle -->
+      <div class="view-toggle" role="group" aria-label="View mode">
+        <button
+          class="view-btn"
+          type="button"
+          [class.active]="viewMode() === 'list'"
+          aria-label="List view"
+          (click)="setViewMode('list')"
+          (keydown.enter)="setViewMode('list')"
+          (keydown.space)="setViewMode('list')"
+        >
+          &#x2630;
+        </button>
+        <button
+          class="view-btn"
+          type="button"
+          [class.active]="viewMode() === 'kanban'"
+          aria-label="Kanban view"
+          (click)="setViewMode('kanban')"
+          (keydown.enter)="setViewMode('kanban')"
+          (keydown.space)="setViewMode('kanban')"
+        >
+          &#x2016;
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="toolbar-right">
-    <!-- View mode toggle -->
-    <div class="view-toggle" role="group" aria-label="View mode">
+<!-- Enhanced Filter Controls -->
+<div class="toolbar-row toolbar-filters">
+  <!-- Search Results Count -->
+  <div class="result-count" role="status" aria-live="polite" aria-atomic="true">
+    @if (filteredTasks().length === 0) {
+      <div class="no-results">
+        <div class="no-results-text">No tasks match your filters.</div>
+        @if (activeFilterCount() > 0) {
+          <button class="clear-all-btn" type="button" (click)="clearAllFilters()" aria-label="Clear all filters">
+            Clear all filters
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="results-info">
+        @if (searchQuery()) {
+          <div class="results-text">
+            Showing {{ filteredTasks().length }} tasks matching "{{ searchQuery() }}"
+          </div>
+        } @else if (activeFilterCount() > 0) {
+          <div class="results-text">
+            Showing {{ filteredTasks().length }} of {{ allTasks.length }} tasks
+          </div>
+        } @else {
+          <div class="results-text">
+            Showing all {{ filteredTasks().length }} tasks
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Filter Dropdowns -->
+  <div class="filter-dropdowns" role="group" aria-label="Filter controls">
+    <!-- Status filter dropdown -->
+    <div class="filter-dropdown" role="group" aria-label="Filter by status">
       <button
-        class="view-btn"
+        class="filter-dropdown-btn"
         type="button"
-        [class.active]="viewMode() === 'list'"
-        aria-label="List view"
-        (click)="setViewMode('list')"
+        [class.active]="statusDropdownOpen()"
+        [attr.aria-expanded]="statusDropdownOpen()"
+        [attr.aria-label]="'Status filter: ' + (statusSelectedCount() > 0 ? statusSelectedCount() + ' selected' : 'none selected')"
+        (click)="toggleStatusDropdown()"
+        (keydown.enter)="toggleStatusDropdown()"
+        (keydown.space)="toggleStatusDropdown()"
       >
-        &#x2630;
+        <span class="filter-dropdown-label">Status</span>
+        @if (statusSelectedCount() > 0) {
+          <span class="filter-dropdown-count">
+            {{ statusSelectedCount() }}
+          </span>
+        }
+        <span class="filter-dropdown-arrow">&#x25BC;</span>
       </button>
+      <div class="filter-dropdown-menu" [class.open]="statusDropdownOpen()" role="listbox" aria-labelledby="status-filter">
+        <div class="filter-dropdown-header">
+          <h3 class="dropdown-title" id="status-filter">Status</h3>
+          <button class="clear-btn" type="button" (click)="clearStatusFilter()" aria-label="Clear status filter">
+            Clear
+          </button>
+        </div>
+        <div class="filter-dropdown-options">
+          @for (status of allStatuses; track status) {
+            <label class="filter-option" role="option">
+              <input
+                type="checkbox"
+                [checked]="isStatusSelected(status)"
+                (change)="toggleStatus(status)"
+                [attr.aria-label]="'Filter by status: ' + statusLabelMap[status]"
+                aria-describedby="status-filter"
+              />
+              <span class="filter-option-label">{{ statusLabelMap[status] }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Type filter dropdown -->
+    <div class="filter-dropdown" role="group" aria-label="Filter by type">
       <button
-        class="view-btn"
+        class="filter-dropdown-btn"
         type="button"
-        [class.active]="viewMode() === 'kanban'"
-        aria-label="Kanban view"
-        (click)="setViewMode('kanban')"
+        [class.active]="typeDropdownOpen()"
+        [attr.aria-expanded]="typeDropdownOpen()"
+        [attr.aria-label]="'Type filter: ' + (typeSelectedCount() > 0 ? typeSelectedCount() + ' selected' : 'none selected')"
+        (click)="toggleTypeDropdown()"
+        (keydown.enter)="toggleTypeDropdown()"
+        (keydown.space)="toggleTypeDropdown()"
       >
-        &#x2016;
+        <span class="filter-dropdown-label">Type</span>
+        @if (typeSelectedCount() > 0) {
+          <span class="filter-dropdown-count">
+            {{ typeSelectedCount() }}
+          </span>
+        }
+        <span class="filter-dropdown-arrow">&#x25BC;</span>
       </button>
+      <div class="filter-dropdown-menu" [class.open]="typeDropdownOpen()" role="listbox" aria-labelledby="type-filter">
+        <div class="filter-dropdown-header">
+          <h3 class="dropdown-title" id="type-filter">Type</h3>
+          <button class="clear-btn" type="button" (click)="clearTypeFilter()" aria-label="Clear type filter">
+            Clear
+          </button>
+        </div>
+        <div class="filter-dropdown-options">
+          @for (type of allTypes; track type) {
+            <label class="filter-option" role="option">
+              <input
+                type="checkbox"
+                [checked]="isTypeSelected(type)"
+                (change)="toggleType(type)"
+                [attr.aria-label]="'Filter by type: ' + type"
+                aria-describedby="type-filter"
+              />
+              <span class="filter-option-label">{{ type }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Priority filter dropdown -->
+    <div class="filter-dropdown" role="group" aria-label="Filter by priority">
+      <button
+        class="filter-dropdown-btn"
+        type="button"
+        [class.active]="priorityDropdownOpen()"
+        [attr.aria-expanded]="priorityDropdownOpen()"
+        [attr.aria-label]="'Priority filter: ' + (prioritySelectedCount() > 0 ? prioritySelectedCount() + ' selected' : 'none selected')"
+        (click)="togglePriorityDropdown()"
+        (keydown.enter)="togglePriorityDropdown()"
+        (keydown.space)="togglePriorityDropdown()"
+      >
+        <span class="filter-dropdown-label">Priority</span>
+        @if (prioritySelectedCount() > 0) {
+          <span class="filter-dropdown-count">
+            {{ prioritySelectedCount() }}
+          </span>
+        }
+        <span class="filter-dropdown-arrow">&#x25BC;</span>
+      </button>
+      <div class="filter-dropdown-menu" [class.open]="priorityDropdownOpen()" role="listbox" aria-labelledby="priority-filter">
+        <div class="filter-dropdown-header">
+          <h3 class="dropdown-title" id="priority-filter">Priority</h3>
+          <button class="clear-btn" type="button" (click)="clearPriorityFilter()" aria-label="Clear priority filter">
+            Clear
+          </button>
+        </div>
+        <div class="filter-dropdown-options">
+          @for (p of allPriorities; track p) {
+            <label class="filter-option" role="option">
+              <input
+                type="checkbox"
+                [checked]="isPrioritySelected(p)"
+                (change)="togglePriority(p)"
+                [attr.aria-label]="'Filter by priority: ' + p"
+                aria-describedby="priority-filter"
+              />
+              <span class="filter-option-label">{{ p }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Model filter dropdown -->
+    @if (availableModels().length > 0) {
+      <div class="filter-dropdown" role="group" aria-label="Filter by model">
+        <button
+          class="filter-dropdown-btn"
+          type="button"
+          [attr.aria-expanded]="false"
+          [attr.aria-label]="'Model filter: ' + (selectedModels().length > 0 ? selectedModels().length + ' selected' : 'none selected')"
+          (click)="modelDropdownOpen.set(!modelDropdownOpen())"
+          (keydown.enter)="modelDropdownOpen.set(!modelDropdownOpen())"
+          (keydown.space)="modelDropdownOpen.set(!modelDropdownOpen())"
+        >
+          <span class="filter-dropdown-label">Model</span>
+          @if (selectedModels().length > 0) {
+            <span class="filter-dropdown-count">{{ selectedModels().length }}</span>
+          }
+          <span class="filter-dropdown-arrow">&#x25BC;</span>
+        </button>
+        <div class="filter-dropdown-menu" [class.open]="modelDropdownOpen()" role="listbox" aria-labelledby="model-filter">
+          <div class="filter-dropdown-header">
+            <h3 class="dropdown-title" id="model-filter">Model</h3>
+            <button class="clear-btn" type="button" (click)="clearModelFilter()" aria-label="Clear model filter">
+              Clear
+            </button>
+          </div>
+          <div class="filter-dropdown-options">
+            @for (m of availableModels(); track m) {
+              <label class="filter-option" role="option">
+                <input
+                  type="checkbox"
+                  [checked]="isModelSelected(m)"
+                  (change)="toggleModel(m)"
+                  [attr.aria-label]="'Filter by model: ' + m"
+                  aria-describedby="model-filter"
+                />
+                <span class="filter-option-label">{{ m }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Date range filter -->
+    <div class="filter-group filter-group--date" role="group" aria-label="Filter by date range">
+      <span class="filter-group-label">Date:</span>
+      <input
+        class="date-input"
+        type="date"
+        [value]="startDate() ?? ''"
+        aria-label="Start date"
+        (change)="onStartDateChange($event)"
+      />
+      <span class="date-sep">&mdash;</span>
+      <input
+        class="date-input"
+        type="date"
+        [value]="endDate() ?? ''"
+        aria-label="End date"
+        (change)="onEndDateChange($event)"
+      />
     </div>
   </div>
 </div>
 
+<!-- Active filter chips -->
+@if (activeFilterChips().length > 0) {
+  <div class="active-filters" role="group" aria-label="Active filters">
+    @for (chip of activeFilterChips(); track chip.type + chip.label) {
+      <span class="active-chip" role="group" [attr.aria-label]="chip.type + ' filter: ' + chip.label">
+        <span class="active-chip-label">{{ chip.type }}: {{ chip.label }}</span>
+        <button
+          class="active-chip-remove"
+          type="button"
+          [attr.aria-label]="'Remove ' + chip.type + ' filter: ' + chip.label"
+          (click)="removeChip(chip)"
+          (keydown.enter)="removeChip(chip)"
+          (keydown.space)="removeChip(chip)"
+        >
+          &#x2715;
+        </button>
+      </span>
+    }
+    <button class="clear-all-btn" type="button" (click)="clearAllFilters()" aria-label="Clear all filters">
+      Clear All
+    </button>
+  </div>
+}
+    </div>
+
+<!-- Bulk Edit Panel -->
+@if (selectedCount() > 0) {
+  <div class="bulk-edit-panel" role="region" aria-label="Bulk edit panel">
+    <div class="bulk-edit-header">
+      <span class="bulk-edit-count">{{ selectedCount() }} task{{ selectedCount() === 1 ? '' : 's' }} selected</span>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="clearSelection()">Clear</button>
+    </div>
+    <div class="bulk-edit-fields">
+      <div class="bulk-field">
+        <label class="bulk-field-label" for="bulk-model">Model</label>
+        <select id="bulk-model" class="form-select form-select--sm" (change)="bulkEditModel.set($any($event.target).value)">
+          <option value="">— keep current —</option>
+          @for (opt of BULK_MODELS; track opt) {
+            <option [value]="opt" [selected]="bulkEditModel() === opt">{{ opt }}</option>
+          }
+        </select>
+      </div>
+      <div class="bulk-field">
+        <label class="bulk-field-label" for="bulk-provider">Provider</label>
+        <select id="bulk-provider" class="form-select form-select--sm" (change)="bulkEditProvider.set($any($event.target).value)">
+          <option value="">— keep current —</option>
+          @for (opt of BULK_PROVIDERS; track opt) {
+            <option [value]="opt" [selected]="bulkEditProvider() === opt">{{ opt }}</option>
+          }
+        </select>
+      </div>
+      <div class="bulk-field">
+        <label class="bulk-field-label" for="bulk-worker-mode">Worker Mode</label>
+        <select id="bulk-worker-mode" class="form-select form-select--sm" (change)="bulkEditWorkerMode.set($any($event.target).value)">
+          <option value="">— keep current —</option>
+          @for (opt of BULK_WORKER_MODES; track opt) {
+            <option [value]="opt" [selected]="bulkEditWorkerMode() === opt">{{ opt }}</option>
+          }
+        </select>
+      </div>
+      <button
+        class="btn btn-primary btn-sm"
+        type="button"
+        [disabled]="bulkSaving()"
+        (click)="applyBulkEdit()"
+      >
+        {{ bulkSaving() ? 'Saving…' : 'Apply to Selected' }}
+      </button>
+    </div>
+    @if (bulkSaveError()) {
+      <div class="bulk-edit-error" role="alert">{{ bulkSaveError() }}</div>
+    }
+  </div>
+}
+
+<!-- Queue Empty State Banner -->
+@if (queueProcessed()) {
+  <div class="queue-empty-banner" role="status" aria-live="polite" aria-label="Queue empty — all tasks processed">
+    <div class="queue-empty-icon" aria-hidden="true">&#x2714;</div>
+    <h2 class="queue-empty-title">Queue Empty</h2>
+    <p class="queue-empty-subtitle">All tasks have been processed</p>
+    <div class="queue-empty-stats" role="group" aria-label="Task outcome summary">
+      <div class="queue-stat">
+        <span class="queue-stat-value queue-stat-value--complete">{{ completedCount() }}</span>
+        <span class="queue-stat-label">Completed</span>
+      </div>
+      @if (failedCount() > 0) {
+        <div class="queue-stat">
+          <span class="queue-stat-value queue-stat-value--failed">{{ failedCount() }}</span>
+          <span class="queue-stat-label">Failed</span>
+        </div>
+      }
+      @if (cancelledCount() > 0) {
+        <div class="queue-stat">
+          <span class="queue-stat-value queue-stat-value--cancelled">{{ cancelledCount() }}</span>
+          <span class="queue-stat-label">Cancelled</span>
+        </div>
+      }
+    </div>
+    <button
+      class="btn btn-primary"
+      type="button"
+      [disabled]="createSessionPending()"
+      aria-label="Launch a new session"
+      (click)="openSessionForm()"
+      (keydown.enter)="openSessionForm()"
+      (keydown.space)="openSessionForm()"
+    >
+      Launch New Session
+    </button>
+  </div>
+}
+
 <!-- List View -->
 @if (viewMode() === 'list') {
-  <section class="task-list" aria-label="Task list">
+  <section class="task-list" role="region" aria-label="Task list">
     @if (filteredTasks().length === 0) {
-      <div class="empty-state" role="status">
-        No tasks match the current filter.
+      <div class="empty-state" role="status" aria-live="polite">
+        <div class="empty-state-text">No tasks match your filters.</div>
+        @if (activeFilterCount() > 0) {
+          <button class="clear-all-btn clear-all-btn--empty" type="button" (click)="clearAllFilters()" aria-label="Clear all filters">
+            Clear all filters
+          </button>
+        }
       </div>
     } @else {
       @for (task of filteredTasks(); track task.id) {
@@ -111,16 +664,27 @@
           class="task-row"
           [ngClass]="[statusClassMap[task.status]]"
           [class.task-row--running]="task.status === 'IN_PROGRESS'"
-          [class.task-row--clickable]="task.status === 'IN_PROGRESS' && task.sessionId"
-          [attr.role]="task.status === 'IN_PROGRESS' && task.sessionId ? 'button' : null"
-          [attr.tabindex]="task.status === 'IN_PROGRESS' && task.sessionId ? '0' : null"
-          [attr.aria-label]="task.id + ': ' + task.title"
+          [class.task-row--clickable]="true"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="task.id + ': ' + task.title + ' - ' + statusLabelMap[task.status] + ' - ' + task.type + ' - ' + task.priority"
           (click)="onTaskClick(task)"
           (keydown.enter)="onTaskClick(task)"
           (keydown.space)="onTaskClick(task)"
         >
+          <!-- Selection checkbox -->
+          <div class="task-row-checkbox" (click)="toggleTaskSelection(task.id, $event)" (keydown.space)="toggleTaskSelection(task.id, $event)">
+            <input
+              type="checkbox"
+              [checked]="isTaskSelected(task.id)"
+              [attr.aria-label]="'Select ' + task.id"
+              tabindex="-1"
+              (change)="toggleTaskSelection(task.id, $event)"
+            />
+          </div>
+
           <!-- Status indicator -->
-          <div class="task-row-indicator" [attr.aria-hidden]="true">
+          <div class="task-row-indicator" aria-hidden="true">
             @if (task.status === 'IN_PROGRESS') {
               <span class="live-dot"></span>
             } @else {
@@ -144,18 +708,9 @@
             </span>
           </div>
 
-          <!-- Phase (if running) -->
-          <div class="task-row-phase">
-            @if (task.phase) {
-              <span class="phase-badge">{{ task.phase }}</span>
-            }
-          </div>
-
-          <!-- Session ID -->
-          <div class="task-row-session">
-            @if (task.sessionId) {
-              <span class="session-id-text">{{ task.sessionId.slice(-16) }}</span>
-            }
+          <!-- Type badge -->
+          <div class="task-row-type">
+            <span class="type-badge">{{ task.type }}</span>
           </div>
 
           <!-- Priority -->
@@ -163,6 +718,13 @@
             <span class="priority-badge" [ngClass]="priorityClassMap[task.priority]">
               {{ task.priority }}
             </span>
+          </div>
+
+          <!-- Model -->
+          <div class="task-row-model">
+            @if (task.model) {
+              <span class="model-text">{{ task.model }}</span>
+            }
           </div>
 
           <!-- Last activity -->
@@ -185,22 +747,22 @@
   <div class="kanban-board" role="region" aria-label="Kanban board">
     @for (col of kanbanColumns(); track col.status) {
       <div class="kanban-col">
-        <div class="kanban-col-header">
+        <div class="kanban-col-header" role="group" [attr.aria-label]="statusLabelMap[col.status] + ' column'">
           <span class="kanban-col-title">{{ statusLabelMap[col.status] }}</span>
-          <span class="kanban-col-count">{{ col.tasks.length }}</span>
+          <span class="kanban-col-count">{{ col.tasks.length }} tasks</span>
         </div>
         <div class="kanban-col-body">
           @if (col.tasks.length === 0) {
-            <div class="kanban-empty">—</div>
+            <div class="kanban-empty" role="status" aria-label="No tasks in this column">&mdash;</div>
           } @else {
             @for (task of col.tasks; track task.id) {
               <div
                 class="kanban-card"
                 [class.kanban-card--running]="task.status === 'IN_PROGRESS'"
-                [class.kanban-card--clickable]="task.status === 'IN_PROGRESS' && task.sessionId"
-                [attr.role]="task.status === 'IN_PROGRESS' && task.sessionId ? 'button' : null"
-                [attr.tabindex]="task.status === 'IN_PROGRESS' && task.sessionId ? '0' : null"
-                [attr.aria-label]="task.id + ': ' + task.title"
+                [class.kanban-card--clickable]="true"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="task.id + ': ' + task.title + ' - ' + statusLabelMap[task.status] + ' - ' + task.type + ' - ' + task.priority"
                 (click)="onTaskClick(task)"
                 (keydown.enter)="onTaskClick(task)"
                 (keydown.space)="onTaskClick(task)"
@@ -216,6 +778,7 @@
                   <span class="priority-badge" [ngClass]="priorityClassMap[task.priority]">
                     {{ task.priority }}
                   </span>
+                  <span class="type-badge type-badge--sm">{{ task.type }}</span>
                   @if (task.phase) {
                     <span class="phase-badge">{{ task.phase }}</span>
                   }

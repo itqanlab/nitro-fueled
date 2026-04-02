@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { watch, type FSWatcher } from 'chokidar';
 import { join } from 'node:path';
+import { resolveProjectRoot } from '../app/resolve-project-root';
 import type { FileChangeEvent } from './dashboard.types';
 
 /**
@@ -18,7 +19,7 @@ export class WatcherService implements OnModuleInit, OnModuleDestroy {
    * Start watching task-tracking directory on module init.
    */
   public onModuleInit(): void {
-    const taskTrackingPath = join(process.cwd(), 'task-tracking');
+    const taskTrackingPath = join(resolveProjectRoot(), 'task-tracking');
     this.logger.log(`Starting watcher for: ${taskTrackingPath}`);
     this.watch(taskTrackingPath, (path, event) => {
       this.logger.debug(`File ${event}: ${path}`);

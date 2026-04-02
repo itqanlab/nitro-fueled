@@ -5,7 +5,7 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import { NgClass, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -18,7 +18,6 @@ import { ApiService } from '../../services/api.service';
 import type { CortexModelPerformance } from '../../models/api.types';
 import {
   adaptModelPerformance,
-  FALLBACK_MODEL_PERF_ROWS,
   ModelPerfRow,
 } from './model-performance.adapters';
 
@@ -26,7 +25,6 @@ import {
   selector: 'app-model-performance',
   standalone: true,
   imports: [
-    NgClass,
     DecimalPipe,
     FormsModule,
     NzTableModule,
@@ -46,12 +44,11 @@ export class ModelPerformanceComponent {
     this.api
       .getCortexModelPerformance()
       .pipe(catchError(() => of(null as CortexModelPerformance[] | null))),
-    { initialValue: null as CortexModelPerformance[] | null },
   );
 
   /** Single adapted signal — shared by rowsComputed and taskTypeOptions to avoid double execution. */
   private readonly adaptedSignal = computed<ModelPerfRow[]>(() =>
-    adaptModelPerformance(this.modelPerfSignal()),
+    adaptModelPerformance(this.modelPerfSignal() ?? null),
   );
 
   private readonly rowsComputed = computed<ModelPerfRow[]>(() => {
@@ -100,14 +97,15 @@ export class ModelPerformanceComponent {
   constructor() {
     effect(() => {
       const raw = this.modelPerfSignal();
+      if (raw === undefined) {
+        // Still loading — HTTP request has not yet completed.
+        return;
+      }
+      this.loading = false;
       if (raw === null) {
-        // Only set unavailable once loading has completed (i.e. a real null response).
-        if (!this.loading) {
-          this.unavailable = true;
-          this.rows = FALLBACK_MODEL_PERF_ROWS;
-        }
+        this.unavailable = true;
+        this.rows = [];
       } else {
-        this.loading = false;
         this.unavailable = false;
         this.rows = this.rowsComputed();
       }

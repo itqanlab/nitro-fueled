@@ -6,7 +6,6 @@ import { Agent } from '../models/agent.model';
 import { ActivityEntry } from '../models/session.model';
 import { AnalyticsSummary } from '../models/analytics-summary.model';
 import { StatusIndicator } from '../models/provider.model';
-import { SidebarSection } from '../models/sidebar.model';
 import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
 import {
   CommandCenterData,
@@ -174,65 +173,6 @@ export const MOCK_STATUS_INDICATORS: readonly StatusIndicator[] = [
   { label: 'File watcher', status: 'ok' },
 ];
 
-export const MOCK_SIDEBAR_SECTIONS: readonly SidebarSection[] = [
-  {
-    title: 'Projects',
-    type: 'project',
-    showAddButton: true,
-    items: [
-      { label: 'e-commerce-api', dotStatus: 'active', badge: 2, isActive: true, route: '/dashboard' },
-      { label: 'my-react-app', dotStatus: 'has-updates', badge: 3, route: '/dashboard' },
-      { label: 'go-microservice', dotStatus: 'inactive', route: '/dashboard' },
-    ],
-  },
-  {
-    title: 'Library',
-    type: 'library',
-    items: [
-      { label: 'Agents', icon: '\u{1F9D1}', badge: 14, route: '/agents' },
-      { label: 'Skills', icon: '\u26A1', badge: 13, route: '/agents' },
-      { label: 'Commands', icon: '\u25B6', badge: 8, route: '/agents' },
-      { label: 'Prompts', icon: '\u{1F4DD}', badge: 5, route: '/agents' },
-      { label: 'Workflows', icon: '\u{1F504}', badge: 7, route: '/agents' },
-    ],
-  },
-  {
-    title: 'Management',
-    type: 'management',
-    items: [
-      { label: 'Clients', icon: '\u{1F4BC}', badge: 4, route: '/dashboard' },
-      { label: 'Teams', icon: '\u{1F465}', badge: 3, route: '/dashboard' },
-      { label: 'Knowledge Base', icon: '\u{1F4DA}', route: '/dashboard' },
-      { label: 'Analytics', icon: '\u{1F4CA}', route: '/analytics' },
-      { label: 'Integrations', icon: '\u{1F517}', badge: 3, route: '/mcp' },
-      { label: 'Activity Log', icon: '\u{1F4CB}', route: '/dashboard' },
-    ],
-  },
-  {
-    title: 'Telemetry',
-    type: 'management',
-    items: [
-      { label: 'Model Performance', icon: '\u{1F4CA}', route: '/telemetry/model-performance' },
-      { label: 'Phase Timing',      icon: '\u23F1',    route: '/telemetry/phase-timing' },
-      { label: 'Session Comparison',icon: '\u21C4',    route: '/telemetry/session-comparison' },
-      { label: 'Task Trace',        icon: '\u{1F50D}', route: '/telemetry/task-trace' },
-    ],
-  },
-  {
-    title: 'Providers',
-    type: 'provider',
-    items: [
-      { label: 'Provider Hub', icon: '\u{1F916}', route: '/providers' },
-    ],
-  },
-  {
-    title: '',
-    type: 'settings',
-    items: [
-      { label: 'Settings', icon: '\u2699', route: '/settings' },
-    ],
-  },
-];
 
 export const MOCK_MCP_SERVERS: readonly McpServer[] = [
   {
@@ -933,6 +873,7 @@ export const MOCK_TASK_STATUS_BREAKDOWN: TaskStatusBreakdown = {
   IN_PROGRESS: 5,
   IMPLEMENTED: 12,
   IN_REVIEW: 3,
+  FIXING: 2,
   COMPLETE: 47,
   FAILED: 2,
   BLOCKED: 1,

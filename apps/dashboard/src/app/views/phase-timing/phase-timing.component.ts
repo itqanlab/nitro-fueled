@@ -42,11 +42,10 @@ export class PhaseTimingComponent {
     this.api
       .getCortexPhaseTimings()
       .pipe(catchError(() => of(null as CortexPhaseTiming[] | null))),
-    { initialValue: null as CortexPhaseTiming[] | null },
   );
 
   private readonly rowsComputed = computed<PhaseTimingRow[]>(() =>
-    adaptPhaseTiming(this.phaseTimingSignal()),
+    adaptPhaseTiming(this.phaseTimingSignal() ?? null),
   );
 
   public rows: PhaseTimingRow[] = [];
@@ -57,14 +56,15 @@ export class PhaseTimingComponent {
   constructor() {
     effect(() => {
       const raw = this.phaseTimingSignal();
+      if (raw === undefined) {
+        // Still loading — HTTP request has not yet completed.
+        return;
+      }
+      this.loading = false;
       if (raw === null) {
-        // Only mark unavailable once the request has completed (loading = false).
-        if (!this.loading) {
-          this.unavailable = true;
-          this.rows = FALLBACK_PHASE_TIMING_ROWS;
-        }
+        this.unavailable = true;
+        this.rows = FALLBACK_PHASE_TIMING_ROWS;
       } else {
-        this.loading = false;
         this.unavailable = false;
         this.rows = this.rowsComputed();
       }

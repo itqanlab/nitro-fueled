@@ -1,0 +1,192 @@
+<div class="model-perf-page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Model × Launcher Performance</h1>
+    <p class="page-subtitle">Heatmap of reviewer scores by model and task type, plus per-launcher metrics and routing recommendations</p>
+  </div>
+
+  <!-- ── Heatmap Matrix ──────────────────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Performance Heatmap</h2>
+    <p class="section-desc">Score a model gave as <em>reviewer</em> (0–10) per task type. Click a cell to see details.</p>
+
+    @if (perfLoading) {
+      <div class="loading-placeholder">Loading heatmap…</div>
+    } @else if (perfUnavailable) {
+      <div class="unavailable-banner" role="alert">Cortex DB unavailable — heatmap data cannot be loaded.</div>
+    } @else if (models().length === 0) {
+      <div class="empty-state">No performance data available yet.</div>
+    } @else {
+      <div class="heatmap-wrapper">
+        <table class="heatmap-table" role="grid" aria-label="Model performance heatmap">
+          <thead>
+            <tr>
+              <th class="model-col-header" scope="col">Model</th>
+              @for (tt of taskTypes(); track trackByTaskType($index, tt)) {
+                <th class="task-type-header" scope="col">{{ tt }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (model of models(); track trackByModel($index, model)) {
+              <tr>
+                <td class="model-label" [title]="model">{{ model }}</td>
+                @for (tt of taskTypes(); track trackByTaskType($index, tt)) {
+                  @let cell = getCell(model, tt);
+                  <td
+                    class="heat-cell {{ cell?.cellClass ?? 'heat-none' }}"
+                    [class.heat-selected]="selectedModel() === model && selectedTaskType() === tt"
+                    (click)="selectCell(model, tt)"
+                    (keydown.enter)="selectCell(model, tt)"
+                    tabindex="0"
+                    role="gridcell"
+                    [attr.aria-label]="model + ' / ' + tt + ': ' + (cell?.label ?? 'no data')"
+                  >
+                    <span class="cell-score">{{ cell?.label ?? '—' }}</span>
+                    @if (cell) {
+                      <span class="cell-phases" title="{{ cell.phaseCount }} phases">{{ cell.phaseCount }}</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Legend -->
+      <div class="heatmap-legend" aria-label="Heatmap legend">
+        <span class="legend-item"><span class="legend-swatch heat-high"></span>≥ 7.0 (high)</span>
+        <span class="legend-item"><span class="legend-swatch heat-mid"></span>4.0–6.9 (mid)</span>
+        <span class="legend-item"><span class="legend-swatch heat-low"></span>&lt; 4.0 (low)</span>
+        <span class="legend-item"><span class="legend-swatch heat-none"></span>no data</span>
+      </div>
+    }
+  </section>
+
+  <!-- ── Detail Panel (shown when cell selected) ──────────────────────── -->
+  @if (selectedModel() !== null) {
+    <section class="section detail-panel">
+      <div class="detail-header">
+        <h2 class="section-title">
+          {{ selectedModel() }}
+          @if (selectedTaskType()) { <span class="detail-task-type">/ {{ selectedTaskType() }}</span> }
+        </h2>
+        <button class="close-btn" (click)="clearSelection()" aria-label="Close detail panel">✕</button>
+      </div>
+
+      <!-- Model metrics for selected row(s) -->
+      @for (row of selectedRows(); track row.taskType) {
+        <div class="detail-metrics">
+          <div class="metric-chip">
+            <span class="chip-label">Phases</span>
+            <span class="chip-value">{{ row.phaseCount }}</span>
+          </div>
+          <div class="metric-chip">
+            <span class="chip-label">Reviews</span>
+            <span class="chip-value">{{ row.reviewCount }}</span>
+          </div>
+          <div class="metric-chip">
+            <span class="chip-label">Avg Duration</span>
+            <span class="chip-value">{{ row.avgDurationMinutes !== null ? (row.avgDurationMinutes | number:'1.0-1') + 'm' : '—' }}</span>
+          </div>
+          <div class="metric-chip">
+            <span class="chip-label">Input Tokens</span>
+            <span class="chip-value">{{ row.totalInputTokens | number }}</span>
+          </div>
+          <div class="metric-chip">
+            <span class="chip-label">Output Tokens</span>
+            <span class="chip-value">{{ row.totalOutputTokens | number }}</span>
+          </div>
+          <div class="metric-chip">
+            <span class="chip-label">Reviewer Score</span>
+            <span class="chip-value">{{ row.avgReviewScore !== null ? (row.avgReviewScore | number:'1.1-1') + '/10' : '—' }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- Tasks of selected task type -->
+      <h3 class="tasks-subtitle">Tasks of type "{{ selectedTaskType() }}"</h3>
+      @if (filteredTasksLoading()) {
+        <div class="loading-placeholder">Loading tasks…</div>
+      } @else if (filteredTasks === null) {
+        <div class="empty-state">Could not load tasks.</div>
+      } @else if (filteredTasks.length === 0) {
+        <div class="empty-state">No tasks found for this type.</div>
+      } @else {
+        <div class="tasks-list">
+          @for (task of filteredTasks; track trackByTaskId($index, task)) {
+            <div class="task-row">
+              <span class="task-id">{{ task.id }}</span>
+              <span class="task-status task-status--{{ task.status.toLowerCase() }}">{{ task.status }}</span>
+              <span class="task-title">{{ task.title }}</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ── Launcher Metrics ─────────────────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Launcher Metrics</h2>
+    @if (launchersUnavailable) {
+      <div class="unavailable-banner" role="alert">Launcher data unavailable.</div>
+    } @else if (launcherCards().length === 0) {
+      <div class="empty-state">No launcher data available yet.</div>
+    } @else {
+      <div class="cards-grid">
+        @for (card of launcherCards(); track trackByLauncher($index, card)) {
+          <div class="launcher-card">
+            <div class="card-header">
+              <span class="launcher-name">{{ card.launcher }}</span>
+              <span class="launcher-workers">{{ card.totalWorkers }} workers</span>
+            </div>
+            <div class="card-body">
+              <div class="completion-bar-label">
+                <span>Completion</span>
+                <span class="completion-pct {{ card.completionClass }}">{{ card.completionPct }}%</span>
+              </div>
+              <div class="completion-bar-track">
+                <div
+                  class="completion-bar-fill {{ card.completionClass }}"
+                  [style.width.%]="card.completionPct"
+                ></div>
+              </div>
+              <div class="card-stats">
+                <span>Failed: {{ card.failedCount }}</span>
+                <span>Cost: {{ card.totalCostFormatted }}</span>
+                <span>Tokens: {{ card.totalTokens | number }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- ── Routing Recommendations ──────────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Routing Recommendations</h2>
+    <p class="section-desc">Best model per task type, based on builder quality scores (reviews of built output).</p>
+    @if (recUnavailable) {
+      <div class="unavailable-banner" role="alert">Recommendations unavailable.</div>
+    } @else if (recommendationCards().length === 0) {
+      <div class="empty-state">No recommendation data available yet.</div>
+    } @else {
+      <div class="cards-grid">
+        @for (rec of recommendationCards(); track trackByTaskType2($index, rec)) {
+          <div class="rec-card">
+            <div class="rec-task-type">{{ rec.taskType }}</div>
+            <div class="rec-model">{{ rec.model }}</div>
+            <div class="rec-score-badge {{ rec.scoreClass }}">{{ rec.scoreLabel }}</div>
+            <p class="rec-reason">{{ rec.reason }}</p>
+            <div class="rec-evidence">Based on {{ rec.evidenceCount }} reviewed task(s)</div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+</div>

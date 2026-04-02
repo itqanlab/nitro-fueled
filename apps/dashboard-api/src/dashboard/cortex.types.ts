@@ -19,10 +19,25 @@ export interface CortexTask {
   updated_at: string;
 }
 
+export interface CortexSubtask {
+  id: string;
+  title: string;
+  status: string;
+  complexity: string | null;
+  model: string | null;
+  subtask_order: number | null;
+  file_scope: string[];
+}
+
 export interface CortexTaskContext extends CortexTask {
   description: string;
   acceptance_criteria: string;
   file_scope: string[];
+  model: string | null;
+  preferred_provider: string | null;
+  worker_mode: string | null;
+  custom_flow_id?: string | null;
+  subtasks: CortexSubtask[];
 }
 
 export interface CortexSession {
@@ -38,6 +53,8 @@ export interface CortexSession {
   total_cost: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  last_heartbeat: string | null;
+  drain_requested: boolean;
 }
 
 export interface CortexSessionWorker {
@@ -52,8 +69,15 @@ export interface CortexSessionWorker {
   output_tokens: number;
 }
 
+export interface CostBreakdown {
+  supervisor_cost: number;
+  worker_cost_by_model: Record<string, number>;
+  total_cost: number;
+}
+
 export interface CortexSessionSummary extends CortexSession {
   workers: CortexSessionWorker[];
+  cost_breakdown: CostBreakdown | null;
 }
 
 export interface CortexWorker {
@@ -142,12 +166,27 @@ export interface CortexModelPerformance {
   last_run: string | null;
 }
 
+/** Quality of work produced by a model (grouped by model_that_built + task_type). */
+export interface CortexBuilderQuality {
+  model: string;
+  task_type: string | null;
+  review_count: number;
+  avg_builder_score: number | null;
+}
+
 export interface CortexPhaseTiming {
   phase: string;
   count: number;
   avg_duration_minutes: number | null;
   min_duration_minutes: number | null;
   max_duration_minutes: number | null;
+}
+
+export interface CortexSkillUsage {
+  skill: string;
+  count: number;
+  avg_duration_ms: number | null;
+  last_used: string | null;
 }
 
 // ============================================================
@@ -167,6 +206,20 @@ export interface RawTask {
   file_scope: string | null;
   created_at: string;
   updated_at: string;
+  model: string | null;
+  preferred_provider: string | null;
+  worker_mode: string | null;
+  custom_flow_id: string | null;
+}
+
+export interface RawSubtask {
+  id: string;
+  title: string;
+  status: string;
+  complexity: string | null;
+  model: string | null;
+  subtask_order: number | null;
+  file_scope: string | null;
 }
 
 export interface RawSession {
@@ -183,6 +236,10 @@ export interface RawSession {
   total_cost: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  last_heartbeat: string | null;
+  drain_requested: number;
+  supervisor_cost_usd: number | null;
+  worker_costs_json: string | null;
 }
 
 export interface RawWorker {
@@ -261,10 +318,49 @@ export interface ModelPerfRow {
   last_run: string | null;
 }
 
+export interface BuilderQualityRow {
+  model: string;
+  task_type: string | null;
+  review_count: number;
+  avg_builder_score: number | null;
+}
+
 export interface PhaseTimingRow {
   phase: string;
   count: number;
   avg_duration_minutes: number | null;
   min_duration_minutes: number | null;
   max_duration_minutes: number | null;
+}
+
+/** Aggregated metrics per launcher (from workers table). */
+export interface CortexLauncherMetrics {
+  launcher: string;
+  total_workers: number;
+  completed_count: number;
+  failed_count: number;
+  completion_rate: number;
+  total_cost: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+}
+
+export interface LauncherMetricsRow {
+  launcher: string;
+  total_workers: number;
+  completed_count: number;
+  failed_count: number;
+  total_cost: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+}
+
+/** Best model recommendation per task type (derived from builder quality). */
+export interface CortexRoutingRecommendation {
+  task_type: string;
+  recommended_model: string;
+  reason: string;
+  avg_builder_score: number | null;
+  avg_duration_minutes: number | null;
+  evidence_count: number;
 }

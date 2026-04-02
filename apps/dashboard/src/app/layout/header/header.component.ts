@@ -1,15 +1,16 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [NzIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="shell-header">
       <div class="shell-header-left">
         <div class="app-logo">N</div>
-        <span class="app-title">N.Gine</span>
+        <span class="app-title">Nitro-Fueled</span>
       </div>
       <div class="shell-header-right">
         <button class="header-btn" title="Search">

@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../base-command.js';
 import { basicPreflightChecks } from '../utils/preflight.js';
@@ -5,6 +6,17 @@ import { spawnClaude } from '../utils/spawn-claude.js';
 import { estimateComplexity, resolveProviderForTier } from '../utils/complexity-estimator.js';
 import type { LauncherName } from '../utils/provider-config.js';
 import { readConfig } from '../utils/provider-config.js';
+
+function getNextTaskId(db: import('better-sqlite3').Database): string {
+  const row = db.prepare("SELECT id FROM tasks ORDER BY id DESC LIMIT 1").get() as { id: string } | undefined;
+  if (row === undefined) return 'TASK_2026_001';
+  const match = row.id.match(/^TASK_(\d{4})_(\d{3})$/);
+  if (match === null) return 'TASK_2026_001';
+  const year = parseInt(match[1]!, 10);
+  const seq = parseInt(match[2]!, 10) + 1;
+  if (seq > 999) return `TASK_${year + 1}_001`;
+  return `TASK_${year}_${seq.toString().padStart(3, '0')}`;
+}
 
 // Allowlist guards — config values embedded in Claude prompt must be safe strings
 const PROVIDER_NAME_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -51,6 +63,30 @@ export default class Create extends BaseCommand {
     }
 
     const description = argv.join(' ');
+
+    if (flags.quick && description.length > 0) {
+      const dbPath = resolve(cwd, '.nitro', 'cortex.db');
+      try {
+        const { initCortexDatabase } = await import('../utils/cortex-db-init.js');
+        const { db } = initCortexDatabase(dbPath);
+        try {
+          const taskId = getNextTaskId(db);
+          const now = new Date().toISOString();
+          db.prepare(
+            `INSERT INTO tasks (id, title, type, priority, status, description, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          ).run(taskId, description, 'FEATURE', 'P2-Medium', 'CREATED', description, now, now);
+          this.log(`CREATED ${taskId} — ${description}`);
+          this.log(`  Run \`npx nitro-fueled run ${taskId}\` to start implementation.`);
+        } finally {
+          db.close();
+        }
+        return Promise.resolve();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200);
+        this.warn(`DB unavailable (${msg}). Falling back to Claude session.`);
+      }
+    }
 
     let claudePrompt: string;
     if (flags.quick) {

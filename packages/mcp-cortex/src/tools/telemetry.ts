@@ -1,5 +1,227 @@
 import type Database from 'better-sqlite3';
 import type { ToolResult } from './types.js';
+import { mcpLogger } from '../utils/logger.js';
+import { normalizeSessionId } from './session-id.js';
+
+// ---------------------------------------------------------------------------
+// get_worker_telemetry
+// ---------------------------------------------------------------------------
+
+export function handleGetWorkerTelemetry(
+  db: Database.Database,
+  args: { worker_id: string },
+): ToolResult {
+  try {
+    const row = db.prepare(`
+      SELECT id, session_id, task_id, worker_type, label, status, pid,
+             working_directory, model, provider, launcher, log_path,
+             auto_close, spawn_time, last_health, stuck_count, compaction_count,
+             tokens_json, cost_json, progress_json, outcome, retry_number,
+             spawn_to_first_output_ms, total_duration_ms,
+             files_changed_count, files_changed,
+             review_result, review_findings_count, workflow_phase
+      FROM workers WHERE id = ?
+    `).get(args.worker_id) as Record<string, unknown> | undefined;
+
+    if (!row) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'worker_not_found' }) }], isError: true };
+    }
+
+    let tokens: Record<string, unknown> = {};
+    let cost: Record<string, unknown> = {};
+    try { tokens = JSON.parse(row['tokens_json'] as string) as Record<string, unknown>; } catch { /* empty */ }
+    try { cost = JSON.parse(row['cost_json'] as string) as Record<string, unknown>; } catch { /* empty */ }
+
+    let filesChanged: unknown[] = [];
+    if (row['files_changed']) {
+      try { filesChanged = JSON.parse(row['files_changed'] as string) as unknown[]; } catch { /* empty */ }
+    }
+
+    const spawnMs = new Date(row['spawn_time'] as string).getTime();
+    const elapsedMs = row['total_duration_ms'] != null
+      ? (row['total_duration_ms'] as number)
+      : Date.now() - spawnMs;
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({
+          ok: true,
+          worker_id: row['id'],
+          session_id: row['session_id'],
+          task_id: row['task_id'],
+          worker_type: row['worker_type'],
+          label: row['label'],
+          status: row['status'],
+          outcome: row['outcome'],
+          retry_number: row['retry_number'],
+          workflow_phase: row['workflow_phase'],
+          model: row['model'],
+          provider: row['provider'],
+          launcher: row['launcher'],
+          timing: {
+            spawn_time: row['spawn_time'],
+            spawn_to_first_output_ms: row['spawn_to_first_output_ms'],
+            total_duration_ms: elapsedMs,
+          },
+          tokens,
+          cost,
+          review: {
+            result: row['review_result'],
+            findings_count: row['review_findings_count'],
+          },
+          files: {
+            changed_count: row['files_changed_count'],
+            changed: filesChanged,
+          },
+          health: {
+            last_health: row['last_health'],
+            stuck_count: row['stuck_count'],
+            compaction_count: row['compaction_count'],
+          },
+          pid: row['pid'],
+          log_path: row['log_path'],
+        }, null, 2),
+      }],
+    };
+  } catch (err) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: err instanceof Error ? err.message : String(err) }) }], isError: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// get_session_telemetry
+// ---------------------------------------------------------------------------
+
+export function handleGetSessionTelemetry(
+  db: Database.Database,
+  args: { session_id: string },
+): ToolResult {
+  try {
+    const sessionId = normalizeSessionId(args.session_id);
+    if (sessionId === null) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }], isError: true };
+    }
+
+    const session = db.prepare('SELECT id, source, started_at, ended_at, loop_status FROM sessions WHERE id = ?').get(sessionId) as Record<string, unknown> | undefined;
+    if (!session) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }], isError: true };
+    }
+
+    const workers = db.prepare(`
+      SELECT id, task_id, worker_type, label, status, model, provider, launcher,
+             spawn_time, outcome, retry_number, workflow_phase,
+             spawn_to_first_output_ms, total_duration_ms,
+             files_changed_count, review_result, review_findings_count,
+             tokens_json, cost_json, stuck_count, compaction_count
+      FROM workers WHERE session_id = ? ORDER BY spawn_time
+    `).all(sessionId) as Array<Record<string, unknown>>;
+
+    // Aggregate metrics
+    let totalCostUsd = 0;
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalFilesChanged = 0;
+    let totalReviewFindings = 0;
+    let totalSpawnToFirstOutputMs = 0;
+    let spawnToFirstOutputCount = 0;
+    let totalDurationMs = 0;
+    let durationCount = 0;
+
+    const byPhase: Record<string, { count: number; completed: number; failed: number }> = {};
+    const byModel: Record<string, { count: number; total_cost_usd: number }> = {};
+
+    for (const w of workers) {
+      try {
+        const cost = JSON.parse(w['cost_json'] as string) as { total_usd?: number };
+        const tokens = JSON.parse(w['tokens_json'] as string) as { total_input?: number; total_output?: number };
+        if (cost.total_usd != null) totalCostUsd += cost.total_usd;
+        if (tokens.total_input != null) totalInputTokens += tokens.total_input;
+        if (tokens.total_output != null) totalOutputTokens += tokens.total_output;
+      } catch { /* empty */ }
+
+      if (w['files_changed_count'] != null) totalFilesChanged += w['files_changed_count'] as number;
+      if (w['review_findings_count'] != null) totalReviewFindings += w['review_findings_count'] as number;
+      if (w['spawn_to_first_output_ms'] != null) {
+        totalSpawnToFirstOutputMs += w['spawn_to_first_output_ms'] as number;
+        spawnToFirstOutputCount++;
+      }
+      if (w['total_duration_ms'] != null) {
+        totalDurationMs += w['total_duration_ms'] as number;
+        durationCount++;
+      }
+
+      const phase = (w['workflow_phase'] as string | null) ?? 'unknown';
+      if (!byPhase[phase]) byPhase[phase] = { count: 0, completed: 0, failed: 0 };
+      byPhase[phase].count++;
+      if (w['outcome'] === 'COMPLETE' || w['status'] === 'completed') byPhase[phase].completed++;
+      if (w['outcome'] === 'FAILED' || w['status'] === 'failed') byPhase[phase].failed++;
+
+      const model = (w['model'] as string | null) ?? 'unknown';
+      if (!byModel[model]) byModel[model] = { count: 0, total_cost_usd: 0 };
+      byModel[model].count++;
+      try {
+        const cost = JSON.parse(w['cost_json'] as string) as { total_usd?: number };
+        if (cost.total_usd != null) byModel[model].total_cost_usd += cost.total_usd;
+      } catch { /* empty */ }
+    }
+
+    const startedAt = new Date(session['started_at'] as string).getTime();
+    const endedAt = session['ended_at'] ? new Date(session['ended_at'] as string).getTime() : Date.now();
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({
+          ok: true,
+          session_id: sessionId,
+          source: session['source'],
+          loop_status: session['loop_status'],
+          started_at: session['started_at'],
+          ended_at: session['ended_at'],
+          total_duration_ms: endedAt - startedAt,
+          worker_count: workers.length,
+          aggregates: {
+            total_cost_usd: Math.round(totalCostUsd * 10000) / 10000,
+            total_input_tokens: totalInputTokens,
+            total_output_tokens: totalOutputTokens,
+            total_files_changed: totalFilesChanged,
+            total_review_findings: totalReviewFindings,
+            avg_spawn_to_first_output_ms: spawnToFirstOutputCount > 0
+              ? Math.round(totalSpawnToFirstOutputMs / spawnToFirstOutputCount)
+              : null,
+            avg_worker_duration_ms: durationCount > 0
+              ? Math.round(totalDurationMs / durationCount)
+              : null,
+          },
+          by_phase: byPhase,
+          by_model: Object.fromEntries(
+            Object.entries(byModel).map(([k, v]) => [k, { ...v, total_cost_usd: Math.round(v.total_cost_usd * 10000) / 10000 }]),
+          ),
+          workers: workers.map(w => ({
+            id: w['id'],
+            task_id: w['task_id'],
+            worker_type: w['worker_type'],
+            label: w['label'],
+            status: w['status'],
+            outcome: w['outcome'],
+            model: w['model'],
+            provider: w['provider'],
+            workflow_phase: w['workflow_phase'],
+            retry_number: w['retry_number'],
+            spawn_to_first_output_ms: w['spawn_to_first_output_ms'],
+            total_duration_ms: w['total_duration_ms'],
+            files_changed_count: w['files_changed_count'],
+            review_result: w['review_result'],
+            review_findings_count: w['review_findings_count'],
+          })),
+        }, null, 2),
+      }],
+    };
+  } catch (err) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: err instanceof Error ? err.message : String(err) }) }], isError: true };
+  }
+}
 
 // ---------------------------------------------------------------------------
 // log_phase
@@ -339,7 +561,11 @@ export function handleGetSessionSummary(
   args: { session_id: string },
 ): ToolResult {
   try {
-    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(args.session_id) as Record<string, unknown> | undefined;
+    const sessionId = normalizeSessionId(args.session_id);
+    if (sessionId === null) {
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'invalid_session_id_format' }) }], isError: true };
+    }
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as Record<string, unknown> | undefined;
     if (!session) {
       return { content: [{ type: 'text' as const, text: JSON.stringify({ ok: false, reason: 'session_not_found' }) }], isError: true };
     }
@@ -354,16 +580,16 @@ export function handleGetSessionSummary(
        FROM workers
        WHERE session_id = ?
        GROUP BY worker_type, status, model, provider`,
-    ).all(args.session_id) as Array<Record<string, unknown>>;
+    ).all(sessionId) as Array<Record<string, unknown>>;
 
     const taskIds = (db.prepare(
       'SELECT DISTINCT task_id FROM workers WHERE session_id = ? AND task_id IS NOT NULL',
-    ).all(args.session_id) as Array<{ task_id: string }>).map(r => r.task_id);
+    ).all(sessionId) as Array<{ task_id: string }>).map(r => r.task_id);
 
     // Cost breakdown: sum from workers cost_json
     const workers = db.prepare(
       'SELECT cost_json, tokens_json, model, provider, spawn_time FROM workers WHERE session_id = ?',
-    ).all(args.session_id) as Array<{ cost_json: string; tokens_json: string; model: string | null; provider: string | null; spawn_time: string }>;
+    ).all(sessionId) as Array<{ cost_json: string; tokens_json: string; model: string | null; provider: string | null; spawn_time: string }>;
 
     let totalCost = 0;
     let totalInputTokens = 0;
@@ -384,8 +610,32 @@ export function handleGetSessionSummary(
         if (tokens.total_output != null) totalOutputTokens += tokens.total_output;
         if (tokens.total_cache_creation != null) totalCacheTokens += tokens.total_cache_creation;
         if (tokens.total_cache_read != null) totalCacheTokens += tokens.total_cache_read;
-      } catch { /* ignore */ }
+      } catch (err) {
+        mcpLogger.error(`get_session_summary: failed to parse cost/tokens for worker, skipping`, err);
+      }
     }
+
+    // Cost breakdown: supervisor cost vs worker costs
+    const supervisorCostUsd = typeof session['supervisor_cost_usd'] === 'number' ? session['supervisor_cost_usd'] : 0;
+
+    // worker_cost_by_model: prefer stored worker_costs_json if present, else use computed perModelCost
+    let workerCostByModel: Record<string, number> = Object.fromEntries(
+      Object.entries(perModelCost).map(([k, v]) => [k, Math.round(v * 10000) / 10000]),
+    );
+    if (typeof session['worker_costs_json'] === 'string' && session['worker_costs_json'].length > 2) {
+      try {
+        const stored = JSON.parse(session['worker_costs_json'] as string) as Record<string, number>;
+        if (typeof stored === 'object' && stored !== null && !Array.isArray(stored)) {
+          workerCostByModel = Object.fromEntries(
+            Object.entries(stored).map(([k, v]) => [k, Math.round((v as number) * 10000) / 10000]),
+          );
+        }
+      } catch {
+        // Fallback to computed value on parse error
+      }
+    }
+
+    const workerCostTotal = Object.values(workerCostByModel).reduce((s, v) => s + v, 0);
 
     // Elapsed time
     const startedAt = new Date(session['started_at'] as string).getTime();
@@ -397,7 +647,7 @@ export function handleGetSessionSummary(
         type: 'text' as const,
         text: JSON.stringify({
           ok: true,
-          session_id: args.session_id,
+          session_id: sessionId,
           source: session['source'],
           loop_status: session['loop_status'],
           started_at: session['started_at'],
@@ -414,6 +664,11 @@ export function handleGetSessionSummary(
             input: totalInputTokens,
             output: totalOutputTokens,
             cache: totalCacheTokens,
+          },
+          cost_breakdown: {
+            supervisor_cost: Math.round(supervisorCostUsd * 10000) / 10000,
+            worker_cost_by_model: workerCostByModel,
+            total_cost: Math.round((supervisorCostUsd + workerCostTotal) * 10000) / 10000,
           },
         }, null, 2),
       }],

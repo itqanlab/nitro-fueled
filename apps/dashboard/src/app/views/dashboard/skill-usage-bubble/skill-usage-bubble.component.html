@@ -1,0 +1,54 @@
+<div class="skill-bubble-widget">
+
+  <!-- Header with period selector -->
+  <div class="widget-header">
+    <span class="widget-title">Skill Usage</span>
+    <nz-select
+      [(ngModel)]="selectedPeriod"
+      (ngModelChange)="onPeriodChange($event)"
+      class="period-select"
+      aria-label="Select time period"
+    >
+      @for (opt of periodOptions; track opt.value) {
+        <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+      }
+    </nz-select>
+  </div>
+
+  <!-- Loading skeleton -->
+  @if (loading && !unavailable) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 4 }"></nz-skeleton>
+  }
+
+  <!-- Unavailable -->
+  @if (unavailable) {
+    <div class="unavailable-banner" role="alert">
+      Cortex DB unavailable — skill usage data cannot be loaded.
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading && !unavailable && empty) {
+    <nz-empty nzNotFoundContent="No skill invocations recorded for this period"></nz-empty>
+  }
+
+  <!-- Chart container (D3 renders into this div) -->
+  @if (!loading && !unavailable && !empty) {
+    <div class="chart-container" #chartContainer></div>
+  }
+
+  <!-- Tooltip -->
+  @if (hasTooltip()) {
+    <div
+      class="bubble-tooltip"
+      [style.left.px]="tooltip()!.x"
+      [style.top.px]="tooltip()!.y"
+      role="tooltip"
+    >
+      <div class="tt-skill">{{ tooltip()!.skill }}</div>
+      <div class="tt-row">Invocations: <strong>{{ tooltip()!.count }}</strong></div>
+      <div class="tt-row">Avg duration: <strong>{{ formatDuration(tooltip()!.avgDurationMs) }}</strong></div>
+    </div>
+  }
+
+</div>

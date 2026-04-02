@@ -23,8 +23,11 @@ export type TaskType =
   | 'DOCUMENTATION'
   | 'RESEARCH'
   | 'DEVOPS'
+  | 'OPS'
   | 'CREATIVE'
-  | 'CONTENT';
+  | 'CONTENT'
+  | 'SOCIAL'
+  | 'DESIGN';
 
 export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
 
@@ -204,6 +207,12 @@ export interface DashboardStats {
   readonly totalTokens: number;
   readonly costByModel: Record<string, number>;
   readonly tokensByModel: Record<string, number>;
+  readonly recentSessions: ReadonlyArray<{
+    readonly sessionId: string;
+    readonly date: string;
+    readonly tokens: number;
+    readonly cost: number;
+  }>;
 }
 
 export interface AntiPatternRule {
@@ -236,33 +245,102 @@ export interface SessionData {
   readonly log: ReadonlyArray<LogEntry>;
 }
 
-export type AutoPilotSessionStatus = 'starting' | 'running' | 'stopped';
+// ── Auto-pilot / Session types ────────────────────────────────────────────────
 
-export interface StartAutoPilotRequest {
-  readonly taskIds?: ReadonlyArray<string>;
-  readonly options?: {
-    readonly dryRun?: boolean;
-  };
+export type ProviderType = 'claude' | 'glm' | 'opencode' | 'codex';
+export type PriorityStrategy = 'build-first' | 'review-first' | 'balanced';
+export type LoopStatus = 'running' | 'paused' | 'stopped';
+
+export interface SupervisorConfig {
+  readonly concurrency: number;
+  readonly limit: number;
+  readonly prep_provider: ProviderType;
+  readonly prep_model: string;
+  readonly implement_provider: ProviderType;
+  readonly implement_model: string;
+  readonly implement_fallback_provider: ProviderType;
+  readonly implement_fallback_model: string;
+  readonly review_provider: ProviderType;
+  readonly review_model: string;
+  readonly priority: PriorityStrategy;
+  readonly retries: number;
+  readonly poll_interval_ms: number;
+  readonly working_directory: string;
 }
 
-export interface StartAutoPilotResponse {
+export interface CreateSessionRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
+  readonly supervisorModel?: string;
+  readonly maxCompactions?: number;
+  readonly pollIntervalMs?: number;
+  readonly dryRun?: boolean;
+}
+
+export interface CreateSessionResponse {
   readonly sessionId: string;
   readonly status: 'starting';
 }
 
-export interface StopAutoPilotRequest {
-  readonly sessionId: string;
+export interface UpdateSessionConfigRequest {
+  readonly concurrency?: number;
+  readonly limit?: number;
+  readonly prepProvider?: ProviderType;
+  readonly prepModel?: string;
+  readonly implementProvider?: ProviderType;
+  readonly implementModel?: string;
+  readonly implementFallbackProvider?: ProviderType;
+  readonly implementFallbackModel?: string;
+  readonly reviewProvider?: ProviderType;
+  readonly reviewModel?: string;
+  readonly priority?: PriorityStrategy;
+  readonly retries?: number;
+  readonly pollIntervalMs?: number;
 }
 
-export interface StopAutoPilotResponse {
+export interface UpdateSessionConfigResponse {
   readonly sessionId: string;
-  readonly stopped: true;
+  readonly config: SupervisorConfig;
 }
 
-export interface AutoPilotStatusResponse {
+export interface SessionStatusResponse {
   readonly sessionId: string;
-  readonly status: AutoPilotSessionStatus;
-  readonly updatedAt: string;
+  readonly loopStatus: LoopStatus;
+  readonly config: SupervisorConfig;
+  readonly workers: {
+    readonly active: number;
+    readonly completed: number;
+    readonly failed: number;
+  };
+  readonly tasks: {
+    readonly completed: number;
+    readonly failed: number;
+    readonly inProgress: number;
+    readonly remaining: number;
+  };
+  readonly startedAt: string;
+  readonly uptimeMinutes: number;
+  readonly lastHeartbeat: string;
+  readonly drainRequested: boolean;
+}
+
+export interface SessionActionResponse {
+  readonly sessionId: string;
+  readonly action: 'stopped' | 'paused' | 'resumed' | 'draining';
+}
+
+export interface ListSessionsResponse {
+  readonly sessions: ReadonlyArray<SessionStatusResponse>;
 }
 
 // ── Graph types ──────────────────────────────────────────────────────────────
@@ -302,7 +380,8 @@ export type DashboardEventType =
   | 'log:entry'
   | 'state:refreshed'
   | 'session:updated'
-  | 'sessions:changed';
+  | 'sessions:changed'
+  | 'session:update';
 
 export interface DashboardEvent {
   readonly type: DashboardEventType;
@@ -384,73 +463,130 @@ export interface AnalyticsSessionsData {
   }>;
 }
 
+// ── Orchestration flow types ─────────────────────────────────────────────────
+
+export interface OrchestrationFlowPhase {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly isOptional: boolean;
+  readonly outputs: readonly string[];
+}
+
+export interface OrchestrationFlow {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly taskTypes: readonly string[];
+  readonly phases: readonly OrchestrationFlowPhase[];
+  readonly hasParallelReview: boolean;
+  readonly strategy: string;
+}
+
+export interface CustomFlowPhase {
+  readonly order: number;
+  readonly agentName: string;
+  readonly agentTitle: string;
+  readonly optional: boolean;
+  readonly estimatedDuration: number;
+  readonly deliverables: readonly string[];
+}
+
+export interface CustomFlow {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly source_flow_id: string | null;
+  readonly phases: readonly CustomFlowPhase[];
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface CreateCustomFlowRequest {
+  name: string;
+  description?: string;
+  sourceFlowId?: string;
+  phases?: CustomFlowPhase[];
+}
+
+export interface UpdateCustomFlowRequest {
+  name?: string;
+  description?: string;
+  phases?: CustomFlowPhase[];
+}
+
 // ── Cortex types ─────────────────────────────────────────────────────────────
 
 export interface CortexTask {
-  id: string;
-  title: string;
-  type: string;
-  priority: string;
-  status: string;
-  complexity: string;
-  dependencies: string[];
-  created_at: string;
-  updated_at: string;
+  readonly id: string;
+  readonly title: string;
+  readonly type: string;
+  readonly priority: string;
+  readonly status: string;
+  readonly complexity: string;
+  readonly dependencies: string[];
+  readonly created_at: string;
+  readonly updated_at: string;
 }
 
 export interface CortexTaskContext extends CortexTask {
-  description: string;
-  acceptance_criteria: string;
-  file_scope: string[];
+  readonly description: string;
+  readonly acceptance_criteria: string;
+  readonly file_scope: string[];
+  readonly model: string | null;
+  readonly preferred_provider: string | null;
+  readonly worker_mode: string | null;
+  readonly custom_flow_id?: string | null;
 }
 
 export interface CortexSession {
-  id: string;
-  source: string;
-  started_at: string;
-  ended_at: string | null;
-  loop_status: string;
-  tasks_terminal: number;
-  supervisor_model: string;
-  supervisor_launcher: string;
-  mode: string;
-  total_cost: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
+  readonly id: string;
+  readonly source: string;
+  readonly started_at: string;
+  readonly ended_at: string | null;
+  readonly loop_status: string;
+  readonly tasks_terminal: number;
+  readonly supervisor_model: string;
+  readonly supervisor_launcher: string;
+  readonly mode: string;
+  readonly total_cost: number;
+  readonly total_input_tokens: number;
+  readonly total_output_tokens: number;
+  readonly last_heartbeat: string | null;
 }
 
 export interface CortexSessionWorker {
-  id: string;
-  task_id: string;
-  worker_type: string;
-  label: string;
-  status: string;
-  model: string;
-  cost: number;
-  input_tokens: number;
-  output_tokens: number;
+  readonly id: string;
+  readonly task_id: string;
+  readonly worker_type: string;
+  readonly label: string;
+  readonly status: string;
+  readonly model: string;
+  readonly cost: number;
+  readonly input_tokens: number;
+  readonly output_tokens: number;
 }
 
 export interface CortexSessionSummary extends CortexSession {
-  workers: CortexSessionWorker[];
+  readonly workers: CortexSessionWorker[];
 }
 
 export interface CortexWorker {
-  id: string;
-  session_id: string;
-  task_id: string;
-  worker_type: string;
-  label: string;
-  status: string;
-  model: string;
-  provider: string;
-  launcher: string;
-  spawn_time: string;
-  outcome: string | null;
-  retry_number: number;
-  cost: number;
-  input_tokens: number;
-  output_tokens: number;
+  readonly id: string;
+  readonly session_id: string;
+  readonly task_id: string;
+  readonly worker_type: string;
+  readonly label: string;
+  readonly status: string;
+  readonly model: string;
+  readonly provider: string;
+  readonly launcher: string;
+  readonly spawn_time: string;
+  readonly outcome: string | null;
+  readonly retry_number: number;
+  readonly cost: number;
+  readonly input_tokens: number;
+  readonly output_tokens: number;
 }
 
 export interface CortexPhase {
@@ -529,6 +665,129 @@ export interface CortexPhaseTiming {
   max_duration_minutes: number | null;
 }
 
+// ── Analytics Module types (TASK_2026_216 endpoints) ─────────────────────────
+
+/** One row from GET /api/analytics/model-performance. */
+export interface AnalyticsModelPerfRow {
+  readonly model: string;
+  readonly taskType: string | null;
+  readonly phaseCount: number;
+  readonly reviewCount: number;
+  readonly avgDurationMinutes: number | null;
+  readonly totalInputTokens: number;
+  readonly totalOutputTokens: number;
+  /** Average score given by this model when acting as a reviewer (0–10). */
+  readonly avgReviewScore: number | null;
+}
+
+export interface AnalyticsModelPerfResponse {
+  readonly data: readonly AnalyticsModelPerfRow[];
+  readonly total: number;
+}
+
+/** Aggregated metrics for one launcher. */
+export interface AnalyticsLauncherMetrics {
+  readonly launcher: string;
+  readonly totalWorkers: number;
+  readonly completedCount: number;
+  readonly failedCount: number;
+  readonly completionRate: number;
+  readonly totalCost: number;
+  readonly totalInputTokens: number;
+  readonly totalOutputTokens: number;
+}
+
+export interface AnalyticsLauncherMetricsResponse {
+  readonly data: readonly AnalyticsLauncherMetrics[];
+  readonly total: number;
+}
+
+/** One routing recommendation from GET /api/analytics/routing-recommendations. */
+export interface AnalyticsRoutingRecommendation {
+  readonly taskType: string;
+  readonly recommendedModel: string;
+  readonly reason: string;
+  readonly avgBuilderScore: number | null;
+  readonly avgDurationMinutes: number | null;
+  readonly evidenceCount: number;
+}
+
+export interface AnalyticsRoutingRecommendationsResponse {
+  readonly recommendations: readonly AnalyticsRoutingRecommendation[];
+  readonly total: number;
+}
+
+export interface AnalyticsSkillUsageItem {
+  readonly skill: string;
+  readonly count: number;
+  readonly avgDurationMs: number | null;
+  readonly lastUsed: string | null;
+}
+
+export interface AnalyticsSkillUsageResponse {
+  readonly data: readonly AnalyticsSkillUsageItem[];
+  readonly total: number;
+}
+
+// ── Provider Quota types ──────────────────────────────────────────────────────
+
+export type ProviderId = 'glm' | 'anthropic' | 'openai';
+
+export interface ProviderQuotaAvailable {
+  readonly provider: ProviderId;
+  readonly unavailable: false;
+  readonly plan: string;
+  readonly used: number;
+  readonly limit: number;
+  readonly remaining: number;
+  readonly resetAt: string | null;
+  readonly currency: string;
+  readonly costThisPeriod: number;
+}
+
+export interface ProviderQuotaUnavailable {
+  readonly provider: ProviderId;
+  readonly unavailable: true;
+  readonly reason: string;
+}
+
+export type ProviderQuotaItem = ProviderQuotaAvailable | ProviderQuotaUnavailable;
+
+// ── Logs types ─────────────────────────────────────────────────────────────────
+
+export interface LogsEventFilters {
+  readonly sessionId?: string;
+  readonly taskId?: string;
+  readonly eventType?: string;
+  readonly severity?: string;
+  readonly limit?: number;
+  readonly offset?: number;
+}
+
+export interface WorkerLogEntry {
+  readonly worker: CortexWorker;
+  readonly phases: readonly CortexPhase[];
+  readonly events: readonly CortexEvent[];
+}
+
+export interface SessionLogSummary {
+  readonly sessionId: string;
+  readonly eventCount: number;
+  readonly workerCount: number;
+  readonly taskIds: readonly string[];
+  readonly startTime: string | null;
+  readonly lastActivity: string | null;
+  readonly events: readonly CortexEvent[];
+  readonly workers: readonly CortexWorker[];
+  readonly phases: readonly CortexPhase[];
+}
+
+export interface LogSearchResult {
+  readonly events: readonly CortexEvent[];
+  readonly total: number;
+  readonly query: string;
+}
+
 // Task creation API types
 export type TaskCreationComplexity = 'Simple' | 'Medium' | 'Complex';
 
@@ -556,3 +815,108 @@ export interface CreateTaskResponse {
   tasks: CreatedTask[];
   autoSplit?: boolean;
 }
+
+// ── Command Console types ────────────────────────────────────────────────────
+
+export interface CommandCatalogEntry {
+  readonly name: string;
+  readonly slashCommand: string;
+  readonly description: string;
+  readonly category: string;
+  readonly args?: readonly string[];
+}
+
+export interface CommandSuggestion {
+  readonly command: string;
+  readonly label: string;
+  readonly reason: string;
+}
+
+export interface CommandExecuteRequest {
+  readonly command: string;
+  readonly args?: Record<string, unknown>;
+}
+
+export interface CommandExecuteResult {
+  readonly success: boolean;
+  readonly output: string;
+  readonly data?: Record<string, unknown>;
+}
+
+export type SessionEndStatus = 'completed' | 'killed' | 'crashed' | 'running' | 'stopped';
+
+export interface SessionHistoryListItem {
+  readonly id: string;
+  readonly source: string;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  readonly endStatus: SessionEndStatus;
+  readonly durationMinutes: number | null;
+  readonly tasksCompleted: number;
+  readonly tasksFailed: number;
+  readonly tasksBlocked: number;
+  readonly totalTasks: number;
+  readonly totalCost: number;
+  readonly models: readonly string[];
+  readonly supervisorModel: string;
+  readonly mode: string;
+}
+
+export interface SessionHistoryTaskResult {
+  readonly taskId: string;
+  readonly outcome: string;
+  readonly cost: number;
+  readonly durationMinutes: number | null;
+  readonly model: string;
+  readonly reviewScore: number | null;
+}
+
+export interface SessionHistoryTimelineEvent {
+  readonly id: number;
+  readonly type: string;
+  readonly source: string;
+  readonly timestamp: string;
+  readonly description: string;
+}
+
+export interface SessionHistoryWorker {
+  readonly id: string;
+  readonly taskId: string;
+  readonly workerType: string;
+  readonly label: string;
+  readonly status: string;
+  readonly model: string;
+  readonly provider: string;
+  readonly cost: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+}
+
+export interface CostBreakdown {
+  readonly supervisor_cost: number;
+  readonly worker_cost_by_model: Record<string, number>;
+  readonly total_cost: number;
+}
+
+export interface SessionHistoryDetail {
+  readonly id: string;
+  readonly source: string;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  readonly endStatus: SessionEndStatus;
+  readonly durationMinutes: number | null;
+  readonly totalCost: number;
+  readonly mode: string;
+  readonly supervisorModel: string;
+  readonly workerCount: number;
+  readonly taskResults: readonly SessionHistoryTaskResult[];
+  readonly timeline: readonly SessionHistoryTimelineEvent[];
+  readonly workers: readonly SessionHistoryWorker[];
+  readonly logContent: string | null;
+  readonly drainRequested: boolean;
+  readonly costBreakdown: CostBreakdown | null;
+}
+
+
+
+

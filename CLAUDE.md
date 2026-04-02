@@ -30,7 +30,7 @@ libs/                      # Shared libraries
 
 ## Key Docs
 - `docs/nitro-fueled-design.md` — Full design doc
-- `docs/mcp-session-orchestrator-design.md` — MCP cortex design (worker management + task DB)
+- `docs/mcp-nitro-cortex-design.md` — MCP cortex design (worker management + task DB)
 - `docs/task-template-guide.md` — Task template usage and orchestration integration
 
 ## Dependencies
@@ -73,3 +73,14 @@ libs/                      # Shared libraries
 - Task states: CREATED | IN_PROGRESS | IMPLEMENTED | IN_REVIEW | COMPLETE | FAILED | BLOCKED | CANCELLED
 - Agent naming: all agents use the `nitro-` prefix (e.g., `nitro-planner`, `nitro-software-architect`). This prefix scopes agents to the nitro-fueled namespace so they do not conflict with project-specific agents in target codebases.
 - Do NOT start git commit/push without explicit user instruction
+
+## Commit Footer
+- Do NOT use `Co-Authored-By: Claude ...` in commits. Use this footer instead:
+  ```
+  Generated-By: nitro-fueled v0.1.0 (https://github.com/itqanlab/nitro-fueled)
+  ```
+- For orchestrated commits, the full metadata block (Task, Agent, Phase, etc.) is defined in the orchestration skill — follow that format.
+- For interactive commits (user asks you to commit directly), end the commit message with:
+  ```
+  Generated-By: nitro-fueled v0.1.0 (https://github.com/itqanlab/nitro-fueled)
+  ```

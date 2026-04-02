@@ -5,7 +5,7 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import { NgClass, DecimalPipe, DatePipe, SlicePipe } from '@angular/common';
+import { DecimalPipe, DatePipe, SlicePipe } from '@angular/common';
 import { catchError, of } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -16,7 +16,6 @@ import { ApiService } from '../../services/api.service';
 import type { CortexSession } from '../../models/api.types';
 import {
   adaptSessions,
-  FALLBACK_SESSION_ROWS,
   SessionRow,
 } from './session-comparison.adapters';
 
@@ -24,7 +23,6 @@ import {
   selector: 'app-session-comparison',
   standalone: true,
   imports: [
-    NgClass,
     DecimalPipe,
     DatePipe,
     SlicePipe,
@@ -44,11 +42,10 @@ export class SessionComparisonComponent {
     this.api
       .getCortexSessions(200)
       .pipe(catchError(() => of(null as CortexSession[] | null))),
-    { initialValue: null as CortexSession[] | null },
   );
 
   private readonly rowsComputed = computed<SessionRow[]>(() =>
-    adaptSessions(this.sessionsSignal()),
+    adaptSessions(this.sessionsSignal() ?? null),
   );
 
   public rows: SessionRow[] = [];
@@ -61,14 +58,15 @@ export class SessionComparisonComponent {
   constructor() {
     effect(() => {
       const raw = this.sessionsSignal();
+      if (raw === undefined) {
+        // Still loading — initial state before the HTTP request completes.
+        return;
+      }
+      this.loading = false;
       if (raw === null) {
-        // Only mark unavailable once the request has completed (loading = false).
-        if (!this.loading) {
-          this.unavailable = true;
-          this.rows = FALLBACK_SESSION_ROWS;
-        }
+        this.unavailable = true;
+        this.rows = [];
       } else {
-        this.loading = false;
         this.unavailable = false;
         this.rows = this.rowsComputed();
       }

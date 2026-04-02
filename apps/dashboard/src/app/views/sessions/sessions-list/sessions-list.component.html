@@ -1,0 +1,88 @@
+<div class="sessions-page">
+  <div class="page-header">
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">Session History</h1>
+        <p class="page-subtitle">Browse all past auto-pilot and orchestration sessions</p>
+      </div>
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="!canCompare()"
+        (click)="compareSelected()"
+        class="compare-btn"
+      >Compare Sessions</button>
+    </div>
+  </div>
+
+  @if (unavailable()) {
+    <div class="unavailable-banner" role="alert">
+      Cortex DB unavailable — session history cannot be loaded at this time.
+    </div>
+  }
+
+  @if (loading() && !unavailable()) {
+    <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 6 }"></nz-skeleton>
+  }
+
+  @if (!loading() || unavailable()) {
+    @if (enriched().length === 0 && !unavailable()) {
+      <nz-empty nzNotFoundContent="No session history available"></nz-empty>
+    } @else if (enriched().length > 0) {
+      <nz-table
+        #sessionTable
+        [nzData]="enriched()"
+        [nzShowPagination]="enriched().length > 20"
+        [nzPageSize]="20"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th scope="col" class="checkbox-col"></th>
+            <th scope="col">Session ID</th>
+            <th scope="col">Status</th>
+            <th scope="col">Started</th>
+            <th scope="col">Uptime</th>
+            <th scope="col">Cost</th>
+            <th scope="col">Tasks</th>
+            <th scope="col">Supervisor</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (session of sessionTable.data; track session.id) {
+            <tr class="clickable-row" [routerLink]="['/sessions', session.id]">
+              <td class="checkbox-col" (click)="toggleSelection(session.id, $event)">
+                <label nz-checkbox [nzChecked]="isSelected(session.id)" (click)="$event.stopPropagation()"></label>
+              </td>
+              <td class="source-cell">{{ session.id }}</td>
+              <td><nz-tag [nzColor]="session.statusColor">{{ session.statusLabel }}</nz-tag></td>
+              <td>{{ session.startedAt | date:'short' }}</td>
+              <td>{{ session.formattedDuration }}</td>
+              <td>{{ session.formattedCost }}</td>
+              <td>
+                <span class="task-counts">
+                  <span class="count-ok">{{ session.tasksCompleted }}</span>/<span class="count-total">{{ session.totalTasks }}</span>
+                </span>
+              </td>
+              <td class="model-cell">{{ session.supervisorModel }}</td>
+              <td class="actions-cell">
+                @if (session.statusLabel === 'running') {
+                  <button
+                    nz-button
+                    nzType="default"
+                    nzDanger
+                    nzSize="small"
+                    [nzLoading]="isStopping(session.id)"
+                    [disabled]="isStopping(session.id)"
+                    (click)="stopSession(session.id, $event)"
+                  >Stop</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+  }
+</div>

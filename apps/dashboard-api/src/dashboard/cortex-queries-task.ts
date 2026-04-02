@@ -5,10 +5,13 @@ import Database from 'better-sqlite3';
 import type {
   CortexTask,
   CortexTaskContext,
+  CortexSubtask,
   CortexSession,
   CortexSessionSummary,
   CortexSessionWorker,
+  CostBreakdown,
   RawTask,
+  RawSubtask,
   RawSession,
   RawWorker,
 } from './cortex.types';
@@ -19,9 +22,11 @@ import { mapWorker } from './cortex-queries-worker';
 // ============================================================
 
 export const TASK_COLS =
-  'id, title, type, priority, status, complexity, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at';
+  'id, title, type, priority, status, complexity, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at, model, preferred_provider, worker_mode, custom_flow_id';
+export const SUBTASK_COLS =
+  'id, title, status, complexity, model, subtask_order, file_scope';
 export const SESSION_COLS =
-  'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens';
+  'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat, drain_requested, supervisor_cost_usd, worker_costs_json';
 export const WORKER_COLS =
   'id, session_id, task_id, worker_type, label, status, model, provider, launcher, spawn_time, tokens_json, cost_json, outcome, retry_number';
 
@@ -56,12 +61,29 @@ export function mapTask(row: RawTask): CortexTask {
   };
 }
 
-export function mapTaskContext(row: RawTask): CortexTaskContext {
+export function mapSubtask(row: RawSubtask): CortexSubtask {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    complexity: row.complexity ?? null,
+    model: row.model ?? null,
+    subtask_order: row.subtask_order ?? null,
+    file_scope: parseJson<string[]>(row.file_scope, []),
+  };
+}
+
+export function mapTaskContext(row: RawTask, subtasks: CortexSubtask[] = []): CortexTaskContext {
   return {
     ...mapTask(row),
     description: row.description,
     acceptance_criteria: row.acceptance_criteria,
     file_scope: parseJson<string[]>(row.file_scope, []),
+    model: row.model ?? null,
+    preferred_provider: row.preferred_provider ?? null,
+    worker_mode: row.worker_mode ?? null,
+    custom_flow_id: row.custom_flow_id ?? null,
+    subtasks,
   };
 }
 
@@ -79,6 +101,8 @@ export function mapSession(row: RawSession): CortexSession {
     total_cost: row.total_cost,
     total_input_tokens: row.total_input_tokens,
     total_output_tokens: row.total_output_tokens,
+    last_heartbeat: row.last_heartbeat,
+    drain_requested: row.drain_requested === 1,
   };
 }
 
@@ -105,7 +129,11 @@ export function queryTasks(db: Database.Database, filters?: { status?: string; t
 
 export function queryTaskContext(db: Database.Database, taskId: string): CortexTaskContext | null {
   const row = db.prepare(`SELECT ${TASK_COLS} FROM tasks WHERE id = ?`).get(taskId) as RawTask | undefined;
-  return row ? mapTaskContext(row) : null;
+  if (!row) return null;
+  const subtaskRows = db.prepare(
+    `SELECT ${SUBTASK_COLS} FROM tasks WHERE parent_task_id = ? ORDER BY subtask_order ASC`,
+  ).all(taskId) as RawSubtask[];
+  return mapTaskContext(row, subtaskRows.map(mapSubtask));
 }
 
 export function querySessions(db: Database.Database): CortexSession[] {
@@ -139,5 +167,41 @@ export function querySessionSummary(db: Database.Database, sessionId: string): C
     };
   });
 
-  return { ...mapSession(sessionRow), workers };
+  // Compute cost_breakdown from workers' cost_json, then refine with stored session columns
+  const perModelCost: Record<string, number> = {};
+  for (const w of workerRows) {
+    if (!w.cost_json) continue;
+    try {
+      const cost = JSON.parse(w.cost_json) as { total_usd?: number };
+      if (cost.total_usd != null) {
+        const key = w.model ?? 'unknown';
+        perModelCost[key] = (perModelCost[key] ?? 0) + cost.total_usd;
+      }
+    } catch { /* skip malformed rows */ }
+  }
+
+  const supervisorCost = typeof sessionRow.supervisor_cost_usd === 'number' ? sessionRow.supervisor_cost_usd : 0;
+
+  let workerCostByModel: Record<string, number> = Object.fromEntries(
+    Object.entries(perModelCost).map(([k, v]) => [k, Math.round(v * 10000) / 10000]),
+  );
+  if (sessionRow.worker_costs_json) {
+    try {
+      const stored = JSON.parse(sessionRow.worker_costs_json) as Record<string, number>;
+      if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+        workerCostByModel = Object.fromEntries(
+          Object.entries(stored).map(([k, v]) => [k, Math.round(v * 10000) / 10000]),
+        );
+      }
+    } catch { /* use computed fallback */ }
+  }
+
+  const workerCostTotal = Object.values(workerCostByModel).reduce((s, v) => s + v, 0);
+  const costBreakdown: CostBreakdown = {
+    supervisor_cost: Math.round(supervisorCost * 10000) / 10000,
+    worker_cost_by_model: workerCostByModel,
+    total_cost: Math.round((supervisorCost + workerCostTotal) * 10000) / 10000,
+  };
+
+  return { ...mapSession(sessionRow), workers, cost_breakdown: costBreakdown };
 }

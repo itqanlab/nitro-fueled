@@ -1,0 +1,118 @@
+<section class="progress-center">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Mission Control</p>
+      <h1>Real-Time Progress Center</h1>
+      <p class="subtitle">Live session progress, worker health, ETA forecasting, and the latest orchestration activity.</p>
+    </div>
+    @if (health(); as healthValue) {
+      <div class="health-summary">
+        <div class="health-pill" [ngClass]="healthToneClass()">{{ healthValue.tone }}</div>
+        <div class="health-metrics">
+          <span>{{ healthValue.activeSessions }} sessions</span>
+          <span>{{ healthValue.activeWorkers }} workers</span>
+          <span>{{ healthValue.stuckWorkers }} stuck</span>
+          <span>{{ healthValue.retryingWorkers }} retries</span>
+          <span>{{ healthValue.failedTasks }} failed</span>
+        </div>
+        @if (lastUpdated(); as updatedAt) {
+          <p class="meta">Last refresh {{ updatedAt | date:'HH:mm:ss' }}</p>
+        }
+      </div>
+    }
+  </header>
+
+  @if (hasData()) {
+    <div class="layout-grid">
+      <section class="session-column">
+        @for (session of sessions(); track trackBySession($index, session)) {
+          <article class="session-card">
+            <div class="session-card__header">
+              <div>
+                <p class="session-source">{{ session.source }}</p>
+                <h2>{{ session.currentTaskLabel }}</h2>
+              </div>
+              <span class="session-status" [ngClass]="sessionStatusMap[session.status]">{{ session.status }}</span>
+            </div>
+
+            <div class="session-card__stats">
+              <div>
+                <span class="label">Progress</span>
+                <strong>{{ session.completedTasks }}/{{ session.totalTasks }} tasks</strong>
+              </div>
+              <div>
+                <span class="label">Current Phase</span>
+                <strong>{{ session.currentPhase }}</strong>
+              </div>
+              <div>
+                <span class="label">Elapsed</span>
+                <strong>{{ session.elapsedMinutes }} min</strong>
+              </div>
+              <div>
+                <span class="label">ETA</span>
+                <strong>@if (session.etaMinutes !== null) { {{ session.etaMinutes }} min } @else { n/a }</strong>
+              </div>
+            </div>
+
+            <app-progress-bar [value]="session.progressPercent" variant="accent" [showLabel]="true" [label]="session.progressPercent + '%'" />
+
+            <div class="session-card__meta">
+              <span>{{ session.activeWorkers }} active workers</span>
+              <span>{{ session.stuckWorkers }} stuck workers</span>
+              <span>Started {{ session.startedAt | date:'HH:mm:ss' }}</span>
+            </div>
+
+            <div class="task-list">
+              @for (task of session.tasks; track trackByTask($index, task)) {
+                <div class="task-row">
+                  <div class="task-row__top">
+                    <div>
+                      <strong>{{ task.title }}</strong>
+                      <p>{{ task.taskId }} · {{ task.status }}</p>
+                    </div>
+                    <div class="task-row__metrics">
+                      <span>{{ task.workerCount }} workers</span>
+                      <span>@if (task.etaMinutes !== null) { {{ task.etaMinutes }} min ETA } @else { ETA n/a }</span>
+                    </div>
+                  </div>
+
+                  <app-progress-bar [value]="task.progressPercent" variant="accent" [showLabel]="true" [label]="task.currentPhase" />
+
+                  <div class="phase-strip">
+                    @for (phase of task.phases; track phase.key) {
+                      <span class="phase-chip" [ngClass]="'phase-chip--' + phase.state">{{ phase.key }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </section>
+
+      <aside class="activity-column">
+        <section class="activity-card">
+          <div class="activity-card__header">
+            <h2>Live Activity Feed</h2>
+            <p>Streaming from cortex events over WebSocket.</p>
+          </div>
+
+          <div class="activity-list">
+            @for (item of activity(); track trackByActivity($index, item)) {
+              <article class="activity-item" [ngClass]="activityToneMap[item.tone]">
+                <div class="activity-item__meta">
+                  <span>{{ item.timestamp | date:'HH:mm:ss' }}</span>
+                  <span>{{ item.source }}</span>
+                </div>
+                <strong>{{ item.summary }}</strong>
+                <p>{{ item.eventType }} · {{ item.taskId ?? item.sessionId }}</p>
+              </article>
+            }
+          </div>
+        </section>
+      </aside>
+    </div>
+  } @else {
+    <app-empty-state icon="&#x23F3;" message="No active progress data yet"></app-empty-state>
+  }
+</section>

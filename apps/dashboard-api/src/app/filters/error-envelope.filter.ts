@@ -83,6 +83,7 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
       [HttpStatus.CONFLICT]: 'CONFLICT',
       [HttpStatus.UNPROCESSABLE_ENTITY]: 'VALIDATION_ERROR',
       [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL_ERROR',
+      [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
     };
     return statusMap[status] ?? 'UNKNOWN_ERROR';
   }

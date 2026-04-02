@@ -1,15 +1,17 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { Task } from '../../models/task.model';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
 @Component({
   selector: 'app-task-card',
   standalone: true,
-  imports: [NgClass],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgClass, ProgressBarComponent],
   template: `
-    @if (task.pipeline.length > 0) {
+    @if (task().pipeline.length > 0) {
       <div class="pipeline">
-        @for (step of task.pipeline; track step.stage; let last = $last) {
+        @for (step of task().pipeline; track step.stage; let last = $last) {
           <span class="pipeline-step" [ngClass]="step.status">
             @if (step.status === 'done') { &#10003; }
             @if (step.status === 'active') { &#x25CB; }
@@ -23,8 +25,8 @@ import { Task } from '../../models/task.model';
     }
 
     <div class="task-item">
-      <div class="task-status-indicator" [ngClass]="task.status">
-        @switch (task.status) {
+      <div class="task-status-indicator" [ngClass]="task().status">
+        @switch (task().status) {
           @case ('running') { &#x25B6; }
           @case ('paused') { &#x23F8; }
           @case ('completed') { &#x2713; }
@@ -33,43 +35,36 @@ import { Task } from '../../models/task.model';
 
       <div class="task-info">
         <div class="task-title">
-          <span class="priority-dot" [ngClass]="task.priority"></span>
-          {{ task.id }}: {{ task.title }}
-          @if (task.status !== 'completed') {
-            <span class="autorun-badge" [ngClass]="task.autoRun ? 'on' : 'off'">Auto</span>
+          <span class="priority-dot" [ngClass]="task().priority"></span>
+          {{ task().id }}: {{ task().title }}
+          @if (task().status !== 'completed') {
+            <span class="autorun-badge" [ngClass]="task().autoRun ? 'on' : 'off'">Auto</span>
           }
         </div>
         <div class="task-meta">
-          <span class="task-strategy-badge" [ngClass]="task.type.toLowerCase()">{{ task.type }}</span>
-          @if (task.status !== 'completed') {
-            @if (task.agentLabel) {
-              <span class="task-agent-badge">{{ task.agentLabel }}</span>
+          <span class="task-strategy-badge" [ngClass]="task().type.toLowerCase()">{{ task().type }}</span>
+          @if (task().status !== 'completed') {
+            @if (task().agentLabel) {
+              <span class="task-agent-badge">{{ task().agentLabel }}</span>
             }
-            <span class="task-meta-item">&#x23F1; {{ task.elapsedMinutes }} min</span>
+            <span class="task-meta-item">&#x23F1; {{ task().elapsedMinutes }} min</span>
           } @else {
-            <span class="task-meta-item">{{ task.tokensUsed }} tokens</span>
+            <span class="task-meta-item">{{ task().tokensUsed }} tokens</span>
           }
-          <span class="task-meta-item cost-text">{{ '$' + task.cost.toFixed(2) }}</span>
-          @if (task.completedAgo) {
-            <span class="task-meta-item">{{ task.completedAgo }}</span>
+          <span class="task-meta-item cost-text">{{ '$' + task().cost.toFixed(2) }}</span>
+          @if (task().completedAgo) {
+            <span class="task-meta-item">{{ task().completedAgo }}</span>
           }
         </div>
       </div>
 
-      @if (task.status !== 'completed') {
+      @if (task().status !== 'completed') {
         <div class="task-progress">
-          <div class="task-progress-bar">
-            <div
-              class="task-progress-fill"
-              [ngClass]="task.status"
-              [style.width.%]="task.progressPercent"
-            ></div>
-          </div>
-          <div class="task-progress-label">{{ task.progressPercent }}%</div>
+          <app-progress-bar [value]="task().progressPercent" [variant]="task().status" [showLabel]="true"></app-progress-bar>
         </div>
         <div class="task-actions">
-          <button class="btn btn-sm btn-icon" [title]="task.status === 'running' ? 'Pause' : 'Resume'">
-            @if (task.status === 'running') { &#x23F8; } @else { &#x25B6; }
+          <button class="btn btn-sm btn-icon" [title]="task().status === 'running' ? 'Pause' : 'Resume'">
+            @if (task().status === 'running') { &#x23F8; } @else { &#x25B6; }
           </button>
           <button class="btn btn-sm btn-icon" title="View">&#x2192;</button>
         </div>
@@ -219,25 +214,6 @@ import { Task } from '../../models/task.model';
 
     .task-actions { display: flex; gap: 4px; flex-shrink: 0; }
     .task-progress { width: 100px; flex-shrink: 0; }
-    .task-progress-bar {
-      height: 4px;
-      background: var(--bg-hover);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .task-progress-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.3s;
-    }
-    .task-progress-fill.running { background: var(--running); }
-    .task-progress-fill.paused { background: var(--paused); }
-    .task-progress-label {
-      font-size: 11px;
-      color: var(--text-tertiary);
-      text-align: right;
-      margin-top: 3px;
-    }
 
     .btn {
       display: inline-flex;
@@ -267,5 +243,5 @@ import { Task } from '../../models/task.model';
   `],
 })
 export class TaskCardComponent {
-  @Input({ required: true }) task!: Task;
+  public readonly task = input.required<Task>();
 }

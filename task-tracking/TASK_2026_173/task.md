@@ -37,9 +37,10 @@ Implement a simple API key or token-based guard that can be enabled/disabled via
 
 ## File Scope
 
-- apps/dashboard-api/src/app/auth/ (new guard module)
-- apps/dashboard-api/src/app/app.module.ts
-- apps/dashboard-api/src/main.ts
+- apps/dashboard-api/src/app/auth/http-auth.guard.ts (new)
+- apps/dashboard-api/src/app/auth/index.ts (new)
+- apps/dashboard-api/src/app/app.module.ts (modified)
+- apps/dashboard-api/test/app/http-auth.guard.spec.ts (new)
 
 ## Parallelism
 

@@ -15,6 +15,7 @@
 | Poll Interval         | [default | 30s | 60s | 2m | ...]                                             |
 | Health Check Interval | [default | 5m | 10m | 15m | ...]                                             |
 | Max Retries           | [default | 0-5]                                                               |
+| Worker Mode           | [single | split]                                                              |
 
 <!-- Type: Determines agent workflow sequence (see Workflow Selection Matrix in SKILL.md)
        FEATURE       — PM -> [Research] -> Architect -> Team-Leader -> QA
@@ -77,6 +78,12 @@
        Values above 5 are clamped to 5 with a warning log.
        Increase for tasks prone to transient failures (e.g., network-dependent operations);
        decrease to 0 for tasks that should fail fast. -->
+
+<!-- Worker Mode: Controls whether the task uses a single Build Worker or splits into Prep + Implement Workers.
+       single — One Build Worker runs the full pipeline (PM → Architect → Dev). Default for Simple tasks.
+       split  — Prep Worker runs planning (PM → Architect → Team Leader MODE 1), then Implement Worker runs dev loop (Team Leader MODE 2/3). Default for Medium/Complex tasks.
+     The Supervisor auto-selects based on Complexity when this field is absent or omitted.
+     Set explicitly to override: e.g., force "single" on a Medium task to skip the split. -->
 
 ## Description
 

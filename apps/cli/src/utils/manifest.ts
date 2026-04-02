@@ -1,10 +1,20 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { logger } from './logger.js';
+
+/** Maximum content length to store as merge base (200 KB). Larger files are not stored. */
+const MAX_BASE_CONTENT_LENGTH = 200_000;
 
 export interface CoreFileEntry {
   checksum: string;
   installedVersion: string;
+  /**
+   * Original scaffold content stored as the merge base.
+   * Present when the file was installed/updated at or after the version that
+   * introduced three-way merge support. Absent for older manifest entries.
+   */
+  scaffoldContent?: string;
 }
 
 export interface GeneratedFileEntry {
@@ -45,12 +55,12 @@ export function readManifest(cwd: string): Manifest | null {
     const raw = readFileSync(manifestPath, 'utf8');
     const parsed: unknown = JSON.parse(raw);
     if (!isManifest(parsed)) {
-      console.error(`Warning: manifest.json has unexpected shape, ignoring`);
+      logger.error(`Warning: manifest.json has unexpected shape, ignoring`);
       return null;
     }
     return parsed;
   } catch (err: unknown) {
-    console.error(`Warning: failed to read manifest.json: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(`Warning: failed to read manifest.json: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -84,11 +94,21 @@ export function computeChecksum(filePath: string): string {
 }
 
 /**
- * Builds a CoreFileEntry for a single file: reads it and computes its checksum.
+ * Builds a CoreFileEntry for a single file: reads it, computes its checksum,
+ * and stores the content as merge base (if within the size limit).
  */
 export function buildCoreFileEntry(filePath: string, version: string): CoreFileEntry {
-  return {
+  const entry: CoreFileEntry = {
     checksum: computeChecksum(filePath),
     installedVersion: version,
   };
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    if (content.length <= MAX_BASE_CONTENT_LENGTH) {
+      entry.scaffoldContent = content;
+    }
+  } catch {
+    // Not critical — merge base is optional
+  }
+  return entry;
 }

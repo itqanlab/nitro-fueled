@@ -6,7 +6,6 @@ import { Agent } from '../models/agent.model';
 import { ActivityEntry } from '../models/session.model';
 import { AnalyticsSummary } from '../models/analytics-summary.model';
 import { StatusIndicator } from '../models/provider.model';
-import { SidebarSection } from '../models/sidebar.model';
 import { McpServer, McpToolAccessRow, McpIntegration } from '../models/mcp.model';
 import { AnalyticsData } from '../models/analytics.model';
 import { ModelAssignmentsData } from '../models/model-assignment.model';
@@ -23,7 +22,6 @@ import {
   MOCK_ACTIVITY,
   MOCK_ANALYTICS,
   MOCK_STATUS_INDICATORS,
-  MOCK_SIDEBAR_SECTIONS,
   MOCK_MCP_SERVERS,
   MOCK_MCP_TOOL_ACCESS,
   MOCK_MCP_INTEGRATIONS,
@@ -61,10 +59,6 @@ export class MockDataService {
 
   public getStatusIndicators(): readonly StatusIndicator[] {
     return MOCK_STATUS_INDICATORS;
-  }
-
-  public getSidebarSections(): readonly SidebarSection[] {
-    return MOCK_SIDEBAR_SECTIONS;
   }
 
   public getMcpServers(): readonly McpServer[] {

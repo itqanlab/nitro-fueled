@@ -4,6 +4,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { ToolResult } from './types.js';
+import { mcpLogger } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
 // get_available_providers — reads config, probes launcher binaries
@@ -29,6 +30,15 @@ interface ProviderResult {
   available: boolean;
   reason?: string;
   models: Record<string, string>;
+}
+
+/**
+ * Map internal config launcher names to the canonical client-facing launcher identifier.
+ * Both 'claude' and 'glm' use the Claude Code CLI binary, so they both map to 'claude-code'.
+ */
+function toClientLauncherName(configLauncher: string): string {
+  if (configLauncher === 'claude' || configLauncher === 'glm') return 'claude-code';
+  return configLauncher;
 }
 
 function probeLauncher(launcher: string): { available: boolean; reason?: string } {
@@ -162,7 +172,7 @@ function loadConfig(workingDirectory?: string): ConfigFile {
     try {
       merged = JSON.parse(readFileSync(userConfig, 'utf8')) as ConfigFile;
     } catch {
-      console.error(`[get_available_providers] failed to parse ${userConfig}`);
+      mcpLogger.error(`[get_available_providers] failed to parse ${userConfig}`);
     }
   }
 
@@ -173,7 +183,7 @@ function loadConfig(workingDirectory?: string): ConfigFile {
       if (project.providers) merged.providers = { ...merged.providers, ...project.providers };
       if (project.fallbackChain) merged.fallbackChain = project.fallbackChain;
     } catch {
-      console.error(`[get_available_providers] failed to parse ${projectConfig}`);
+      mcpLogger.error(`[get_available_providers] failed to parse ${projectConfig}`);
     }
   }
 
@@ -198,7 +208,7 @@ export async function handleGetAvailableProviders(
 
   for (const [name, providerConfig] of Object.entries(config.providers ?? {})) {
     if (providerConfig.enabled === false) {
-      results.push({ name, launcher: providerConfig.launcher ?? name, available: false, reason: 'disabled in config', models: {} });
+      results.push({ name, launcher: toClientLauncherName(providerConfig.launcher ?? name), available: false, reason: 'disabled in config', models: {} });
       continue;
     }
 
@@ -227,7 +237,7 @@ export async function handleGetAvailableProviders(
       }
     }
 
-    results.push({ name, launcher, available: probe.available, reason: probe.reason, models });
+    results.push({ name, launcher: toClientLauncherName(launcher), available: probe.available, reason: probe.reason, models });
   }
 
   const lines = results.map((p) => {

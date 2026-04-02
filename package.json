@@ -3,7 +3,11 @@
   "private": true,
   "scripts": {
     "build": "npm run build --workspaces",
-    "dashboard": "node apps/cli/dist/index.js dashboard"
+    "dashboard": "node apps/cli/dist/index.js dashboard",
+    "dev": "npx concurrently -n api,web -c blue,green \"npm run start:dev -w apps/dashboard-api\" \"npx nx serve dashboard\"",
+    "dev:api": "npm run start:dev -w apps/dashboard-api",
+    "dev:web": "npx nx serve dashboard",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "workspaces": [
     "apps/*",
@@ -15,23 +19,27 @@
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^19.2.23",
-    "@types/socket.io-client": "^3.0.0",
     "@angular/cli": "^19.2.23",
     "@angular/compiler-cli": "^19.2.20",
     "@nx/angular": "^20.8.4",
+    "@types/socket.io-client": "^3.0.0",
     "nx": "^20.0.0",
     "typescript": "~5.6.0"
   },
   "dependencies": {
-    "socket.io-client": "^4.8.1",
     "@angular/animations": "^19.2.20",
     "@angular/common": "^19.2.20",
     "@angular/compiler": "^19.2.20",
     "@angular/core": "^19.2.20",
     "@angular/platform-browser": "^19.2.20",
     "@angular/router": "^19.2.20",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/d3-selection": "^3.0.11",
+    "d3-hierarchy": "^3.1.2",
+    "d3-selection": "^3.0.0",
     "ng-zorro-antd": "^19.3.1",
     "rxjs": "~7.8.0",
+    "socket.io-client": "^4.8.1",
     "zone.js": "^0.15.1"
   }
 }

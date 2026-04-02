@@ -13,8 +13,12 @@ export {
   queryWorkers,
   queryTaskTrace,
   queryModelPerformance,
+  queryBuilderQuality,
   queryPhaseTiming,
   queryEventsSince,
+  queryLauncherMetrics,
+  queryRoutingRecommendations,
+  querySkillUsage,
   mapWorker,
   mapEvent,
 } from './cortex-queries-worker';

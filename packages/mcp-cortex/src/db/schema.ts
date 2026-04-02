@@ -2,10 +2,31 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED';
-export type TaskType = 'FEATURE' | 'BUG' | 'BUGFIX' | 'REFACTOR' | 'REFACTORING' | 'DOCS' | 'DOCUMENTATION' | 'TEST' | 'CHORE' | 'DEVOPS' | 'RESEARCH' | 'CREATIVE';
+export type TaskStatus = 'CREATED' | 'IN_PROGRESS' | 'PREPPED' | 'IMPLEMENTING' | 'IMPLEMENTED' | 'IN_REVIEW' | 'FIXING' | 'COMPLETE' | 'FAILED' | 'BLOCKED' | 'CANCELLED' | 'ARCHIVE';
+export const CANONICAL_TASK_TYPES = [
+  'FEATURE',
+  'BUGFIX',
+  'REFACTORING',
+  'DOCUMENTATION',
+  'RESEARCH',
+  'DEVOPS',
+  'OPS',
+  'CREATIVE',
+  'CONTENT',
+  'SOCIAL',
+  'DESIGN',
+] as const;
+const DB_TASK_TYPES = [
+  ...CANONICAL_TASK_TYPES,
+  'BUG',
+  'REFACTOR',
+  'DOCS',
+  'TEST',
+  'CHORE',
+] as const;
+export type TaskType = typeof DB_TASK_TYPES[number];
 export type TaskPriority = 'P0-Critical' | 'P1-High' | 'P2-Medium' | 'P3-Low';
-export type WorkerType = 'build' | 'review';
+export type WorkerType = 'build' | 'prep' | 'implement' | 'review' | 'cleanup';
 export type WorkerStatus = 'active' | 'completed' | 'failed' | 'killed';
 export type LoopStatus = 'running' | 'paused' | 'stopped';
 export type HealthStatus = 'healthy' | 'starting' | 'high_context' | 'compacting' | 'stuck' | 'finished';
@@ -40,13 +61,17 @@ export interface WorkerProgress {
   elapsed_minutes: number;
 }
 
+function sqlEnum(values: readonly string[]): string {
+  return values.map(value => `'${value}'`).join(',');
+}
+
 const TASKS_TABLE = `
 CREATE TABLE IF NOT EXISTS tasks (
   id               TEXT PRIMARY KEY,
   title            TEXT NOT NULL,
-  type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','BUGFIX','REFACTOR','REFACTORING','DOCS','DOCUMENTATION','TEST','CHORE','DEVOPS','RESEARCH','CREATIVE')),
+  type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
   priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-  status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+  status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE')),
   complexity       TEXT,
   model            TEXT,
   dependencies     TEXT NOT NULL DEFAULT '[]',
@@ -55,6 +80,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   file_scope       TEXT NOT NULL DEFAULT '[]',
   session_claimed  TEXT,
   claimed_at       TEXT,
+  claim_timeout_ms INTEGER,
   created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
@@ -78,7 +104,7 @@ CREATE TABLE IF NOT EXISTS workers (
   id                 TEXT PRIMARY KEY,
   session_id         TEXT NOT NULL REFERENCES sessions(id),
   task_id            TEXT REFERENCES tasks(id),
-  worker_type        TEXT NOT NULL CHECK(worker_type IN ('build','review')),
+  worker_type        TEXT NOT NULL CHECK(worker_type IN ('build','prep','implement','review','cleanup')),
   label              TEXT,
   status             TEXT NOT NULL CHECK(status IN ('active','completed','failed','killed')) DEFAULT 'active',
   pid                INTEGER,
@@ -98,11 +124,22 @@ CREATE TABLE IF NOT EXISTS workers (
   progress_json      TEXT NOT NULL DEFAULT '{}'
 )`;
 
+const CUSTOM_FLOWS_TABLE = `
+CREATE TABLE IF NOT EXISTS custom_flows (
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  description    TEXT,
+  source_flow_id TEXT,
+  phases_json    TEXT NOT NULL DEFAULT '[]',
+  created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const HANDOFFS_TABLE = `
 CREATE TABLE IF NOT EXISTS handoffs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id      TEXT NOT NULL REFERENCES tasks(id),
-  worker_type  TEXT NOT NULL CHECK(worker_type IN ('build','review')),
+  worker_type  TEXT NOT NULL CHECK(worker_type IN ('build','prep','implement','review','cleanup')),
   files_changed TEXT NOT NULL DEFAULT '[]',
   commits      TEXT NOT NULL DEFAULT '[]',
   decisions    TEXT NOT NULL DEFAULT '[]',
@@ -170,6 +207,154 @@ CREATE TABLE IF NOT EXISTS fix_cycles (
   created_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 )`;
 
+const AGENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS agents (
+  id                     TEXT PRIMARY KEY,
+  name                   TEXT NOT NULL UNIQUE,
+  description            TEXT,
+  capabilities           TEXT NOT NULL DEFAULT '[]',
+  prompt_template        TEXT,
+  launcher_compatibility TEXT NOT NULL DEFAULT '[]',
+  created_at             TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at             TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const WORKFLOWS_TABLE = `
+CREATE TABLE IF NOT EXISTS workflows (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  phases      TEXT NOT NULL DEFAULT '[]',
+  is_default  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const LAUNCHERS_TABLE = `
+CREATE TABLE IF NOT EXISTS launchers (
+  id         TEXT PRIMARY KEY,
+  type       TEXT NOT NULL CHECK(type IN ('claude-code','codex','cursor','opencode','other')),
+  config     TEXT NOT NULL DEFAULT '{}',
+  status     TEXT NOT NULL CHECK(status IN ('active','inactive')) DEFAULT 'active',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const COMPATIBILITY_TABLE = `
+CREATE TABLE IF NOT EXISTS compatibility (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  launcher_type TEXT NOT NULL,
+  model         TEXT NOT NULL,
+  task_type     TEXT NOT NULL,
+  workflow_id   TEXT REFERENCES workflows(id),
+  outcome       TEXT NOT NULL CHECK(outcome IN ('success','failed','killed')),
+  duration_ms   INTEGER,
+  cost_estimate REAL,
+  review_pass   INTEGER,
+  created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_REVIEWS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_reviews (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id      TEXT NOT NULL REFERENCES tasks(id),
+  review_type  TEXT NOT NULL CHECK(review_type IN ('style','logic','security','visual','other')),
+  verdict      TEXT NOT NULL CHECK(verdict IN ('PASS','FAIL')),
+  findings     TEXT NOT NULL DEFAULT '',
+  reviewer     TEXT,
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_TEST_REPORTS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_test_reports (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  status     TEXT NOT NULL CHECK(status IN ('PASS','FAIL','SKIPPED')),
+  summary    TEXT NOT NULL DEFAULT '',
+  details    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_COMPLETION_REPORTS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_completion_reports (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id             TEXT NOT NULL REFERENCES tasks(id),
+  summary             TEXT NOT NULL DEFAULT '',
+  review_results      TEXT NOT NULL DEFAULT '',
+  test_results        TEXT NOT NULL DEFAULT '',
+  follow_on_tasks     TEXT NOT NULL DEFAULT '',
+  files_changed_count INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_PLANS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_plans (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  content    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_DESCRIPTIONS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_descriptions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  content    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_CONTEXTS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_contexts (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    TEXT NOT NULL REFERENCES tasks(id),
+  content    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const TASK_SUBTASKS_TABLE = `
+CREATE TABLE IF NOT EXISTS task_subtasks (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id      TEXT NOT NULL REFERENCES tasks(id),
+  batch_number INTEGER NOT NULL DEFAULT 1,
+  subtask_name TEXT NOT NULL,
+  status       TEXT NOT NULL CHECK(status IN ('PENDING','IN_PROGRESS','COMPLETE','FAILED','BLOCKED','CANCELLED')) DEFAULT 'PENDING',
+  assigned_to  TEXT,
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+const SKILL_INVOCATIONS_TABLE = `
+CREATE TABLE IF NOT EXISTS skill_invocations (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  skill_name  TEXT NOT NULL,
+  session_id  TEXT,
+  worker_id   TEXT,
+  task_id     TEXT,
+  invoked_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  duration_ms INTEGER,
+  outcome     TEXT
+)`;
+
+const SESSION_EVALUATIONS_TABLE = `
+CREATE TABLE IF NOT EXISTS session_evaluations (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id       TEXT NOT NULL REFERENCES sessions(id),
+  overall_score    REAL NOT NULL,
+  quality_score    REAL NOT NULL,
+  efficiency_score REAL NOT NULL,
+  process_score    REAL NOT NULL,
+  outcome_score    REAL NOT NULL,
+  signals_json     TEXT NOT NULL DEFAULT '{}',
+  schema_version   INTEGER NOT NULL DEFAULT 1,
+  created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
   'CREATE INDEX IF NOT EXISTS idx_tasks_claimed ON tasks(session_claimed)',
@@ -181,6 +366,8 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(loop_status)',
   'CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_custom_flows_name ON custom_flows(name)',
+  'CREATE INDEX IF NOT EXISTS idx_custom_flows_source ON custom_flows(source_flow_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)',
   'CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)',
@@ -190,6 +377,28 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_reviews_task ON reviews(task_id)',
   'CREATE INDEX IF NOT EXISTS idx_reviews_model_built ON reviews(model_that_built)',
   'CREATE INDEX IF NOT EXISTS idx_fix_cycles_task ON fix_cycles(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name)',
+  'CREATE INDEX IF NOT EXISTS idx_workflows_default ON workflows(is_default)',
+  'CREATE INDEX IF NOT EXISTS idx_launchers_type ON launchers(type)',
+  'CREATE INDEX IF NOT EXISTS idx_launchers_status ON launchers(status)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_launcher ON compatibility(launcher_type)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_model ON compatibility(model)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_task_type ON compatibility(task_type)',
+  'CREATE INDEX IF NOT EXISTS idx_compatibility_outcome ON compatibility(outcome)',
+  'CREATE INDEX IF NOT EXISTS idx_task_reviews_task ON task_reviews(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_test_reports_task ON task_test_reports(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_completion_reports_task ON task_completion_reports(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_plans_task ON task_plans(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_descriptions_task ON task_descriptions(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_contexts_task ON task_contexts(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_task_subtasks_task ON task_subtasks(task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_id)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_parent_order ON tasks(parent_task_id, subtask_order)',
+  'CREATE INDEX IF NOT EXISTS idx_session_evaluations_session ON session_evaluations(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_skill ON skill_invocations(skill_name)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_session ON skill_invocations(session_id)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_invoked_at ON skill_invocations(invoked_at)',
+  'CREATE INDEX IF NOT EXISTS idx_skill_invocations_task ON skill_invocations(task_id)',
 ];
 
 // Column additions for schema evolution. Each entry is applied once via ALTER TABLE.
@@ -203,6 +412,12 @@ const TASK_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'file_scope',           ddl: "ALTER TABLE tasks ADD COLUMN file_scope TEXT NOT NULL DEFAULT '[]'" },
   { column: 'session_claimed',      ddl: 'ALTER TABLE tasks ADD COLUMN session_claimed TEXT' },
   { column: 'claimed_at',           ddl: 'ALTER TABLE tasks ADD COLUMN claimed_at TEXT' },
+  { column: 'claim_timeout_ms',     ddl: 'ALTER TABLE tasks ADD COLUMN claim_timeout_ms INTEGER' },
+  { column: 'custom_flow_id',         ddl: 'ALTER TABLE tasks ADD COLUMN custom_flow_id TEXT' },
+  { column: 'preferred_provider',     ddl: 'ALTER TABLE tasks ADD COLUMN preferred_provider TEXT' },
+  { column: 'worker_mode',            ddl: "ALTER TABLE tasks ADD COLUMN worker_mode TEXT" },
+  { column: 'parent_task_id',         ddl: 'ALTER TABLE tasks ADD COLUMN parent_task_id TEXT' },
+  { column: 'subtask_order',          ddl: 'ALTER TABLE tasks ADD COLUMN subtask_order INTEGER' },
 ];
 
 const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
@@ -212,11 +427,22 @@ const SESSION_MIGRATIONS: Array<{ column: string; ddl: string }> = [
   { column: 'total_cost',                ddl: 'ALTER TABLE sessions ADD COLUMN total_cost REAL' },
   { column: 'total_input_tokens',        ddl: 'ALTER TABLE sessions ADD COLUMN total_input_tokens INTEGER' },
   { column: 'total_output_tokens',       ddl: 'ALTER TABLE sessions ADD COLUMN total_output_tokens INTEGER' },
+  { column: 'last_heartbeat',            ddl: 'ALTER TABLE sessions ADD COLUMN last_heartbeat TEXT' },
+  { column: 'drain_requested',           ddl: 'ALTER TABLE sessions ADD COLUMN drain_requested INTEGER NOT NULL DEFAULT 0' },
+  { column: 'supervisor_cost_usd',       ddl: 'ALTER TABLE sessions ADD COLUMN supervisor_cost_usd REAL' },
+  { column: 'worker_costs_json',         ddl: "ALTER TABLE sessions ADD COLUMN worker_costs_json TEXT" },
 ];
 
 const WORKER_MIGRATIONS: Array<{ column: string; ddl: string }> = [
-  { column: 'outcome',       ddl: 'ALTER TABLE workers ADD COLUMN outcome TEXT' },
-  { column: 'retry_number',  ddl: 'ALTER TABLE workers ADD COLUMN retry_number INTEGER NOT NULL DEFAULT 0' },
+  { column: 'outcome',                  ddl: 'ALTER TABLE workers ADD COLUMN outcome TEXT' },
+  { column: 'retry_number',             ddl: 'ALTER TABLE workers ADD COLUMN retry_number INTEGER NOT NULL DEFAULT 0' },
+  { column: 'spawn_to_first_output_ms', ddl: 'ALTER TABLE workers ADD COLUMN spawn_to_first_output_ms INTEGER' },
+  { column: 'total_duration_ms',        ddl: 'ALTER TABLE workers ADD COLUMN total_duration_ms INTEGER' },
+  { column: 'files_changed_count',      ddl: 'ALTER TABLE workers ADD COLUMN files_changed_count INTEGER' },
+  { column: 'files_changed',            ddl: 'ALTER TABLE workers ADD COLUMN files_changed TEXT' },
+  { column: 'review_result',            ddl: "ALTER TABLE workers ADD COLUMN review_result TEXT" },
+  { column: 'review_findings_count',    ddl: 'ALTER TABLE workers ADD COLUMN review_findings_count INTEGER' },
+  { column: 'workflow_phase',           ddl: 'ALTER TABLE workers ADD COLUMN workflow_phase TEXT' },
 ];
 
 function applyMigrations(db: Database.Database, table: string, migrations: Array<{ column: string; ddl: string }>): void {
@@ -239,8 +465,8 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
   const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").get() as { sql: string } | undefined;
   if (!tableInfo) return; // Table doesn't exist yet, CREATE TABLE will handle it
 
-  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'");
-  const needsTypeMigration = !tableInfo.sql.includes("'BUGFIX'");
+  const needsStatusMigration = !tableInfo.sql.includes("'FIXING'") || !tableInfo.sql.includes("'PREPPED'") || !tableInfo.sql.includes("'IMPLEMENTING'") || !tableInfo.sql.includes("'ARCHIVE'");
+  const needsTypeMigration = !tableInfo.sql.includes("'OPS'") || !tableInfo.sql.includes("'DESIGN'");
   if (!needsStatusMigration && !needsTypeMigration) return; // Already up to date
 
   // Disable foreign keys during table recreation to avoid FK constraint failures
@@ -254,9 +480,9 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
       CREATE TABLE tasks_new (
         id               TEXT PRIMARY KEY,
         title            TEXT NOT NULL,
-        type             TEXT NOT NULL CHECK(type IN ('FEATURE','BUG','BUGFIX','REFACTOR','REFACTORING','DOCS','DOCUMENTATION','TEST','CHORE','DEVOPS','RESEARCH','CREATIVE')),
+        type             TEXT NOT NULL CHECK(type IN (${sqlEnum(DB_TASK_TYPES)})),
         priority         TEXT NOT NULL CHECK(priority IN ('P0-Critical','P1-High','P2-Medium','P3-Low')),
-        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED')),
+        status           TEXT NOT NULL CHECK(status IN ('CREATED','IN_PROGRESS','PREPPED','IMPLEMENTING','IMPLEMENTED','IN_REVIEW','FIXING','COMPLETE','FAILED','BLOCKED','CANCELLED','ARCHIVE')),
         complexity       TEXT,
         model            TEXT,
         dependencies     TEXT NOT NULL DEFAULT '[]',
@@ -265,6 +491,8 @@ function migrateTasksCheckConstraint(db: Database.Database): void {
         file_scope       TEXT NOT NULL DEFAULT '[]',
         session_claimed  TEXT,
         claimed_at       TEXT,
+        claim_timeout_ms INTEGER,
+        custom_flow_id   TEXT,
         created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
         updated_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       )
@@ -297,7 +525,7 @@ function migrateWorkersProviderConstraint(db: Database.Database): void {
   const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='workers'").get() as { sql: string } | undefined;
   if (!tableInfo) return;
 
-  if (tableInfo.sql.includes("'codex'")) return; // Already up to date
+  if (tableInfo.sql.includes("'codex'") && tableInfo.sql.includes("'prep'")) return; // Already up to date
 
   db.pragma('foreign_keys = OFF');
 
@@ -323,6 +551,83 @@ function migrateWorkersProviderConstraint(db: Database.Database): void {
   db.pragma('foreign_keys = ON');
 }
 
+/**
+ * Migrate the handoffs table CHECK constraint to include new worker types (prep, implement, cleanup).
+ * SQLite cannot ALTER CHECK constraints, so we recreate the table preserving data.
+ */
+function migrateHandoffsWorkerTypeConstraint(db: Database.Database): void {
+  const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='handoffs'").get() as { sql: string } | undefined;
+  if (!tableInfo) return;
+
+  if (tableInfo.sql.includes("'prep'")) return; // Already up to date
+
+  db.pragma('foreign_keys = OFF');
+
+  db.transaction(() => {
+    db.exec('DROP TABLE IF EXISTS handoffs_new');
+
+    db.exec(HANDOFFS_TABLE.replace('CREATE TABLE IF NOT EXISTS handoffs', 'CREATE TABLE handoffs_new'));
+
+    const existingCols = (db.prepare('PRAGMA table_info(handoffs)').all() as Array<{ name: string }>).map(r => r.name);
+    const newCols = new Set(
+      (db.prepare('PRAGMA table_info(handoffs_new)').all() as Array<{ name: string }>).map(r => r.name),
+    );
+    const shared = existingCols.filter(c => newCols.has(c));
+    const colList = shared.join(', ');
+
+    db.exec(`INSERT INTO handoffs_new (${colList}) SELECT ${colList} FROM handoffs`);
+    db.exec('DROP TABLE handoffs');
+    db.exec('ALTER TABLE handoffs_new RENAME TO handoffs');
+  })();
+
+  db.pragma('foreign_keys = ON');
+}
+
+/**
+ * One-shot data migration: normalize any session_claimed values still in the legacy
+ * underscore format (SESSION_YYYY-MM-DD_HH-MM-SS) to the canonical T-format.
+ * This repairs rows written before TASK_2026_194 deployed the normalization fix.
+ * Safe to run on every startup — the WHERE clause ensures it is a no-op once migrated.
+ */
+function migrateSessionClaimedFormat(db: Database.Database): void {
+  try {
+    db.prepare(
+      `UPDATE tasks
+       SET session_claimed = SUBSTR(session_claimed, 1, 18) || 'T' || SUBSTR(session_claimed, 20)
+       WHERE session_claimed LIKE 'SESSION_____-__-____%'
+         AND session_claimed NOT LIKE 'SESSION_____-__-__T%'`,
+    ).run();
+  } catch {
+    // Table may not exist yet on a fresh install — safe to ignore
+  }
+}
+
+/**
+ * Seed the default PM->Architect->Dev->QA workflow if not already present.
+ * Wrapped in a transaction so partial inserts cannot persist.
+ */
+function seedDefaultWorkflow(db: Database.Database): void {
+  const existing = db.prepare("SELECT id FROM workflows WHERE id = 'default-pm-arch-dev-qa'").get();
+  if (existing) return;
+
+  db.transaction(() => {
+    db.prepare(`
+      INSERT INTO workflows (id, name, description, phases, is_default)
+      VALUES (?, ?, ?, ?, 1)
+    `).run(
+      'default-pm-arch-dev-qa',
+      'PM → Architect → Dev → QA',
+      'Standard nitro-fueled pipeline: project management, architecture, development, and quality assurance',
+      JSON.stringify([
+        { name: 'PM', required_capability: 'project-management', next_phase: 'Architect' },
+        { name: 'Architect', required_capability: 'architecture', next_phase: 'Dev' },
+        { name: 'Dev', required_capability: 'development', next_phase: 'QA' },
+        { name: 'QA', required_capability: 'quality-assurance', next_phase: null },
+      ]),
+    );
+  })();
+}
+
 export function initDatabase(dbPath: string): Database.Database {
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
 
@@ -333,15 +638,30 @@ export function initDatabase(dbPath: string): Database.Database {
   // Migrate CHECK constraints before CREATE TABLE IF NOT EXISTS (which won't update existing tables)
   migrateTasksCheckConstraint(db);
   migrateWorkersProviderConstraint(db);
+  migrateHandoffsWorkerTypeConstraint(db);
 
   db.exec(TASKS_TABLE);
   db.exec(SESSIONS_TABLE);
   db.exec(WORKERS_TABLE);
+  db.exec(CUSTOM_FLOWS_TABLE);
   db.exec(HANDOFFS_TABLE);
   db.exec(EVENTS_TABLE);
   db.exec(PHASES_TABLE);
   db.exec(REVIEWS_TABLE);
   db.exec(FIX_CYCLES_TABLE);
+  db.exec(AGENTS_TABLE);
+  db.exec(WORKFLOWS_TABLE);
+  db.exec(LAUNCHERS_TABLE);
+  db.exec(COMPATIBILITY_TABLE);
+  db.exec(TASK_REVIEWS_TABLE);
+  db.exec(TASK_TEST_REPORTS_TABLE);
+  db.exec(TASK_COMPLETION_REPORTS_TABLE);
+  db.exec(TASK_PLANS_TABLE);
+  db.exec(TASK_DESCRIPTIONS_TABLE);
+  db.exec(TASK_CONTEXTS_TABLE);
+  db.exec(TASK_SUBTASKS_TABLE);
+  db.exec(SESSION_EVALUATIONS_TABLE);
+  db.exec(SKILL_INVOCATIONS_TABLE);
   for (const idx of INDEXES) {
     db.exec(idx);
   }
@@ -349,6 +669,11 @@ export function initDatabase(dbPath: string): Database.Database {
   applyMigrations(db, 'tasks', TASK_MIGRATIONS);
   applyMigrations(db, 'sessions', SESSION_MIGRATIONS);
   applyMigrations(db, 'workers', WORKER_MIGRATIONS);
+
+  // Repair legacy session_claimed values written before the T-separator normalization fix.
+  migrateSessionClaimedFormat(db);
+
+  seedDefaultWorkflow(db);
 
   return db;
 }

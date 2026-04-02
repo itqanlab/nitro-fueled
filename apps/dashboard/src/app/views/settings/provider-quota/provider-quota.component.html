@@ -1,0 +1,62 @@
+<div class="provider-quota-panel">
+  <div class="quota-header">
+    <h2 class="quota-title">Provider Quota</h2>
+    <button class="refresh-btn" (click)="onRefresh()" [disabled]="loadState() === 'loading'">
+      {{ loadState() === 'loading' ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+
+  @if (loadState() === 'error') {
+    <p class="quota-error">Failed to load provider quota. Click Refresh to retry.</p>
+  }
+
+  @if (loadState() !== 'error') {
+    <div class="quota-grid">
+      @for (card of [glmCard(), anthropicCard(), openaiCard()]; track card?.provider ?? $index) {
+        @if (card) {
+          <div class="quota-card" [class.quota-card--unavailable]="card.unavailable">
+            <div class="quota-card__identity">
+              <span class="provider-badge">{{ card.provider === 'glm' ? 'GL' : card.provider === 'anthropic' ? 'AN' : 'OA' }}</span>
+              <div class="quota-card__info">
+                <h3 class="quota-card__name">
+                  {{ card.provider === 'glm' ? 'GLM / ZAI' : card.provider === 'anthropic' ? 'Anthropic' : 'OpenAI' }}
+                </h3>
+                @if (!card.unavailable) {
+                  <p class="quota-card__plan">{{ card.plan }}</p>
+                }
+              </div>
+            </div>
+
+            @if (card.unavailable) {
+              <div class="quota-card__overlay">
+                <span class="overlay-label">Not Configured</span>
+                <span class="overlay-reason" [title]="card.reason">{{ card.reason }}</span>
+              </div>
+            } @else {
+              <div class="quota-card__usage">
+                <div class="usage-bar-track">
+                  <div
+                    class="usage-bar-fill"
+                    [style.width.%]="cardBarWidths().get(card.provider) ?? 0"
+                  ></div>
+                </div>
+                <div class="usage-stats">
+                  <span class="usage-text">{{ card.used | number }} / {{ card.limit | number }} tokens</span>
+                  @if (card.limit > 0 && card.remaining > 0) {
+                    <span class="usage-remaining">{{ ((card.remaining / card.limit) * 100) | number:'1.1-1' }}% remaining</span>
+                  }
+                </div>
+                @if (card.costThisPeriod > 0) {
+                  <span class="usage-cost">{{ card.currency }} {{ card.costThisPeriod | number:'1.2-2' }} this period</span>
+                }
+                @if (card.resetAt) {
+                  <span class="usage-reset">Resets: {{ card.resetAt | date:'mediumDate' }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
