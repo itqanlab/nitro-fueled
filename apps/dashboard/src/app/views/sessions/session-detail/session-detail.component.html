@@ -33,6 +33,35 @@
       </div>
     </div>
 
+    @if (d.costBreakdown) {
+      <section class="section">
+        <h2 class="section-title">Cost Breakdown</h2>
+        <div class="cost-breakdown-card">
+          <div class="cost-row">
+            <span class="cost-label">Supervisor ({{ d.supervisorModel }})</span>
+            <span class="cost-value">${{ d.costBreakdown.supervisor_cost | number:'1.4-4' }}</span>
+          </div>
+          @for (entry of costBreakdownEntries(d.costBreakdown); track entry.model) {
+            <div class="cost-row">
+              <span class="cost-label">{{ entry.model }}</span>
+              <span class="cost-value">${{ entry.cost | number:'1.4-4' }}</span>
+            </div>
+          }
+          <div class="cost-row cost-total">
+            <span class="cost-label">Total</span>
+            <span class="cost-value">${{ d.costBreakdown.total_cost | number:'1.4-4' }}</span>
+          </div>
+        </div>
+      </section>
+    } @else {
+      <section class="section">
+        <h2 class="section-title">Cost Breakdown</h2>
+        <div class="cost-breakdown-card">
+          <p class="cost-placeholder">No cost data available</p>
+        </div>
+      </section>
+    }
+
     @if (isActiveSession()) {
       <div class="controls-card">
         <h2 class="section-title">Session Controls</h2>

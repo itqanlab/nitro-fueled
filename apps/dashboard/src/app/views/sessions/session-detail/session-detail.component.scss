@@ -173,3 +173,42 @@
   align-items: center;
   gap: 6px;
 }
+
+.cost-breakdown-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-primary);
+
+  &.cost-total {
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+    font-weight: 600;
+  }
+}
+
+.cost-label {
+  color: var(--text-secondary);
+}
+
+.cost-value {
+  font-family: monospace;
+}
+
+.cost-placeholder {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}

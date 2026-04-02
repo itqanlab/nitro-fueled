@@ -717,6 +717,18 @@ export interface AnalyticsRoutingRecommendationsResponse {
   readonly total: number;
 }
 
+export interface AnalyticsSkillUsageItem {
+  readonly skill: string;
+  readonly count: number;
+  readonly avgDurationMs: number | null;
+  readonly lastUsed: string | null;
+}
+
+export interface AnalyticsSkillUsageResponse {
+  readonly data: readonly AnalyticsSkillUsageItem[];
+  readonly total: number;
+}
+
 // ── Provider Quota types ──────────────────────────────────────────────────────
 
 export type ProviderId = 'glm' | 'anthropic' | 'openai';
@@ -880,6 +892,12 @@ export interface SessionHistoryWorker {
   readonly outputTokens: number;
 }
 
+export interface CostBreakdown {
+  readonly supervisor_cost: number;
+  readonly worker_cost_by_model: Record<string, number>;
+  readonly total_cost: number;
+}
+
 export interface SessionHistoryDetail {
   readonly id: string;
   readonly source: string;
@@ -896,6 +914,7 @@ export interface SessionHistoryDetail {
   readonly workers: readonly SessionHistoryWorker[];
   readonly logContent: string | null;
   readonly drainRequested: boolean;
+  readonly costBreakdown: CostBreakdown | null;
 }
 
 

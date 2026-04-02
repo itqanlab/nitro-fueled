@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 import { resolveProjectRoot } from '../app/resolve-project-root';
 import { CortexService } from './cortex.service';
-import type { CortexSession, CortexWorker, CortexEvent, CortexTaskTrace } from './cortex.types';
+import type { CortexSession, CortexWorker, CortexEvent, CortexTaskTrace, CostBreakdown } from './cortex.types';
 
 export type SessionEndStatus = 'completed' | 'killed' | 'crashed' | 'running' | 'stopped';
 
@@ -70,6 +70,7 @@ export interface SessionHistoryDetail {
   readonly workers: readonly SessionHistoryWorker[];
   readonly logContent: string | null;
   readonly drainRequested: boolean;
+  readonly costBreakdown: CostBreakdown | null;
 }
 
 @Injectable()
@@ -98,6 +99,7 @@ export class SessionsHistoryService {
     const events = this.loadSessionEvents(sessionId);
     const taskResults = this.buildTaskResults(workers);
     const logContent = await this.readLogContent(sessionId);
+    const summary = this.cortexService.getSessionSummary(sessionId);
 
     return {
       id: session.id,
@@ -132,6 +134,7 @@ export class SessionsHistoryService {
       })),
       logContent,
       drainRequested: session.drain_requested,
+      costBreakdown: summary?.cost_breakdown ?? null,
     };
   }
 

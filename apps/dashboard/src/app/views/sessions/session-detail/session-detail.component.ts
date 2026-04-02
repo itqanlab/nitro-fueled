@@ -24,6 +24,7 @@ import type {
   SessionHistoryTimelineEvent,
   SessionStatusResponse,
   SessionActionResponse,
+  CostBreakdown,
 } from '../../../models/api.types';
 
 interface EnrichedDetail {
@@ -43,6 +44,7 @@ interface EnrichedDetail {
   readonly workers: readonly SessionHistoryWorker[];
   readonly timeline: readonly SessionHistoryTimelineEvent[];
   readonly logContent: string | null;
+  readonly costBreakdown: CostBreakdown | null;
 }
 
 @Component({
@@ -99,6 +101,7 @@ export class SessionDetailComponent {
       workers: raw.workers,
       timeline: raw.timeline,
       logContent: raw.logContent,
+      costBreakdown: raw.costBreakdown ?? null,
     };
   });
 
@@ -188,6 +191,10 @@ export class SessionDetailComponent {
         }
       }),
     ).subscribe();
+  }
+
+  public costBreakdownEntries(breakdown: CostBreakdown): Array<{ model: string; cost: number }> {
+    return Object.entries(breakdown.worker_cost_by_model).map(([model, cost]) => ({ model, cost }));
   }
 
   private statusColor(status: SessionEndStatus): string {
