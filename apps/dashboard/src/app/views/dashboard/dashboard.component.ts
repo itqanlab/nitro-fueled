@@ -4,6 +4,7 @@ import { catchError, of } from 'rxjs';
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 import { StatusIndicatorComponent } from '../../shared/status-indicator/status-indicator.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { SkillUsageBubbleComponent } from './skill-usage-bubble/skill-usage-bubble.component';
 import { ApiService } from '../../services/api.service';
 import type {
   TaskStatusBreakdown,
@@ -22,7 +23,7 @@ const EMPTY_BREAKDOWN: TaskStatusBreakdown = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [StatCardComponent, StatusIndicatorComponent, EmptyStateComponent],
+  imports: [StatCardComponent, StatusIndicatorComponent, EmptyStateComponent, SkillUsageBubbleComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
