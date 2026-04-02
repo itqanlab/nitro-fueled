@@ -201,6 +201,40 @@ export class SessionRunner {
     }
   }
 
+  private static isSubtaskId(taskId: string): boolean {
+    return /^TASK_\d{4}_\d{3}\.\d+$/.test(taskId);
+  }
+
+  private handleSubtaskParentRollup(subtaskId: string): void {
+    const parentId = subtaskId.substring(0, subtaskId.lastIndexOf('.'));
+    const rollup = this.supervisorDb.getParentStatusRollup(parentId);
+
+    if (rollup.allComplete) {
+      this.logger.log(`All subtasks complete for ${parentId} — promoting to IMPLEMENTED`);
+      this.supervisorDb.updateTaskStatus(parentId, 'IMPLEMENTED');
+      this.supervisorDb.logEvent(
+        this.sessionId, parentId, 'supervisor', 'PARENT_AUTO_PROMOTED',
+        { subtaskId, newStatus: 'IMPLEMENTED' },
+      );
+      this.emitEvent('task:subtask-parent-promoted', {
+        parentId,
+        subtaskId,
+        newStatus: 'IMPLEMENTED',
+      });
+    } else if (rollup.anyFailed) {
+      this.logger.warn(`Subtask ${subtaskId} failed — blocking parent ${parentId}`);
+      this.supervisorDb.updateTaskStatus(parentId, 'BLOCKED');
+      this.supervisorDb.logEvent(
+        this.sessionId, parentId, 'supervisor', 'PARENT_BLOCKED_BY_SUBTASK',
+        { subtaskId },
+      );
+      this.emitEvent('task:blocked', {
+        taskId: parentId,
+        reason: `subtask ${subtaskId} exhausted retries`,
+      });
+    }
+  }
+
   private handleWorkerCompletion(worker: ActiveWorkerInfo): void {
     const taskStatus = this.supervisorDb.getTaskStatus(worker.taskId);
 
@@ -227,6 +261,11 @@ export class SessionRunner {
         this.supervisorDb.updateWorkerReviewOutcome(worker.workerId, 'COMPLETE', 0);
         this.emitEvent('worker:completed', { taskId: worker.taskId, workerType: 'review' });
         this.emitEvent('task:completed', { taskId: worker.taskId });
+
+        // Subtask: after a subtask reaches COMPLETE, check if parent can be promoted
+        if (SessionRunner.isSubtaskId(worker.taskId)) {
+          this.handleSubtaskParentRollup(worker.taskId);
+        }
       } else {
         this.handleWorkerFailure(worker, `Task status is ${taskStatus} (expected COMPLETE)`);
       }
@@ -262,6 +301,11 @@ export class SessionRunner {
       );
       this.emitEvent('task:failed', { taskId: worker.taskId, reason, retryCount });
       this.emitEvent('task:blocked', { taskId: worker.taskId, reason });
+
+      // Subtask: propagate terminal failure to parent
+      if (SessionRunner.isSubtaskId(worker.taskId)) {
+        this.handleSubtaskParentRollup(worker.taskId);
+      }
     }
   }
 

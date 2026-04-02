@@ -89,6 +89,10 @@ export interface TaskCandidate {
   dependencies: string[];
   model: string | null;
   customFlowId: string | null;
+  /** Non-null when this candidate is a subtask (TASK_YYYY_NNN.M format). */
+  parentTaskId: string | null;
+  /** 1-indexed position within the parent task's subtask sequence. */
+  subtaskOrder: number | null;
 }
 
 // ============================================================
@@ -188,7 +192,8 @@ export interface SupervisorEvent {
   type: 'supervisor:started' | 'supervisor:stopped' | 'supervisor:heartbeat'
     | 'supervisor:paused' | 'supervisor:resumed'
     | 'worker:spawned' | 'worker:completed' | 'worker:failed' | 'worker:killed'
-    | 'task:claimed' | 'task:completed' | 'task:failed' | 'task:blocked';
+    | 'task:claimed' | 'task:completed' | 'task:failed' | 'task:blocked'
+    | 'task:subtask-parent-promoted';
   sessionId: string;
   timestamp: string;
   payload: Record<string, unknown>;

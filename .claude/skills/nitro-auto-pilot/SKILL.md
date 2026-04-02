@@ -81,6 +81,24 @@ Tasks can run in **single** mode (one Build Worker: CREATED → IMPLEMENTED) or 
 
 In both modes, the Review+Fix Worker handles IMPLEMENTED → COMPLETE.
 
+### Subtask-Aware Scheduling (tick-mode supervisor)
+
+When a Prep Worker decomposes a task by calling `bulk_create_subtasks`, the parent task moves to
+`PREPPED` and subtasks (IDs in `TASK_YYYY_NNN.M` format) are created at `CREATED` status. The
+tick-mode supervisor (`session-runner.ts` in the dashboard API) handles these automatically:
+
+1. **Decomposed parent skipped**: A parent task with active subtasks is excluded from the work queue.
+   Subtasks appear as first-class schedulable units instead.
+2. **Sequential ordering enforced**: Subtask M waits for subtask M-1 to reach `COMPLETE` before it
+   is scheduled. Parallel subtasks (order 1, or with satisfied predecessors) are scheduled concurrently
+   up to the configured concurrency limit.
+3. **Parent-level dependency inheritance**: Subtasks inherit their parent's declared dependencies —
+   a subtask is only scheduled once all parent-level dependencies are `COMPLETE`.
+4. **Parent auto-promotion**: When the last subtask reaches `COMPLETE`, the parent task is
+   automatically promoted to `IMPLEMENTED` and enters the review queue.
+5. **Subtask failure propagation**: If a subtask exhausts its retry budget and reaches `BLOCKED`,
+   the parent is immediately marked `BLOCKED` as well.
+
 ## Quick Start
 
 ```

@@ -54,6 +54,8 @@ interface TaskRow {
   model: string | null;
   description: string;
   custom_flow_id: string | null;
+  parent_task_id: string | null;
+  subtask_order: number | null;
 }
 
 interface CustomFlowRow {
@@ -228,7 +230,8 @@ export class SupervisorDbService implements OnModuleDestroy {
   public getTaskCandidates(): TaskCandidate[] {
     const db = this.getDb();
     const rows = db.prepare(
-      `SELECT id, title, status, type, priority, complexity, dependencies, model, custom_flow_id
+      `SELECT id, title, status, type, priority, complexity, dependencies, model, custom_flow_id,
+              parent_task_id, subtask_order
        FROM tasks
        WHERE status IN ('CREATED', 'IMPLEMENTED')
        ORDER BY
@@ -239,6 +242,38 @@ export class SupervisorDbService implements OnModuleDestroy {
     const completeTasks = new Set(
       (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE' LIMIT 1000").all() as Array<{ id: string }>).map(r => r.id),
     );
+
+    // Parent task IDs that have active (non-terminal) subtasks — skip these parents, schedule subtasks instead
+    const decomposedParentIds = new Set(
+      (db.prepare(
+        `SELECT DISTINCT parent_task_id FROM tasks WHERE parent_task_id IS NOT NULL AND status NOT IN ('COMPLETE', 'BLOCKED', 'CANCELLED')`,
+      ).all() as Array<{ parent_task_id: string }>).map(r => r.parent_task_id),
+    );
+
+    // For sequential subtask ordering: track which subtask_orders are COMPLETE per parent
+    const completedOrdersByParent = new Map<string, Set<number>>();
+    const completedSubtaskRows = db.prepare(
+      `SELECT parent_task_id, subtask_order FROM tasks WHERE parent_task_id IS NOT NULL AND status = 'COMPLETE'`,
+    ).all() as Array<{ parent_task_id: string; subtask_order: number }>;
+    for (const r of completedSubtaskRows) {
+      if (!completedOrdersByParent.has(r.parent_task_id)) {
+        completedOrdersByParent.set(r.parent_task_id, new Set());
+      }
+      completedOrdersByParent.get(r.parent_task_id)!.add(r.subtask_order);
+    }
+
+    // Fetch parent-level dependencies for all decomposed parents so subtasks can inherit them
+    const parentDepsById = new Map<string, string[]>();
+    if (decomposedParentIds.size > 0) {
+      const ids = [...decomposedParentIds];
+      const placeholders = ids.map(() => '?').join(',');
+      const parentRows = db.prepare(
+        `SELECT id, dependencies FROM tasks WHERE id IN (${placeholders})`,
+      ).all(...ids) as Array<{ id: string; dependencies: string | null }>;
+      for (const r of parentRows) {
+        parentDepsById.set(r.id, parseJson<string[]>(r.dependencies, []));
+      }
+    }
 
     return rows
       .map(row => ({
@@ -251,11 +286,47 @@ export class SupervisorDbService implements OnModuleDestroy {
         dependencies: parseJson<string[]>(row.dependencies, []),
         model: row.model,
         customFlowId: row.custom_flow_id ?? null,
+        parentTaskId: row.parent_task_id ?? null,
+        subtaskOrder: row.subtask_order ?? null,
       }))
       .filter(task => {
-        // Only return tasks whose dependencies are all COMPLETE
+        // Skip decomposed parents — their subtasks are scheduled independently
+        if (decomposedParentIds.has(task.id)) return false;
+
+        if (task.parentTaskId !== null) {
+          // Subtask: parent-level dependencies must all be COMPLETE
+          const parentDeps = parentDepsById.get(task.parentTaskId) ?? [];
+          if (parentDeps.length > 0 && !parentDeps.every(d => completeTasks.has(d))) return false;
+
+          // Subtask: sequential ordering — predecessor must be COMPLETE before this one can start
+          const order = task.subtaskOrder ?? 1;
+          if (order > 1) {
+            const completedOrders = completedOrdersByParent.get(task.parentTaskId);
+            if (!completedOrders?.has(order - 1)) return false;
+          }
+          return true;
+        }
+
+        // Regular task: all declared dependencies must be COMPLETE
         return task.dependencies.length === 0 || task.dependencies.every(d => completeTasks.has(d));
       });
+  }
+
+  /**
+   * Returns the rollup status for all subtasks of a decomposed parent.
+   * Used after a subtask completes or fails to determine whether to promote or block the parent.
+   */
+  public getParentStatusRollup(parentTaskId: string): { allComplete: boolean; anyFailed: boolean } {
+    const db = this.getDb();
+    const rows = db.prepare(
+      'SELECT status FROM tasks WHERE parent_task_id = ?',
+    ).all(parentTaskId) as Array<{ status: string }>;
+
+    if (rows.length === 0) return { allComplete: false, anyFailed: false };
+
+    const allComplete = rows.every(r => r.status === 'COMPLETE');
+    const anyFailed = rows.some(r => r.status === 'BLOCKED');
+    return { allComplete, anyFailed };
   }
 
   public claimTask(taskId: string, sessionId: string): boolean {
