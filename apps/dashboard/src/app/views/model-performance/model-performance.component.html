@@ -75,6 +75,7 @@
       <nz-empty nzNotFoundContent="No model performance data available"></nz-empty>
     } @else {
       <nz-table
+        #perfTable
         [nzData]="rows"
         [nzShowPagination]="rows.length > 20"
         [nzPageSize]="20"
@@ -96,7 +97,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of rows; track row.model + row.taskType) {
+          @for (row of perfTable.data; track row.model + row.taskType) {
             <tr>
               <td class="model-cell">{{ row.model }}</td>
               <td>{{ row.taskType }}</td>

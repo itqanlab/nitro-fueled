@@ -4,16 +4,18 @@ import { HeaderComponent } from './header/header.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { StatusBarComponent } from './status-bar/status-bar.component';
 import { CommandConsoleComponent } from '../components/command-console/command-console.component';
+import { WorkspaceSwitcherComponent } from './workspace-switcher/workspace-switcher.component';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, SidebarComponent, StatusBarComponent, CommandConsoleComponent],
+  imports: [RouterOutlet, HeaderComponent, SidebarComponent, StatusBarComponent, CommandConsoleComponent, WorkspaceSwitcherComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="shell">
       <app-header />
       <div class="shell-body">
+        <app-workspace-switcher />
         <app-sidebar />
         <main class="main-content">
           <router-outlet />

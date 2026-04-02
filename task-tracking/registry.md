@@ -3,8 +3,8 @@
 
 | Task ID       | Status      | Type    | Description                        | Created    | Model |
 |---------------|-------------|---------|------------------------------------|------------|-------|
-| TASK_2026_001 | COMPLETE    |         |  | 2026-04-01 | default |
-| TASK_2026_002 | COMPLETE    |         |  | 2026-04-01 | default |
+| TASK_2026_001 | COMPLETE    |         |  | 2026-04-02 | default |
+| TASK_2026_002 | COMPLETE    |         |  | 2026-04-02 | default |
 | TASK_2026_003 | COMPLETE    | REFACTORING | Supervisor Architecture | 2026-03-30 | default |
 | TASK_2026_004 | COMPLETE    | FEATURE | Planner Agent and /plan Command | 2026-03-30 | default |
 | TASK_2026_005 | COMPLETE    | REFACTORING | Fix Workspace Agent Setup for Nitro-Fueled | 2026-03-30 | default |
@@ -248,16 +248,16 @@
 | TASK_2026_243 | COMPLETE    | FEATURE | Per-Task Model/Provider Editor in Dashboard | 2026-03-31 | default |
 | TASK_2026_244 | COMPLETE    | FEATURE | Dashboard API: Wire Supervisor Events to WebSocket Gateway | 2026-03-31 | default |
 | TASK_2026_245 | CANCELLED   | FEATURE | Tick-Mode Auto-Pilot Skill Prompt | 2026-03-31 | default |
-| TASK_2026_246 | CREATED     | FEATURE | Dashboard UI: Session Cost Breakdown Card | 2026-03-31 | default |
-| TASK_2026_247 | CREATED     | FEATURE | Sessions List: Checkbox Selection and Compare Button | 2026-03-31 | default |
+| TASK_2026_246 | COMPLETE    | FEATURE | Dashboard UI: Session Cost Breakdown Card | 2026-03-31 | default |
+| TASK_2026_247 | COMPLETE    | FEATURE | Sessions List: Checkbox Selection and Compare Button | 2026-03-31 | default |
 | TASK_2026_248 | CREATED     | FEATURE | Session Comparison View -- Side-by-Side Model Cost/Performance | 2026-03-31 | default |
-| TASK_2026_249 | CREATED     | FEATURE | Cortex Schema: Session Cost Breakdown Columns and Summary | 2026-03-31 | default |
-| TASK_2026_250 | CREATED     | FEATURE | Dashboard API: Session Cost Breakdown Response | 2026-03-31 | default |
+| TASK_2026_249 | COMPLETE    | FEATURE | Cortex Schema: Session Cost Breakdown Columns and Summary | 2026-03-31 | default |
+| TASK_2026_250 | COMPLETE    | FEATURE | Dashboard API: Session Cost Breakdown Response | 2026-03-31 | default |
 | TASK_2026_251 | COMPLETE    | FEATURE | MCP Cortex: bulk_update_tasks Tool | 2026-03-31 | default |
 | TASK_2026_252 | COMPLETE    | BUGFIX  | MCP Cortex: update_task Syncs Title/Status to Disk Files | 2026-03-31 | default |
-| TASK_2026_253 | CREATED     | BUGFIX  | MCP Cortex: Reject Tasks with Empty/Default Titles on Create | 2026-03-31 | default |
-| TASK_2026_254 | CREATED     | BUGFIX  | MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup | 2026-03-31 | default |
-| TASK_2026_255 | CREATED     | REFACTORING | Auto-Pilot Skill: Use stage_and_commit MCP Instead of Bash Git | 2026-03-31 | default |
+| TASK_2026_253 | COMPLETE    | BUGFIX  | MCP Cortex: Reject Tasks with Empty/Default Titles on Create | 2026-03-31 | default |
+| TASK_2026_254 | COMPLETE    | BUGFIX  | MCP Cortex: Auto-Close Stale Sessions on Supervisor Startup | 2026-03-31 | default |
+| TASK_2026_255 | COMPLETE    | REFACTORING | Auto-Pilot Skill: Use stage_and_commit MCP Instead of Bash Git | 2026-03-31 | default |
 | TASK_2026_256 | COMPLETE    | FEATURE | MCP Cortex: get_backlog_summary Tool — Status Counts Only | 2026-03-31 | default |
 | TASK_2026_257 | CREATED     | FEATURE | Server Restart Recovery — Reconstruct Active Sessions from DB | 2026-03-31 | default |
 | TASK_2026_258 | CREATED     | FEATURE | Dashboard UI: Live Session Monitor via WebSocket | 2026-03-31 | default |
@@ -266,12 +266,12 @@
 | TASK_2026_261 | CANCELLED   | FEATURE | Tick Scheduler Service -- Spawn Claude Code Processes per Tick | 2026-03-31 | default |
 | TASK_2026_262 | CANCELLED   | FEATURE | Worker Heartbeat Verification in Supervisor Tick Loop | 2026-03-31 | default |
 | TASK_2026_263 | COMPLETE    | FEATURE | Cortex DB Schema: Subtask Support | 2026-03-31 | default |
-| TASK_2026_264 | CREATED     | FEATURE | Prep Worker: Task Decomposition into Subtasks | 2026-03-31 | default |
-| TASK_2026_265 | CREATED     | FEATURE | Supervisor: Subtask-Aware Scheduling | 2026-03-31 | default |
-| TASK_2026_266 | CREATED     | FEATURE | Supervisor: Per-Subtask Model Routing | 2026-03-31 | default |
-| TASK_2026_267 | CREATED     | FEATURE | Review Worker: Holistic Parent Review After Subtask Completion | 2026-03-31 | default |
+| TASK_2026_264 | COMPLETE    | FEATURE | Prep Worker: Task Decomposition into Subtasks | 2026-03-31 | default |
+| TASK_2026_265 | COMPLETE    | FEATURE | Supervisor: Subtask-Aware Scheduling | 2026-03-31 | default |
+| TASK_2026_266 | COMPLETE    | FEATURE | Supervisor: Per-Subtask Model Routing | 2026-03-31 | default |
+| TASK_2026_267 | COMPLETE    | FEATURE | Review Worker: Holistic Parent Review After Subtask Completion | 2026-03-31 | default |
 | TASK_2026_268 | CREATED     | FEATURE | Dashboard UI: Subtask Tree Display in Task Detail | 2026-03-31 | default |
-| TASK_2026_269 | CREATED     | FEATURE | Dashboard API: Subtask Data in Task Response | 2026-03-31 | default |
+| TASK_2026_269 | COMPLETE    | FEATURE | Dashboard API: Subtask Data in Task Response | 2026-03-31 | default |
 | TASK_2026_270 | COMPLETE    | FEATURE | MCP Cortex: Launcher-Aware spawn_worker and get_available_providers | 2026-03-31 | default |
 | TASK_2026_271 | CREATED     | FEATURE | Autopilot: Prompt Adapter Layer + Supervisor Codex Launcher Routing | 2026-03-31 | default |
 | TASK_2026_272 | CREATED     | RESEARCH | Research — Multi-Launcher Data Model, Compatibility Matrix, and MCP API Spec | 2026-03-31 | default |
@@ -282,34 +282,34 @@
 | TASK_2026_277 | COMPLETE    | FEATURE | CLAUDE.md Split — Introduce .nitro/CLAUDE.nitro.md as Nitro's System Prompt | 2026-03-31 | default |
 | TASK_2026_278 | COMPLETE    | REFACTORING | Scaffold Source Restructure — Replace scaffold/.claude/ with scaffold/nitro/ and scaffold/nitro-root/ | 2026-03-31 | default |
 | TASK_2026_279 | COMPLETE    | REFACTORING | Rename Unprefixed .claude/ Dirs and Files to nitro-* (Structural Rename) | 2026-03-31 | default |
-| TASK_2026_280 | CREATED     | REFACTORING | Update All Internal References After nitro-* Rename | 2026-03-31 | default |
+| TASK_2026_280 | COMPLETE    | REFACTORING | Update All Internal References After nitro-* Rename | 2026-03-31 | default |
 | TASK_2026_281 | COMPLETE    | FEATURE | Smart Codebase Sampling for Init — Hybrid Signal Collection | 2026-03-31 | default |
-| TASK_2026_282 | IN_PROGRESS | FEATURE | AI-Generated Project Artifacts from Init Analysis — Single-Pass Generation | 2026-03-31 | default |
-| TASK_2026_283 | CREATED     | FEATURE | Multi-Tool Context File Generation — .cursorrules, copilot-instructions, .clinerules | 2026-03-31 | default |
+| TASK_2026_282 | COMPLETE    | FEATURE | AI-Generated Project Artifacts from Init Analysis — Single-Pass Generation | 2026-03-31 | default |
+| TASK_2026_283 | COMPLETE    | FEATURE | Multi-Tool Context File Generation — .cursorrules, copilot-instructions, .clinerules | 2026-03-31 | default |
 | TASK_2026_284 | COMPLETE    | FEATURE | AI-Assisted Three-Way Merge on Update (--ai-merge) | 2026-03-31 | default |
 | TASK_2026_285 | CREATED     | FEATURE | Update Change Summary — AI-Powered Diff Explanation | 2026-03-31 | default |
 | TASK_2026_286 | CREATED     | FEATURE | Generate .codex/ Configuration and Agent Files on Init | 2026-03-31 | default |
 | TASK_2026_287 | COMPLETE    | FEATURE | Cortex DB Schema: Task Artifact Tables | 2026-03-31 | default |
 | TASK_2026_288 | COMPLETE    | FEATURE | MCP Tools: Task Artifact CRUD Operations | 2026-03-31 | default |
-| TASK_2026_289 | CREATED     | REFACTORING | Worker Prompts: MCP-Only Artifact Access (Eliminate File I/O) | 2026-03-31 | default |
-| TASK_2026_290 | CREATED     | REFACTORING | Supervisor: Drop File-Based Fallback Paths, DB-Only Mode | 2026-03-31 | default |
-| TASK_2026_291 | CREATED     | REFACTORING | CLI and MCP — DB-Only Task Creation, Remove File-Based Artifacts | 2026-04-01 | default |
-| TASK_2026_292 | CREATED     | FEATURE | Cortex DB: Skill Invocations Table and MCP Analytics Tools | 2026-03-31 | default |
-| TASK_2026_293 | CREATED     | FEATURE | Dashboard API: Skill Usage Analytics Endpoint | 2026-03-31 | default |
-| TASK_2026_294 | CREATED     | FEATURE | Dashboard UI: Skill Usage Bubble Chart (D3 Circle Pack) | 2026-03-31 | default |
+| TASK_2026_289 | IMPLEMENTED | REFACTORING | Worker Prompts: MCP-Only Artifact Access (Eliminate File I/O) | 2026-03-31 | default |
+| TASK_2026_290 | COMPLETE    | REFACTORING | Supervisor: Drop File-Based Fallback Paths, DB-Only Mode | 2026-03-31 | default |
+| TASK_2026_291 | COMPLETE    | REFACTORING | CLI and MCP — DB-Only Task Creation, Remove File-Based Artifacts | 2026-04-01 | default |
+| TASK_2026_292 | COMPLETE    | FEATURE | Cortex DB: Skill Invocations Table and MCP Analytics Tools | 2026-03-31 | default |
+| TASK_2026_293 | COMPLETE    | FEATURE | Dashboard API: Skill Usage Analytics Endpoint | 2026-03-31 | default |
+| TASK_2026_294 | COMPLETE    | FEATURE | Dashboard UI: Skill Usage Bubble Chart (D3 Circle Pack) | 2026-03-31 | default |
 | TASK_2026_295 | COMPLETE    | FEATURE | Extend update_session MCP tool to write supervisor_model, mode, total_cost | 2026-04-01 | default |
 | TASK_2026_296 | CREATED     | FEATURE | Wire auto-pilot supervisor to log session metadata, phases, and reviews | 2026-04-01 | default |
 | TASK_2026_297 | COMPLETE    | FEATURE | Wire Sidebar navigation to real data (badges, items) | 2026-04-01 | default |
 | TASK_2026_298 | COMPLETE    | BUGFIX  | Validate and fix Sessions List and Session Detail real API wiring | 2026-04-01 | default |
 | TASK_2026_299 | COMPLETE    | FEATURE | Wire Provider Hub screen to real provider API | 2026-04-01 | default |
-| TASK_2026_300 | CREATED     | FEATURE | Audit and fix Analytics screens (cost, efficiency, model performance) | 2026-04-01 | default |
-| TASK_2026_301 | CREATED     | FEATURE | Audit and fix Telemetry screens (phase-timing, task-trace) | 2026-04-01 | default |
+| TASK_2026_300 | COMPLETE    | FEATURE | Audit and fix Analytics screens (cost, efficiency, model performance) | 2026-04-01 | default |
+| TASK_2026_301 | COMPLETE    | FEATURE | Audit and fix Telemetry screens (phase-timing, task-trace) | 2026-04-01 | default |
 | TASK_2026_302 | CREATED     | REFACTORING | Remove all remaining mock data constants and dead imports | 2026-04-01 | default |
 | TASK_2026_303 | COMPLETE    | FEATURE | Add MCP server management API endpoints (backend) | 2026-04-01 | default |
 | TASK_2026_304 | COMPLETE    | FEATURE | Wire MCP Integrations frontend to real API | 2026-04-01 | default |
-| TASK_2026_305 | CREATED     | RESEARCH | Audit SettingsService — determine if it persists to backend or localStorage | 2026-04-01 | default |
-| TASK_2026_306 | CREATED     | FEATURE | Audit Agent Editor store and fix data source | 2026-04-01 | default |
-| TASK_2026_307 | CREATED     | FEATURE | Audit and fix Progress Center screen | 2026-04-01 | default |
+| TASK_2026_305 | COMPLETE    | RESEARCH | Audit SettingsService — determine if it persists to backend or localStorage | 2026-04-01 | default |
+| TASK_2026_306 | COMPLETE    | FEATURE | Audit Agent Editor store and fix data source | 2026-04-01 | default |
+| TASK_2026_307 | COMPLETE    | FEATURE | Audit and fix Progress Center screen | 2026-04-01 | default |
 | TASK_2026_308 | CREATED     | FEATURE | Audit and fix Reports screen | 2026-04-01 | default |
 | TASK_2026_309 | CREATED     | FEATURE | Audit and fix Orchestration screen | 2026-04-01 | default |
 | TASK_2026_310 | CREATED     | FEATURE | Audit and fix Logs screen | 2026-04-01 | default |
@@ -317,11 +317,11 @@
 | TASK_2026_312 | CREATED     | FEATURE | Audit and fix Analytics screens | 2026-04-01 | default |
 | TASK_2026_313 | CREATED     | FEATURE | Audit and fix Phase Timing and Task Trace telemetry screens | 2026-04-01 | default |
 | TASK_2026_314 | CREATED     | REFACTORING | Remove all dead mock data constants and files | 2026-04-01 | default |
-| TASK_2026_315 | CREATED     | FEATURE | Add backend API endpoints for Settings persistence | 2026-04-01 | default |
-| TASK_2026_316 | CREATED     | FEATURE | Wire SettingsService to backend API for all tabs | 2026-04-01 | default |
+| TASK_2026_315 | COMPLETE    | FEATURE | Add backend API endpoints for Settings persistence | 2026-04-01 | default |
+| TASK_2026_316 | COMPLETE    | FEATURE | Wire SettingsService to backend API for all tabs | 2026-04-01 | default |
 | TASK_2026_317 | COMPLETE    | FEATURE | Add ARCHIVE status to cortex DB schema and MCP task tools | 2026-04-01 | default |
 | TASK_2026_318 | CREATED     | FEATURE | Add ARCHIVE status to dashboard frontend and API | 2026-04-01 | default |
-| TASK_2026_319 | CREATED     | FEATURE | Add session_evaluations table and evaluate_session MCP tool | 2026-04-01 | default |
+| TASK_2026_319 | COMPLETE    | FEATURE | Add session_evaluations table and evaluate_session MCP tool | 2026-04-01 | default |
 | TASK_2026_320 | CANCELLED   | FEATURE | Write session evaluation markdown scorecard to disk | 2026-04-01 | default |
 | TASK_2026_321 | CREATED     | FEATURE | Enforce per-phase token capture in log_phase MCP tool | 2026-04-01 | default |
 | TASK_2026_322 | CREATED     | FEATURE | Add lesson_violations_count to reviews table and MCP log_review tool | 2026-04-01 | default |
