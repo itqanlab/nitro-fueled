@@ -17,11 +17,15 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE="$ROOT/.claude"
 SCAFFOLD="$ROOT/apps/cli/scaffold/.claude"
 
-# Files/dirs to exclude — local-only, not shipped in scaffold
+# Files/dirs to exclude — local-only, or tracked under a different scaffold path
+# Note: .claude/agents/ and .claude/commands/ are synced to apps/cli/scaffold/nitro/
+# (not apps/cli/scaffold/.claude/) per the restructure in TASK_2026_278.
 EXCLUDE_PATTERNS=(
   ".claude/hooks/"
   ".claude/worktrees/"
   ".claude/settings.local.json"
+  ".claude/agents/"
+  ".claude/commands/"
 )
 
 STAGED_ONLY=false

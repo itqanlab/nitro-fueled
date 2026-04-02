@@ -243,6 +243,6 @@ Task created successfully.
 ## References
 
 - Task template: `task-tracking/task-template.md`
-- Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
-- Orchestration skill: `.claude/skills/orchestration/SKILL.md`
+- Task tracking conventions: `.claude/skills/nitro-orchestration/references/task-tracking.md`
+- Orchestration skill: `.claude/skills/nitro-orchestration/SKILL.md`
 - Template guide: `docs/task-template-guide.md`

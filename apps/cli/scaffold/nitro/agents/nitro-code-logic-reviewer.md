@@ -84,7 +84,7 @@ Every score MUST include:
 
 ## MANDATORY: Update Review Lessons After Reviewing
 
-After completing your review, check if any of your findings represent NEW patterns (not already in `.claude/review-lessons/`). If so, append them to the appropriate file:
+After completing your review, check if any of your findings represent NEW patterns (not already in `.claude/nitro-review-lessons/`). If so, append them to the appropriate file:
 
 - Cross-cutting rules (naming, types, file size, imports) → `review-general.md`
 - Backend-specific (DB, IPC, services, Electron) → `backend.md`
@@ -234,7 +234,7 @@ What happens when each integration point fails?
 
 ```bash
 # Read project anti-patterns — logic violations in these are blocking
-Read(.claude/anti-patterns.md)
+Read(.claude/nitro-anti-patterns.md)
 
 # Read original request
 Read(task-tracking/TASK_[ID]/context.md)

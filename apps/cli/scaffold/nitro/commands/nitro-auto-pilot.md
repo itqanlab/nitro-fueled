@@ -64,7 +64,7 @@ and loops until all tasks are complete or blocked.
 
 ### Step 1: Load Skill
 
-Read `.claude/skills/auto-pilot/SKILL.md` -- this contains the full
+Read `.claude/skills/nitro-auto-pilot/SKILL.md` -- this contains the full
 Supervisor loop logic, worker type determination, state management,
 and monitoring protocol.
 
@@ -107,7 +107,7 @@ Parse $ARGUMENTS for:
 
 ### Step 3: Pre-Flight Checks
 
-**3a. Stale Archive Check** (see ## Stale Session Archive Check in `.claude/skills/auto-pilot/SKILL.md`) — Before any other checks, commit any session artifacts left uncommitted by a previous crashed session. Best-effort — never blocks startup.
+**3a. Stale Archive Check** (see ## Stale Session Archive Check in `.claude/skills/nitro-auto-pilot/SKILL.md`) — Before any other checks, commit any session artifacts left uncommitted by a previous crashed session. Best-effort — never blocks startup.
 
 **3b.** Verify `task-tracking/registry.md` exists.
 If missing: ERROR -- "Registry not found. Run /nitro-initialize-workspace first."
@@ -363,13 +363,13 @@ Enter the full Supervisor loop from SKILL.md (Steps 1-8).
 **MCP Tools**: spawn_worker, list_workers, get_worker_activity, get_worker_stats,
               kill_worker, subscribe_worker, get_pending_events, emit_event
 **State Dir**: task-tracking/sessions/SESSION_{timestamp}/
-**Skill Path**: .claude/skills/auto-pilot/SKILL.md
+**Skill Path**: .claude/skills/nitro-auto-pilot/SKILL.md
 
 ## References
 
-- Supervisor skill: `.claude/skills/auto-pilot/SKILL.md`
-- Orchestration skill (used by workers): `.claude/skills/orchestration/SKILL.md`
-- Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
+- Supervisor skill: `.claude/skills/nitro-auto-pilot/SKILL.md`
+- Orchestration skill (used by workers): `.claude/skills/nitro-orchestration/SKILL.md`
+- Task tracking conventions: `.claude/skills/nitro-orchestration/references/task-tracking.md`
 - MCP nitro-cortex design: `docs/mcp-nitro-cortex-design.md`
 - Task template guide: `docs/task-template-guide.md`
 - Benchmark suite: `benchmark-suite/config.md`

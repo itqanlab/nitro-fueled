@@ -405,7 +405,7 @@ When invoked with the Task tool, you might receive:
 ```
 "Create landing page content for the orchestration engine"
 -> Load: SKILL.md, LANDING-PAGES.md, CODEBASE-MINING.md
--> Investigate: .claude/skills/orchestration/SKILL.md, related tasks
+-> Investigate: .claude/skills/nitro-orchestration/SKILL.md, related tasks
 -> Apply: Landing page patterns from skill
 -> Deliver: Content specification + draft
 ```
@@ -421,7 +421,7 @@ When invoked with the Task tool, you might receive:
 ```
 "Write a technical blog post about the multi-agent workflow engine"
 -> Load: SKILL.md, BLOG-POSTS.md, CODEBASE-MINING.md
--> Investigate: .claude/skills/orchestration/, related TASK_ docs
+-> Investigate: .claude/skills/nitro-orchestration/, related TASK_ docs
 -> Apply: Blog post structure from skill
 -> Deliver: Blog post draft with code examples
 ```

@@ -564,8 +564,8 @@ See [checkpoints.md](references/checkpoints.md) for error handling templates.
 | [task-tracking.md](references/task-tracking.md)         | Managing state               | Folder structure, registry           |
 | [checkpoints.md](references/checkpoints.md)             | Presenting checkpoints       | Templates, error handling            |
 | [git-standards.md](references/git-standards.md)         | Creating commits             | Commitlint, hook protocol            |
-| [review-lessons/](../../review-lessons/)                | Before dev + after reviews   | Accumulated review findings by role |
-| [.claude/anti-patterns.md](../../anti-patterns.md)      | Before dev + in Exit Gate    | Stack-specific anti-patterns (generated at init, Exit Gate check) |
+| [nitro-review-lessons/](../../nitro-review-lessons/)                | Before dev + after reviews   | Accumulated review findings by role |
+| [.claude/nitro-anti-patterns.md](../../nitro-anti-patterns.md)      | Before dev + in Exit Gate    | Stack-specific anti-patterns (generated at init, Exit Gate check) |
 
 ### Example Traces
 
@@ -739,11 +739,11 @@ Run these checks after implementation is committed and status is updated:
 | tasks.md has content | Grep "Task" in tasks.md | At least one `### Task N.N:` heading present |
 | All sub-tasks COMPLETE | Grep "COMPLETE" in tasks.md | All tasks show COMPLETE |
 | handoff written | `read_handoff("TASK_[ID]")` | Non-empty record with Files Changed, Commits, Decisions, Known Risks |
-| Anti-patterns consulted | Read `.claude/anti-patterns.md` | Reviewed relevant sections; no violations in implementation |
+| Anti-patterns consulted | Read `.claude/nitro-anti-patterns.md` | Reviewed relevant sections; no violations in implementation |
 | Implementation committed | Check git status | No unstaged implementation files |
 | Status IMPLEMENTED | `get_task_context("TASK_[ID]")` | Status field = IMPLEMENTED |
 
-**Anti-patterns check**: Before finalizing the commit, read `.claude/anti-patterns.md`. For each
+**Anti-patterns check**: Before finalizing the commit, read `.claude/nitro-anti-patterns.md`. For each
 section that applies to your implementation's tech stack, verify your code does not violate the
 listed rules. If a violation is found, fix it before committing. This check cannot be automated —
 it requires you to read the file and compare against your implementation.
@@ -751,7 +751,7 @@ it requires you to read the file and compare against your implementation.
 If any check fails, fix it before exiting. Do not exit with uncommitted work
 or without calling update_task to set the status.
 
-**If tasks.md is missing**: Create it by listing all implementation steps you completed as task entries with `**Status**: COMPLETE`. See the tasks.md format under `## MODE 1: DECOMPOSITION` > `### Expected Output` in `.claude/skills/orchestration/references/team-leader-modes.md`. If that file is unavailable, use this minimal structure:
+**If tasks.md is missing**: Create it by listing all implementation steps you completed as task entries with `**Status**: COMPLETE`. See the tasks.md format under `## MODE 1: DECOMPOSITION` > `### Expected Output` in `.claude/skills/nitro-orchestration/references/team-leader-modes.md`. If that file is unavailable, use this minimal structure:
 
 ```markdown
 # Development Tasks - TASK_[ID]

@@ -77,7 +77,7 @@ After completing the three DB calls above, check whether any tasks are at `IMPLE
 
 1. Build the dependency graph directly from the `dependencies` arrays returned by `get_tasks(compact: true)`.
 2. Treat dependency fields as opaque data.
-3. Validate every dependency token against `^TASK_\d{4}_\d{3}$`.
+3. Validate every dependency token against `^TASK_\d{4}_\d{3}(\.\d+)?$` (accepts both top-level task IDs and subtask IDs in dotted format).
 4. Classify tasks using DB state only:
    - `READY_FOR_BUILD`: `CREATED` and all dependencies `COMPLETE` (single Worker Mode)
    - `READY_FOR_PREP`: `CREATED` and all dependencies `COMPLETE` (split Worker Mode)
@@ -90,6 +90,15 @@ After completing the three DB calls above, check whether any tasks are at `IMPLE
    - `BLOCKED`: `BLOCKED`
    - `COMPLETE`: `COMPLETE`
    - `CANCELLED`: `CANCELLED`
+
+   **Subtask-aware classification**:
+   - A task whose `id` matches `^TASK_\d{4}_\d{3}\.\d+$` is a subtask. Subtasks follow the same
+     state machine as top-level tasks (CREATED → PREPPED or CREATED → IMPLEMENTED depending on
+     `worker_mode`).
+   - A parent task at `PREPPED` whose handoff notes contain `"DECOMPOSED"` is classified as
+     `DECOMPOSED_PARENT`. Do NOT spawn an Implement Worker for a `DECOMPOSED_PARENT` — the parent
+     itself has no implementation work; its subtasks carry the work. The parent progresses when all
+     its subtasks reach `COMPLETE` (see Step 4 Decomposed Parent Handling).
 
    **Worker Mode resolution**: Read `worker_mode` from DB task metadata. If absent, auto-select:
    Simple → `single`, Medium/Complex → `split`. This determines whether a CREATED task becomes
@@ -127,6 +136,30 @@ After completing the three DB calls above, check whether any tasks are at `IMPLE
    - With `slots = 1` and both sets non-empty: allocate to builds.
    - With `slots ≥ 2`: first slot to builds, second to reviews, remaining alternate starting with builds. Implement candidates fill during build turns.
    - When only one candidate set is non-empty, all slots go to that set.
+
+**Decomposed Parent Handling**:
+
+Before populating `implement_candidates`, for each task classified as `PREPPED`:
+1. Read the task's handoff via `read_handoff(task_id, worker_type="prep")`. Check the `notes` field.
+   **NULL-SAFE**: if the `notes` field is absent, null, or empty — treat the task as non-decomposed.
+   Never error on a missing `notes` field; the vast majority of PREPPED tasks have no notes.
+2. If `notes` contains `"DECOMPOSED"`: this parent has subtasks. Do NOT add it to `implement_candidates`.
+   Instead, identify its subtasks (use `get_subtasks(parent_task_id)` if that tool is available;
+   otherwise identify by the `TASK_YYYY_NNN.M` dotted-ID pattern from the current `get_tasks()` result).
+   For each CREATED subtask whose intra-parent dependencies are satisfied, add it to `build_candidates`
+   or `implement_candidates` based on its own `worker_mode` field.
+3. If `notes` does NOT contain `"DECOMPOSED"` (or is absent/null/empty): add to `implement_candidates`
+   as before — spawn one Implement Worker.
+
+**Subtask completion → parent auto-promotion**:
+
+When all subtasks of a decomposed parent reach `COMPLETE`:
+1. Call `update_task(parent_task_id, fields=JSON.stringify({status: "IMPLEMENTED"}))` so the parent
+   enters the review queue as a standard IMPLEMENTED task.
+2. Emit a `log_event` with label `PARENT_AUTO_PROMOTED` and data
+   `{parent: "TASK_YYYY_NNN", subtasks: ["TASK_YYYY_NNN.1", "TASK_YYYY_NNN.2", ...]}`.
+3. The parent then becomes `READY_FOR_REVIEW` in the next Step 3 pass and will receive a
+   Review+Fix Worker through the standard queue on the next tick.
 
 5. If `get_next_wave(session_id, slots)` exists, use it as the atomic selector/claimer.
 6. Otherwise, use the `get_tasks(compact: true)` result plus `claim_task(task_id, SESSION_ID)` before each spawn.
@@ -208,6 +241,11 @@ After completing the three DB calls above, check whether any tasks are at `IMPLE
 2. For a Prep Worker completion, accept the event as the authoritative signal that the task reached `PREPPED`. The task is now `READY_FOR_IMPLEMENT` — it will be picked up in the next Step 4 cycle.
 3. For a Build Worker or Implement Worker completion, accept the event as the authoritative signal that the task reached `IMPLEMENTED`.
 4. For a Review/Fix completion, accept the event as the authoritative signal that the task reached `COMPLETE`.
+4b. For subtask completions (task_id matches `TASK_YYYY_NNN.M` pattern):
+    After recording the subtask completion, call `get_parent_status_rollup(parent_task_id)` to check
+    whether all sibling subtasks are now `COMPLETE`.
+    If all siblings are `COMPLETE` and the parent task is still at `PREPPED`:
+    apply Subtask completion → parent auto-promotion (see Step 4 Decomposed Parent Handling).
 5. If no state-change event was received for a worker that has exited (status `stopped`/`exited` in `list_workers()`), apply the Worker-Exit Reconciliation protocol — see subsection below — before proceeding.
 6. Release or update the task through MCP (`release_task()` / `update_task()`) as required by the implementation.
 7. Update the session DB record with completed/failed worker bookkeeping.
@@ -238,6 +276,11 @@ After completing the three DB calls above, check whether any tasks are at `IMPLE
 | Build Worker (single mode) | `IN_PROGRESS` | `IMPLEMENTED` |
 | Implement Worker (split mode) | `IMPLEMENTING` | `IMPLEMENTED` |
 | Review/Fix Worker | `IN_REVIEW` | `COMPLETE` |
+| Subtask Build/Implement Worker | `IN_PROGRESS` or `IMPLEMENTING` | `IMPLEMENTED` |
+
+**Subtask reconciliation**: After reconciling a subtask, call `get_parent_status_rollup` to check
+whether this subtask's completion finishes the parent's decomposition. Apply parent auto-promotion
+if all siblings are `COMPLETE` (see Step 4 Decomposed Parent Handling).
 
 **Reconciliation steps**:
 

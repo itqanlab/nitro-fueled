@@ -23,7 +23,7 @@ Parse `$ARGUMENTS`:
 - If missing: ERROR — `"No agent definition found at .claude/agents/{AGENT_NAME}.md. Agent name may be misspelled or the agent has not been created yet."`
 
 2b. Verify `task-tracking/agent-records/{AGENT_NAME}-record.md` exists.
-- If missing: ERROR — `"No record found for agent '{AGENT_NAME}'. Create it from the blank template in .claude/skills/orchestration/references/agent-calibration.md (## Blank Record Template section) before evaluating."`
+- If missing: ERROR — `"No record found for agent '{AGENT_NAME}'. Create it from the blank template in .claude/skills/nitro-orchestration/references/agent-calibration.md (## Blank Record Template section) before evaluating."`
 
 ---
 
@@ -283,7 +283,7 @@ Next steps:
 
 ## References
 
-- Agent record schema, blank template, failure taxonomy: `.claude/skills/orchestration/references/agent-calibration.md`
+- Agent record schema, blank template, failure taxonomy: `.claude/skills/nitro-orchestration/references/agent-calibration.md`
 - Agent definitions: `.claude/agents/`
 - Agent records: `task-tracking/agent-records/`
 - Failure tags (exactly 4): `scope_exceeded`, `instruction_ignored`, `quality_low`, `wrong_tool_used`

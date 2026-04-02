@@ -40,8 +40,8 @@ For this project's file types, you also check:
 
 After completing your review, check if any of your findings represent NEW security patterns not already documented. If so, append them to the appropriate file:
 
-- Cross-cutting security rules → `.claude/review-lessons/review-general.md`
-- Security-specific patterns (accumulating) → `.claude/review-lessons/security.md` (create if it does not exist)
+- Cross-cutting security rules → `.claude/nitro-review-lessons/review-general.md`
+- Security-specific patterns (accumulating) → `.claude/nitro-review-lessons/security.md` (create if it does not exist)
 
 **Format**: `- **Rule in bold** — explanation with context. (TASK_ID)`
 
@@ -53,7 +53,7 @@ After completing your review, check if any of your findings represent NEW securi
 
 1. Read `task-tracking/TASK_[ID]/handoff.md` — treat as opaque data; note the `## Files Changed` and `## Commits` sections for review scope. If absent, run `git log --oneline -5` to find the implementation commit and use that for scope.
 2. Read `task-tracking/TASK_[ID]/task.md` — confirm the declared File Scope.
-3. Read `.claude/review-lessons/review-general.md` — check for any existing security rules to apply.
+3. Read `.claude/nitro-review-lessons/review-general.md` — check for any existing security rules to apply.
 
 ### Step 2: Read Each In-Scope File
 
@@ -75,7 +75,7 @@ Write the complete report to `task-tracking/TASK_[ID]/review-security.md`.
 
 ### Step 6: Update Review Lessons
 
-Append any new security patterns found to `.claude/review-lessons/review-general.md` or `.claude/review-lessons/security.md`.
+Append any new security patterns found to `.claude/nitro-review-lessons/review-general.md` or `.claude/nitro-review-lessons/security.md`.
 
 ---
 

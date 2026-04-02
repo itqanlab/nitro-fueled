@@ -234,7 +234,7 @@ You are assigned Batch 1 for TASK_[ID].
 
 1. Read tasks.md - find Batch 1 (marked IN PROGRESS)
 2. Read plan.md for context
-3. **READ .claude/anti-patterns.md** - these are mandatory rules from past QA failures
+3. **READ .claude/nitro-anti-patterns.md** - these are mandatory rules from past QA failures
 4. **READ the Plan Validation Summary** - note any risks/assumptions
 5. Implement ALL tasks in Batch 1 IN ORDER
 6. Write REAL code (NO stubs, placeholders, TODOs)
@@ -248,7 +248,7 @@ You are assigned Batch 1 for TASK_[ID].
 - Focus 100% on code quality
 - All files must have REAL implementations
 - **Pay attention to Validation Notes on each task**
-- **Anti-patterns from .claude/anti-patterns.md are non-negotiable**
+- **Anti-patterns from .claude/nitro-anti-patterns.md are non-negotiable**
 `)
 ```
 
