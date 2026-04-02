@@ -17,7 +17,7 @@ Single source-of-truth template for generating developer agents. The `/create-ag
 | `{universal_rules_content}` | Top priority rules adapted to the language/framework | Same 7 rules with Java-specific examples |
 | `{anti_patterns_content}` | Language-specific anti-patterns to avoid | God classes, anemic domain model, catching Exception |
 | `{pro_tips_content}` | Practical ecosystem tips (numbered list, 8-10 items) | Use records for DTOs, prefer constructor injection |
-| `{review_lessons_paths}` | Paths to relevant review-lessons files | `.claude/review-lessons/review-general.md` and `.claude/review-lessons/backend.md` |
+| `{review_lessons_paths}` | Paths to relevant review-lessons files | `.claude/nitro-review-lessons/review-general.md` and `.claude/nitro-review-lessons/backend.md` |
 | `{file_size_table}` | Language-appropriate file size limits table | Component: 150, Service: 200, Test: 300 |
 | `{return_header}` | Completion report header | `BACKEND IMPLEMENTATION COMPLETE` |
 | `{return_fields}` | Additional report fields specific to domain | `**Service/Feature**: [What was implemented]` |

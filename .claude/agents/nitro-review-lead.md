@@ -106,7 +106,7 @@ spawn_worker(
 3. Mark the failed reviewer as "skipped" and exclude its worker ID from the polling list — it produces no report.
 4. Minimum viable: at least style + logic reports must exist. Security report is optional. If both style and logic are missing, write exit-gate-failure.md and exit.
 
-**Note on review lessons**: Sub-workers may concurrently append to `.claude/review-lessons/review-general.md`. This is acceptable — concurrent markdown appends rarely corrupt plain-text files. If the Review Lead detects a malformed lessons file after sub-workers complete, it should note this in the completion report but not fail.
+**Note on review lessons**: Sub-workers may concurrently append to `.claude/nitro-review-lessons/review-general.md`. This is acceptable — concurrent markdown appends rarely corrupt plain-text files. If the Review Lead detects a malformed lessons file after sub-workers complete, it should note this in the completion report but not fail.
 
 ---
 
@@ -256,7 +256,7 @@ If fixes exceed 20 distinct changes across files, log a note in the completion r
 
 ## Phase 5: Completion
 
-Execute the Completion Phase as defined in `.claude/skills/orchestration/SKILL.md`.
+Execute the Completion Phase as defined in `.claude/skills/nitro-orchestration/SKILL.md`.
 
 **IMPORTANT — Three-commit rule**: The fix commit (Phase 4, step 7) and the bookkeeping commit (Phase 5, step 4) are separate commits. Do NOT combine them. The Supervisor relies on this commit sequence as a state machine.
 

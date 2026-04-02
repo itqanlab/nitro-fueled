@@ -73,7 +73,7 @@ The Planner agent definition contains the full flow for each mode.
 
 - Planner agent: `.claude/agents/nitro-planner.md`
 - Task template: `task-tracking/task-template.md`
-- Task tracking conventions: `.claude/skills/orchestration/references/task-tracking.md`
-- Orchestration skill: `.claude/skills/orchestration/SKILL.md`
-- Supervisor skill: `.claude/skills/auto-pilot/SKILL.md`
+- Task tracking conventions: `.claude/skills/nitro-orchestration/references/task-tracking.md`
+- Orchestration skill: `.claude/skills/nitro-orchestration/SKILL.md`
+- Supervisor skill: `.claude/skills/nitro-auto-pilot/SKILL.md`
 - Template guide: `docs/task-template-guide.md`

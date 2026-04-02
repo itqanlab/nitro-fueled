@@ -72,7 +72,7 @@ For each task in the queue:
 
     Use the Agent tool to run the full orchestration pipeline for TASK_X.
     Pass the task folder path and instruct the subagent to read
-    .claude/skills/orchestration/SKILL.md and execute the full pipeline.
+    .claude/skills/nitro-orchestration/SKILL.md and execute the full pipeline.
     The subagent should not stop for approval — build, commit, review, fix, complete.
 
 6e. After agent returns: read task-tracking/TASK_X/status

@@ -11,7 +11,7 @@ Invoke the orchestration skill for development workflows.
 
 ## Execution
 
-1. Load `.claude/skills/orchestration/SKILL.md`
+1. Load `.claude/skills/nitro-orchestration/SKILL.md`
 2. Follow the Workflow Selection Matrix to determine strategy
 3. Execute the chosen strategy (invoke agents, handle checkpoints)
 4. Load references as needed during execution:
@@ -32,4 +32,4 @@ Invoke the orchestration skill for development workflows.
 
 ## Skill Path
 
-`.claude/skills/orchestration/SKILL.md`
+`.claude/skills/nitro-orchestration/SKILL.md`

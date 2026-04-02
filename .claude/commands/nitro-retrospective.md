@@ -33,8 +33,8 @@ Read these artifacts for every task ID in scope:
 - `task-tracking/TASK_{ID}/completion-report.md` — Review Scores table (style/logic/security X/10 values), Findings Fixed section, Files Modified section. If this file is missing or has no Review Scores table, record all scores as `n/a` for this task.
 - `task-tracking/TASK_{ID}/review-style.md`, `review-logic.md`, `review-security.md` — blocking/serious/minor finding counts, verdicts per review type. Also check for `review-code-style.md`, `review-code-logic.md` (older naming). Read whichever files exist in each task folder.
 - `task-tracking/sessions/*/log.md` — stuck and killed worker events, retry events. If no session directories exist, record all Worker Health metrics as `n/a`.
-- `.claude/review-lessons/*.md` — existing lessons content (all files). Read once before Step 3.
-- `.claude/anti-patterns.md` — existing anti-patterns. Read once before Step 3.
+- `.claude/nitro-review-lessons/*.md` — existing lessons content (all files). Read once before Step 3.
+- `.claude/nitro-anti-patterns.md` — existing anti-patterns. Read once before Step 3.
 
 If no `completion-report.md` files exist within the analyzed scope, output: "No completed tasks found in the analyzed scope." and stop.
 
@@ -43,7 +43,7 @@ If no `completion-report.md` files exist within the analyzed scope, output: "No 
 Scan findings across all tasks in scope and identify:
 
 - **Recurring findings**: same finding category (e.g., "File size violation", "Missing access modifier", "Missing error handling") appearing in review files for 3 or more distinct task IDs → systemic issue.
-- **Violated existing lessons**: findings from review files that match a lesson in `.claude/review-lessons/*.md` — a lesson exists but was still violated. A match requires the same concrete rule (same verb + same noun, e.g., "do not use `as` assertions" matching a finding about `as` type assertions). Record the lesson file, the lesson text, and the task IDs where it was violated.
+- **Violated existing lessons**: findings from review files that match a lesson in `.claude/nitro-review-lessons/*.md` — a lesson exists but was still violated. A match requires the same concrete rule (same verb + same noun, e.g., "do not use `as` assertions" matching a finding about `as` type assertions). Record the lesson file, the lesson text, and the task IDs where it was violated.
 - **Acknowledged-but-unfixed findings**: findings explicitly marked as "acknowledged" or "out of scope" across 2+ tasks in the same category — accumulating tech debt.
 - **Low-scoring task types**: review scores below 6/10 — note which task types correlate with lower scores.
 - **Worker health issues**: from session logs, count stuck events and killed events; identify preceding context (task type, phase).
@@ -134,8 +134,8 @@ Write to `task-tracking/retrospectives/RETRO_{YYYY-MM-DD}.md` (create the `retro
 
 Only apply entries that pass Step 4 (no conflicts, not duplicates) and are within the volume cap:
 
-- New lessons → append to the appropriate `.claude/review-lessons/*.md` file, tagged `[RETRO_{YYYY-MM-DD}]`.
-- Patterns that have a matching violated lesson in 3+ tasks → promote to `.claude/anti-patterns.md` as a new entry, tagged `[RETRO_{YYYY-MM-DD}]`.
+- New lessons → append to the appropriate `.claude/nitro-review-lessons/*.md` file, tagged `[RETRO_{YYYY-MM-DD}]`.
+- Patterns that have a matching violated lesson in 3+ tasks → promote to `.claude/nitro-anti-patterns.md` as a new entry, tagged `[RETRO_{YYYY-MM-DD}]`.
 
 **Idempotency rule**: Before writing any entry, search the target file for an existing `[RETRO_{YYYY-MM-DD}_{SCOPE}]` tag where `{SCOPE}` is `all`, `session`, or `since-{date}` matching the current run's scope. If found, skip all writes — this retrospective scope has already been applied.
 
@@ -145,11 +145,11 @@ After writing the retrospective report (5a) and applying all safe updates (5b), 
 
 ```bash
 git add task-tracking/retrospectives/RETRO_[DATE].md
-git add .claude/review-lessons/ .claude/anti-patterns.md
+git add .claude/nitro-review-lessons/ .claude/nitro-anti-patterns.md
 git commit -m "docs(retro): add RETRO_[DATE] retrospective"
 ```
 
-> Always stage `review-lessons/` and `anti-patterns.md` unconditionally — git will silently skip files with no changes, so this is safe even when no lessons were auto-applied.
+> Always stage `nitro-review-lessons/` and `nitro-anti-patterns.md` unconditionally — git will silently skip files with no changes, so this is safe even when no lessons were auto-applied.
 
 #### 5d. Present to User
 

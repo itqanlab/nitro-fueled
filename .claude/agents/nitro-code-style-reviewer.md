@@ -84,7 +84,7 @@ Every score MUST include:
 
 ## MANDATORY: Update Review Lessons After Reviewing
 
-After completing your review, check if any of your findings represent NEW patterns (not already in `.claude/review-lessons/`). If so, append them to the appropriate file:
+After completing your review, check if any of your findings represent NEW patterns (not already in `.claude/nitro-review-lessons/`). If so, append them to the appropriate file:
 
 - Cross-cutting rules (naming, types, file size, imports) → `review-general.md`
 - Backend-specific (DB, IPC, services, Electron) → `backend.md`
@@ -268,7 +268,7 @@ if (node().status === 'pending_review')  // Magic string - should be enum/const
 
 ```bash
 # Read project anti-patterns FIRST — violations here are automatic blocking issues
-Read(.claude/anti-patterns.md)
+Read(.claude/nitro-anti-patterns.md)
 
 # Read task requirements
 Read(task-tracking/TASK_[ID]/context.md)
@@ -279,7 +279,7 @@ Glob(**/*similar*.ts)
 Read([similar implementation for comparison])
 ```
 
-**Anti-patterns are first-class review criteria.** Any rule in `.claude/anti-patterns.md` that
+**Anti-patterns are first-class review criteria.** Any rule in `.claude/nitro-anti-patterns.md` that
 applies to the implementation's tech stack is a blocking issue if violated. The file is
 stack-specific — sections that don't match the project's stack can be skipped.
 

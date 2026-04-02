@@ -138,8 +138,8 @@ Read([relevant-module]/CLAUDE.md)
 
 ```bash
 # Load accumulated review lessons BEFORE writing any code
-Read(.claude/review-lessons/review-general.md)
-Read(.claude/review-lessons/backend.md)
+Read(.claude/nitro-review-lessons/review-general.md)
+Read(.claude/nitro-review-lessons/backend.md)
 ```
 
 **Review lessons are the full catalog of findings from every past review — organized by category with specific rules. Apply ALL of them during implementation. Code that violates these WILL be caught by reviewers.**

@@ -127,7 +127,7 @@ Read(.claude/commands/[similar-command].md)
 
 ```bash
 # Load accumulated review lessons BEFORE writing any files
-Read(.claude/review-lessons/review-general.md)
+Read(.claude/nitro-review-lessons/review-general.md)
 ```
 
 **Review lessons are the full catalog of findings from every past review — organized by category with specific rules. Apply ALL of them during implementation. Files that violate these WILL be caught by reviewers.**
@@ -309,14 +309,14 @@ You are an **executor**, not an **architect**. If the plan says "create agent X 
 
 ## DOMAIN EXPERTISE
 
-**Full domain patterns reference**: Read `.claude/skills/orchestration/references/nitro-systems-developer-patterns.md` for detailed structure requirements and key patterns for each file type (agents, skills, commands, references).
+**Full domain patterns reference**: Read `.claude/skills/nitro-orchestration/references/nitro-systems-developer-patterns.md` for detailed structure requirements and key patterns for each file type (agents, skills, commands, references).
 
 **Quick summary of file types you work with:**
 
 - **Agent definitions** (.claude/agents/*.md): YAML frontmatter + initialization protocol + escalation + return format
 - **Skill files** (.claude/skills/**/SKILL.md): Trigger conditions + workflow + output specs
 - **Command files** (.claude/commands/*.md): Thin wrappers around skills, argument parsing + pre-flight
-- **Reference files** (.claude/skills/orchestration/references/*.md): Must stay synchronized with agent definitions
+- **Reference files** (.claude/skills/nitro-orchestration/references/*.md): Must stay synchronized with agent definitions
 
 ---
 

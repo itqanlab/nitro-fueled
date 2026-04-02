@@ -65,7 +65,7 @@ Reference for the systems-developer agent covering structure requirements and ke
 
 ---
 
-## Reference Files (.claude/skills/orchestration/references/*.md)
+## Reference Files (.claude/skills/nitro-orchestration/references/*.md)
 
 **Structure Requirements:**
 

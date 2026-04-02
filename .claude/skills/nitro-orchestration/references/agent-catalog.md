@@ -278,7 +278,7 @@ See nitro-planner.md for detailed instructions.`,
 **Outputs**:
 
 - Files in `.claude/agents/`, `.claude/skills/`, `.claude/commands/`
-- Reference files in `.claude/skills/orchestration/references/`
+- Reference files in `.claude/skills/nitro-orchestration/references/`
 - Updates to `task-tracking/TASK_[ID]/tasks.md` (status: IMPLEMENTED)
 
 **Dependencies**: nitro-team-leader (batch assignment)

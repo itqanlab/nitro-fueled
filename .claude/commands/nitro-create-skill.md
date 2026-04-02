@@ -107,5 +107,5 @@ Skill created successfully.
 ## References
 
 - Skill pattern: `.claude/skills/ui-ux-designer/SKILL.md`
-- Skill pattern: `.claude/skills/orchestration/SKILL.md`
+- Skill pattern: `.claude/skills/nitro-orchestration/SKILL.md`
 - Command pattern: `.claude/commands/nitro-create-task.md`
