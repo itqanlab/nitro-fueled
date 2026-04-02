@@ -243,17 +243,20 @@ export class SupervisorDbService implements OnModuleDestroy {
       (db.prepare("SELECT id FROM tasks WHERE status = 'COMPLETE' LIMIT 1000").all() as Array<{ id: string }>).map(r => r.id),
     );
 
-    // Parent task IDs that have active (non-terminal) subtasks — skip these parents, schedule subtasks instead
+    // Parent task IDs that have active (still-building) subtasks — skip these parents, schedule subtasks instead.
+    // IMPLEMENTED subtasks are done building; once all subtasks are IMPLEMENTED the parent is promoted
+    // to IMPLEMENTED and should appear in the review queue — so exclude IMPLEMENTED from this filter.
     const decomposedParentIds = new Set(
       (db.prepare(
-        `SELECT DISTINCT parent_task_id FROM tasks WHERE parent_task_id IS NOT NULL AND status NOT IN ('COMPLETE', 'BLOCKED', 'CANCELLED')`,
+        `SELECT DISTINCT parent_task_id FROM tasks WHERE parent_task_id IS NOT NULL AND status NOT IN ('IMPLEMENTED', 'COMPLETE', 'BLOCKED', 'CANCELLED')`,
       ).all() as Array<{ parent_task_id: string }>).map(r => r.parent_task_id),
     );
 
-    // For sequential subtask ordering: track which subtask_orders are COMPLETE per parent
+    // For sequential subtask ordering: a subtask is considered "done" once it reaches IMPLEMENTED
+    // (build complete). COMPLETE is also accepted for backwards-compatibility.
     const completedOrdersByParent = new Map<string, Set<number>>();
     const completedSubtaskRows = db.prepare(
-      `SELECT parent_task_id, subtask_order FROM tasks WHERE parent_task_id IS NOT NULL AND status = 'COMPLETE'`,
+      `SELECT parent_task_id, subtask_order FROM tasks WHERE parent_task_id IS NOT NULL AND status IN ('IMPLEMENTED', 'COMPLETE')`,
     ).all() as Array<{ parent_task_id: string; subtask_order: number }>;
     for (const r of completedSubtaskRows) {
       if (!completedOrdersByParent.has(r.parent_task_id)) {
@@ -316,17 +319,23 @@ export class SupervisorDbService implements OnModuleDestroy {
    * Returns the rollup status for all subtasks of a decomposed parent.
    * Used after a subtask completes or fails to determine whether to promote or block the parent.
    */
-  public getParentStatusRollup(parentTaskId: string): { allComplete: boolean; anyFailed: boolean } {
+  public getParentStatusRollup(parentTaskId: string): {
+    allComplete: boolean;
+    allImplemented: boolean;
+    anyFailed: boolean;
+  } {
     const db = this.getDb();
     const rows = db.prepare(
       'SELECT status FROM tasks WHERE parent_task_id = ?',
     ).all(parentTaskId) as Array<{ status: string }>;
 
-    if (rows.length === 0) return { allComplete: false, anyFailed: false };
+    if (rows.length === 0) return { allComplete: false, allImplemented: false, anyFailed: false };
 
     const allComplete = rows.every(r => r.status === 'COMPLETE');
+    // allImplemented: all subtasks have finished building (IMPLEMENTED or beyond)
+    const allImplemented = rows.every(r => r.status === 'IMPLEMENTED' || r.status === 'COMPLETE');
     const anyFailed = rows.some(r => r.status === 'BLOCKED');
-    return { allComplete, anyFailed };
+    return { allComplete, allImplemented, anyFailed };
   }
 
   public claimTask(taskId: string, sessionId: string): boolean {

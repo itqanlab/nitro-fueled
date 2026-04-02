@@ -209,8 +209,9 @@ export class SessionRunner {
     const parentId = subtaskId.substring(0, subtaskId.lastIndexOf('.'));
     const rollup = this.supervisorDb.getParentStatusRollup(parentId);
 
-    if (rollup.allComplete) {
-      this.logger.log(`All subtasks complete for ${parentId} — promoting to IMPLEMENTED`);
+    if (rollup.allImplemented) {
+      // All subtasks have finished building — promote parent to IMPLEMENTED for holistic review
+      this.logger.log(`All subtasks implemented for ${parentId} — promoting to IMPLEMENTED`);
       this.supervisorDb.updateTaskStatus(parentId, 'IMPLEMENTED');
       this.supervisorDb.logEvent(
         this.sessionId, parentId, 'supervisor', 'PARENT_AUTO_PROMOTED',
@@ -247,6 +248,12 @@ export class SessionRunner {
           { workerId: worker.workerId, provider: worker.provider },
         );
         this.emitEvent('worker:completed', { taskId: worker.taskId, workerType: 'build' });
+
+        // Subtask: after build completes, check if all siblings are IMPLEMENTED
+        // → promote parent to IMPLEMENTED for holistic review
+        if (SessionRunner.isSubtaskId(worker.taskId)) {
+          this.handleSubtaskParentRollup(worker.taskId);
+        }
       } else {
         this.handleWorkerFailure(worker, `Task status is ${taskStatus} (expected IMPLEMENTED)`);
       }
@@ -261,11 +268,8 @@ export class SessionRunner {
         this.supervisorDb.updateWorkerReviewOutcome(worker.workerId, 'COMPLETE', 0);
         this.emitEvent('worker:completed', { taskId: worker.taskId, workerType: 'review' });
         this.emitEvent('task:completed', { taskId: worker.taskId });
-
-        // Subtask: after a subtask reaches COMPLETE, check if parent can be promoted
-        if (SessionRunner.isSubtaskId(worker.taskId)) {
-          this.handleSubtaskParentRollup(worker.taskId);
-        }
+        // Note: subtask parent promotion is triggered from the build branch (when all subtasks
+        // reach IMPLEMENTED). Subtasks do not get individual review workers.
       } else {
         this.handleWorkerFailure(worker, `Task status is ${taskStatus} (expected COMPLETE)`);
       }
@@ -343,7 +347,11 @@ export class SessionRunner {
     const available = candidates.filter(c => !activeTasks.has(c.id));
 
     const buildCandidates = available.filter(c => c.status === 'CREATED' || c.status === 'PREPPED');
-    const reviewCandidates = available.filter(c => c.status === 'IMPLEMENTED');
+    // Subtasks (TASK_YYYY_NNN.M) never get individual review workers — only the parent is reviewed
+    // holistically after all subtasks reach IMPLEMENTED.
+    const reviewCandidates = available.filter(
+      c => c.status === 'IMPLEMENTED' && !SessionRunner.isSubtaskId(c.id),
+    );
 
     return this.applyPriorityStrategy(buildCandidates, reviewCandidates, slots, this.config.priority);
   }
