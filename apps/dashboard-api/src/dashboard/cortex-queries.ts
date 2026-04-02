@@ -18,6 +18,7 @@ export {
   queryEventsSince,
   queryLauncherMetrics,
   queryRoutingRecommendations,
+  querySkillUsage,
   mapWorker,
   mapEvent,
 } from './cortex-queries-worker';

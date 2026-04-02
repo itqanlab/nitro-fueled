@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CortexService } from '../dashboard/cortex.service';
-import type { CortexModelPerformance, CortexBuilderQuality, CortexWorker } from '../dashboard/cortex.service';
+import type { CortexModelPerformance, CortexBuilderQuality, CortexWorker, CortexSkillUsage } from '../dashboard/cortex.service';
 import type {
   ModelPerformanceRowDto,
   ModelPerformanceResponseDto,
@@ -8,6 +8,8 @@ import type {
   LauncherMetricsResponseDto,
   RoutingRecommendationDto,
   RoutingRecommendationsResponseDto,
+  SkillUsageItemDto,
+  SkillUsageResponseDto,
 } from './analytics.dto';
 
 @Injectable()
@@ -59,6 +61,22 @@ export class AnalyticsService {
       this.aggregateLauncherWorkers(launcher, ws),
     );
 
+    return { data, total: data.length };
+  }
+
+  // ============================================================
+  // Skill Usage
+  // ============================================================
+
+  public getSkillUsage(filters?: { period?: string }): SkillUsageResponseDto | null {
+    const rows = this.cortex.getSkillUsage(filters);
+    if (!rows) return null;
+    const data: SkillUsageItemDto[] = rows.map((r: CortexSkillUsage) => ({
+      skill: r.skill,
+      count: r.count,
+      avgDurationMs: r.avg_duration_ms,
+      lastUsed: r.last_used,
+    }));
     return { data, total: data.length };
   }
 

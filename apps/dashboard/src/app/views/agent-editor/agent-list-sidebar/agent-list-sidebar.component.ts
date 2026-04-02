@@ -34,11 +34,11 @@ export class AgentListSidebarComponent {
   ];
 
   protected readonly visibleAgents = computed<readonly AgentEditorData[]>(() =>
-    this.store.agentList.slice(0, MAX_VISIBLE_AGENTS),
+    this.store.agentList().slice(0, MAX_VISIBLE_AGENTS),
   );
 
   protected readonly hiddenCount = computed<number>(() =>
-    Math.max(0, this.store.agentList.length - MAX_VISIBLE_AGENTS),
+    Math.max(0, this.store.agentList().length - MAX_VISIBLE_AGENTS),
   );
 
   protected readonly selectedAgentId = computed<string | null>(

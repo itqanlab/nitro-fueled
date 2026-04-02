@@ -182,6 +182,13 @@ export interface CortexPhaseTiming {
   max_duration_minutes: number | null;
 }
 
+export interface CortexSkillUsage {
+  skill: string;
+  count: number;
+  avg_duration_ms: number | null;
+  last_used: string | null;
+}
+
 // ============================================================
 // Raw DB row shapes (better-sqlite3 return types)
 // ============================================================

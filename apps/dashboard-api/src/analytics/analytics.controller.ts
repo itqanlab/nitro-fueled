@@ -5,6 +5,7 @@ import type {
   ModelPerformanceResponseDto,
   LauncherMetricsResponseDto,
   RoutingRecommendationsResponseDto,
+  SkillUsageResponseDto,
 } from './analytics.dto';
 
 @ApiTags('analytics')
@@ -63,6 +64,20 @@ export class AnalyticsController {
     const result = this.analyticsService.getLauncherMetrics(launcherId);
     if (!result) {
       this.logger.warn(`getLauncherMetrics: cortex DB unavailable (launcher=${AnalyticsService.sanitizeForLog(launcherId)})`);
+      throw new ServiceUnavailableException('Cortex DB is not available');
+    }
+    return result;
+  }
+
+  @Get('skill-usage')
+  @ApiOperation({ summary: 'Skill invocation usage aggregated by skill name' })
+  @ApiQuery({ name: 'period', required: false, description: 'Time window: 7d, 30d, 90d, or all (default: 30d)' })
+  public getSkillUsage(
+    @Query('period') period?: string,
+  ): SkillUsageResponseDto {
+    const result = this.analyticsService.getSkillUsage(period ? { period } : undefined);
+    if (!result) {
+      this.logger.warn('getSkillUsage: cortex DB unavailable');
       throw new ServiceUnavailableException('Cortex DB is not available');
     }
     return result;

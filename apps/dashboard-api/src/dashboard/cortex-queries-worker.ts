@@ -14,6 +14,7 @@ import type {
   CortexBuilderQuality,
   CortexLauncherMetrics,
   CortexRoutingRecommendation,
+  CortexSkillUsage,
   RawWorker,
   RawPhase,
   RawReview,
@@ -354,5 +355,50 @@ export function queryRoutingRecommendations(db: Database.Database): CortexRoutin
     avg_builder_score: r.avg_builder_score,
     avg_duration_minutes: durationMap.get(`${r.model}::${r.task_type}`) ?? null,
     evidence_count: r.evidence_count,
+  }));
+}
+
+export function querySkillUsage(
+  db: Database.Database,
+  filters?: { period?: string },
+): CortexSkillUsage[] {
+  const period = filters?.period ?? '30d';
+
+  let sinceExpr: string;
+  const daysMatch = /^(\d+)d$/.exec(period);
+  if (period === 'all') {
+    sinceExpr = '';
+  } else if (daysMatch) {
+    sinceExpr = `invoked_at >= datetime('now', '-${parseInt(daysMatch[1], 10)} days')`;
+  } else {
+    // Default to 30d for unknown formats
+    sinceExpr = `invoked_at >= datetime('now', '-30 days')`;
+  }
+
+  const where = sinceExpr ? `WHERE ${sinceExpr}` : '';
+  const sql = `
+    SELECT
+      skill_name AS skill,
+      COUNT(*) AS count,
+      AVG(CAST(duration_ms AS REAL)) AS avg_duration_ms,
+      MAX(invoked_at) AS last_used
+    FROM skill_invocations
+    ${where}
+    GROUP BY skill_name
+    ORDER BY count DESC
+  `;
+
+  interface SkillRow {
+    skill: string;
+    count: number;
+    avg_duration_ms: number | null;
+    last_used: string | null;
+  }
+
+  return (db.prepare(sql).all() as SkillRow[]).map((r): CortexSkillUsage => ({
+    skill: r.skill,
+    count: r.count,
+    avg_duration_ms: r.avg_duration_ms,
+    last_used: r.last_used,
   }));
 }

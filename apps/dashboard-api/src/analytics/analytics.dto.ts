@@ -111,3 +111,29 @@ export class RoutingRecommendationsResponseDto {
   @ApiProperty({ example: 4 })
   public readonly total!: number;
 }
+
+// ============================================================
+// Skill Usage
+// ============================================================
+
+export class SkillUsageItemDto {
+  @ApiProperty({ example: 'nitro-orchestration', description: 'Skill name' })
+  public readonly skill!: string;
+
+  @ApiProperty({ example: 42, description: 'Number of invocations in the period' })
+  public readonly count!: number;
+
+  @ApiProperty({ example: 3500, description: 'Average duration in milliseconds', nullable: true })
+  public readonly avgDurationMs!: number | null;
+
+  @ApiProperty({ example: '2026-03-31T14:22:00.000Z', description: 'ISO timestamp of last invocation', nullable: true })
+  public readonly lastUsed!: string | null;
+}
+
+export class SkillUsageResponseDto {
+  @ApiProperty({ type: [SkillUsageItemDto], description: 'Skill usage rows sorted by count descending' })
+  public readonly data!: ReadonlyArray<SkillUsageItemDto>;
+
+  @ApiProperty({ example: 8 })
+  public readonly total!: number;
+}

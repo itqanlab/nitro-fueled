@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import type { ApiKeyEntry, LauncherEntry, ModelMapping, SubscriptionEntry } from '../models/settings.model';
+import type { AgentEditorData } from '../models/agent-editor.model';
 
 interface HealthResponse {
   status: string;
@@ -65,6 +66,7 @@ import type {
   AnalyticsModelPerfResponse,
   AnalyticsLauncherMetricsResponse,
   AnalyticsRoutingRecommendationsResponse,
+  AnalyticsSkillUsageResponse,
   SessionHistoryListItem,
   SessionHistoryDetail,
 } from '../models/api.types';
@@ -393,6 +395,15 @@ export class ApiService {
     );
   }
 
+  public getAnalyticsSkillUsage(period?: string): Observable<AnalyticsSkillUsageResponse> {
+    let params = new HttpParams();
+    if (period) params = params.set('period', period);
+    return this.http.get<AnalyticsSkillUsageResponse>(
+      `${this.base}/analytics/skill-usage`,
+      { params },
+    );
+  }
+
   // ── Command Console ──────────────────────────────────────────────────────
 
   public getCommandCatalog(): Observable<CommandCatalogEntry[]> {
@@ -626,6 +637,28 @@ export class ApiService {
 
   public replaceSettingsMappings(mappings: ModelMapping[]): Observable<ModelMapping[]> {
     return this.http.put<ModelMapping[]>(`${this.base}/settings/mapping`, mappings);
+  }
+
+  // ── Agents ────────────────────────────────────────────────────────────────
+
+  public getAgents(): Observable<AgentEditorData[]> {
+    return this.http.get<AgentEditorData[]>(`${this.base}/agents`);
+  }
+
+  public getAgent(id: string): Observable<AgentEditorData> {
+    return this.http.get<AgentEditorData>(`${this.base}/agents/${encodeURIComponent(id)}`);
+  }
+
+  public createAgent(data: Omit<AgentEditorData, 'id'>): Observable<AgentEditorData> {
+    return this.http.post<AgentEditorData>(`${this.base}/agents`, data);
+  }
+
+  public updateAgent(id: string, data: Partial<Omit<AgentEditorData, 'id'>>): Observable<AgentEditorData> {
+    return this.http.put<AgentEditorData>(`${this.base}/agents/${encodeURIComponent(id)}`, data);
+  }
+
+  public deleteAgent(id: string): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${this.base}/agents/${encodeURIComponent(id)}`);
   }
 }
 

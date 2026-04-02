@@ -15,6 +15,7 @@ import {
   queryEventsSince,
   queryLauncherMetrics,
   queryRoutingRecommendations,
+  querySkillUsage,
 } from './cortex-queries';
 import type {
   CortexTask,
@@ -29,6 +30,7 @@ import type {
   CortexPhaseTiming,
   CortexLauncherMetrics,
   CortexRoutingRecommendation,
+  CortexSkillUsage,
 } from './cortex.types';
 
 export type {
@@ -42,6 +44,7 @@ export type {
   CortexModelPerformance,
   CortexBuilderQuality,
   CortexPhaseTiming,
+  CortexSkillUsage,
 };
 
 /**
@@ -235,6 +238,19 @@ export class CortexService {
       return queryPhaseTiming(db);
     } catch (err) {
       this.logger.error(`getPhaseTiming failed: ${String(err)}`);
+      return null;
+    } finally {
+      db.close();
+    }
+  }
+
+  public getSkillUsage(filters?: { period?: string }): CortexSkillUsage[] | null {
+    const db = this.openDb();
+    if (!db) return null;
+    try {
+      return querySkillUsage(db, filters);
+    } catch (err) {
+      this.logger.error(`getSkillUsage failed: ${String(err)}`);
       return null;
     } finally {
       db.close();
