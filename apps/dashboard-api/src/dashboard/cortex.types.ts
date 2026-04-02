@@ -19,6 +19,16 @@ export interface CortexTask {
   updated_at: string;
 }
 
+export interface CortexSubtask {
+  id: string;
+  title: string;
+  status: string;
+  complexity: string | null;
+  model: string | null;
+  subtask_order: number | null;
+  file_scope: string[];
+}
+
 export interface CortexTaskContext extends CortexTask {
   description: string;
   acceptance_criteria: string;
@@ -27,6 +37,7 @@ export interface CortexTaskContext extends CortexTask {
   preferred_provider: string | null;
   worker_mode: string | null;
   custom_flow_id?: string | null;
+  subtasks: CortexSubtask[];
 }
 
 export interface CortexSession {
@@ -185,6 +196,16 @@ export interface RawTask {
   preferred_provider: string | null;
   worker_mode: string | null;
   custom_flow_id: string | null;
+}
+
+export interface RawSubtask {
+  id: string;
+  title: string;
+  status: string;
+  complexity: string | null;
+  model: string | null;
+  subtask_order: number | null;
+  file_scope: string | null;
 }
 
 export interface RawSession {

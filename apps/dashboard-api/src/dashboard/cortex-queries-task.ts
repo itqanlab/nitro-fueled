@@ -5,10 +5,12 @@ import Database from 'better-sqlite3';
 import type {
   CortexTask,
   CortexTaskContext,
+  CortexSubtask,
   CortexSession,
   CortexSessionSummary,
   CortexSessionWorker,
   RawTask,
+  RawSubtask,
   RawSession,
   RawWorker,
 } from './cortex.types';
@@ -20,6 +22,8 @@ import { mapWorker } from './cortex-queries-worker';
 
 export const TASK_COLS =
   'id, title, type, priority, status, complexity, dependencies, description, acceptance_criteria, file_scope, created_at, updated_at, model, preferred_provider, worker_mode, custom_flow_id';
+export const SUBTASK_COLS =
+  'id, title, status, complexity, model, subtask_order, file_scope';
 export const SESSION_COLS =
   'id, source, started_at, ended_at, loop_status, tasks_terminal, supervisor_model, supervisor_launcher, mode, total_cost, total_input_tokens, total_output_tokens, last_heartbeat, drain_requested';
 export const WORKER_COLS =
@@ -56,7 +60,19 @@ export function mapTask(row: RawTask): CortexTask {
   };
 }
 
-export function mapTaskContext(row: RawTask): CortexTaskContext {
+export function mapSubtask(row: RawSubtask): CortexSubtask {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    complexity: row.complexity ?? null,
+    model: row.model ?? null,
+    subtask_order: row.subtask_order ?? null,
+    file_scope: parseJson<string[]>(row.file_scope, []),
+  };
+}
+
+export function mapTaskContext(row: RawTask, subtasks: CortexSubtask[] = []): CortexTaskContext {
   return {
     ...mapTask(row),
     description: row.description,
@@ -66,6 +82,7 @@ export function mapTaskContext(row: RawTask): CortexTaskContext {
     preferred_provider: row.preferred_provider ?? null,
     worker_mode: row.worker_mode ?? null,
     custom_flow_id: row.custom_flow_id ?? null,
+    subtasks,
   };
 }
 
@@ -111,7 +128,11 @@ export function queryTasks(db: Database.Database, filters?: { status?: string; t
 
 export function queryTaskContext(db: Database.Database, taskId: string): CortexTaskContext | null {
   const row = db.prepare(`SELECT ${TASK_COLS} FROM tasks WHERE id = ?`).get(taskId) as RawTask | undefined;
-  return row ? mapTaskContext(row) : null;
+  if (!row) return null;
+  const subtaskRows = db.prepare(
+    `SELECT ${SUBTASK_COLS} FROM tasks WHERE parent_task_id = ? ORDER BY subtask_order ASC`,
+  ).all(taskId) as RawSubtask[];
+  return mapTaskContext(row, subtaskRows.map(mapSubtask));
 }
 
 export function querySessions(db: Database.Database): CortexSession[] {
